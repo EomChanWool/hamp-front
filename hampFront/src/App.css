@@ -229,11 +229,6 @@ button {
   margin: 2px 0;
 }
 
-.navGroup button small {
-  color: #8fa1b7;
-  font-size: 11px;
-}
-
 .navGroup button.active,
 .navGroup button:hover {
   background: #12365d;

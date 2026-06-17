@@ -42,7 +42,6 @@ export function AppShell({
                   onClick={() => onScreenChange(item.key)}
                 >
                   <span>{item.label}</span>
-                  <small>{item.accessLabel}</small>
                 </button>
               ))}
             </section>
