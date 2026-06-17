@@ -1,0 +1,694 @@
+.loginPage {
+  min-height: 100vh;
+  background:
+    linear-gradient(120deg, rgba(11, 31, 58, 0.92), rgba(16, 92, 112, 0.78)),
+    url('./assets/hero.png') center/360px no-repeat,
+    #0b1f3a;
+  display: grid;
+  place-items: center;
+  padding: 40px 20px;
+}
+
+.loginPanel {
+  width: min(1040px, 100%);
+  min-height: 580px;
+  display: grid;
+  grid-template-columns: 1.25fr 420px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+  overflow: hidden;
+}
+
+.loginCopy {
+  background: #0b1f3a;
+  color: #fff;
+  padding: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+}
+
+.loginCopy h1 {
+  font-size: 56px;
+  line-height: 1;
+  margin: 0;
+}
+
+.loginCopy p {
+  max-width: 520px;
+  color: #d8dee9;
+  font-size: 18px;
+}
+
+.eyebrow {
+  color: #00a6a6;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.loginFlow,
+.stepFlow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.loginFlow span,
+.stepFlow span {
+  border: 1px solid rgba(0, 166, 166, 0.36);
+  background: rgba(0, 166, 166, 0.12);
+  color: #0b6666;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.loginCopy .loginFlow span {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.loginForm {
+  padding: 64px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+}
+
+.loginForm h2 {
+  margin: 0 0 12px;
+  color: #0b1f3a;
+  font-size: 28px;
+}
+
+.loginForm p {
+  color: #748094;
+  font-size: 13px;
+}
+
+label {
+  display: grid;
+  gap: 7px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+input {
+  min-width: 0;
+  height: 40px;
+  border: 1px solid #d8dee9;
+  border-radius: 6px;
+  background: #fff;
+  padding: 0 12px;
+  color: #0b1f3a;
+  font: inherit;
+  outline: none;
+}
+
+input:focus {
+  border-color: #00a6a6;
+  box-shadow: 0 0 0 3px rgba(0, 166, 166, 0.12);
+}
+
+button {
+  border: 0;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primaryButton,
+.ghostButton,
+.iconButton {
+  height: 40px;
+  border-radius: 6px;
+  padding: 0 15px;
+  white-space: nowrap;
+}
+
+.primaryButton {
+  background: #00a6a6;
+  color: #fff;
+}
+
+.ghostButton {
+  border: 1px solid #d8dee9;
+  background: #fff;
+  color: #0b1f3a;
+}
+
+.iconButton {
+  width: 40px;
+  padding: 0;
+  background: #fff2f0;
+  color: #e94f37;
+  border: 1px solid #ffd1ca;
+}
+
+.appShell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  background: #f3f6f8;
+  color: #0b1f3a;
+}
+
+.sidebar {
+  background: #0b1f3a;
+  color: #fff;
+  padding: 22px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.brandMark {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  background: #00a6a6;
+  border-radius: 8px;
+  font-weight: 900;
+  font-size: 24px;
+}
+
+.brand strong,
+.brand small {
+  display: block;
+}
+
+.brand small {
+  color: #aeb8c7;
+  font-size: 12px;
+}
+
+.navMenu {
+  display: grid;
+  gap: 18px;
+}
+
+.navGroup h2 {
+  margin: 0 0 8px;
+  color: #95a3b8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.navGroup button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: transparent;
+  color: #d8dee9;
+  text-align: left;
+  margin: 2px 0;
+}
+
+.navGroup button small {
+  color: #8fa1b7;
+  font-size: 11px;
+}
+
+.navGroup button.active,
+.navGroup button:hover {
+  background: #12365d;
+  color: #fff;
+}
+
+.navGroup button.active {
+  box-shadow: inset 3px 0 0 #00a6a6;
+}
+
+.workspace {
+  min-width: 0;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.breadcrumb {
+  color: #00a6a6;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.topbar h1 {
+  margin: 4px 0 0;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.userBadge {
+  display: grid;
+  gap: 2px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 12px;
+  min-width: 92px;
+}
+
+.userBadge span {
+  color: #748094;
+  font-size: 11px;
+}
+
+.userBadge strong {
+  font-size: 13px;
+}
+
+.screenStack {
+  display: grid;
+  gap: 18px;
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.metricCard,
+.panel,
+.searchBand,
+.fieldBoard,
+.equipmentCard {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.metricCard {
+  padding: 20px;
+  display: grid;
+  gap: 14px;
+  border-left: 4px solid #00a6a6;
+}
+
+.metricCard span {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.metricCard strong {
+  font-size: 30px;
+}
+
+.metricCard.warn {
+  border-left-color: #f59e0b;
+}
+
+.metricCard.danger {
+  border-left-color: #e94f37;
+}
+
+.metricCard.info {
+  border-left-color: #1c6dd0;
+}
+
+.contentGrid {
+  display: grid;
+  gap: 18px;
+}
+
+.contentGrid.two {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.panel {
+  min-width: 0;
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panelHeader h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+}
+
+th,
+td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 12px 10px;
+  text-align: left;
+  font-size: 13px;
+}
+
+th {
+  background: #f8fafc;
+  color: #64748b;
+  font-weight: 900;
+}
+
+td {
+  color: #1e293b;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.badge.good,
+.equipmentCard.good {
+  color: #187344;
+}
+
+.badge.good {
+  background: #e9f9ef;
+}
+
+.badge.warn {
+  background: #fff7e6;
+  color: #996100;
+}
+
+.badge.danger {
+  background: #fff0ed;
+  color: #c23822;
+}
+
+.badge.info {
+  background: #eaf3ff;
+  color: #1c6dd0;
+}
+
+.badge.muted {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.progressList,
+.detailList,
+.summaryList {
+  display: grid;
+  gap: 12px;
+}
+
+.progressRow {
+  display: grid;
+  grid-template-columns: 150px minmax(120px, 1fr) 72px;
+  align-items: center;
+  gap: 12px;
+}
+
+.progressRow div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.progressRow span,
+.progressRow em {
+  color: #64748b;
+  font-size: 12px;
+  font-style: normal;
+}
+
+.progressBar {
+  height: 9px;
+  background: #edf2f7;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progressBar i {
+  display: block;
+  height: 100%;
+  background: #00a6a6;
+  border-radius: inherit;
+}
+
+.searchBand {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 12px;
+  padding: 16px;
+  align-items: end;
+}
+
+.locationGrid,
+.sensorPanel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.locationGrid span,
+.summaryList span,
+.detailList div,
+.sensorPanel div,
+.noteBox {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.detailList div {
+  display: grid;
+  gap: 5px;
+}
+
+.detailList span,
+.sensorPanel span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.fieldBoard {
+  min-height: 520px;
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  overflow: hidden;
+}
+
+.fieldHero {
+  background: #0b1f3a;
+  color: #fff;
+  padding: 42px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+}
+
+.fieldHero span {
+  color: #00a6a6;
+  font-weight: 900;
+}
+
+.fieldHero h2 {
+  margin: 0;
+  font-size: 34px;
+}
+
+.fieldHero p {
+  color: #d8dee9;
+}
+
+.fieldActions {
+  padding: 32px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-content: center;
+}
+
+.fieldActions button {
+  min-height: 108px;
+  border-radius: 8px;
+  background: #eef7f7;
+  color: #0b6666;
+  border: 1px solid rgba(0, 166, 166, 0.2);
+  font-size: 20px;
+}
+
+.fieldActions button.start {
+  grid-column: span 2;
+  background: #00a6a6;
+  color: #fff;
+  font-size: 24px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.equipmentGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.equipmentCard {
+  padding: 20px;
+  display: grid;
+  gap: 20px;
+  border-top: 4px solid #22c55e;
+}
+
+.equipmentCard h2 {
+  margin: 4px 0 0;
+  font-size: 24px;
+}
+
+.equipmentCard span,
+.equipmentCard small {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.equipmentCard strong {
+  font-size: 32px;
+}
+
+.equipmentCard.warn {
+  border-top-color: #f59e0b;
+}
+
+.equipmentCard.danger {
+  border-top-color: #e94f37;
+  color: #c23822;
+}
+
+.equipmentCard.muted {
+  border-top-color: #94a3b8;
+  color: #64748b;
+}
+
+.noteBox {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+@media (max-width: 1180px) {
+  .appShell {
+    grid-template-columns: 230px minmax(0, 1fr);
+  }
+
+  .metricGrid,
+  .equipmentGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .searchBand,
+  .formGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .loginPanel,
+  .appShell,
+  .contentGrid.two,
+  .fieldBoard {
+    grid-template-columns: 1fr;
+  }
+
+  .loginCopy,
+  .loginForm {
+    padding: 34px 24px;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+  }
+
+  .metricGrid,
+  .equipmentGrid,
+  .searchBand,
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar,
+  .panelHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .topActions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .progressRow {
+    grid-template-columns: 1fr;
+  }
+
+  .fieldActions {
+    grid-template-columns: 1fr;
+  }
+
+  .fieldActions button.start {
+    grid-column: auto;
+  }
+}
