@@ -1,15 +1,16 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { menuGroups } from '../data/navigation'
-import type { ScreenKey } from '../types'
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { menuGroups } from "../data/navigation";
+import type { ScreenKey } from "../types";
+import { FolderIcon, FolderOpenIcon } from "@heroicons/react/24/outline";
 
 type AppShellProps = {
-  activeScreen: ScreenKey
-  activeGroup: string
-  activeTitle: string
-  onScreenChange: (screen: ScreenKey) => void
-  onLogout: () => void
-  children: ReactNode
-}
+  activeScreen: ScreenKey;
+  activeGroup: string;
+  activeTitle: string;
+  onScreenChange: (screen: ScreenKey) => void;
+  onLogout: () => void;
+  children: ReactNode;
+};
 
 export function AppShell({
   activeScreen,
@@ -22,73 +23,82 @@ export function AppShell({
   const activeGroupTitle = useMemo(
     () => menuGroups.find((group) => group.items.some((item) => item.key === activeScreen))?.title,
     [activeScreen],
-  )
-  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(activeGroupTitle ? [activeGroupTitle] : []))
+  );
+  const [openGroup, setOpenGroup] = useState<string | null>(activeGroupTitle ?? null);
 
   useEffect(() => {
-    if (!activeGroupTitle) return
-    setOpenGroups((current) => {
-      const next = new Set(current)
-      next.add(activeGroupTitle)
-      return next
-    })
-  }, [activeGroupTitle])
+    if (activeGroupTitle) {
+      setOpenGroup(activeGroupTitle);
+    }
+  }, [activeGroupTitle]);
 
   const toggleGroup = (title: string) => {
-    setOpenGroups((current) => {
-      const next = new Set(current)
-      if (next.has(title)) {
-        next.delete(title)
-      } else {
-        next.add(title)
-      }
-      return next
-    })
-  }
+    setOpenGroup((current) => (current === title ? null : title));
+  };
+
+  //메뉴 접고 펴기
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="appShell">
+    <div className={`appShell ${collapsed ? "collapsed" : ""}`}>
       <aside className="sidebar">
         <div className="brand">
-          <span className="brandMark">H</span>
-          <div>
-            <strong>HEMP-MES</strong>
-            <small>Production Control</small>
-          </div>
+          <div className="brandMark">H</div>
+
+          {!collapsed && (
+            <div>
+              <strong>HEMP-MES</strong>
+              <small>Production Control</small>
+            </div>
+          )}
+
+          <button className="sidebarToggle" onClick={() => setCollapsed(!collapsed)}>
+            {collapsed ? ">" : "<"}
+          </button>
         </div>
 
         <nav className="navMenu" aria-label="주 메뉴">
           {menuGroups.map((group) => {
-            const isOpen = openGroups.has(group.title)
-            const hasActiveItem = group.items.some((item) => item.key === activeScreen)
+            const isOpen = openGroup === group.title;
+            const hasActiveItem = group.items.some((item) => item.key === activeScreen);
 
             return (
-              <section key={group.title} className={`navGroup ${hasActiveItem ? 'current' : ''}`}>
+              <section key={group.title} className={`navGroup ${hasActiveItem ? "current" : ""}`}>
                 <button
                   type="button"
                   className="navGroupHeader"
                   aria-expanded={isOpen}
                   onClick={() => toggleGroup(group.title)}
                 >
-                  <span>{group.title}</span>
-                  <strong>{isOpen ? '−' : '+'}</strong>
+                  <span className="groupLabel">
+                    <group.icon className="h-5 w-5" />
+
+                    {!collapsed && <span>{group.title}</span>}
+                  </span>
+
+                  <strong>{isOpen ? "−" : "+"}</strong>
                 </button>
-                {isOpen && (
-                  <div className="navItems">
-                    {group.items.map((item) => (
-                      <button
-                        key={item.key}
-                        className={activeScreen === item.key ? 'active' : ''}
-                        type="button"
-                        onClick={() => onScreenChange(item.key)}
-                      >
-                        <span>{item.label}</span>
-                      </button>
-                    ))}
+                {!collapsed && (
+                  <div className={`navItems ${isOpen ? "open" : ""}`}>
+                    {group.items.map((item) => {
+                      const Icon = activeScreen === item.key ? FolderOpenIcon : FolderIcon;
+
+                      return (
+                        <button
+                          key={item.key}
+                          className={activeScreen === item.key ? "active" : ""}
+                          type="button"
+                          onClick={() => onScreenChange(item.key)}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span>{item.label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </section>
-            )
+            );
           })}
         </nav>
       </aside>
@@ -116,5 +126,5 @@ export function AppShell({
         {children}
       </main>
     </div>
-  )
+  );
 }

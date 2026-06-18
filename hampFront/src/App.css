@@ -1,3 +1,19 @@
+:root {
+  --sidebar-bg: #f7f8f5;
+  --sidebar-card: #ffffff;
+  --sidebar-border: #e8ebe4;
+
+  --primary: #57d3a1;
+  --primary-hover: #43c18f;
+  --primary-light: #dff7ec;
+
+  --text-main: #283238;
+  --text-sub: #8b959e;
+
+  --shadow:
+    0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
 .loginPage {
   min-height: 100vh;
   background:
@@ -156,14 +172,23 @@ button {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
+  transition: grid-template-columns .3s ease;
   background: #f3f6f8;
   color: #0b1f3a;
 }
 
+.appShell.collapsed {
+  grid-template-columns: 80px 1fr;
+}
+
 .sidebar {
-  background: #0b1f3a;
-  color: #fff;
-  padding: 22px 18px;
+  background:
+    rgba(255,255,255,.8);
+  color: var(--text-main);
+  border-right: 1px solid var(--sidebar-border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+  padding: 20px 14px;
   display: flex;
   flex-direction: column;
   gap: 22px;
@@ -171,6 +196,12 @@ button {
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  transition: width .3s ease;
+}
+
+.appShell.collapsed .sidebar {
+  margin: 0 auto;
+  /* border-radius: 14px; */
 }
 
 .brand {
@@ -178,7 +209,7 @@ button {
   align-items: center;
   gap: 12px;
   padding-bottom: 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid var(--sidebar-border);
 }
 
 .brandMark {
@@ -186,19 +217,27 @@ button {
   height: 42px;
   display: grid;
   place-items: center;
-  background: #00a6a6;
-  border-radius: 8px;
+  background: linear-gradient(
+    135deg,
+    #57d3a1,
+    #78e1b8
+  );
+  color: #fff;
+  border-radius: 14px;
+  box-shadow:
+    0 4px 12px rgba(87, 211, 161, 0.3);
   font-weight: 900;
   font-size: 24px;
 }
 
-.brand strong,
-.brand small {
+.brand strong {
   display: block;
+  color: var(--text-main);
 }
 
 .brand small {
-  color: #aeb8c7;
+  display: block;
+  color: var(--text-sub);
   font-size: 12px;
 }
 
@@ -216,20 +255,54 @@ button {
   width: 100%;
   min-height: 44px;
   padding: 0 12px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text-main);
+  border: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   text-align: left;
+  transition: all .25s ease;
+}
+
+.navGroup.open .navGroupHeader {
+  background: #eef7f1;
+  color: var(--text-main);
+}
+
+.navGroupHeader:hover {
+  background: #eef7f1;
+}
+
+.appShell.collapsed .navGroupHeader {
+  justify-content: center;
+}
+
+.appShell.collapsed .groupLabel {
+  justify-content: center;
+}
+
+.appShell.collapsed .navGroupHeader strong {
+  display: none;
 }
 
 .navGroupHeader span {
-  font-size: 15px;
-  font-weight: 900;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.navGroupHeader .groupLabel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navGroupHeader .groupLabel svg {
+  width: 18px;
+  height: 18px;
 }
 
 .navGroupHeader strong {
@@ -238,47 +311,84 @@ button {
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: rgba(0, 166, 166, 0.2);
-  color: #8ff3ef;
+  background: rgba(255,255,255,.3);
+  color: inherit;
   font-size: 17px;
+  font-weight: 600;
   line-height: 1;
 }
 
 .navGroup.current .navGroupHeader,
 .navGroupHeader:hover {
-  background: #12365d;
+  background: var(--primary);
   border-color: rgba(0, 166, 166, 0.4);
+  color: white;
+  box-shadow:
+    0 4px 14px rgba(87, 211, 161, .35);
 }
 
 .navItems {
   display: grid;
   gap: 2px;
-  padding-left: 8px;
+  padding-left: 12px;
+  margin-top: 4px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+.navItems.open {
+  max-height: 500px;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .navItems button {
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   min-height: 38px;
   padding: 0 10px;
-  border-radius: 6px;
+  border-radius: 12px;
   background: transparent;
-  color: #d8dee9;
+  color: var(--text-sub);
   text-align: left;
   margin: 2px 0;
+  transition: all .2s ease;
 }
 
 .navItems button.active,
 .navItems button:hover {
-  background: #12365d;
-  color: #fff;
+  background: #eef7f1;
+  color: var(--text-main);
 }
 
 .navItems button.active {
-  box-shadow: inset 3px 0 0 #00a6a6;
+  background: var(--primary-light);
+  color: #17875f;
+  border-left: none;
+}
+
+.navItems button svg {
+  width: 16px;
+  height: 16px;
+  transition: all 0.25s ease;
+  color: #7d8a91;
+}
+
+.navItems button.active svg {
+  color: #3ec58c;
+}
+
+.navItems button span {
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .workspace {
