@@ -21,7 +21,7 @@ export function DashboardPage({ setActiveScreen }: DashboardPageProps) {
       </section>
 
       <section className="contentGrid two">
-        <Panel title="생산 진행률" action="작업지시 보기" onAction={() => setActiveScreen('workOrders')}>
+        <Panel title="생산 진행률" action="작업지시 보기" onAction={() => setActiveScreen('productionWorkOrders')}>
           <div className="progressList">
             {progressOrders.map((order) => (
               <div key={order.code} className="progressRow">
@@ -38,7 +38,7 @@ export function DashboardPage({ setActiveScreen }: DashboardPageProps) {
           </div>
         </Panel>
 
-        <Panel title="실시간 알람" action="알람 관리" onAction={() => setActiveScreen('alarms')}>
+        <Panel title="실시간 알림" action="이상 알림 보기" onAction={() => setActiveScreen('equipmentAlerts')}>
           <DataTable
             headers={['등급', '설비', '내용', '상태']}
             rows={[

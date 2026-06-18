@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { menuGroups } from '../data/navigation'
 import type { ScreenKey } from '../types'
 
@@ -19,6 +19,33 @@ export function AppShell({
   onLogout,
   children,
 }: AppShellProps) {
+  const activeGroupTitle = useMemo(
+    () => menuGroups.find((group) => group.items.some((item) => item.key === activeScreen))?.title,
+    [activeScreen],
+  )
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(activeGroupTitle ? [activeGroupTitle] : []))
+
+  useEffect(() => {
+    if (!activeGroupTitle) return
+    setOpenGroups((current) => {
+      const next = new Set(current)
+      next.add(activeGroupTitle)
+      return next
+    })
+  }, [activeGroupTitle])
+
+  const toggleGroup = (title: string) => {
+    setOpenGroups((current) => {
+      const next = new Set(current)
+      if (next.has(title)) {
+        next.delete(title)
+      } else {
+        next.add(title)
+      }
+      return next
+    })
+  }
+
   return (
     <div className="appShell">
       <aside className="sidebar">
@@ -31,21 +58,38 @@ export function AppShell({
         </div>
 
         <nav className="navMenu" aria-label="주 메뉴">
-          {menuGroups.map((group) => (
-            <section key={group.title} className="navGroup">
-              <h2>{group.title}</h2>
-              {group.items.map((item) => (
+          {menuGroups.map((group) => {
+            const isOpen = openGroups.has(group.title)
+            const hasActiveItem = group.items.some((item) => item.key === activeScreen)
+
+            return (
+              <section key={group.title} className={`navGroup ${hasActiveItem ? 'current' : ''}`}>
                 <button
-                  key={item.key}
-                  className={activeScreen === item.key ? 'active' : ''}
                   type="button"
-                  onClick={() => onScreenChange(item.key)}
+                  className="navGroupHeader"
+                  aria-expanded={isOpen}
+                  onClick={() => toggleGroup(group.title)}
                 >
-                  <span>{item.label}</span>
+                  <span>{group.title}</span>
+                  <strong>{isOpen ? '−' : '+'}</strong>
                 </button>
-              ))}
-            </section>
-          ))}
+                {isOpen && (
+                  <div className="navItems">
+                    {group.items.map((item) => (
+                      <button
+                        key={item.key}
+                        className={activeScreen === item.key ? 'active' : ''}
+                        type="button"
+                        onClick={() => onScreenChange(item.key)}
+                      >
+                        <span>{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )
+          })}
         </nav>
       </aside>
 
