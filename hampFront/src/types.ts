@@ -1,3 +1,5 @@
+import type { ComponentType, SVGProps } from 'react'
+
 export type ScreenKey =
   | 'dashboard'
   | 'systemAdmins'
@@ -52,7 +54,8 @@ export type ScreenKey =
 
 export type StatusTone = 'good' | 'warn' | 'danger' | 'info' | 'muted'
 
-export type MenuGroup = {
+export interface MenuGroup {
   title: string
-  items: Array<{ key: ScreenKey; label: string }>
+  icon: ComponentType<SVGProps<SVGSVGElement>>
+  items: { key: ScreenKey; label: string }[]
 }
