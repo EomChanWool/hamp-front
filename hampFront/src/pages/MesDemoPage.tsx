@@ -269,7 +269,11 @@ export function MesDemoPage({ screen }: { screen: ScreenKey }) {
 
         <DataTable
           headers={["선택", "코드", "명칭", "구분", "상태", "담당자", "일자", "관리"]}
-          onRowClick={(index) => setModalRow(filteredRows[index])}
+          onRowClick={(index) => {
+            const row = filteredRows[index];
+            if (editingId === row.id) return;
+            setModalRow(row);
+          }}
           rows={filteredRows.map((row) => {
             const isEditing = editingId === row.id;
 
@@ -335,10 +339,24 @@ export function MesDemoPage({ screen }: { screen: ScreenKey }) {
               <div className="rowActions">
                 {isEditing ? (
                   <>
-                    <button type="button" className="miniButton primary" onClick={handleSaveRow}>
+                    <button
+                      type="button"
+                      className="miniButton primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSaveRow();
+                      }}
+                    >
                       저장
                     </button>
-                    <button type="button" className="miniButton" onClick={handleCancel}>
+                    <button
+                      type="button"
+                      className="miniButton"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCancel();
+                      }}
+                    >
                       취소
                     </button>
                   </>

@@ -1,5 +1,4 @@
-import { useState } from "react";
-
+import { useEffect, useState } from "react";
 type Field = {
   label: string;
   key: string;
@@ -13,17 +12,15 @@ type RowDetailModalProps = {
   data: Record<string, string>;
 };
 
-export function RowDetailModal({
-  isOpen,
-  onClose,
-  onSave,
-  fields,
-  data,
-}: RowDetailModalProps) {
+export function RowDetailModal({ isOpen, onClose, onSave, fields, data }: RowDetailModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState(data);
 
-  if (!isOpen) return null;
+  // ...컴포넌트 안에서
+  useEffect(() => {
+    setForm(data);
+    setIsEditing(false);
+  }, [data]);
 
   const handleSave = () => {
     onSave(form);
@@ -31,10 +28,12 @@ export function RowDetailModal({
   };
 
   const handleClose = () => {
-    setForm(data);       // 변경사항 롤백
+    setForm(data); // 변경사항 롤백
     setIsEditing(false);
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <>
@@ -75,9 +74,7 @@ export function RowDetailModal({
             borderBottom: "1px solid #e2e8f0",
           }}
         >
-          <strong style={{ fontSize: 16 }}>
-            {isEditing ? "항목 수정" : "상세 보기"}
-          </strong>
+          <strong style={{ fontSize: 16 }}>{isEditing ? "항목 수정" : "상세 보기"}</strong>
           <button
             onClick={handleClose}
             style={{
@@ -120,15 +117,11 @@ export function RowDetailModal({
                 <input
                   className="tableInput"
                   value={form[key] ?? ""}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, [key]: e.target.value }))
-                  }
+                  onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
                   style={{ height: 36, fontSize: 13 }}
                 />
               ) : (
-                <span style={{ fontSize: 14, color: "#1e293b" }}>
-                  {data[key] || "—"}
-                </span>
+                <span style={{ fontSize: 14, color: "#1e293b" }}>{data[key] || "—"}</span>
               )}
             </div>
           ))}
@@ -147,16 +140,10 @@ export function RowDetailModal({
         >
           {isEditing ? (
             <>
-              <button
-                className="miniButton"
-                onClick={() => setIsEditing(false)}
-              >
+              <button className="miniButton" onClick={() => setIsEditing(false)}>
                 취소
               </button>
-              <button
-                className="miniButton primary"
-                onClick={handleSave}
-              >
+              <button className="miniButton primary" onClick={handleSave}>
                 저장
               </button>
             </>
@@ -165,10 +152,7 @@ export function RowDetailModal({
               <button className="miniButton" onClick={handleClose}>
                 닫기
               </button>
-              <button
-                className="miniButton primary"
-                onClick={() => setIsEditing(true)}
-              >
+              <button className="miniButton primary" onClick={() => setIsEditing(true)}>
                 수정
               </button>
             </>
