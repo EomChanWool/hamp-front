@@ -1,4 +1,5 @@
-import { MoonIcon, SunIcon } from "@heroicons/react/24/outline";
+import { MoonIcon, SunIcon, BellIcon, UserIcon, ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline";
+import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
 type HeaderProps = {
   activeGroup: string;
@@ -6,37 +7,68 @@ type HeaderProps = {
   theme: "dark" | "light";
   onToggleTheme: () => void;
   onLogout: () => void;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
 };
 
-export function Header({ activeGroup, activeTitle, theme, onToggleTheme, onLogout }: HeaderProps) {
+export function Header({ theme, onToggleTheme, onLogout, collapsed, onToggleCollapsed }: HeaderProps) {
   return (
-    <header className="topbar">
-      <div>
-        <span className="breadcrumb">{activeGroup}</span>
-        <h1>{activeTitle}</h1>
-      </div>
-      <div className="topActions">
-        <button type="button" className="iconButton" aria-label="알림">
-          !
+    <header className="header">
+      <div className="brand">
+        <div className="brandInfo">
+          <div className="brandMark">H</div>
+          {!collapsed && (
+            <div className="brandText">
+              <strong>HEMP-MES</strong>
+              <small>Production Control</small>
+            </div>
+          )}
+        </div>
+        <button className="sidebarToggle" onClick={onToggleCollapsed}>
+          {collapsed ? <ChevronRightIcon className="h-4 w-4" /> : <ChevronLeftIcon className="h-4 w-4" />}
         </button>
+      </div>
+
+      <div className="headerRight">
+        {/* 알림 */}
+        <button type="button" className="headerIconBtn" aria-label="알림">
+          <BellIcon className="h-5 w-5" />
+          <span className="headerBadgeDot" />
+        </button>
+
+        {/* 테마 토글 */}
         <button
           type="button"
-          className="themeToggle"
-          aria-label={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}
+          className="headerIconBtn"
+          aria-label={theme === "dark" ? "라이트 모드" : "다크 모드"}
           onClick={onToggleTheme}
         >
-          {theme === "dark" ? (
-            <SunIcon className="themeToggleIcon" aria-hidden="true" />
-          ) : (
-            <MoonIcon className="themeToggleIcon" aria-hidden="true" />
-          )}
+          {theme === "dark"
+            ? <SunIcon className="h-5 w-5" />
+            : <MoonIcon className="h-5 w-5" />}
         </button>
-        <div className="userBadge">
-          <span>관리자</span>
-          <strong>admin</strong>
+
+        <div className="headerDivider" />
+
+        {/* 유저 */}
+        <div className="headerUser">
+          <div className="headerAvatar">
+            <UserIcon className="h-5 w-5" />
+          </div>
+          <div className="headerUserInfo">
+            <span>관리자</span>
+            <strong>admin</strong>
+          </div>
         </div>
-        <button type="button" className="ghostButton" onClick={onLogout}>
-          로그아웃
+
+        {/* 로그아웃 */}
+        <button
+          type="button"
+          className="headerIconBtn headerLogout"
+          aria-label="로그아웃"
+          onClick={onLogout}
+        >
+          <ArrowRightStartOnRectangleIcon className="h-5 w-5" />
         </button>
       </div>
     </header>
