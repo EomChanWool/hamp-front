@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { menuGroups } from "../data/navigation";
 import type { ScreenKey } from "../types";
-import { FolderIcon, FolderOpenIcon } from "@heroicons/react/24/outline";
+import { FolderIcon, FolderOpenIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
 type AppShellProps = {
   activeScreen: ScreenKey;
@@ -38,22 +38,25 @@ export function AppShell({
 
   //메뉴 접고 펴기
   const [collapsed, setCollapsed] = useState(false);
+  const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
 
   return (
     <div className={`appShell ${collapsed ? "collapsed" : ""}`}>
       <aside className="sidebar">
         <div className="brand">
-          <div className="brandMark">H</div>
+          <div className="brandInfo">
+            <div className="brandMark">H</div>
 
-          {!collapsed && (
-            <div>
-              <strong>HEMP-MES</strong>
-              <small>Production Control</small>
-            </div>
-          )}
+            {!collapsed && (
+              <div className="brandText">
+                <strong>HEMP-MES</strong>
+                <small>Production Control</small>
+              </div>
+            )}
+          </div>
 
           <button className="sidebarToggle" onClick={() => setCollapsed(!collapsed)}>
-            {collapsed ? ">" : "<"}
+            {collapsed ? <ChevronRightIcon className="h-4 w-4" /> : <ChevronLeftIcon className="h-4 w-4" />}
           </button>
         </div>
 
@@ -63,40 +66,48 @@ export function AppShell({
             const hasActiveItem = group.items.some((item) => item.key === activeScreen);
 
             return (
-              <section key={group.title} className={`navGroup ${hasActiveItem ? "current" : ""}`}>
+              <section
+                key={group.title}
+                className={[
+                  "navGroup",
+                  hasActiveItem ? "current" : "",
+                  collapsed && hoveredGroup === group.title ? "flyoutOpen" : "",
+                ].join(" ")}
+                onMouseEnter={() => collapsed && setHoveredGroup(group.title)}
+                onMouseLeave={() => collapsed && setHoveredGroup(null)}
+              >
                 <button
                   type="button"
                   className="navGroupHeader"
                   aria-expanded={isOpen}
-                  onClick={() => toggleGroup(group.title)}
+                  onClick={() => !collapsed && toggleGroup(group.title)}
                 >
                   <span className="groupLabel">
                     <group.icon className="h-5 w-5" />
-
                     {!collapsed && <span>{group.title}</span>}
                   </span>
-
-                  <strong>{isOpen ? "−" : "+"}</strong>
+                  {!collapsed && <strong>{isOpen ? "−" : "+"}</strong>}
                 </button>
-                {!collapsed && (
-                  <div className={`navItems ${isOpen ? "open" : ""}`}>
-                    {group.items.map((item) => {
-                      const Icon = activeScreen === item.key ? FolderOpenIcon : FolderIcon;
 
-                      return (
-                        <button
-                          key={item.key}
-                          className={activeScreen === item.key ? "active" : ""}
-                          type="button"
-                          onClick={() => onScreenChange(item.key)}
-                        >
-                          <Icon className="h-4 w-4" />
-                          <span>{item.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+                <div className={`navItems ${isOpen && !collapsed ? "open" : ""}`}>
+                  {group.items.map((item) => {
+                    const Icon = activeScreen === item.key ? FolderOpenIcon : FolderIcon;
+                    return (
+                      <button
+                        key={item.key}
+                        className={activeScreen === item.key ? "active" : ""}
+                        type="button"
+                        onClick={() => {
+                          onScreenChange(item.key);
+                          if (collapsed) setHoveredGroup(null);
+                        }}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </section>
             );
           })}
