@@ -1,5 +1,4 @@
 import type { ScreenKey } from '../types'
-import { DashboardPage } from './dashboard/DashboardPage'
 import { MesDemoPage } from './MesDemoPage'
 
 type PageRendererProps = {
@@ -8,9 +7,7 @@ type PageRendererProps = {
 }
 
 export function PageRenderer({ activeScreen, setActiveScreen }: PageRendererProps) {
-  if (activeScreen === 'dashboard') {
-    return <DashboardPage setActiveScreen={setActiveScreen} />
-  }
+  void setActiveScreen
 
   return <MesDemoPage screen={activeScreen} />
 }

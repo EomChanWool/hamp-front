@@ -539,6 +539,8 @@ button { border: 0; font: inherit; font-weight: 600; cursor: pointer; }
 .metricCard.warn   { border-left-color: #f59e0b; }
 .metricCard.danger { border-left-color: #e94f37; }
 .metricCard.info   { border-left-color: #2563eb; }
+.metricCard.good   { border-left-color: #16a34a; }
+.metricCard.pulse  { box-shadow: 0 0 0 3px rgba(0, 166, 166, 0.1), var(--shadow); }
 
 .contentGrid { display: grid; gap: 18px; }
 .contentGrid.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
@@ -743,15 +745,229 @@ tbody tr:hover td { background: #f8fafc; }
 
 .noteBox { color: #475569; font-size: 13px; font-weight: 600; }
 
+.realtimeStrip {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border: 1px solid rgba(0, 166, 166, 0.18);
+  border-radius: 8px;
+  background: rgba(0, 166, 166, 0.08);
+  color: var(--text-body);
+  font-size: 13px;
+}
+
+.liveDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.14);
+}
+
+.barChart { display: grid; gap: 12px; }
+
+.barRow {
+  display: grid;
+  grid-template-columns: 150px minmax(120px, 1fr) 56px;
+  align-items: center;
+  gap: 12px;
+}
+
+.barRow span { color: var(--text-muted); font-size: 12px; font-weight: 700; }
+.barRow strong { color: var(--text-heading); font-size: 13px; text-align: right; }
+
+.barTrack {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+}
+
+.barTrack i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.4s ease;
+}
+
+.barTrack i.good { background: #22c55e; }
+.barTrack i.warn { background: #f59e0b; }
+.barTrack i.danger { background: #e94f37; }
+.barTrack i.info { background: #2563eb; }
+.barTrack i.muted { background: #94a3b8; }
+
+.paginationBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.paginationBar strong {
+  min-width: 28px;
+  min-height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: #00a6a6;
+  color: #fff;
+}
+
+.permissionBoard {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 18px;
+}
+
+.roleList { display: grid; gap: 8px; }
+
+.roleList button {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  color: var(--text-body);
+  text-align: left;
+}
+
+.roleList button.active {
+  border-color: rgba(0, 166, 166, 0.35);
+  background: rgba(0, 166, 166, 0.1);
+  color: #0b6666;
+}
+
+.roleList span { color: var(--text-muted); font-size: 12px; }
+
+.permissionMatrix {
+  display: grid;
+  gap: 8px;
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.permissionMatrixRow {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) repeat(5, minmax(78px, 0.5fr));
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+}
+
+.permissionMatrixRow strong {
+  color: var(--text-heading);
+  font-size: 13px;
+}
+
+.cctvGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.cctvCard {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+}
+
+.cctvCard div:not(.cctvFrame) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cctvCard div:not(.cctvFrame) span,
+.cctvCard small {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cctvFrame {
+  position: relative;
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%) 0 0 / 18px 18px,
+    linear-gradient(315deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%) 0 0 / 18px 18px,
+    #111827;
+  color: #d1d5db;
+}
+
+.cctvFrame.offline { background: #1f2937; color: #94a3b8; }
+.cctvFrame span {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.cctvFrame strong { font-size: 24px; letter-spacing: 0; }
+
+.timelineList {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.timelineItem {
+  min-height: 92px;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-subtle);
+}
+
+.timelineItem span:first-child {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #00a6a6;
+  color: #fff;
+  font-weight: 800;
+  font-size: 12px;
+}
+
 /* ================================
    RESPONSIVE
 ================================ */
 
 @media (max-width: 1180px) {
   .metricGrid,
-  .equipmentGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .equipmentGrid,
+  .cctvGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .searchBand,
   .formGrid       { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .permissionBoard { grid-template-columns: 1fr; }
+  .permissionMatrixRow { grid-template-columns: 1fr repeat(5, minmax(78px, 1fr)); }
 }
 
 @media (max-width: 860px) {
@@ -768,12 +984,16 @@ tbody tr:hover td { background: #f8fafc; }
 
   .metricGrid,
   .equipmentGrid,
+  .cctvGrid,
+  .timelineList,
   .searchBand,
   .formGrid { grid-template-columns: 1fr; }
 
   .panelHeader { align-items: flex-start; flex-direction: column; }
 
   .permissionGrid { grid-template-columns: 1fr; }
+  .permissionMatrixRow { grid-template-columns: 1fr; }
+  .barRow { grid-template-columns: 1fr; }
   .progressRow    { grid-template-columns: 1fr; }
 
   .fieldActions { grid-template-columns: 1fr; }

@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "./components/AppShell";
-import { menuGroups, screenTitles } from "./data/navigation";
+import { defaultScreen, menuGroups, screenTitles } from "./data/navigation";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { PageRenderer } from "./pages/PageRenderer";
 import type { ScreenKey } from "./types";
 import "./App.css";
 
 const SESSION_KEY = "hemp_mes_demo_session";
-const defaultScreen: ScreenKey = "dashboard";
 
 const screenKeys = new Set<ScreenKey>(Object.keys(screenTitles) as ScreenKey[]);
 
@@ -50,7 +49,7 @@ function App() {
   }, [activeScreen, isLoggedIn]);
 
   const activeGroup = useMemo(
-    () => menuGroups.find((group) => group.items.some((item) => item.key === activeScreen))?.title ?? "대시보드",
+    () => menuGroups.find((group) => group.items.some((item) => item.key === activeScreen))?.title ?? "시스템관리",
     [activeScreen],
   );
 
