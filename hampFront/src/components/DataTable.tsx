@@ -10,7 +10,7 @@ export function DataTable({ headers, rows, onRowClick }: DataTableProps) {
   return (
     <div className="tableWrap">
       <table>
-        <colgroup>
+        {/* <colgroup>
           <col style={{ width: "5%" }} />
           <col style={{ width: "10%" }} />
           <col style={{ width: "22%" }} />
@@ -19,7 +19,7 @@ export function DataTable({ headers, rows, onRowClick }: DataTableProps) {
           <col style={{ width: "14%" }} />
           <col style={{ width: "15%" }} />
           <col style={{ width: "10%" }} />
-        </colgroup>
+        </colgroup> */}
         <thead>
           <tr>
             {headers.map((header) => (
