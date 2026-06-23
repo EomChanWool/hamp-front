@@ -49,110 +49,59 @@ export function RowDetailModal({ isOpen, onClose, onSave, fields, data }: RowDet
         }}
       />
 
-      {/* 모달 */}
-      <div
-        style={{
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "min(520px, 90vw)",
-          background: "#fff",
-          borderRadius: 12,
-          boxShadow: "0 24px 60px rgba(0,0,0,0.18)",
-          zIndex: 201,
-          overflow: "hidden",
-        }}
-      >
-        {/* 헤더 */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "18px 24px",
-            borderBottom: "1px solid #e2e8f0",
-          }}
-        >
-          <strong style={{ fontSize: 16 }}>{isEditing ? "항목 수정" : "상세 보기"}</strong>
-          <button
-            onClick={handleClose}
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 6,
-              border: "1px solid #e2e8f0",
-              background: "#f8fafc",
-              color: "#64748b",
-              fontSize: 16,
-              display: "grid",
-              placeItems: "center",
-              cursor: "pointer",
-            }}
-          >
+      <div className="detailModal">
+        <div className="detailModalHeader">
+          <div>
+            <h3>{isEditing ? "정보 수정" : "상세 정보"}</h3>
+            <span>사용자 정보 조회</span>
+          </div>
+
+          <button className="detailModalClose" onClick={handleClose}>
             ✕
           </button>
         </div>
 
-        {/* 바디 */}
-        <div
-          style={{
-            display: "grid",
-            gap: 14,
-            padding: "24px",
-          }}
-        >
+        <div className="detailModalBody">
           {fields.map(({ label, key }) => (
-            <div key={key} style={{ display: "grid", gap: 6 }}>
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: "#64748b",
-                }}
-              >
-                {label}
-              </span>
+            <div key={key} className="detailField">
+              <label>{label}</label>
+
               {isEditing ? (
                 <input
                   className="tableInput"
                   value={form[key] ?? ""}
-                  onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
-                  style={{ height: 36, fontSize: 13 }}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      [key]: e.target.value,
+                    }))
+                  }
                 />
               ) : (
-                <span style={{ fontSize: 14, color: "#1e293b" }}>{data[key] || "—"}</span>
+                <div className="detailValue">{data[key] || "-"}</div>
               )}
             </div>
           ))}
         </div>
 
-        {/* 푸터 */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: 8,
-            padding: "16px 24px",
-            borderTop: "1px solid #e2e8f0",
-            background: "#f8fafc",
-          }}
-        >
+        <div className="detailModalFooter">
           {isEditing ? (
             <>
-              <button className="miniButton" onClick={() => setIsEditing(false)}>
+              <button className="ghostButton" onClick={() => setIsEditing(false)}>
                 취소
               </button>
-              <button className="miniButton primary" onClick={handleSave}>
+
+              <button className="primaryButton" onClick={handleSave}>
                 저장
               </button>
             </>
           ) : (
             <>
-              <button className="miniButton" onClick={handleClose}>
+              <button className="ghostButton" onClick={handleClose}>
                 닫기
               </button>
-              <button className="miniButton primary" onClick={() => setIsEditing(true)}>
+
+              <button className="primaryButton" onClick={() => setIsEditing(true)}>
                 수정
               </button>
             </>

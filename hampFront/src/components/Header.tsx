@@ -14,7 +14,7 @@ type HeaderProps = {
 export function Header({ theme, onToggleTheme, onLogout, collapsed, onToggleCollapsed }: HeaderProps) {
   return (
     <header className="header">
-      <div className="brand">
+      <div className="brand" style={{ width: collapsed ? 'fit-content' : '252px', transition: 'width 0.3s ease' }}>
         <div className="brandInfo">
           <div className="brandMark">H</div>
           {!collapsed && (
@@ -24,52 +24,47 @@ export function Header({ theme, onToggleTheme, onLogout, collapsed, onToggleColl
             </div>
           )}
         </div>
-        <button className="sidebarToggle" onClick={onToggleCollapsed}>
-          {collapsed ? <ChevronRightIcon className="h-4 w-4" /> : <ChevronLeftIcon className="h-4 w-4" />}
-        </button>
       </div>
 
       <div className="headerRight">
-        {/* 알림 */}
-        <button type="button" className="headerIconBtn" aria-label="알림">
-          <BellIcon className="h-5 w-5" />
-          <span className="headerBadgeDot" />
+        <button className="sidebarToggle" onClick={onToggleCollapsed}>
+          {collapsed ? <ChevronRightIcon className="h-4 w-4" /> : <ChevronLeftIcon className="h-4 w-4" />}
         </button>
+        <div className="headActions">
+          {/* 알림 */}
+          <button type="button" className="headerIconBtn" aria-label="알림">
+            <BellIcon className="h-5 w-5" />
+            <span className="headerBadgeDot" />
+          </button>
 
-        {/* 테마 토글 */}
-        <button
-          type="button"
-          className="headerIconBtn"
-          aria-label={theme === "dark" ? "라이트 모드" : "다크 모드"}
-          onClick={onToggleTheme}
-        >
-          {theme === "dark"
-            ? <SunIcon className="h-5 w-5" />
-            : <MoonIcon className="h-5 w-5" />}
-        </button>
+          {/* 테마 토글 */}
+          <button
+            type="button"
+            className="headerIconBtn"
+            aria-label={theme === "dark" ? "라이트 모드" : "다크 모드"}
+            onClick={onToggleTheme}
+          >
+            {theme === "dark" ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+          </button>
 
-        <div className="headerDivider" />
+          <div className="headerDivider" />
 
-        {/* 유저 */}
-        <div className="headerUser">
-          <div className="headerAvatar">
-            <UserIcon className="h-5 w-5" />
+          {/* 유저 */}
+          <div className="headerUser">
+            <div className="headerAvatar">
+              <UserIcon className="h-5 w-5" />
+            </div>
+            <div className="headerUserInfo">
+              <span>관리자</span>
+              <strong>admin</strong>
+            </div>
           </div>
-          <div className="headerUserInfo">
-            <span>관리자</span>
-            <strong>admin</strong>
-          </div>
+
+          {/* 로그아웃 */}
+          <button type="button" className="headerIconBtn headerLogout" aria-label="로그아웃" onClick={onLogout}>
+            <ArrowRightStartOnRectangleIcon className="h-5 w-5" />
+          </button>
         </div>
-
-        {/* 로그아웃 */}
-        <button
-          type="button"
-          className="headerIconBtn headerLogout"
-          aria-label="로그아웃"
-          onClick={onLogout}
-        >
-          <ArrowRightStartOnRectangleIcon className="h-5 w-5" />
-        </button>
       </div>
     </header>
   );

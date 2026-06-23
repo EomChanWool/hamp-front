@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { menuGroups } from "../data/navigation";
 import type { ScreenKey } from "../types";
-import { FolderIcon, FolderOpenIcon } from "@heroicons/react/24/outline";
+import { FolderIcon, FolderOpenIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { Header } from "./Header";
 
 type AppShellProps = {
@@ -84,7 +84,8 @@ export function AppShell({
                       <group.icon className="h-5 w-5" />
                       {!collapsed && <span>{group.title}</span>}
                     </span>
-                    {!collapsed && <strong>{isOpen ? "−" : "+"}</strong>}
+                    {!collapsed &&
+                      (isOpen ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />)}
                   </button>
 
                   <div className={`navItems ${isOpen && !collapsed ? "open" : ""}`}>
