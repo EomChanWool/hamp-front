@@ -41,7 +41,7 @@ export type ScreenKey =
   | 'inpiDefectManage'
   | 'inpiDefectStatus'
 
-export type StatusTone = 'good' | 'warn' | 'danger' | 'info' | 'muted'
+export type StatusTone = 'good' | 'warn' | 'danger' | 'info' | 'muted' | 'limits'
 
 export interface MenuGroup {
   title: string

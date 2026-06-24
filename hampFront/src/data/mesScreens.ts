@@ -203,6 +203,7 @@ export const mesScreens = {
 
 export function getStatusTone(status: string): StatusTone {
   if (/(위험|고장|거부|끊김|경고|실패|미달|폐기|반려|중지)/.test(status)) return 'danger'
+  if (/(제한)/.test(status)) return 'limits'
   if (/(주의|대기|점검|진행중|원인분석|보류|미처리|처리중|미사용)/.test(status)) return 'warn'
   if (/(완료|승인|사용|정상|가동|성공|허용|녹화중)/.test(status)) return 'good'
   if (/(정보|조회|출고|접수)/.test(status)) return 'info'

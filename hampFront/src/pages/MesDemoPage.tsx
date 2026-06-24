@@ -12,7 +12,12 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   CheckIcon,
+  SunIcon,
+  BeakerIcon,
+  CloudIcon,
+  SparklesIcon,
 } from "@heroicons/react/16/solid";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 function makeEmptyRow(columns: string[], count: number): MesRow {
   return Object.fromEntries(
@@ -25,7 +30,8 @@ function makeEmptyRow(columns: string[], count: number): MesRow {
 
 function cellTone(value: string): StatusTone | null {
   const tone = getStatusTone(value);
-  return tone === "muted" ? null : tone;
+  if (tone === "muted") return null;
+  return tone;
 }
 
 export function MesDemoPage({ screen }: { screen: ScreenKey }) {
@@ -241,15 +247,71 @@ export function MesDemoPage({ screen }: { screen: ScreenKey }) {
   );
 }
 
+type KpiIconMeta = {
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+  color: string;
+  darkColor: string;
+};
+
+const kpiIconMap: Record<string, KpiIconMeta> = {
+  온도: {
+    icon: SunIcon,
+    color: "#EA580C",
+    darkColor: "#FB923C",
+  },
+
+  습도: {
+    icon: BeakerIcon,
+    color: "#0284C7",
+    darkColor: "#38BDF8",
+  },
+
+  CO2: {
+    icon: CloudIcon,
+    color: "#64748B",
+    darkColor: "#94A3B8",
+  },
+
+  미세먼지: {
+    icon: SparklesIcon,
+    color: "#16A34A",
+    darkColor: "#4ADE80",
+  },
+};
+
 function KpiGrid({ kpis, pulse }: { kpis: { label: string; value: string; tone: StatusTone }[]; pulse: number }) {
+  const [isDark, setIsDark] = useState(() => document.documentElement.getAttribute("data-theme") === "dark");
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.getAttribute("data-theme") === "dark");
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section className="metricGrid">
-      {kpis.map((kpi, index) => (
-        <article key={kpi.label} className={`metricCard ${kpi.tone} ${pulse % 2 === 1 && index === 0 ? "pulse" : ""}`}>
-          <span>{kpi.label}</span>
-          <strong>{kpi.value}</strong>
-        </article>
-      ))}
+      {kpis.map((kpi, index) => {
+        const meta = kpiIconMap[kpi.label];
+        const iconColor = meta ? (isDark ? meta.darkColor : meta.color) : undefined;
+        return (
+          <article
+            key={kpi.label}
+            className={`metricCard ${kpi.tone} ${pulse % 2 === 1 && index === 0 ? "pulse" : ""}`}
+          >
+            {meta && (
+              <div className="metricIcon">
+                <meta.icon style={{ width: 18, height: 18, color: iconColor }} />
+              </div>
+            )}
+            <div className="metricValue">
+              <span>{kpi.label}</span>
+              <strong>{kpi.value}</strong>
+            </div>
+          </article>
+        );
+      })}
     </section>
   );
 }
@@ -259,28 +321,82 @@ function BarChart({
   items,
   pulse,
 }: {
-  title: string;
-  items: { label: string; value: number; tone?: StatusTone }[];
-  pulse: number;
+  title: string
+  items: { label: string; value: number; tone?: StatusTone }[]
+  pulse: number
 }) {
+  // 시간대 기반 데이터로 변환
+  const hours = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00']
+
+  const data = hours.map((hour, hi) => {
+    const entry: Record<string, string | number> = { time: hour }
+    items.forEach((item, ii) => {
+      entry[item.label] = Math.min(100, Math.max(10,
+        item.value * Math.sin((hi + ii + pulse * 0.3) * 0.6 + ii) * 0.4 + item.value * 0.6
+      ))
+    })
+    return entry
+  })
+
+  const colors = ['#38bdf8', '#57d3a1', '#f59e0b', '#a78bfa', '#f472b6']
+
   return (
     <Panel title={title}>
-      <div className="barChart">
-        {items.map((item, index) => {
-          const value = Math.min(100, item.value + (pulse % 3) * (index % 2 === 0 ? 2 : -1));
-          return (
-            <div key={item.label} className="barRow">
-              <span>{item.label}</span>
-              <div className="barTrack">
-                <i className={item.tone ?? "info"} style={{ width: `${Math.max(8, value)}%` }} />
-              </div>
-              <strong>{Math.round(value)}%</strong>
-            </div>
-          );
-        })}
-      </div>
+      <ResponsiveContainer width="100%" height={240}>
+        <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <defs>
+            {items.map((item, i) => (
+              <linearGradient key={item.label} id={`grad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%"  stopColor={colors[i % colors.length]} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={colors[i % colors.length]} stopOpacity={0} />
+              </linearGradient>
+            ))}
+          </defs>
+          <XAxis
+            dataKey="time"
+            tick={{ fontSize: 11, fill: '#94a3b8' }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            domain={[0, 100]}
+            tick={{ fontSize: 11, fill: '#94a3b8' }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip
+            contentStyle={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 10,
+              fontSize: 12,
+              color: 'var(--text-body)',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+            }}
+            cursor={{ stroke: '#94a3b8', strokeWidth: 1, strokeDasharray: '4 4' }}
+            formatter={(value) => [`${Math.round(Number(value))}%`]}
+          />
+          <Legend
+            wrapperStyle={{ fontSize: 12, color: 'var(--text-muted)', paddingTop: 12 }}
+            iconType="circle"
+            iconSize={8}
+          />
+          {items.map((item, i) => (
+            <Area
+              key={item.label}
+              type="monotone"
+              dataKey={item.label}
+              stroke={colors[i % colors.length]}
+              strokeWidth={2.5}
+              fill={`url(#grad-${i})`}
+              dot={false}
+              activeDot={{ r: 5, fill: colors[i % colors.length], stroke: '#fff', strokeWidth: 2 }}
+            />
+          ))}
+        </AreaChart>
+      </ResponsiveContainer>
     </Panel>
-  );
+  )
 }
 
 function PermissionBoard() {
