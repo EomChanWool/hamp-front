@@ -940,30 +940,88 @@ button {
 
 .metricCard {
   padding: 20px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  border-left: 3px solid #00a6a6;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  border-left: 1px solid var(--border); /* border-left 3px 제거 */
+  transition: box-shadow 0.15s;
+}
+
+.metricCard:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.metricCard .metricIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .metricCard span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-.metricCard strong {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text-heading);
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
 }
 
-.metricCard.warn {
-  border-left-color: #f59e0b;
+.metricCard span svg {
+  width: 14px;
+  height: 14px;
 }
-.metricCard.danger {
-  border-left-color: #e94f37;
+
+.metricCard strong {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-heading);
+  letter-spacing: -0.5px;
+  line-height: 1;
 }
-.metricCard.info {
-  border-left-color: #2563eb;
+
+/* tone별 아이콘 배경 */
+.metricCard.good .metricIcon {
+  background: #DCFCE7;
+}
+
+.metricCard.warn .metricIcon {
+  background: #FFEDD5;
+}
+
+.metricCard.danger .metricIcon {
+  background: #FEE2E2;
+}
+
+.metricCard.info .metricIcon {
+  background: #E0F2FE;
+}
+
+.metricCard.muted .metricIcon {
+  background: #F1F5F9;
+}
+
+/* 다크모드 */
+[data-theme="dark"] .metricCard:hover { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3); }
+[data-theme="dark"] .metricCard.good .metricIcon {
+  background: #052E16;
+}
+[data-theme="dark"] .metricCard.warn .metricIcon {
+  background: #431407;
+}
+[data-theme="dark"] .metricCard.danger .metricIcon {
+  background: #450A0A;
+}
+[data-theme="dark"] .metricCard.info .metricIcon {
+  background: #082F49;
+}
+[data-theme="dark"] .metricCard.muted .metricIcon {
+  background: #1E293B;
 }
 
 .contentGrid {
@@ -1171,6 +1229,26 @@ tbody tr:hover td {
 .badge.muted {
   background: #f1f5f9;
   color: #475569;
+}
+.badge.limits { 
+  background: #f3e8ff; 
+  color: #6b21a8; 
+}
+
+.limitsTxt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  background: #eef2f6;
+  color: #64748b;
 }
 
 /* ================================
