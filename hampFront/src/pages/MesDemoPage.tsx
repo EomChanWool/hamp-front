@@ -6,7 +6,13 @@ import { RowDetailModal } from "../components/RowDetailModal";
 import { getStatusTone, mesScreens, type MesRow } from "../data/mesScreens";
 import { menuGroups } from "../data/navigation";
 import type { ScreenKey, StatusTone } from "../types";
-import { AdjustmentsHorizontalIcon, ArrowPathIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/16/solid";
+import {
+  AdjustmentsHorizontalIcon,
+  ArrowPathIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CheckIcon,
+} from "@heroicons/react/16/solid";
 
 function makeEmptyRow(columns: string[], count: number): MesRow {
   return Object.fromEntries(
@@ -278,36 +284,92 @@ function BarChart({
 }
 
 function PermissionBoard() {
-  const menus = menuGroups.flatMap((group) => group.items.map((item) => `${group.title} / ${item.label}`));
-  const roles = ["시스템관리자", "생산관리자", "품질관리자", "설비관리자", "일반작업자"];
+  const menus = menuGroups.flatMap((group) =>
+    group.items.map((item) => ({ label: `${group.title} / ${item.label}`, key: item.key })),
+  );
+  const roles = [
+    { name: "시스템관리자", count: 12, desc: "모든 메뉴 및 기능에 접근 가능한 최고 권한 그룹입니다." },
+    { name: "생산관리자", count: 9, desc: "생산, 재고, LOT 관련 메뉴에 대한 등록·수정 권한을 가집니다." },
+    { name: "품질관리자", count: 7, desc: "품질검사 및 불량관리 메뉴에 대한 접근 권한을 가집니다." },
+    { name: "설비관리자", count: 5, desc: "설비 운영 및 알람 메뉴의 조회·수정 권한을 가집니다." },
+    { name: "일반작업자", count: 11, desc: "지정된 메뉴의 조회 권한만 부여된 기본 작업자 그룹입니다." },
+  ];
+  const permissions = ["조회", "등록", "수정", "삭제", "승인"] as const;
+
+  // 역할 인덱스가 낮을수록 더 많은 권한 (시스템관리자=0이 전체 허용)
+  const hasPermission = (roleIndex: number, permIndex: number, menuIndex: number) => {
+    const maxMenu = [menus.length, 8, 7, 5, 4]; // 각 권한별 허용 메뉴 수
+    const maxPerm = [5, 4, 3, 2, 1]; // 각 역할별 허용 권한 수
+    return permIndex < maxPerm[roleIndex] && menuIndex < maxMenu[permIndex];
+  };
+
+  const [activeRole, setActiveRole] = useState(0);
+
+  const [permState, setPermState] = useState(() =>
+    menus.map((_, mi) => permissions.map((_, pi) => hasPermission(0, pi, mi))),
+  );
+
+  useEffect(() => {
+    setPermState(menus.map((_, mi) => permissions.map((_, pi) => hasPermission(activeRole, pi, mi))));
+  }, [activeRole]);
 
   return (
     <section className="permissionBoard">
-      <Panel title="권한 그룹">
-        <div className="roleList">
+      {/* 역할 탭 */}
+      <div className="permissionTabs">
+        <div className="permissionTabsBox">
           {roles.map((role, index) => (
-            <button key={role} type="button" className={index === 0 ? "active" : ""}>
-              <strong>{role}</strong>
-              <span>{12 - index}명</span>
+            <button
+              key={role.name}
+              type="button"
+              className={`permissionTab ${index === activeRole ? "active" : ""}`}
+              onClick={() => setActiveRole(index)}
+            >
+              <span>{role.name}</span>
+              <span className="tabBadge">{role.count}명</span>
             </button>
           ))}
         </div>
-      </Panel>
-      <Panel title="메뉴 접근 권한">
-        <div className="permissionMatrix">
-          {menus.slice(0, 12).map((menu, index) => (
-            <div key={menu} className="permissionMatrixRow">
-              <strong>{menu}</strong>
-              {["조회", "등록", "수정", "삭제", "승인"].map((permission, permissionIndex) => (
-                <label key={permission} className="checkRow">
-                  <input type="checkbox" defaultChecked={index < 8 || permissionIndex < 2} />
-                  {permission}
-                </label>
-              ))}
-            </div>
+        {/* 역할 설명 */}
+        <p className="permissionDesc">{roles[activeRole].desc}</p>
+      </div>
+
+      {/* 권한 매트릭스 */}
+      <div className="permissionMatrix">
+        {/* 헤더 */}
+        <div className="matrixHeader">
+          <span>메뉴 경로</span>
+          {permissions.map((p) => (
+            <span key={p}>{p}</span>
           ))}
         </div>
-      </Panel>
+
+        {/* 메뉴 행 */}
+        {menus.slice(0, 12).map((menu, menuIndex) => (
+          <div key={menu.key} className="matrixRow">
+            <span className="matrixLabel">{menu.label}</span>
+            {permissions.map((p, permIndex) => {
+              const checked = permState[menuIndex]?.[permIndex] ?? false; // ← permState로 변경
+              return (
+                <div key={p} className="matrixCheckCell">
+                  <span
+                    className={`customCheck ${checked ? "checked" : ""}`}
+                    onClick={() => {
+                      setPermState((prev) =>
+                        prev.map((row, mi) =>
+                          mi === menuIndex ? row.map((v, pi) => (pi === permIndex ? !v : v)) : row,
+                        ),
+                      );
+                    }}
+                  >
+                    {checked && <CheckIcon />}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
     </section>
   );
 }
