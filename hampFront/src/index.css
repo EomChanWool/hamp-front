@@ -10,19 +10,41 @@
 
 * {
   box-sizing: border-box;
+  padding: 0;
+  margin: 0;
 }
 
 body {
-  margin: 0;
   min-width: 320px;
   background: #fff;
   box-sizing: border-box;
 }
 
+li {
+  list-style: none;
+}
+
 a {
   color: inherit;
+  text-decoration: none;
 }
 
 #root {
   min-height: 100vh;
+}
+
+.p16 {
+  padding: 16px;
+}
+
+.bgWhite {
+  background: #fff;
+}
+
+.bR8 {
+  border-radius: 8px;
+}
+
+.bor1px {
+  border: 1px solid var(--border);
 }

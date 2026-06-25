@@ -1,112 +1,117 @@
-import { useEffect, useMemo, useState } from "react";
-import { Badge } from "../components/Badge";
-import { DataTable } from "../components/DataTable";
-import { Panel } from "../components/Panel";
-import { RowDetailModal } from "../components/RowDetailModal";
-import { getStatusTone, mesScreens, type MesRow } from "../data/mesScreens";
-import { menuGroups } from "../data/navigation";
-import type { ScreenKey, StatusTone } from "../types";
+import { useEffect, useMemo, useState } from 'react'
+import { Badge } from '../components/Badge'
+import { DataTable } from '../components/DataTable'
+import { Panel } from '../components/Panel'
+import { RowDetailModal } from '../components/RowDetailModal'
+import { KpiGrid } from '../components/kpi/KpiGrid'
+import { MesAreaChart } from '../components/chart/MesAreaChart'
+import { PermissionBoard } from '../components/permission/PermissionBoard'
+import { CctvGrid } from '../components/cctv/CctvGrid'
+import { getStatusTone, mesScreens, type MesRow } from '../data/mesScreens'
+import { menuGroups } from '../data/navigation'
+import type { ScreenKey, StatusTone } from '../types'
 import {
   AdjustmentsHorizontalIcon,
   ArrowPathIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  CheckIcon,
-  SunIcon,
-  BeakerIcon,
-  CloudIcon,
-  SparklesIcon,
-} from "@heroicons/react/16/solid";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+} from '@heroicons/react/16/solid'
 
 function makeEmptyRow(columns: string[], count: number): MesRow {
   return Object.fromEntries(
     columns.map((column, index) => [
       `c${index}`,
-      index === 0 ? `NEW-${String(count).padStart(3, "0")}` : column.includes("상태") ? "대기" : "",
+      index === 0
+        ? `NEW-${String(count).padStart(3, '0')}`
+        : column.includes('상태')
+          ? '대기'
+          : '',
     ]),
-  );
+  )
 }
 
 function cellTone(value: string): StatusTone | null {
-  const tone = getStatusTone(value);
-  if (tone === "muted") return null;
-  return tone;
+  const tone = getStatusTone(value)
+  if (tone === 'muted') return null
+  return tone
 }
 
 export function MesDemoPage({ screen }: { screen: ScreenKey }) {
-  const definition = mesScreens[screen];
-  const groupTitle = menuGroups.find((group) => group.items.some((item) => item.key === screen))?.title ?? "MES";
-  const [keyword, setKeyword] = useState("");
-  const [rows, setRows] = useState<MesRow[]>(definition.rows);
-  const [modalRow, setModalRow] = useState<MesRow | null>(null);
-  const [updatedAt, setUpdatedAt] = useState(new Date());
-  const [pulse, setPulse] = useState(0);
-  const [filterKey, setFilterKey] = useState(0);
+  const definition = mesScreens[screen]
+  const groupTitle =
+    menuGroups.find((group) => group.items.some((item) => item.key === screen))?.title ?? 'MES'
+
+  const [keyword, setKeyword] = useState('')
+  const [rows, setRows] = useState<MesRow[]>(definition.rows)
+  const [modalRow, setModalRow] = useState<MesRow | null>(null)
+  const [updatedAt, setUpdatedAt] = useState(new Date())
+  const [pulse, setPulse] = useState(0)
+  const [filterKey, setFilterKey] = useState(0)
 
   useEffect(() => {
-    setKeyword("");
-    setRows(definition.rows);
-    setModalRow(null);
-  }, [definition]);
+    setKeyword('')
+    setRows(definition.rows)
+    setModalRow(null)
+  }, [definition])
 
   useEffect(() => {
-    if (definition.kind !== "realtime") return;
-
+    if (definition.kind !== 'realtime') return
     const timer = window.setInterval(() => {
-      setUpdatedAt(new Date());
-      setPulse((value) => value + 1);
-    }, 2500);
-
-    return () => window.clearInterval(timer);
-  }, [definition.kind]);
+      setUpdatedAt(new Date())
+      setPulse((v) => v + 1)
+    }, 2500)
+    return () => window.clearInterval(timer)
+  }, [definition.kind])
 
   const filteredRows = useMemo(() => {
-    const normalized = keyword.trim().toLowerCase();
-    if (!normalized) return rows;
-    return rows.filter((row) => Object.values(row).join(" ").toLowerCase().includes(normalized));
-  }, [keyword, rows]);
+    const normalized = keyword.trim().toLowerCase()
+    if (!normalized) return rows
+    return rows.filter((row) =>
+      Object.values(row).join(' ').toLowerCase().includes(normalized),
+    )
+  }, [keyword, rows])
 
-  const fields = definition.columns.map((label, index) => ({ label, key: `c${index}` }));
+  const fields = definition.columns.map((label, index) => ({ label, key: `c${index}` }))
 
   const handleAdd = () => {
-    const nextRow = makeEmptyRow(definition.columns, rows.length + 1);
-    setRows((current) => [nextRow, ...current]);
-    setModalRow(nextRow);
-  };
+    const nextRow = makeEmptyRow(definition.columns, rows.length + 1)
+    setRows((current) => [nextRow, ...current])
+    setModalRow(nextRow)
+  }
 
   const handleDelete = (row: MesRow) => {
     if (window.confirm(`${row.c0} 항목을 화면에서 삭제할까요?`)) {
-      setRows((current) => current.filter((item) => item !== row));
-      window.alert("실제 API 호출 없이 mock data에서만 삭제되었습니다.");
+      setRows((current) => current.filter((item) => item !== row))
+      window.alert('실제 API 호출 없이 mock data에서만 삭제되었습니다.')
     }
-  };
+  }
 
-  // handleReset
   const handleReset = () => {
-    setKeyword("");
-    setFilterKey((k) => k + 1);
-  };
+    setKeyword('')
+    setFilterKey((k) => k + 1)
+  }
 
   const saveRow = (updated: Record<string, string>) => {
-    setRows((current) => current.map((row) => (row === modalRow ? { ...row, ...updated } : row)));
-    setModalRow(null);
-    window.alert("실제 API 호출 없이 화면 상태에만 저장되었습니다.");
-  };
+    setRows((current) =>
+      current.map((row) => (row === modalRow ? { ...row, ...updated } : row)),
+    )
+    setModalRow(null)
+    window.alert('실제 API 호출 없이 화면 상태에만 저장되었습니다.')
+  }
 
   const tableRows = filteredRows.map((row) => [
     ...definition.columns.map((_, index) => {
-      const value = row[`c${index}`] ?? "";
-      const tone = cellTone(value);
-      return tone ? <Badge tone={tone}>{value}</Badge> : value;
+      const value = row[`c${index}`] ?? ''
+      const tone = cellTone(value)
+      return tone ? <Badge tone={tone}>{value}</Badge> : value
     }),
     <div className="rowActions">
       <button
         type="button"
         className="miniButton"
-        onClick={(event) => {
-          event.stopPropagation();
-          setModalRow(row);
+        onClick={(e) => {
+          e.stopPropagation()
+          setModalRow(row)
         }}
       >
         상세
@@ -114,34 +119,46 @@ export function MesDemoPage({ screen }: { screen: ScreenKey }) {
       <button
         type="button"
         className="miniButton danger"
-        onClick={(event) => {
-          event.stopPropagation();
-          handleDelete(row);
+        onClick={(e) => {
+          e.stopPropagation()
+          handleDelete(row)
         }}
       >
         삭제
       </button>
     </div>,
-  ]);
+  ])
 
   return (
     <section className="screenStack">
+      {/* KPI */}
       {definition.kpis && <KpiGrid kpis={definition.kpis} pulse={pulse} />}
 
-      {definition.kind === "realtime" && (
+      {/* 실시간 배너 */}
+      {definition.kind === 'realtime' && (
         <div className="realtimeStrip">
           <span className="liveDot" />
           <strong>실시간 mock 갱신</strong>
-          <span>최종 갱신시간 {updatedAt.toLocaleTimeString("ko-KR")}</span>
+          <span>최종 갱신시간 {updatedAt.toLocaleTimeString('ko-KR')}</span>
         </div>
       )}
 
-      {definition.kind === "permission" && <PermissionBoard />}
+      {/* 권한 매트릭스 */}
+      {definition.kind === 'permission' && <PermissionBoard />}
 
-      {definition.kind === "cctv" && <CctvGrid rows={rows} />}
+      {/* CCTV 그리드 */}
+      {definition.kind === 'cctv' && <CctvGrid rows={rows} />}
 
-      {definition.chart && <BarChart title={definition.chart.title} items={definition.chart.items} pulse={pulse} />}
+      {/* 차트 */}
+      {definition.chart && (
+        <MesAreaChart
+          title={definition.chart.title}
+          items={definition.chart.items}
+          pulse={pulse}
+        />
+      )}
 
+      {/* 패널 (LOT 흐름 등) */}
       {definition.panels?.map((panel) => (
         <Panel key={panel.title} title={panel.title}>
           <div className="timelineList">
@@ -156,6 +173,7 @@ export function MesDemoPage({ screen }: { screen: ScreenKey }) {
         </Panel>
       ))}
 
+      {/* 검색 필터 */}
       <div className="searchBand">
         <div className="searchBandTop">
           <h2>
@@ -170,9 +188,11 @@ export function MesDemoPage({ screen }: { screen: ScreenKey }) {
             <label key={`${filterKey}-${filter}`}>
               <p>{filter}</p>
               <input
-                type={filter.includes("일") ? "date" : "text"}
-                value={index === 0 && !filter.includes("일") ? keyword : undefined}
-                onChange={(event) => index === 0 && !filter.includes("일") && setKeyword(event.target.value)}
+                type={filter.includes('일') ? 'date' : 'text'}
+                value={index === 0 && !filter.includes('일') ? keyword : undefined}
+                onChange={(e) =>
+                  index === 0 && !filter.includes('일') && setKeyword(e.target.value)
+                }
                 placeholder={`${filter} 입력`}
               />
             </label>
@@ -180,37 +200,47 @@ export function MesDemoPage({ screen }: { screen: ScreenKey }) {
           <button
             type="button"
             className="primaryButton"
-            onClick={() => window.alert("mock data 기준으로 조회되었습니다.")}
+            onClick={() => window.alert('mock data 기준으로 조회되었습니다.')}
           >
             조회
           </button>
         </div>
       </div>
 
+      {/* 메인 테이블 */}
       <Panel
         title={`${definition.title} 목록`}
-        action={definition.kind === "dashboard" || definition.kind === "realtime" ? "새로고침" : "등록"}
+        action={
+          definition.kind === 'dashboard' || definition.kind === 'realtime'
+            ? '새로고침'
+            : '등록'
+        }
         onAction={
-          definition.kind === "dashboard" || definition.kind === "realtime" ? () => setUpdatedAt(new Date()) : handleAdd
+          definition.kind === 'dashboard' || definition.kind === 'realtime'
+            ? () => setUpdatedAt(new Date())
+            : handleAdd
         }
       >
         <DataTable
-          headers={[...definition.columns, "관리"]}
+          headers={[...definition.columns, '관리']}
           rows={tableRows}
           onRowClick={(index) => {
-            const row = filteredRows[index];
-            if (row) setModalRow(row);
+            const row = filteredRows[index]
+            if (row) setModalRow(row)
           }}
         />
         <div className="paginationBar">
           <span className="paginationInfo">{filteredRows.length}건</span>
-
           <div className="paginationBtns">
             <button type="button" className="pageBtn" aria-label="이전 페이지">
               <ChevronLeftIcon className="w-4 h-4" />
             </button>
             {[1, 2, 3, 4, 5].map((page) => (
-              <button key={page} type="button" className={`pageBtn ${page === 1 ? "active" : ""}`}>
+              <button
+                key={page}
+                type="button"
+                className={`pageBtn ${page === 1 ? 'active' : ''}`}
+              >
                 {page}
               </button>
             ))}
@@ -221,7 +251,12 @@ export function MesDemoPage({ screen }: { screen: ScreenKey }) {
         </div>
       </Panel>
 
-      <Panel title="운영 메모" action="처리 완료" onAction={() => window.alert("mock 상태로 처리되었습니다.")}>
+      {/* 운영 메모 */}
+      <Panel
+        title="운영 메모"
+        action="처리 완료"
+        onAction={() => window.alert('mock 상태로 처리되었습니다.')}
+      >
         <div className="detailList">
           <div>
             <span>메뉴 경로</span>
@@ -231,7 +266,9 @@ export function MesDemoPage({ screen }: { screen: ScreenKey }) {
           </div>
           <div>
             <span>화면 동작</span>
-            <strong>검색, 등록, 수정, 삭제, 상세 확인은 API 없이 브라우저 상태에서만 동작합니다.</strong>
+            <strong>
+              검색, 등록, 수정, 삭제, 상세 확인은 API 없이 브라우저 상태에서만 동작합니다.
+            </strong>
           </div>
         </div>
       </Panel>
@@ -244,269 +281,5 @@ export function MesDemoPage({ screen }: { screen: ScreenKey }) {
         data={modalRow ?? {}}
       />
     </section>
-  );
-}
-
-type KpiIconMeta = {
-  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
-  color: string;
-  darkColor: string;
-};
-
-const kpiIconMap: Record<string, KpiIconMeta> = {
-  온도: {
-    icon: SunIcon,
-    color: "#EA580C",
-    darkColor: "#FB923C",
-  },
-
-  습도: {
-    icon: BeakerIcon,
-    color: "#0284C7",
-    darkColor: "#38BDF8",
-  },
-
-  CO2: {
-    icon: CloudIcon,
-    color: "#64748B",
-    darkColor: "#94A3B8",
-  },
-
-  미세먼지: {
-    icon: SparklesIcon,
-    color: "#16A34A",
-    darkColor: "#4ADE80",
-  },
-};
-
-function KpiGrid({ kpis, pulse }: { kpis: { label: string; value: string; tone: StatusTone }[]; pulse: number }) {
-  const [isDark, setIsDark] = useState(() => document.documentElement.getAttribute("data-theme") === "dark");
-
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setIsDark(document.documentElement.getAttribute("data-theme") === "dark");
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <section className="metricGrid">
-      {kpis.map((kpi, index) => {
-        const meta = kpiIconMap[kpi.label];
-        const iconColor = meta ? (isDark ? meta.darkColor : meta.color) : undefined;
-        return (
-          <article
-            key={kpi.label}
-            className={`metricCard ${kpi.tone} ${pulse % 2 === 1 && index === 0 ? "pulse" : ""}`}
-          >
-            {meta && (
-              <div className="metricIcon">
-                <meta.icon style={{ width: 18, height: 18, color: iconColor }} />
-              </div>
-            )}
-            <div className="metricValue">
-              <span>{kpi.label}</span>
-              <strong>{kpi.value}</strong>
-            </div>
-          </article>
-        );
-      })}
-    </section>
-  );
-}
-
-function BarChart({
-  title,
-  items,
-  pulse,
-}: {
-  title: string
-  items: { label: string; value: number; tone?: StatusTone }[]
-  pulse: number
-}) {
-  // 시간대 기반 데이터로 변환
-  const hours = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00']
-
-  const data = hours.map((hour, hi) => {
-    const entry: Record<string, string | number> = { time: hour }
-    items.forEach((item, ii) => {
-      entry[item.label] = Math.min(100, Math.max(10,
-        item.value * Math.sin((hi + ii + pulse * 0.3) * 0.6 + ii) * 0.4 + item.value * 0.6
-      ))
-    })
-    return entry
-  })
-
-  const colors = ['#38bdf8', '#57d3a1', '#f59e0b', '#a78bfa', '#f472b6']
-
-  return (
-    <Panel title={title}>
-      <ResponsiveContainer width="100%" height={240}>
-        <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-          <defs>
-            {items.map((item, i) => (
-              <linearGradient key={item.label} id={`grad-${i}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor={colors[i % colors.length]} stopOpacity={0.3} />
-                <stop offset="95%" stopColor={colors[i % colors.length]} stopOpacity={0} />
-              </linearGradient>
-            ))}
-          </defs>
-          <XAxis
-            dataKey="time"
-            tick={{ fontSize: 11, fill: '#94a3b8' }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis
-            domain={[0, 100]}
-            tick={{ fontSize: 11, fill: '#94a3b8' }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <Tooltip
-            contentStyle={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              borderRadius: 10,
-              fontSize: 12,
-              color: 'var(--text-body)',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-            }}
-            cursor={{ stroke: '#94a3b8', strokeWidth: 1, strokeDasharray: '4 4' }}
-            formatter={(value) => [`${Math.round(Number(value))}%`]}
-          />
-          <Legend
-            wrapperStyle={{ fontSize: 12, color: 'var(--text-muted)', paddingTop: 12 }}
-            iconType="circle"
-            iconSize={8}
-          />
-          {items.map((item, i) => (
-            <Area
-              key={item.label}
-              type="monotone"
-              dataKey={item.label}
-              stroke={colors[i % colors.length]}
-              strokeWidth={2.5}
-              fill={`url(#grad-${i})`}
-              dot={false}
-              activeDot={{ r: 5, fill: colors[i % colors.length], stroke: '#fff', strokeWidth: 2 }}
-            />
-          ))}
-        </AreaChart>
-      </ResponsiveContainer>
-    </Panel>
   )
-}
-
-function PermissionBoard() {
-  const menus = menuGroups.flatMap((group) =>
-    group.items.map((item) => ({ label: `${group.title} / ${item.label}`, key: item.key })),
-  );
-  const roles = [
-    { name: "시스템관리자", count: 12, desc: "모든 메뉴 및 기능에 접근 가능한 최고 권한 그룹입니다." },
-    { name: "생산관리자", count: 9, desc: "생산, 재고, LOT 관련 메뉴에 대한 등록·수정 권한을 가집니다." },
-    { name: "품질관리자", count: 7, desc: "품질검사 및 불량관리 메뉴에 대한 접근 권한을 가집니다." },
-    { name: "설비관리자", count: 5, desc: "설비 운영 및 알람 메뉴의 조회·수정 권한을 가집니다." },
-    { name: "일반작업자", count: 11, desc: "지정된 메뉴의 조회 권한만 부여된 기본 작업자 그룹입니다." },
-  ];
-  const permissions = ["조회", "등록", "수정", "삭제", "승인"] as const;
-
-  // 역할 인덱스가 낮을수록 더 많은 권한 (시스템관리자=0이 전체 허용)
-  const hasPermission = (roleIndex: number, permIndex: number, menuIndex: number) => {
-    const maxMenu = [menus.length, 8, 7, 5, 4]; // 각 권한별 허용 메뉴 수
-    const maxPerm = [5, 4, 3, 2, 1]; // 각 역할별 허용 권한 수
-    return permIndex < maxPerm[roleIndex] && menuIndex < maxMenu[permIndex];
-  };
-
-  const [activeRole, setActiveRole] = useState(0);
-
-  const [permState, setPermState] = useState(() =>
-    menus.map((_, mi) => permissions.map((_, pi) => hasPermission(0, pi, mi))),
-  );
-
-  useEffect(() => {
-    setPermState(menus.map((_, mi) => permissions.map((_, pi) => hasPermission(activeRole, pi, mi))));
-  }, [activeRole]);
-
-  return (
-    <section className="permissionBoard">
-      {/* 역할 탭 */}
-      <div className="permissionTabs">
-        <div className="permissionTabsBox">
-          {roles.map((role, index) => (
-            <button
-              key={role.name}
-              type="button"
-              className={`permissionTab ${index === activeRole ? "active" : ""}`}
-              onClick={() => setActiveRole(index)}
-            >
-              <span>{role.name}</span>
-              <span className="tabBadge">{role.count}명</span>
-            </button>
-          ))}
-        </div>
-        {/* 역할 설명 */}
-        <p className="permissionDesc">{roles[activeRole].desc}</p>
-      </div>
-
-      {/* 권한 매트릭스 */}
-      <div className="permissionMatrix">
-        {/* 헤더 */}
-        <div className="matrixHeader">
-          <span>메뉴 경로</span>
-          {permissions.map((p) => (
-            <span key={p}>{p}</span>
-          ))}
-        </div>
-
-        {/* 메뉴 행 */}
-        {menus.slice(0, 12).map((menu, menuIndex) => (
-          <div key={menu.key} className="matrixRow">
-            <span className="matrixLabel">{menu.label}</span>
-            {permissions.map((p, permIndex) => {
-              const checked = permState[menuIndex]?.[permIndex] ?? false; // ← permState로 변경
-              return (
-                <div key={p} className="matrixCheckCell">
-                  <span
-                    className={`customCheck ${checked ? "checked" : ""}`}
-                    onClick={() => {
-                      setPermState((prev) =>
-                        prev.map((row, mi) =>
-                          mi === menuIndex ? row.map((v, pi) => (pi === permIndex ? !v : v)) : row,
-                        ),
-                      );
-                    }}
-                  >
-                    {checked && <CheckIcon />}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function CctvGrid({ rows }: { rows: MesRow[] }) {
-  return (
-    <section className="cctvGrid">
-      {rows.map((row, index) => (
-        <article key={row.c0} className="cctvCard">
-          <div className={`cctvFrame ${index % 3 === 2 ? "offline" : ""}`}>
-            <span>REC</span>
-            <strong>{row.c0}</strong>
-          </div>
-          <div>
-            <strong>{row.c0}</strong>
-            <span>{row.c1}</span>
-          </div>
-          <Badge tone={getStatusTone(row.c2)}>{row.c2}</Badge>
-          <small>최근감지시간 {row.c3}</small>
-        </article>
-      ))}
-    </section>
-  );
 }
