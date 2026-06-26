@@ -1,0 +1,100 @@
+/* ══════════════════════════════════════════
+   HempProcessFlowPage
+══════════════════════════════════════════ */
+.hpf {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* ── 탭바 ── */
+.hpf__tabbar {
+  display: flex;
+  align-items: flex-end;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-app);
+}
+.hpf__tab {
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  background: transparent;
+  transition: color .15s, background .15s, border-color .15s;
+  margin-bottom: -1px;
+}
+.hpf__tab:hover:not(.hpf__tab--on) { color: var(--text-primary); background: var(--bg-card); }
+.hpf__tab--on { color: var(--text-primary); background: var(--bg-card); border-color: var(--border); }
+
+/* ── 패널 ── */
+.hpf__panel { padding: 12px 10px 10px; }
+
+/* ── 범례 ── */
+.hpf__legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+.hpf__leg { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text-secondary); }
+.hpf__legDot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+
+/* ── SVG 핵심 수정: 고정 너비, 절대 늘어나지 않음 ── */
+.hpf__svg {
+  display: block;
+  /* 컨테이너보다 크면 축소, 하지만 원래 크기보다 커지지 않음 */
+  width: 100%;
+  /* max-width: 520px; */
+  height: auto;
+}
+
+/* ── 노드 ── */
+.hpf__step {
+  fill: #f9fafb;
+  stroke: #9ca3af;
+  stroke-width: 0.6px;
+}
+[data-theme='dark'] .hpf__step {
+  fill: #374151;
+  stroke: #6b7280;
+}
+.hpf__pill {
+  fill: #1D9E75;
+  stroke: #0F6E56;
+  stroke-width: 0.6px;
+}
+.hpf__amber {
+  fill: #FAEEDA;
+  stroke: #EF9F27;
+  stroke-width: 0.8px;
+  stroke-dasharray: 3 2;
+}
+[data-theme='dark'] .hpf__amber { fill: #412402; }
+
+/* ── 텍스트 ── */
+.hpf__lbl {
+  fill: #374151;
+  font-size: 9px;
+  font-weight: 500;
+  font-family: var(--font-sans, sans-serif);
+}
+[data-theme='dark'] .hpf__lbl { fill: #e5e7eb; }
+.hpf__sub {
+  fill: #6b7280;
+  font-size: 8px;
+  font-family: var(--font-sans, sans-serif);
+}
+[data-theme='dark'] .hpf__sub { fill: #9ca3af; }
+.hpf__pillLbl {
+  fill: #ffffff;
+  font-size: 9px;
+  font-weight: 600;
+  font-family: var(--font-sans, sans-serif);
+}
+.hpf__amberLbl {
+  fill: #633806;
+  font-size: 8px;
+  font-family: var(--font-sans, sans-serif);
+}
+[data-theme='dark'] .hpf__amberLbl { fill: #FAC775; }
