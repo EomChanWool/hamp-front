@@ -47,6 +47,7 @@
   width: 100%;
   /* max-width: 520px; */
   height: auto;
+  transform: scale(0.7);
 }
 
 /* ── 노드 ── */
