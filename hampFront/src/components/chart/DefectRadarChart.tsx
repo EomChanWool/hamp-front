@@ -266,8 +266,8 @@ export function DefectRadarChart({ colorMode = "dark" }: DefectRadarChartProps) 
       <div className={styles.chartBox}>
         <div className={styles.chartWrap}>
           <ResponsiveContainer width="100%" height={320}>
-            <RadarChart data={chartData} margin={{ top: 24, right: 48, bottom: 24, left: 48 }}>
-              <PolarGrid stroke={gridLine} strokeWidth={1} />
+            <RadarChart data={chartData} outerRadius="72%" margin={{ top: 30, right: 60, bottom: 30, left: 60 }}>
+              <PolarGrid stroke={gridLine} strokeWidth={1} gridType="polygon" polarRadius={[24, 48, 72, 96, 120]} />
               <PolarAngleAxis
                 dataKey="subject"
                 tick={(props) => <CustomAngleLabel {...props} data={chartData} />}
@@ -276,6 +276,7 @@ export function DefectRadarChart({ colorMode = "dark" }: DefectRadarChartProps) 
               />
               <PolarRadiusAxis
                 domain={[0, 1]}
+                tickCount={5}
                 tick={false}
                 axisLine={false}
                 tickLine={false}

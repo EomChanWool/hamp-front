@@ -24,7 +24,7 @@ export function TablePanel({
 }: Props) {
   return (
     <Panel title={title} action={action} onAction={onAction}>
-      <DataTable headers={headers} rows={rows} onRowClick={onRowClick} />
+      <DataTable headers={headers.filter((h, i, arr) => !(h === '관리' && arr.lastIndexOf('관리') !== i))} rows={rows} onRowClick={onRowClick} />
       <div className="paginationBar">
         <span className="paginationInfo">{totalCount}건</span>
         <div className="paginationBtns">
