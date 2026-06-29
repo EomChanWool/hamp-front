@@ -1,0 +1,178 @@
+/* ─── DefectRadarChart.module.css ─────────────────────────────────────────── */
+
+.card {
+  background: var(--rc-surface);
+  border: 1px solid var(--rc-border);
+  border-radius: 10px;
+  padding: 20px;
+  color: var(--rc-text);
+  font-family: inherit;
+}
+
+/* ── 헤더 ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.headerLabel {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rc-text-faint);
+  margin-bottom: 3px;
+}
+
+.headerTitle {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--rc-text);
+}
+
+.select {
+  background: var(--rc-select-bg);
+  border: 1px solid var(--rc-border);
+  border-radius: 6px;
+  color: var(--rc-text);
+  font-size: 12px;
+  padding: 5px 10px;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.select:hover {
+  border-color: var(--rc-poly-stroke);
+}
+
+.selectOption {
+  background: var(--rc-select-option-bg);
+}
+
+/* ── 배지 3개 ── */
+.badges {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.badge {
+  /* background: var(--rc-badge-bg); */
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.badgeHeader {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.badgeIcon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.badgeLabel {
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--rc-text-faint);
+}
+
+.badgeValue {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ── 차트 + 범례 래퍼 ── */
+.chartBox {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── 차트 영역 ── */
+.chartWrap {
+  width: 500px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 320px;
+  overflow: visible;
+}
+
+/* ── 범례 ── */
+.legend {
+  flex: 0 0 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.legendDot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 2px;
+}
+
+.legendName {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--rc-text-muted);
+  min-width: 44px;
+}
+
+/* mini bar track */
+.legendBar {
+  flex: 1 1 0;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--rc-bar-track);
+  overflow: hidden;
+  position: relative;
+}
+
+.legendBarFill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.legendCount {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: right;
+}

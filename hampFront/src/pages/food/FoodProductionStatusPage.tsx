@@ -16,7 +16,6 @@ export function FoodProductionStatusPage() {
   return (
     <section className="screenStack">
       {DEF.kpis && <KpiGrid kpis={DEF.kpis} />}
-      {DEF.chart && <MesAreaChart title={DEF.chart.title} items={DEF.chart.items} />}
       <SearchBand filters={DEF.filters} onSearch={setKeyword} onReset={() => setKeyword('')} />
       <TablePanel title={`${DEF.title} 목록`} headers={[...DEF.columns, '관리']} rows={tableRows} totalCount={filteredRows.length} action="새로고침" onAction={() => window.alert('mock 새로고침')} onRowClick={(i) => setModalRow(filteredRows[i])} />
       <RowDetailModal isOpen={modalRow !== null} onClose={() => setModalRow(null)} onSave={handleSave} fields={fields} data={modalRow ?? {}} />
