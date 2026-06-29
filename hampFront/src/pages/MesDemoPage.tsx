@@ -99,8 +99,10 @@ export function MesDemoPage({ screen }: { screen: ScreenKey }) {
     window.alert('실제 API 호출 없이 화면 상태에만 저장되었습니다.')
   }
 
+  const dataColumns = definition.columns.at(-1) === '관리' ? definition.columns.slice(0, -1) : definition.columns
+
   const tableRows = filteredRows.map((row) => [
-    ...definition.columns.map((_, index) => {
+    ...dataColumns.map((_, index) => {
       const value = row[`c${index}`] ?? ''
       const tone = cellTone(value)
       return tone ? <Badge tone={tone}>{value}</Badge> : value
@@ -222,7 +224,7 @@ export function MesDemoPage({ screen }: { screen: ScreenKey }) {
         }
       >
         <DataTable
-          headers={[...definition.columns, '관리']}
+          headers={[...dataColumns, '관리']}
           rows={tableRows}
           onRowClick={(index) => {
             const row = filteredRows[index]
