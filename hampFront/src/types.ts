@@ -1,6 +1,9 @@
 import type { ComponentType, SVGProps } from 'react'
 
 export type ScreenKey =
+  | 'dashboard'
+  | 'systemUsers'
+  | 'systemUserPermissions'
   | 'systemUsers'
   | 'systemUserPermissions'
   | 'systemAccessLogs'

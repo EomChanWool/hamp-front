@@ -61,7 +61,8 @@ function App() {
   const handleLogin = () => {
     localStorage.setItem(SESSION_KEY, "true");
     setIsLoggedIn(true);
-    moveHash(activeScreen);
+    setActiveScreenState(defaultScreen);
+    window.location.hash = `#/${defaultScreen}`;
   };
 
   const handleLogout = () => {

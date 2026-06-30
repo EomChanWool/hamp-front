@@ -116,6 +116,9 @@ export const menuGroups: MenuGroup[] = [
 
 export const defaultScreen: ScreenKey = 'systemUsers'
 
-export const screenTitles: Record<ScreenKey, string> = Object.fromEntries(
-  menuGroups.flatMap((group) => group.items.map((item) => [item.key, item.label])),
-) as Record<ScreenKey, string>
+export const screenTitles: Record<ScreenKey, string> = {
+  dashboard: '메인 대시보드',
+  ...Object.fromEntries(
+    menuGroups.flatMap((group) => group.items.map((item) => [item.key, item.label])),
+  ),
+} as Record<ScreenKey, string>
