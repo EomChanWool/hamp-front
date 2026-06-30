@@ -12,7 +12,7 @@ const DEF = mesScreens.inpiInventoryStatus
 export function InpiInventoryStatusPage() {
   const { filteredRows, setKeyword, modalRow, setModalRow, handleDelete, handleSave } = useTableData(DEF.rows)
   const fields = DEF.columns.map((label, i) => ({ label, key: `c${i}` }))
-  const tableRows = buildTableRows(filteredRows, DEF.columns.length, setModalRow, handleDelete)
+  const tableRows = buildTableRows(filteredRows, DEF.columns.length, setModalRow, handleDelete, DEF.columns)
   return (
     <section className="screenStack">
       {DEF.kpis && <KpiGrid kpis={DEF.kpis} />}
