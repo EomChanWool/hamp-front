@@ -34,12 +34,19 @@ interface ChartPoint {
 
 // ─── 타입별 고유 색상 ─────────────────────────────────────────────────────────
 const TYPE_COLORS: Record<string, { dark: string; light: string }> = {
-  이물:    { dark: "#57d3a1", light: "#10b981" },
-  중량미달: { dark: "#f87171", light: "#ef4444" },
-  파손:    { dark: "#fb923c", light: "#ff8c3a" },
-  색상불량: { dark: "#a78bfa", light: "#8b5cf6" },
-  포장불량: { dark: "#facc15", light: "#eab308" },
-  기타:    { dark: "#94a3b8", light: "#64748b" },
+  이물:    { dark: "#6ee7b7", light: "#059669" },
+  중량미달: { dark: "#34d399", light: "#10b981" },
+  파손:    { dark: "#4ade80", light: "#16a34a" },
+  색상불량: { dark: "#86efac", light: "#22c55e" },
+  포장불량: { dark: "#a7f3d0", light: "#65a30d" },
+  기타:    { dark: "#5eead4", light: "#0d9488" },
+};
+
+// ─── 별 고유 색상 ─────────────────────────────────────────────────────────
+const BADGE_COLORS: Record<string, { dark: string; light: string }> = {
+  총불량:    { dark: "#fbbf24", light: "#d97706" },
+  평균불량률: { dark: "#60a5fa", light: "#2563eb" },
+  최다불량:  { dark: "#f87171", light: "#dc2626" },
 };
 
 // ─── CSS 변수 주입용 테마 맵 ──────────────────────────────────────────────────
@@ -221,9 +228,9 @@ export function DefectRadarChart({ colorMode = "dark" }: DefectRadarChartProps) 
   const worstAxis    = chartData.reduce((a, b) => (a.rawCount > b.rawCount ? a : b));
 
   const badges = [
-    { label: "총 불량",    value: `${totalDefects}건`, color: TYPE_COLORS["중량미달"][mode], Icon: ExclamationTriangleIcon },
-    { label: "평균 불량률", value: `${avgRate}%`,       color: TYPE_COLORS["파손"][mode],    Icon: ChartBarIcon            },
-    { label: "최다 불량",  value: worstAxis.subject,    color: worstAxis.color,              Icon: FireIcon                },
+    { label: "총 불량",    value: `${totalDefects}건`, color: BADGE_COLORS["총불량"][mode],    Icon: ExclamationTriangleIcon },
+    { label: "평균 불량률", value: `${avgRate}%`,       color: BADGE_COLORS["평균불량률"][mode], Icon: ChartBarIcon            },
+    { label: "최다 불량",  value: worstAxis.subject,    color: BADGE_COLORS["최다불량"][mode],   Icon: FireIcon                },
   ];
 
   const polyStroke = cssVars["--rc-poly-stroke"];
