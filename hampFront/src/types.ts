@@ -4,8 +4,6 @@ export type ScreenKey =
   | 'dashboard'
   | 'systemUsers'
   | 'systemUserPermissions'
-  | 'systemUsers'
-  | 'systemUserPermissions'
   | 'systemAccessLogs'
   | 'facilityAccessManage'
   | 'facilityAccessRealtime'

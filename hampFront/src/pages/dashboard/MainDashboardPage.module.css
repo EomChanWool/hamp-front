@@ -3,14 +3,20 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 24px;
-  min-height: 100%;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 
 .pageHeader {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 10px;
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 .pageTitle {
@@ -25,23 +31,95 @@
   color: var(--text-muted);
 }
 
+/* ── 상단 KPI 카드 (파스텔톤, 다크모드 자동 대응) ──────────────────────────── */
+.kpiCardGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.kpiCard {
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kpiCardTop {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kpiCardDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  flex-shrink: 0;
+}
+
+.kpiCardLabel {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.kpiCardValueRow {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.kpiCardValue {
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--text-heading);
+  line-height: 1;
+}
+
+.kpiCardUnit {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.kpiCardDelta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.deltaUp {
+  color: #10b981;
+}
+.deltaDown {
+  color: #ef4444;
+}
+
+/* ── 메인 그리드 (좌우 공정 섹션) ──────────────────────────────────────────── */
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1px 1fr;
-  gap: 0 24px;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
   align-items: start;
 }
 
-.divider {
-  background: var(--border);
-  align-self: stretch;
-}
-
-/* ── 섹션 ────────────────────────────────────────────────────────────────────── */
+/* ── 섹션 — 컨텐츠 구분을 위해 큰 카드로 감쌈 ─────────────────────────────── */
 .section {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
 }
 
 .sectionHeader {
@@ -49,6 +127,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
 }
 
 .sectionTitleRow {
@@ -75,7 +155,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--bg-subtle);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 6px 14px;
@@ -103,23 +183,40 @@
   background: var(--border);
 }
 
-/* ── 공정 흐름도 ─────────────────────────────────────────────────────────────── */
-.flowCard {
-  background: var(--bg-subtle);
+/* 섹션 내부 패널 — section의 옅은 배경과 대비되도록 카드 배경 + 그림자 */
+.panelCard {
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 14px 16px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.flowCardTitle {
-  font-size: 11px;
+.panelTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.panelName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.panelValue {
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 12px;
 }
 
+/* ── 생산량 추이 영역차트 ───────────────────────────────────────────────────── */
+.trendChartWrap {
+  width: 100%;
+}
+
+/* ── 공정 흐름도 ─────────────────────────────────────────────────────────────── */
 .processFlow {
   display: flex;
   align-items: center;
@@ -145,9 +242,18 @@
   transition: 0.15s;
 }
 
-.nodeOn   { background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.25); }
-.nodeWarn { background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.25); }
-.nodeOff  { background: var(--bg-card);           border-color: var(--border);             }
+.nodeOn {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+.nodeWarn {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+.nodeOff {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
 
 .processDot {
   width: 8px;
@@ -174,45 +280,17 @@
   opacity: 0.25;
 }
 
-/* ── 탭 ──────────────────────────────────────────────────────────────────────── */
-.tabs {
-  display: flex;
-  gap: 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.tab {
-  padding: 7px 16px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-muted);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  transition: 0.15s;
-  margin-bottom: -1px;
-}
-
-.tab:hover {
-  color: var(--text-body);
-}
-
-.tabActive {
-  font-weight: 600;
-}
-
-/* ── 생산라인 카드 ───────────────────────────────────────────────────────────── */
-.lineList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+/* ── 생산라인 카드 (보더 대신 그라데이션 배경, 다크모드 자동 대응) ────────── */
+.lineGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
 }
 
 .lineCard {
-  background: var(--bg-card);
+  background: linear-gradient(150deg, var(--bg-card), var(--bg-subtle));
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
@@ -220,20 +298,27 @@
   transition: 0.15s;
 }
 
-.statusOn   { border-left: 3px solid #10b981; }
-.statusWarn { border-left: 3px solid #f59e0b; }
-.statusOff  { border-left: 3px solid var(--border); opacity: 0.55; }
-
 .lineTop {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 6px;
 }
 
 .lineInfo {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 7px;
+  min-width: 0;
+}
+
+.lineProcess {
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lineDot {
@@ -249,14 +334,26 @@
   color: var(--text-heading);
 }
 
-.lineProcess {
-  font-size: 11px;
-  color: var(--text-muted);
+/* 상태 배지 — 카드 보더 대신 캡슐형 배지로 상태 표시 */
+.lineStatus {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+  flex-shrink: 0;
 }
 
-.lineStatus {
-  font-size: 11px;
-  font-weight: 600;
+.badgeOn {
+  color: #10b981;
+  background: color-mix(in srgb, #10b981 16%, var(--bg-card));
+}
+.badgeWarn {
+  color: #f59e0b;
+  background: color-mix(in srgb, #f59e0b 16%, var(--bg-card));
+}
+.badgeOff {
+  color: var(--text-muted);
+  background: var(--bg-subtle);
 }
 
 .lineOutputRow {
@@ -291,7 +388,7 @@
 
 .lineBar {
   height: 4px;
-  background: var(--bg-subtle);
+  background: var(--border);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -302,26 +399,69 @@
   transition: width 0.4s ease;
 }
 
-.barOn   { background: linear-gradient(90deg, #10b981, #34d399); }
-.barWarn { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-.barOff  { background: var(--border); }
+.barOn {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+.barWarn {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+.barOff {
+  background: var(--border);
+}
 
 /* ── dot 색상 ───────────────────────────────────────────────────────────────── */
-.dotOn   { background: #10b981; box-shadow: 0 0 6px #10b98170; }
-.dotWarn { background: #f59e0b; box-shadow: 0 0 6px #f59e0b70; }
-.dotOff  { background: var(--text-muted); }
+.dotOn {
+  background: #10b981;
+  box-shadow: 0 0 6px #10b98170;
+}
+.dotWarn {
+  background: #f59e0b;
+  box-shadow: 0 0 6px #f59e0b70;
+}
+.dotOff {
+  background: var(--text-muted);
+}
 
-/* ── 불량현황 ─────────────────────────────────────────────────────────────────── */
-.defectList {
+/* ── 불량현황 (레이더 + 리스트) ───────────────────────────────────────────── */
+.donutRow {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.radarChartWrap {
+  width: 300px;
+  position: relative;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  gap: 4px;
+}
+
+.radarTotal {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.radarTotal strong {
+  color: var(--text-heading);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.defectList {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
 }
 
 .defectRow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .defectDot {
@@ -329,59 +469,67 @@
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .defectType {
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-body);
-  width: 56px;
+  color: var(--text-heading);
+  width: 60px;
   flex-shrink: 0;
+  line-height: 1;
 }
 
 .defectBar {
   flex: 1;
-  height: 6px;
+  height: 8px;
   background: var(--bg-subtle);
-  border-radius: 3px;
+  border-radius: 999px;
   overflow: hidden;
 }
 
 .defectBarFill {
   height: 100%;
-  border-radius: 3px;
+  border-radius: 999px;
   transition: width 0.4s ease;
 }
 
 .defectCount {
-  font-size: 12px;
-  font-weight: 700;
-  width: 34px;
+  font-size: 13px;
+  font-weight: 500;
+  width: 38px;
   text-align: right;
   flex-shrink: 0;
 }
 
 .defectRate {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
-  width: 36px;
+  width: 40px;
   text-align: right;
   flex-shrink: 0;
 }
 
-.defectSummary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-top: 10px;
-  margin-top: 2px;
-  border-top: 1px solid var(--border);
-  font-size: 12px;
-  color: var(--text-muted);
+/* ── 반응형 ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 1280px) {
+  .kpiCardGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
-.defectSummary strong {
-  font-weight: 700;
-  color: var(--text-heading);
-  margin-right: 8px;
+@media (max-width: 960px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .kpiCardGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .donutRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .lineGrid {
+    grid-template-columns: 1fr;
+  }
 }

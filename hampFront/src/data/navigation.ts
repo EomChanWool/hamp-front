@@ -114,7 +114,7 @@ export const menuGroups: MenuGroup[] = [
   },
 ]
 
-export const defaultScreen: ScreenKey = 'systemUsers'
+export const defaultScreen: ScreenKey = 'dashboard'
 
 export const screenTitles: Record<ScreenKey, string> = {
   dashboard: '메인 대시보드',

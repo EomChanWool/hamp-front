@@ -93,9 +93,9 @@
 }
 
 [data-theme="dark"] .ghostButton {
-  background: var(--bg-card);
-  border-color: var(--border);
-  color: var(--text-main);
+  background: rgba(96, 165, 250, 0.14);
+  border: 1px solid rgba(96, 165, 250, 0.32);
+  color: #93c5fd;
 }
 [data-theme="dark"] .miniButton {
   background: #252a36;
@@ -204,14 +204,6 @@
 [data-theme="dark"] .headerLogout:hover {
   background: #2d1a1a;
   color: #dc2626;
-}
-[data-theme="dark"] .ghostButton {
-  background: #252a36;
-  border: 1px solid #394150;
-  color: #cbd5e1;
-}
-[data-theme="dark"] .ghostButton:hover {
-  background: #303848;
 }
 
 /* ================================
@@ -343,6 +335,7 @@ button {
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  line-height: 1;
 }
 
 .primaryButton,
@@ -365,7 +358,6 @@ button {
   color: #fff;
   border: none;
   border-radius: 8px;
-
   font-size: 14px;
   font-weight: 600;
 
