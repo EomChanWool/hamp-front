@@ -55,6 +55,7 @@ export function AppShell({
         onLogout={onLogout}
         collapsed={collapsed}
         onToggleCollapsed={() => setCollapsed(!collapsed)}
+        onLogoClick={() => onScreenChange("dashboard")}
       />
       <div className={`mainContent ${collapsed ? "collapsed" : ""}`}>
         <aside className="sidebar">

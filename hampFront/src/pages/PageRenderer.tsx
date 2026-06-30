@@ -1,5 +1,8 @@
 import type { ScreenKey } from '../types'
 
+//메인페이지
+import { MainDashboardPage } from './dashboard/MainDashboardPage'
+
 // 시스템관리
 import { SystemUsersPage } from './system/SystemUsersPage'
 import { SystemUserPermissionsPage } from './system/SystemUserPermissionsPage'
@@ -60,6 +63,9 @@ type Props = {
 
 export function PageRenderer({ activeScreen }: Props) {
   switch (activeScreen) {
+    //메인페이지
+    case 'dashboard': return <MainDashboardPage />
+
     // 시스템관리
     case 'systemUsers':              return <SystemUsersPage />
     case 'systemUserPermissions':    return <SystemUserPermissionsPage />

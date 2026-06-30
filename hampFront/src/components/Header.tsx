@@ -9,12 +9,19 @@ type HeaderProps = {
   onLogout: () => void;
   collapsed: boolean;
   onToggleCollapsed: () => void;
+  onLogoClick: () => void;
 };
 
-export function Header({ theme, onToggleTheme, onLogout, collapsed, onToggleCollapsed }: HeaderProps) {
+export function Header({ theme, onToggleTheme, onLogout, collapsed, onToggleCollapsed, onLogoClick }: HeaderProps) {
   return (
     <header className="header">
-      <div className="brand" style={{ width: collapsed ? 'fit-content' : '252px', transition: 'width 0.3s ease' }}>
+      <div
+        className="brand"
+        style={{ width: collapsed ? 'fit-content' : '252px', transition: 'width 0.3s ease', cursor: 'pointer' }}
+        onClick={onLogoClick}
+        role="button"
+        aria-label="메인 대시보드로 이동"
+      >
         <div className="brandInfo">
           <div className="brandMark">H</div>
           {!collapsed && (
