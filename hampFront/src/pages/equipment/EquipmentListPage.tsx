@@ -10,7 +10,7 @@ const DEF = mesScreens.equipmentList
 export function EquipmentListPage() {
   const { filteredRows, setKeyword, modalRow, setModalRow, handleDelete, handleSave } = useTableData(DEF.rows)
   const fields = DEF.columns.map((label, i) => ({ label, key: `c${i}` }))
-  const tableRows = buildTableRows(filteredRows, DEF.columns.length, setModalRow, handleDelete)
+  const tableRows = buildTableRows(filteredRows, DEF.columns.length, setModalRow, handleDelete, DEF.columns)
   return (
     <section className="screenStack">
       <SearchBand filters={DEF.filters} onSearch={setKeyword} onReset={() => setKeyword('')} />
