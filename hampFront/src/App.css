@@ -771,6 +771,10 @@ button {
   height: 14px;
 }
 
+.headerPopupEmpty {
+  font-size: 12px;
+}
+
 .headerDivider {
   width: 1px;
   height: 24px;
