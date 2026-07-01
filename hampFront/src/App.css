@@ -386,6 +386,7 @@ button {
   justify-content: space-between;
   padding: 4px 2px;
   margin-top: 14px;
+  position: relative;
 }
 
 .paginationInfo {
@@ -397,6 +398,11 @@ button {
   display: flex;
   align-items: center;
   gap: 3px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
 }
 
 .pageBtn {
@@ -425,6 +431,16 @@ button {
   background: var(--primary);
   border-color: var(--primary);
   color: #fff;
+}
+
+.pageBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pageBtn svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* 다크모드 */

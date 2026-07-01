@@ -1,5 +1,10 @@
 import type { ReactNode } from 'react'
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/16/solid'
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
+} from '@heroicons/react/16/solid'
 import { DataTable } from '../DataTable'
 import { Panel } from '../Panel'
 
@@ -24,10 +29,17 @@ export function TablePanel({
 }: Props) {
   return (
     <Panel title={title} action={action} onAction={onAction}>
-      <DataTable headers={headers.filter((h, i, arr) => !(h === '관리' && arr.lastIndexOf('관리') !== i))} rows={rows} onRowClick={onRowClick} />
+      <DataTable
+        headers={headers.filter((h, i, arr) => !(h === '관리' && arr.lastIndexOf('관리') !== i))}
+        rows={rows}
+        onRowClick={onRowClick}
+      />
       <div className="paginationBar">
         <span className="paginationInfo">{totalCount}건</span>
         <div className="paginationBtns">
+          <button type="button" className="pageBtn" aria-label="첫 페이지">
+            <ChevronDoubleLeftIcon className="w-4 h-4" />
+          </button>
           <button type="button" className="pageBtn" aria-label="이전 페이지">
             <ChevronLeftIcon className="w-4 h-4" />
           </button>
@@ -42,6 +54,9 @@ export function TablePanel({
           ))}
           <button type="button" className="pageBtn" aria-label="다음 페이지">
             <ChevronRightIcon className="w-4 h-4" />
+          </button>
+          <button type="button" className="pageBtn" aria-label="마지막 페이지">
+            <ChevronDoubleRightIcon className="w-4 h-4" />
           </button>
         </div>
       </div>
