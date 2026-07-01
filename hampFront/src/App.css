@@ -472,11 +472,11 @@ button {
 }
 
 .brand {
-  width: 252px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
   flex-shrink: 0;
+  position: relative;
 }
 
 .brandInfo {
@@ -484,6 +484,7 @@ button {
   align-items: center;
   gap: 12px;
   overflow: hidden;
+  min-width: 0; 
 }
 
 .brandMark {
@@ -496,22 +497,12 @@ button {
   color: #fff;
   border-radius: 10px;
   font-weight: 900;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .brandText {
   overflow: hidden;
   white-space: nowrap;
-  max-width: 160px;
-  opacity: 1;
-  transition:
-    max-width 0.3s ease,
-    opacity 0.15s ease;
-}
-
-.mainContent.collapsed .brandText {
-  max-width: 0;
-  opacity: 0;
 }
 
 .brandText strong {
@@ -524,6 +515,64 @@ button {
   display: block;
   font-size: 11px;
   color: var(--text-sub);
+}
+
+.topbar h1 {
+  line-height: 1;
+  font-size: 26px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary, #8a8f98);
+}
+
+.breadcrumbHomeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 2px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-tertiary, #6b7280);
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.breadcrumbHomeBtn:hover {
+  color: var(--text-primary, #e5e7eb);
+  background-color: var(--hover-bg, rgba(255, 255, 255, 0.06));
+}
+
+.breadcrumbHomeIcon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-tertiary, #6b7280);
+}
+
+.breadcrumbSep {
+  width: 14px;
+  height: 14px;
+  color: var(--text-tertiary, #4b5563);
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.breadcrumbGroup {
+  color: var(--text-secondary, #9ca3af);
+  line-height: 1;
+}
+
+.breadcrumbCurrent {
+  color: var(--primary);
+  font-weight: 500;
+  line-height: 1;
 }
 
 /* Header right */
@@ -606,7 +655,7 @@ button {
   width: 1px;
   height: 24px;
   background: var(--border);
-  margin: 0 10px;
+  margin: 0 15px;
 }
 
 .headerUser {
@@ -614,6 +663,7 @@ button {
   align-items: center;
   gap: 8px;
   border-radius: 8px;
+  margin-right: 6px;
 }
 
 .headerAvatar {
@@ -893,20 +943,6 @@ button {
   gap: 18px;
   background: var(--bg-app);
   overflow-y: auto;
-}
-
-.topbar h1 {
-  margin-top: 10px;
-  line-height: 1;
-  font-size: 26px;
-}
-
-.breadcrumb {
-  color: var(--primary);
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 /* ================================

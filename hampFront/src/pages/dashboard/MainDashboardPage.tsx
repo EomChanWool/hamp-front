@@ -49,6 +49,8 @@ const FOOD_LINES: ProductionLine[] = [
   { id: "F-L2", name: "2라인", status: "warn", output: 820, target: 1200, process: "세척→건조→선별→포장" },
   { id: "F-L3", name: "3라인", status: "on", output: 960, target: 1000, process: "추출→농축→캡슐화" },
   { id: "F-L4", name: "4라인", status: "off", output: 0, target: 800, process: "오일→정제→병입" },
+  { id: "F-L4", name: "5라인", status: "off", output: 0, target: 800, process: "오일→정제→병입" },
+  { id: "F-L4", name: "6라인", status: "off", output: 0, target: 800, process: "오일→정제→병입" },
 ];
 
 const FIBER_LINES: ProductionLine[] = [
@@ -56,6 +58,8 @@ const FIBER_LINES: ProductionLine[] = [
   { id: "I-L2", name: "2라인", status: "on", output: 1100, target: 1100, process: "투입→개섬→정렬→포장" },
   { id: "I-L3", name: "3라인", status: "off", output: 0, target: 900, process: "압축→성형→검사" },
   { id: "I-L4", name: "4라인", status: "warn", output: 430, target: 800, process: "정렬→결속→출하" },
+  { id: "I-L4", name: "5라인", status: "warn", output: 430, target: 800, process: "정렬→결속→출하" },
+  { id: "I-L4", name: "6라인", status: "warn", output: 430, target: 800, process: "정렬→결속→출하" },
 ];
 
 const FOOD_DEFECTS: DefectStat[] = [
@@ -144,22 +148,24 @@ function KpiCard({
         <span className={styles.kpiCardDot} />
         <span className={styles.kpiCardLabel}>{label}</span>
       </div>
-      <div className={styles.kpiCardValueRow}>
-        <strong className={styles.kpiCardValue}>{value}</strong>
-        {unit && <span className={styles.kpiCardUnit}>{unit}</span>}
+      <div className={styles.kpiCardValueBox}>
+        <div className={styles.kpiCardValueRow}>
+          <strong className={styles.kpiCardValue}>{value}</strong>
+          {unit && <span className={styles.kpiCardUnit}>{unit}</span>}
+        </div>
+        {delta && (
+          <span className={`${styles.kpiCardDelta} ${delta.positive ? styles.deltaUp : styles.deltaDown}`}>
+            <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+              {delta.positive ? (
+                <path d="M5 1L9 7H1L5 1Z" fill="currentColor" />
+              ) : (
+                <path d="M5 9L1 3H9L5 9Z" fill="currentColor" />
+              )}
+            </svg>
+            {delta.value}
+          </span>
+        )}
       </div>
-      {delta && (
-        <span className={`${styles.kpiCardDelta} ${delta.positive ? styles.deltaUp : styles.deltaDown}`}>
-          <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-            {delta.positive ? (
-              <path d="M5 1L9 7H1L5 1Z" fill="currentColor" />
-            ) : (
-              <path d="M5 9L1 3H9L5 9Z" fill="currentColor" />
-            )}
-          </svg>
-          {delta.value}
-        </span>
-      )}
     </div>
   );
 }
@@ -186,7 +192,13 @@ function ProcessFlow({ processes }: { processes: ProcessUnit[] }) {
                   strokeWidth="1.5"
                   strokeDasharray={p.status === "off" ? "4 3" : "none"}
                 />
-                <polyline points="14,2 20,6 14,10" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinejoin="round" />
+                <polyline
+                  points="14,2 20,6 14,10"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  fill="none"
+                  strokeLinejoin="round"
+                />
               </svg>
             </div>
           )}
@@ -292,7 +304,9 @@ function DefectRadar({ defects, accent }: { defects: DefectStat[]; accent: strin
               dot={(dotProps: any) => {
                 const { cx, cy, index, key } = dotProps;
                 const color = defects[index]?.color ?? accent;
-                return <circle key={key} cx={cx} cy={cy} r={5} fill={color} stroke="var(--bg-card)" strokeWidth={1.5} />;
+                return (
+                  <circle key={key} cx={cx} cy={cy} r={5} fill={color} stroke="var(--bg-card)" strokeWidth={1.5} />
+                );
               }}
             />
             <Tooltip
@@ -420,12 +434,12 @@ function ProcessSection({
       </div>
 
       {/* 불량현황 */}
-      <div className={styles.panelCard}>
+      {/* <div className={styles.panelCard}>
         <div className={styles.panelTitle}>
           <span className={styles.panelName}>불량현황</span>
         </div>
         <DefectRadar defects={defects} accent={accent} />
-      </div>
+      </div> */}
     </div>
   );
 }
@@ -452,10 +466,28 @@ export function MainDashboardPage() {
 
       {/* 상단 KPI 요약 카드 */}
       <div className={styles.kpiCardGrid}>
-        <KpiCard label="총 생산량" value={totalOutput.toLocaleString()} unit="kg" delta={{ value: "4.2%", positive: true }} accent="#34d399" />
-        <KpiCard label="목표 대비 효율" value={`${totalEff}`} unit="%" delta={{ value: "1.8%", positive: true }} accent="#818cf8" />
+        <KpiCard
+          label="총 생산량"
+          value={totalOutput.toLocaleString()}
+          unit="kg"
+          delta={{ value: "4.2%", positive: true }}
+          accent="#34d399"
+        />
+        <KpiCard
+          label="목표 대비 효율"
+          value={`${totalEff}`}
+          unit="%"
+          delta={{ value: "1.8%", positive: true }}
+          accent="#818cf8"
+        />
         <KpiCard label="가동 라인" value={`${onLines}`} unit={`/ ${allLines.length}라인`} accent="#38bdf8" />
-        <KpiCard label="총 불량건" value={`${totalDefects}`} unit="건" delta={{ value: "0.6%", positive: false }} accent="#f87171" />
+        <KpiCard
+          label="총 불량건"
+          value={`${totalDefects}`}
+          unit="건"
+          delta={{ value: "0.6%", positive: false }}
+          accent="#f87171"
+        />
         <KpiCard label="평균 불량률" value={avgDefectRate} unit="%" accent="#fbbf24" />
       </div>
 
