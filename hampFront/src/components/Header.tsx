@@ -1,4 +1,11 @@
-import { MoonIcon, SunIcon, BellIcon, UserIcon, ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline";
+import {
+  MoonIcon,
+  SunIcon,
+  BellIcon,
+  UserIcon,
+  ArrowRightStartOnRectangleIcon,
+  HomeIcon,
+} from "@heroicons/react/24/outline";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
 type HeaderProps = {
@@ -12,17 +19,26 @@ type HeaderProps = {
   onLogoClick: () => void;
 };
 
-export function Header({ theme, onToggleTheme, onLogout, collapsed, onToggleCollapsed, onLogoClick }: HeaderProps) {
+export function Header({
+  activeGroup,
+  activeTitle,
+  theme,
+  onToggleTheme,
+  onLogout,
+  collapsed,
+  onToggleCollapsed,
+  onLogoClick,
+}: HeaderProps) {
   return (
     <header className="header">
-      <div
-        className="brand"
-        style={{ width: collapsed ? 'fit-content' : '252px', transition: 'width 0.3s ease', cursor: 'pointer' }}
-        onClick={onLogoClick}
-        role="button"
-        aria-label="메인 대시보드로 이동"
-      >
-        <div className="brandInfo">
+      <div className="brand" style={{ width: collapsed ? "100px" : "252px", transition: "width 0.3s ease" }}>
+        <div
+          className="brandInfo"
+          onClick={onLogoClick}
+          role="button"
+          aria-label="메인 대시보드로 이동"
+          style={{ cursor: "pointer" }}
+        >
           <div className="brandMark">H</div>
           {!collapsed && (
             <div className="brandText">
@@ -31,12 +47,31 @@ export function Header({ theme, onToggleTheme, onLogout, collapsed, onToggleColl
             </div>
           )}
         </div>
+
+        <button className={`sidebarToggle ${collapsed ? "collapsedToggle" : ""}`} onClick={onToggleCollapsed}>
+          {collapsed ? <ChevronRightIcon className="h-4 w-4" /> : <ChevronLeftIcon className="h-4 w-4" />}
+        </button>
       </div>
 
       <div className="headerRight">
-        <button className="sidebarToggle" onClick={onToggleCollapsed}>
-          {collapsed ? <ChevronRightIcon className="h-4 w-4" /> : <ChevronLeftIcon className="h-4 w-4" />}
-        </button>
+        <div className="topbar">
+          <div>
+            <nav className="breadcrumb" aria-label="현재 위치">
+              <button
+                type="button"
+                className="breadcrumbHomeBtn"
+                onClick={onLogoClick}
+                aria-label="메인 대시보드로 이동"
+              >
+                <HomeIcon className="h-4 w-4 breadcrumbHomeIcon" />
+              </button>
+              <ChevronRightIcon className="h-3 w-3 breadcrumbSep" />
+              <span className="breadcrumbGroup">{activeGroup}</span>
+              <ChevronRightIcon className="h-3 w-3 breadcrumbSep" />
+              <span className="breadcrumbCurrent">{activeTitle}</span>
+            </nav>
+          </div>
+        </div>
         <div className="headActions">
           {/* 알림 */}
           <button type="button" className="headerIconBtn" aria-label="알림">

@@ -115,12 +115,6 @@ export function AppShell({
         </aside>
 
         <main className="workspace">
-          <div className="topbar">
-            <div>
-              <span className="breadcrumb">{activeGroup}</span>
-              <h1>{activeTitle}</h1>
-            </div>
-          </div>
           {children}
         </main>
       </div>
