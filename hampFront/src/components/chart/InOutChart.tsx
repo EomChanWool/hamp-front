@@ -104,10 +104,7 @@ export function DashboardCharts({ pageType }: DashboardChartsProps) {
   const keysToDraw = ITEM_KEYS[pageType];
 
  return (
-  // 💡 사수의 코드처럼 공통 컴포넌트 <Panel>로 타이틀과 흰색 상자를 한 번에 처리합니다.
-  <Panel title={`${mainTitle} ${subTitle} 시간대별 현황`}>
-    
-    {/* 📊 Recharts 안정성을 위해 높이를 명시한 컨테이너 */}
+    <Panel title={`${mainTitle} ${subTitle} 시간대별 현황`}>    
     <div style={{ width: '100%', height: '220px' }}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={currentData.time} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
@@ -116,7 +113,6 @@ export function DashboardCharts({ pageType }: DashboardChartsProps) {
           <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
           <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #f3f4f6', fontSize: '11px' }} />
           
-          {/* 하단 컬럼명 범례 */}
           <Legend 
             verticalAlign="bottom" 
             align="center"
