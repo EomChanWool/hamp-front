@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   MoonIcon,
   SunIcon,
@@ -5,6 +6,7 @@ import {
   UserIcon,
   ArrowRightStartOnRectangleIcon,
   HomeIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
@@ -19,6 +21,19 @@ type HeaderProps = {
   onLogoClick: () => void;
 };
 
+type NotificationItem = {
+  id: string;
+  message: string;
+  time: string;
+};
+
+const initialNotifications: NotificationItem[] = [
+  { id: "1", message: "새로운 알림이 있습니다.", time: "2026.07.01 10:30" },
+  { id: "2", message: "새로운 알림이 있습니다.", time: "2026.07.01 10:30" },
+  { id: "3", message: "새로운 알림이 있습니다.", time: "2026.07.01 10:30" },
+  { id: "4", message: "새로운 알림이 있습니다.", time: "2026.07.01 10:30" },
+];
+
 export function Header({
   activeGroup,
   activeTitle,
@@ -29,6 +44,13 @@ export function Header({
   onToggleCollapsed,
   onLogoClick,
 }: HeaderProps) {
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
+
+  const removeNotification = (id: string) => {
+    setNotifications((prev) => prev.filter((item) => item.id !== id));
+  };
+
   return (
     <header className="header">
       <div className="brand" style={{ width: collapsed ? "100px" : "252px", transition: "width 0.3s ease" }}>
@@ -74,10 +96,53 @@ export function Header({
         </div>
         <div className="headActions">
           {/* 알림 */}
-          <button type="button" className="headerIconBtn" aria-label="알림">
-            <BellIcon className="h-5 w-5" />
-            <span className="headerBadgeDot" />
-          </button>
+          <div className="headerNotificationWrap">
+            <button
+              type="button"
+              className="headerIconBtn"
+              aria-label="알림"
+              onClick={() => setShowNotifications((prev) => !prev)}
+            >
+              <BellIcon className="h-5 w-5" />
+              {notifications.length > 0 && <span className="headerBadgeDot" />}
+            </button>
+
+            {/* 알림팝업 */}
+            {showNotifications && (
+              <div className="headerNotificationPopup">
+                <div className="headerPopupTopBox">
+                  <p>알림</p>
+                  <button
+                    type="button"
+                    className="headerPopupCloseBtn"
+                    aria-label="알림 닫기"
+                    onClick={() => setShowNotifications(false)}
+                  >
+                    <XMarkIcon className="h-4 w-4" />
+                  </button>
+                </div>
+                <ul className="headerPopup">
+                  {notifications.length === 0 && (
+                    <li className="headerPopupEmpty">알림이 없습니다.</li>
+                  )}
+                  {notifications.map((item) => (
+                    <li key={item.id} className="headerPopupContent">
+                      <p>{item.message}</p>
+                      <span className="headerPopupTime">{item.time}</span>
+                      <button
+                        type="button"
+                        className="headerListCloseBtn"
+                        aria-label="알림 삭제"
+                        onClick={() => removeNotification(item.id)}
+                      >
+                        <XMarkIcon className="h-4 w-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
 
           {/* 테마 토글 */}
           <button
