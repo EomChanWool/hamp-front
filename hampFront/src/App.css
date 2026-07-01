@@ -604,6 +604,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
 }
 
 .sidebarToggle {
@@ -665,6 +666,109 @@ button {
   border-radius: 999px;
   background: #ff5757;
   border: 1.5px solid var(--bg-card);
+}
+
+.headerNotificationPopup {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 220px;
+  padding: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  z-index: 100;
+}
+
+.headerPopupTopBox {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.headerPopupCloseBtn {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.headerPopupCloseBtn:hover {
+  background: var(--bg-app);
+  color: var(--text-heading);
+}
+
+.headerPopupCloseBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.headerPopup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.headerPopupContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  position: relative;
+  transition:
+    background 0.15s ease
+}
+
+.headerPopupContent:hover {
+  background: var(--primary-light);
+}
+
+.headerPopupContent p {
+  font-size: 12px;
+}
+
+.headerPopupTime {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.headerListCloseBtn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.headerListCloseBtn:hover {
+  background: var(--bg-card);
+  color: var(--text-heading);
+}
+
+.headerListCloseBtn svg {
+  width: 14px;
+  height: 14px;
 }
 
 .headerDivider {
