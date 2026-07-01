@@ -199,6 +199,11 @@ export const mesScreens = {
   inpiInventoryManage: list('인피 재고관리', ['처리 시작일', '처리 종료일', '처리구분', '품목명'], ['처리일자', '처리구분', '품목명', '수량', '단위', '창고위치', '담당자', '비고'], inpiItems.map((item, i) => [`2026-06-${14 + i}`, ['입고', '출고', '조정'][i % 3], item, `${60 + i * 18}`, 'kg', areas[i % areas.length], names[i], 'mock 재고 처리'])),
   ...productionSet('인피', inpiItems, ['투입', '개섬', '정렬', '압축', '포장']),
   ...qualitySet('인피', inpiItems),
+  //씨드,인피 입출고
+  seedInboundManage: list('씨드 입고관리', ['입고번호', '품명', '담당자', '입고처'], ['입고번호', '품명', '입고수량', '불량수량', '양품수량', '담당자', '입고처', '입고시간', '등록일시', '관리'], foodItems.map((item, i) => [`IN-${5000 + i}`, item, `${100 + i * 20} kg`, `${i % 5 === 1 ? 5 : 0} kg`, `${(100 + i * 20) - (i % 5 === 1 ? 5 : 0)} kg`, names[i], '씨드유통(주)', `10:${30 + i}:00`, dated(i, 15), '상세'])),
+  seedOutboundManage: list('씨드 출고관리', ['출고번호', '품명', 'Lot번호', '담당자'], ['출고번호', '품명', 'Lot번호', '출고량', '출고목적지', '담당자', '출고시간', '등록일시', '관리'], foodItems.map((item, i) => [`OUT-${5000 + i}`, item, `LOT-SEED-202606-${10 + i}`, `${80 + i * 15} kg`, '제 1 가공라인', names[i], `14:${10 + i}:00`, dated(i, 15), '상세'])),
+  inpiInboundManage: list('인피 입고관리', ['입고번호', '품명', '담당자', '입고처'], ['입고번호', '품명', '입고수량', '불량수량', '양품수량', '담당자', '입고처', '입고시간', '등록일시', '관리'], inpiItems.map((item, i) => [`IN-${6000 + i}`, item, `${150 + i * 30} kg`, `${i % 4 === 1 ? 8 : 0} kg`, `${(150 + i * 30) - (i % 4 === 1 ? 8 : 0)} kg`, names[i], '(주)인피테크', `09:${15 + i}:00`, dated(i, 15), '상세'])), 
+  inpiOutboundManage: list('인피 출고관리', ['출고번호', '품명', 'Lot번호', '담당자'], ['출고번호', '품명', 'Lot번호', '출고량', '출고목적지', '담당자', '출고시간', '등록일시', '관리'], inpiItems.map((item, i) => [`OUT-${6000 + i}`, item, `LOT-INPI-202606-${10 + i}`, `${100 + i * 20} kg`, '제 2 생산라인', names[i], `16:${20 + i}:00`, dated(i, 15), '상세'])),
 } as Record<ScreenKey, MesScreenDefinition>
 
 export function getStatusTone(status: string): StatusTone {

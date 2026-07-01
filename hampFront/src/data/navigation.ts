@@ -67,6 +67,16 @@ export const menuGroups: MenuGroup[] = [
     ],
   },
   {
+    title: '출고관리',
+    icon: CubeIcon,
+    items: [
+      { key: 'seedInboundManage', label: '씨드입고관리' },
+      { key: 'seedOutboundManage', label: '씨드출고관리' },
+      { key: 'inpiInboundManage', label: '인피입고관리' },
+      { key: 'inpiOutboundManage', label: '인피출고관리' },
+    ],
+  },
+  {
     title: '식품생산관리',
     icon: WrenchScrewdriverIcon,
     items: [

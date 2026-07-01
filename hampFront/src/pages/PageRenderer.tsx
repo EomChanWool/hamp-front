@@ -36,6 +36,12 @@ import { SeedInventoryStatusPage } from './seed/SeedInventoryStatusPage'
 import { SeedReportReturnManagePage } from './seed/SeedReportReturnManagePage'
 import { SeedInventoryManagePage } from './seed/SeedInventoryManagePage'
 
+//출고관리
+import { SeedInboundManagePage } from './ioSeed/SeedInboundManagePage'; 
+import { SeedOutboundManagePage } from './ioSeed/SeedOutboundManagePage';
+import { InpiInboundManagePage } from './ioInpi/InpiInboundManagePage';
+import { InpiOutboundManagePage } from './ioInpi/InpiOutboundManagePage';
+
 // 식품생산관리 + 식품품질검사
 import { FoodWorkOrdersPage } from './food/FoodWorkOrdersPage'
 import { FoodProductionResultsPage } from './food/FoodProductionResultsPage'
@@ -98,6 +104,12 @@ export function PageRenderer({ activeScreen }: Props) {
     case 'seedInventoryStatus':      return <SeedInventoryStatusPage />
     case 'seedReportReturnManage':   return <SeedReportReturnManagePage />
     case 'seedInventoryManage':      return <SeedInventoryManagePage />
+
+    //출고관리
+    case 'seedInboundManage':        return <SeedInboundManagePage />;
+    case 'seedOutboundManage':       return <SeedOutboundManagePage />;
+    case 'inpiInboundManage':        return <InpiInboundManagePage />;
+    case 'inpiOutboundManage':      return <InpiOutboundManagePage />;
 
     // 식품생산관리 + 식품품질검사
     case 'foodWorkOrders':            return <FoodWorkOrdersPage />

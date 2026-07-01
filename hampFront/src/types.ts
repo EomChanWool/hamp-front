@@ -41,7 +41,10 @@ export type ScreenKey =
   | 'inpiInspectionStandards'
   | 'inpiDefectManage'
   | 'inpiDefectStatus'
-
+  | 'seedInboundManage'
+  | 'seedOutboundManage'
+  | 'inpiInboundManage'
+  | 'inpiOutboundManage'
 export type StatusTone = 'good' | 'warn' | 'danger' | 'info' | 'muted' | 'limits'
 
 export interface MenuGroup {
