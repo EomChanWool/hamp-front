@@ -209,96 +209,129 @@
 /* ================================
    LOGIN
 ================================ */
-
 .loginPage {
   min-height: 100vh;
-  background:
-    linear-gradient(120deg, rgba(11, 31, 58, 0.92), rgba(16, 92, 112, 0.78)),
-    url("./assets/hero.png") center / 360px no-repeat,
-    #0b1f3a;
+  background: url("/src/assets/images/login-bg.png") no-repeat center center;
   display: grid;
   place-items: center;
   padding: 40px 20px;
 }
 
 .loginPanel {
-  width: min(1040px, 100%);
-  min-height: 580px;
-  display: grid;
-  grid-template-columns: 1.25fr 420px;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
-  overflow: hidden;
-}
-
-.loginCopy {
-  background: #0b1f3a;
-  color: #fff;
-  padding: 64px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 22px;
-}
-
-.loginCopy h1 {
-  font-size: 56px;
-  line-height: 1;
-  margin: 0;
-}
-.loginCopy p {
-  max-width: 520px;
-  color: #d8dee9;
-  font-size: 18px;
-}
-
-.eyebrow {
-  color: #00a6a6;
-  font-size: 13px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.loginFlow,
-.stepFlow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.loginFlow span,
-.stepFlow span {
-  border: 1px solid rgba(0, 166, 166, 0.36);
-  background: rgba(0, 166, 166, 0.12);
-  color: #0b6666;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.loginCopy .loginFlow span {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .loginForm {
-  padding: 64px 48px;
+  padding: 40px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 18px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.loginForm h2 {
+.loginLogo {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.loginLogo h2 {
   margin: 0 0 12px;
-  color: #0b1f3a;
+  color: #e0e0e0;
   font-size: 28px;
 }
-.loginForm p {
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 24px;
+}
+
+.loginForm label {
+  width: 300px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0 15px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  font-size: 10px;
+  position: relative;
+  color: var(--bg-subtle);
+  transition: all 0.2s ease;
+}
+
+.loginForm label input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 14px;
+  padding: 0;
+  font-weight: 500;
+}
+
+.loginForm label input::placeholder {
+  color: #fff;
+  opacity: 0.5;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.loginForm label input:focus {
+  border: none;
+  box-shadow: none;
+}
+
+.loginForm label:has(input:focus) {
+  border-color: var(--primary-light);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.loginForm label input:-webkit-autofill,
+.loginForm label input:-webkit-autofill:hover,
+.loginForm label input:-webkit-autofill:focus,
+.loginForm label input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+  -webkit-text-fill-color: #fff !important;
+  caret-color: #fff;
+  transition: background-color 5000s ease-in-out 0s; /* 배경 강제 적용 지연시켜서 안 보이게 */
+}
+
+.loginForm label svg {
+  width: 18px;
+  height: 18px;
+  opacity: 0.7;
+}
+
+.loginForm .primaryButton {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--primary-hover);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.loginForm .primaryButton:hover {
+  background: var(--primary);
+}
+
+.loginForm > p {
   color: #748094;
   font-size: 13px;
+  text-align: center;
 }
 
 /* ================================

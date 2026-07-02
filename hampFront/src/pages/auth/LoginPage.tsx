@@ -1,32 +1,28 @@
+import { LockClosedIcon, UserCircleIcon } from "@heroicons/react/24/outline";
+
 type LoginPageProps = {
-  onLogin: () => void
-}
+  onLogin: () => void;
+};
 
 export function LoginPage({ onLogin }: LoginPageProps) {
   return (
     <main className="loginPage">
       <section className="loginPanel">
-        <div className="loginCopy">
-          <span className="eyebrow">React + Spring Boot + Redis + Mosquitto</span>
-          <h1>HEMP-MES</h1>
-          <p>입고, LOT, 생산, 품질, 설비 상태를 하나의 운영 화면에서 관리합니다.</p>
-          <div className="loginFlow">
-            {['입고', 'LOT', '작업지시', '생산실적', '재고', '품질', '설비'].map((step) => (
-              <span key={step}>{step}</span>
-            ))}
-          </div>
-        </div>
-
         <form className="loginForm" onSubmit={(event) => event.preventDefault()}>
-          <h2>HEMP-MES Login</h2>
-          <label>
-            아이디
-            <input defaultValue="admin" type="text" />
-          </label>
-          <label>
-            비밀번호
-            <input defaultValue="password" type="password" />
-          </label>
+          <div className="loginLogo">
+            <div className="brandMark">H</div>
+            <h2>HEMP-MES</h2>
+          </div>
+          <div className="inputGroup">
+            <label htmlFor="username">
+              <input id="username" defaultValue="admin" type="text" placeholder="아이디" />
+              <UserCircleIcon className="inputIcon" />
+            </label>
+            <label htmlFor="password">
+              <input id="password" defaultValue="password" type="password" placeholder="비밀번호" />
+              <LockClosedIcon className="inputIcon" />
+            </label>
+          </div>
           <button type="button" className="primaryButton" onClick={onLogin}>
             로그인
           </button>
@@ -34,5 +30,5 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         </form>
       </section>
     </main>
-  )
+  );
 }
