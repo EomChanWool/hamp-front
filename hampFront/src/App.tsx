@@ -6,6 +6,7 @@ import { PageRenderer } from "./pages/PageRenderer";
 import type { ScreenKey } from "./types";
 import "./App.css";
 
+
 const SESSION_KEY = "hemp_mes_demo_session";
 
 const screenKeys = new Set<ScreenKey>(Object.keys(screenTitles) as ScreenKey[]);

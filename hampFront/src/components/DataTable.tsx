@@ -18,11 +18,13 @@ export function DataTable({ headers, rows, onRowClick }: DataTableProps) {
   return (
     <div className="tableWrap">
       <table>
+        // DataTable.tsx
         <colgroup>
-          {headers.map((_, i) => (
-            <col key={i} />
-          ))}
-        </colgroup>
+          {headers.map((_h, i) => {
+            const isLast = i === headers.length - 1;
+            return <col key={i} style={{ width: isLast ? '150px' : 'auto' }} />;
+           })}
+         </colgroup>
         <thead>
           <tr>
             {headers.map((h) => (

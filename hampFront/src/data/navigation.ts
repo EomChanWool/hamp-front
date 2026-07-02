@@ -58,6 +58,17 @@ export const menuGroups: MenuGroup[] = [
     ],
   },
   {
+    title: '영업관리',
+    icon: ClipboardDocumentCheckIcon,
+    items: [
+      { key: 'orderManage', label: '수주관리' },
+      { key: 'deliveryManage', label: '납품관리' },
+      { key: 'orderStatus', label: '수주현황' },
+      { key: 'deliveryStatus', label: '납품현황' },
+      { key: 'orderPerformance', label: '수주실적현황' },
+    ]
+  },
+  {
     title: '씨드관리',
     icon: CubeIcon,
     items: [
@@ -66,16 +77,7 @@ export const menuGroups: MenuGroup[] = [
       { key: 'seedInventoryManage', label: '재고관리' },
     ],
   },
-  {
-    title: '출고관리',
-    icon: CubeIcon,
-    items: [
-      { key: 'seedInboundManage', label: '씨드입고관리' },
-      { key: 'seedOutboundManage', label: '씨드출고관리' },
-      { key: 'inpiInboundManage', label: '인피입고관리' },
-      { key: 'inpiOutboundManage', label: '인피출고관리' },
-    ],
-  },
+  
   {
     title: '식품생산관리',
     icon: WrenchScrewdriverIcon,
@@ -120,6 +122,16 @@ export const menuGroups: MenuGroup[] = [
       { key: 'inpiInspectionStandards', label: '검사기준서' },
       { key: 'inpiDefectManage', label: '불량관리' },
       { key: 'inpiDefectStatus', label: '불량현황' },
+    ],
+  },
+  {
+    title: '출고관리',
+    icon: CubeIcon,
+    items: [
+      { key: 'seedInboundManage', label: '씨드입고관리' },
+      { key: 'seedOutboundManage', label: '씨드출고관리' },
+      { key: 'inpiInboundManage', label: '인피입고관리' },
+      { key: 'inpiOutboundManage', label: '인피출고관리' },
     ],
   },
 ]

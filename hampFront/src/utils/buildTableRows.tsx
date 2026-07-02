@@ -142,3 +142,17 @@ export function buildTableRows(
     ];
   });
 }
+export function buildOrderTableRows(
+  rows: any[],
+  columnCount: number,
+): Array<Array<React.ReactNode>> {
+  return rows.map((row) => {
+    return Array.from({ length: columnCount }, (_, i) => row[`c${i}`] ?? "");
+  });
+}
+//DeliveryTableRows
+export function buildDeliveryTableRows(rows: any[], columnCount: number, _columns: string[]) {
+  return rows.map((row) => {
+    return Array.from({ length: columnCount }, (_, i) => row[`c${i}`] ?? "");
+  });
+}
