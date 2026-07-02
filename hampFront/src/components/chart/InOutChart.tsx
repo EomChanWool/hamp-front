@@ -8,9 +8,9 @@ import {
   CartesianGrid,
   Tooltip,
   Legend, 
-  BarChart,
-  Bar,
-  Cell
+  // BarChart,
+  // Bar,
+  // Cell
 } from 'recharts';
 import { Panel } from '../Panel'
 
@@ -107,7 +107,7 @@ export function DashboardCharts({ pageType }: DashboardChartsProps) {
     <Panel title={`${mainTitle} ${subTitle} 시간대별 현황`}>    
     <div style={{ width: '100%', height: '220px' }}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={currentData.time} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+        <LineChart data={currentData.time as any[]} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
           <XAxis dataKey="time" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />

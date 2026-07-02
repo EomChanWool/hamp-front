@@ -45,6 +45,11 @@ export type ScreenKey =
   | 'seedOutboundManage'
   | 'inpiInboundManage'
   | 'inpiOutboundManage'
+  | 'deliveryManage'
+  | 'deliveryStatus'
+  | 'orderManage'
+  | 'orderPerformance'
+  | 'orderStatus'
 export type StatusTone = 'good' | 'warn' | 'danger' | 'info' | 'muted' | 'limits'
 
 export interface MenuGroup {

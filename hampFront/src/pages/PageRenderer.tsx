@@ -62,6 +62,14 @@ import { InpiInspectionStandardsPage } from './inpi/InpiInspectionStandardsPage'
 import { InpiDefectManagePage } from './inpi/InpiDefectManagePage'
 import { InpiDefectStatusPage } from './inpi/InpiDefectStatusPage'
 
+//영업관리 
+import {DeliveryManagePage} from './sales/DeliveryManagePage'
+import {DeliveryStatusPage} from './sales/DeliveryStatusPage'
+import {OrderManagePage} from './sales/OrderManagePage'
+import {OrderStatusPage} from './sales/OrderStatusPage'
+import {OrderPerformancePage } from './sales/OrderPerformancePage'
+
+
 type Props = {
   activeScreen: ScreenKey
   setActiveScreen: (key: ScreenKey) => void
@@ -130,6 +138,13 @@ export function PageRenderer({ activeScreen }: Props) {
     case 'inpiInspectionStandards':   return <InpiInspectionStandardsPage />
     case 'inpiDefectManage':          return <InpiDefectManagePage />
     case 'inpiDefectStatus':          return <InpiDefectStatusPage />
+
+    //영업관리
+    case 'deliveryManage':            return <DeliveryManagePage />
+    case 'deliveryStatus':            return <DeliveryStatusPage />
+    case 'orderManage':               return <OrderManagePage />
+    case 'orderPerformance':          return <OrderPerformancePage />
+    case 'orderStatus':               return <OrderStatusPage />
 
     default:
       return null
