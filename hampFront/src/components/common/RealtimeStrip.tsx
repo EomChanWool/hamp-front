@@ -2,6 +2,7 @@ type Props = {
   updatedAt: Date
 }
 
+/** 실시간(mock) 갱신 상태와 마지막 갱신 시각을 보여주는 얇은 상태 바 */
 export function RealtimeStrip({ updatedAt }: Props) {
   return (
     <div className="realtimeStrip">

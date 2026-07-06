@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { CheckIcon } from '@heroicons/react/16/solid'
-import { menuGroups } from '../../data/navigation'
+import { menuRoutes } from '@/router'
 
 const ROLES = [
   { name: '시스템관리자', count: 12, desc: '모든 메뉴 및 기능에 접근 가능한 최고 권한 그룹입니다.' },
@@ -18,8 +18,9 @@ function hasPermission(roleIndex: number, permIndex: number, menuIndex: number):
   return permIndex < maxPerm[roleIndex] && menuIndex < maxMenu[permIndex]
 }
 
+/** 역할별로 메뉴 접근 권한(조회/등록/수정/삭제/승인)을 매트릭스로 보여주고 토글하는 컴포넌트 */
 export function PermissionBoard() {
-  const menus = menuGroups.flatMap((group) =>
+  const menus = menuRoutes.flatMap((group) =>
     group.items.map((item) => ({ label: `${group.title} / ${item.label}`, key: item.key })),
   )
 

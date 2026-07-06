@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { Badge } from "../components/Badge";
-import { getStatusTone } from "../data/mesScreens";
-import type { MesRow } from "../data/mesScreens";
-import type { StatusTone } from "../types";
+import { Badge } from "@components/common/Badge";
+import { getStatusTone } from "@/data/mesScreens";
+import type { MesRow } from "@/data/mesScreens";
+import type { StatusTone } from "@/types";
 
 const BADGE_COLUMNS = new Set([
   "사용여부",

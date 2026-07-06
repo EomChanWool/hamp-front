@@ -1,10 +1,16 @@
 import { LockClosedIcon, UserCircleIcon } from "@heroicons/react/24/outline";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
-type LoginPageProps = {
-  onLogin: () => void;
-};
+export function LoginPage() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-export function LoginPage({ onLogin }: LoginPageProps) {
+  const handleLogin = () => {
+    login();
+    navigate("/");
+  };
+
   return (
     <main className="loginPage">
       <section className="loginPanel">
@@ -23,7 +29,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               <LockClosedIcon className="inputIcon" />
             </label>
           </div>
-          <button type="button" className="primaryButton" onClick={onLogin}>
+          <button type="button" className="primaryButton" onClick={handleLogin}>
             로그인
           </button>
           <p>백엔드 연결 전 임시 로그인입니다.</p>

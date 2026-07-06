@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Badge } from '../Badge'
-import { getStatusTone } from '../../data/mesScreens'
-import type { MesRow } from '../../data/mesScreens'
+import { Badge } from '@components/common/Badge'
+import { getStatusTone } from '@/data/mesScreens'
+import type { MesRow } from '@/data/mesScreens'
 
 type Props = {
   rows: MesRow[]
@@ -18,6 +18,7 @@ function useClock() {
   return time
 }
 
+/** CCTV 카메라 목록을 실시간 시계가 붙은 카드 그리드로 보여주는 컴포넌트 */
 export function CctvGrid({ rows }: Props) {
   const time = useClock()
 

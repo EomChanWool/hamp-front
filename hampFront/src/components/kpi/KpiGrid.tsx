@@ -5,7 +5,7 @@ import {
   CloudIcon,
   SparklesIcon,
 } from '@heroicons/react/16/solid'
-import type { StatusTone } from '../../types'
+import type { StatusTone } from '@/types'
 
 type KpiItem = {
   label: string
@@ -31,6 +31,7 @@ type Props = {
   pulse?: number
 }
 
+/** KPI 지표 카드들을 그리드로 보여주는 컴포넌트. 다크모드 전환에 맞춰 아이콘 색상도 함께 바뀜 */
 export function KpiGrid({ kpis, pulse = 0 }: Props) {
   const [isDark, setIsDark] = useState(
     () => document.documentElement.getAttribute('data-theme') === 'dark',

@@ -1,4 +1,4 @@
-import type { ScreenKey, StatusTone } from '../types'
+import type { ScreenKey, StatusTone } from '@/types'
 
 export type MesRow = Record<string, string>
 

@@ -7,8 +7,8 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts'
-import { Panel } from '../Panel'
-import type { StatusTone } from '../../types'
+import { Panel } from '@components/card/Panel'
+import type { StatusTone } from '@/types'
 
 type ChartItem = {
   label: string
@@ -25,6 +25,7 @@ type Props = {
 const COLORS = ['#38bdf8', '#57d3a1', '#f59e0b', '#a78bfa', '#f472b6']
 const HOURS = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00']
 
+/** 여러 지표를 시간대별 area 차트로 그려주는 공용 차트 컴포넌트 (대시보드/모니터링 화면에서 사용) */
 export function MesAreaChart({ title, items, pulse = 0 }: Props) {
   const data = HOURS.map((hour, hi) => {
     const entry: Record<string, string | number> = { time: hour }

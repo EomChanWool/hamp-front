@@ -199,6 +199,7 @@ interface DefectRadarChartProps {
   colorMode?: "dark" | "light";
 }
 
+/** 불량 유형별 발생 현황을 레이더 차트 + 요약 배지로 보여주는 컴포넌트 (mock 데이터 기반) */
 export function DefectRadarChart({ colorMode = "dark" }: DefectRadarChartProps) {
   const cssVars = colorMode === "light" ? LIGHT_VARS : DARK_VARS;
   const mode    = colorMode === "light" ? "light" : "dark";

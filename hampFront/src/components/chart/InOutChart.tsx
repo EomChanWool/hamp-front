@@ -12,7 +12,7 @@ import {
   // Bar,
   // Cell
 } from 'recharts';
-import { Panel } from '../Panel'
+import { Panel } from '@components/card/Panel'
 
 
 const MOCK_DATA = {
@@ -95,6 +95,7 @@ interface DashboardChartsProps {
   pageType: 'seedInbound' | 'seedOutbound' | 'inpiInbound' | 'inpiOutbound';
 }
 
+/** 씨드/인피 입출고 페이지의 시간대별 처리 현황을 라인 차트로 보여주는 컴포넌트 (mock 데이터 기반) */
 export function DashboardCharts({ pageType }: DashboardChartsProps) {
   const currentData = MOCK_DATA[pageType];
   

@@ -1573,6 +1573,21 @@ tbody tr:hover td {
   background: none;
 }
 
+.searchBand .serchItem .dateRangeLabel {
+  grid-column: span 2;
+}
+
+.searchBand .serchItem .dateRangeGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.searchBand .serchItem .dateRangeGroup input {
+  flex: 1;
+  min-width: 0;
+}
+
 .locationGrid,
 .sensorPanel {
   display: grid;
