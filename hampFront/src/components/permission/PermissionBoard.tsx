@@ -21,7 +21,7 @@ function hasPermission(roleIndex: number, permIndex: number, menuIndex: number):
 /** 역할별로 메뉴 접근 권한(조회/등록/수정/삭제/승인)을 매트릭스로 보여주고 토글하는 컴포넌트 */
 export function PermissionBoard() {
   const menus = menuRoutes.flatMap((group) =>
-    group.items.map((item) => ({ label: `${group.title} / ${item.label}`, key: item.key })),
+    group.items.map((item) => ({ label: `${group.title} / ${item.name}`, key: item.key })),
   )
 
   const [activeRole, setActiveRole] = useState(0)
