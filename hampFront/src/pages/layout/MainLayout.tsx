@@ -1,70 +1,46 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Navigate, Outlet } from 'react-router-dom'
 import { AppShell } from '@pages/layout/AppShell'
 import { useAuth } from '@/context/AuthContext'
-import { defaultScreen, menuRoutes } from '@/router'
-import type { ScreenKey } from '@/types'
 
 export function MainLayout() {
   const { isAuthenticated, logout } = useAuth()
-  const navigate = useNavigate()
-  const location = useLocation()
   const [theme, setTheme] = useState<'dark' | 'light'>('light')
 
+  // 테마(Theme) 상태 반영
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
-  // menuRoutes/defaultScreen은 router와 순환 참조 관계이므로,
-  // 모듈 최상위가 아니라 렌더 시점(컴포넌트 본문)에서만 사용한다.
-  const screenKeys = useMemo(
-    () => new Set<ScreenKey>([defaultScreen, ...menuRoutes.flatMap((group) => group.items.map((item) => item.key))]),
-    [],
-  )
-  const screenLabels = useMemo(
-    () =>
-      new Map<ScreenKey, string>([
-        [defaultScreen, '메인 대시보드'],
-        ...menuRoutes.flatMap((group) => group.items.map((item) => [item.key, item.label] as const)),
-      ]),
-    [],
-  )
-
-  const activeScreen = useMemo(() => {
-    const key = location.pathname === '/' ? defaultScreen : location.pathname.replace(/^\//, '')
-    return screenKeys.has(key as ScreenKey) ? (key as ScreenKey) : defaultScreen
-  }, [location.pathname, screenKeys])
-
-  const activeTitle = screenLabels.get(activeScreen) ?? ''
-  const activeGroup = useMemo(
-    () => menuRoutes.find((group) => group.items.some((item) => item.key === activeScreen))?.title ?? '시스템관리',
-    [activeScreen],
-  )
-
+  // 1. 비로그인 상태면 로그인 페이지로 즉시 튕겨냅니다.
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
 
-  const handleScreenChange = (screen: ScreenKey) => {
-    navigate(screen === defaultScreen ? '/' : `/${screen}`)
+  // 2. 테마 토글 및 로그아웃 핸들러
+  const handleToggleTheme = () => {
+    setTheme((t) => (t === 'light' ? 'dark' : 'light'))
   }
 
   const handleLogout = () => {
     logout()
-    navigate('/login')
+    // 라우터 Navigate 처리가 있으므로 상태 변경 시 자동 튕김이 안 될 경우를 대비해 수동 처리도 가능하지만, 
+    // 보통 logout() 내부에서 인증 상태가 false가 되면 이 컴포넌트 상단 조건문에서 걸러집니다.
   }
 
   return (
     <AppShell
-      activeScreen={activeScreen}
-      activeGroup={activeGroup}
-      activeTitle={activeTitle}
       theme={theme}
-      onToggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
-      onScreenChange={handleScreenChange}
+      onToggleTheme={handleToggleTheme}
       onLogout={handleLogout}
     >
+      {/* 
+        AppShell 내부의 {children} 영역으로 
+        현재 주소(URL)에 일치하는 서브 페이지 컴포넌트들이 실시간 렌더링됩니다.
+      */}
       <Outlet />
     </AppShell>
   )
 }
+
+export default MainLayout;
