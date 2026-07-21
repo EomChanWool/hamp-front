@@ -136,7 +136,7 @@ export function MasterFactoriesPage() {
         ),
       },
     ],
-    [],
+    [factories, searchParams],
   )
 
   const detailFields = [

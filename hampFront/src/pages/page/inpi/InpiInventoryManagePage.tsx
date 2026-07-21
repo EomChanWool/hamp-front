@@ -6,16 +6,7 @@ import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
 
-interface InpiInventoryTransaction {
-  processedAt: string
-  transactionType: string
-  itemName: string
-  quantity: string
-  unit: string
-  warehouseLocation: string
-  manager: string
-  note: string
-}
+import { fetchInpiInventory, deleteInpiInventory, updateInpiInventory, type InpiInventoryTransaction, type InpiInventorySearchParam } from '@/services/inpi/InpiInventoryManagePage'
 
 const TRANSACTION_TYPE_COLORS: Record<string, string> = {
   입고: '#34d399',
@@ -23,19 +14,12 @@ const TRANSACTION_TYPE_COLORS: Record<string, string> = {
   조정: '#94a3b8',
 }
 
-const dummyInventoryTransactions: InpiInventoryTransaction[] = [
-  { processedAt: '2026-06-14', transactionType: '입고', itemName: '인피 원면', quantity: '60', unit: 'kg', warehouseLocation: 'A동 원료실', manager: '김민준', note: 'mock 재고 처리' },
-  { processedAt: '2026-06-15', transactionType: '출고', itemName: '인피 섬유', quantity: '78', unit: 'kg', warehouseLocation: 'B동 생산실', manager: '이서연', note: 'mock 재고 처리' },
-  { processedAt: '2026-06-16', transactionType: '조정', itemName: '인피 매트', quantity: '96', unit: 'kg', warehouseLocation: 'C동 포장실', manager: '박지훈', note: 'mock 재고 처리' },
-  { processedAt: '2026-06-17', transactionType: '입고', itemName: '인피 패드', quantity: '114', unit: 'kg', warehouseLocation: '품질검사실', manager: '최유진', note: 'mock 재고 처리' },
-  { processedAt: '2026-06-18', transactionType: '출고', itemName: '인피 롤', quantity: '132', unit: 'kg', warehouseLocation: '저온창고', manager: '정도윤', note: 'mock 재고 처리' },
-  { processedAt: '2026-06-19', transactionType: '조정', itemName: '인피 보드', quantity: '150', unit: 'kg', warehouseLocation: '출하장', manager: '한수아', note: 'mock 재고 처리' },
-]
-
 const PAGE_SIZE = 10
 
 export function InpiInventoryManagePage() {
-  const [filteredTransactions, setFilteredTransactions] = useState<InpiInventoryTransaction[]>(dummyInventoryTransactions)
+  const [inpiInventory, setInpiInventory] = useState<InpiInventoryTransaction[]>([])
+  const [searchParams, setSearchParams] = useState<InpiInventorySearchParam>({})
+  const [isLoading, setIsLoading] = useState(false)
   const [modalTransaction, setModalTransaction] = useState<InpiInventoryTransaction | null>(null)
   const [page, setPage] = useState(0)
 
@@ -50,53 +34,67 @@ export function InpiInventoryManagePage() {
     { type: 'input', label: '품목명', ref: itemNameRef },
   ]
 
-  const handleSearch = () => {
-    const start = processedStartRef.current?.value ?? ''
-    const end = processedEndRef.current?.value ?? ''
-    const transactionType = transactionTypeRef.current?.value.trim() ?? ''
-    const itemName = itemNameRef.current?.value.trim() ?? ''
+  const loadInpiInventory = async (params: InpiInventorySearchParam) => {
+    setIsLoading(true)
+    try {
+      const data = await fetchInpiInventory(params)
+      setInpiInventory(data)
+      setPage(0) // 검색 조건이 바뀌면 페이지를 첫 페이지로 초기화
+    } catch (error) {
+      console.error(error)
+      window.alert('데이터를 불러오는 중 오류가 발생했습니다.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
-    // 현재는 더미재고처리에 필터로 걸러내고 있는데 추후에 api 연동할 것
-    setFilteredTransactions(
-      dummyInventoryTransactions.filter((transaction) => {
-        const date = transaction.processedAt.slice(0, 10)
-        return (
-          (!start || date >= start) &&
-          (!end || date <= end) &&
-          (!transactionType || transaction.transactionType.includes(transactionType)) &&
-          (!itemName || transaction.itemName.includes(itemName))
-        )
-      }),
-    )
+  useEffect(() => {
+    loadInpiInventory(searchParams)
+  }, [searchParams])
+
+  const handleSearch = () => {
+    const params: InpiInventorySearchParam = {
+      start: processedStartRef.current?.value.trim(),
+      end: processedEndRef.current?.value.trim(),
+      transactionType: transactionTypeRef.current?.value.trim(),
+      itemName: itemNameRef.current?.value.trim(),
+    }
+    setSearchParams(params)
   }
 
   const handleReset = () => {
     ;[processedStartRef, processedEndRef, transactionTypeRef, itemNameRef].forEach((ref) => {
       if (ref.current) ref.current.value = ''
     })
-    setFilteredTransactions(dummyInventoryTransactions)
+    setSearchParams({})
   }
 
-  const handleDelete = (transaction: InpiInventoryTransaction) => {
+  const handleDelete = async (transaction: InpiInventoryTransaction) => {
     if (window.confirm(`${transaction.processedAt} ${transaction.itemName} 재고 처리 건을 삭제할까요?`)) {
-      setFilteredTransactions((prev) => prev.filter((t) => t !== transaction))
-      window.alert('mock data에서만 삭제되었습니다.')
+      try {
+        await deleteInpiInventory(transaction.itemName)
+        window.alert('삭제되었습니다.')
+        loadInpiInventory(searchParams) // 삭제 후 목록 리로드
+      } catch (err) {
+        window.alert('삭제에 실패했습니다.')
+      }
     }
   }
 
-  const handleSave = (updated: Record<string, string>) => {
-    setFilteredTransactions((prev) => prev.map((t) => (t === modalTransaction ? ({ ...t, ...updated } as InpiInventoryTransaction) : t)))
-    setModalTransaction(null)
-    window.alert('화면 상태에만 저장되었습니다.')
+  const handleSave = async (updated: Record<string, string>) => {
+    if (!modalTransaction) return
+    try {
+      await updateInpiInventory(modalTransaction.itemName, updated)
+      window.alert('저장되었습니다.')
+      setModalTransaction(null)
+      loadInpiInventory(searchParams)
+    } catch (err) {
+      window.alert('저장에 실패했습니다.')
+    }
   }
 
-  // 검색 결과가 바뀌면 페이지를 처음으로 되돌리기
-  useEffect(() => {
-    setPage(0)
-  }, [filteredTransactions])
-
-  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE))
-  const pagedTransactions = filteredTransactions.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+  const totalPages = Math.max(1, Math.ceil(inpiInventory.length / PAGE_SIZE))
+  const pagedTransactions = inpiInventory.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
   const columns: ColumnDef<InpiInventoryTransaction>[] = useMemo(
     () => [
@@ -146,7 +144,7 @@ export function InpiInventoryManagePage() {
         ),
       },
     ],
-    [],
+    [inpiInventory, searchParams],
   )
 
   const detailFields = [
@@ -165,8 +163,14 @@ export function InpiInventoryManagePage() {
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
       <Panel title="인피 재고관리 목록" action="등록" onAction={() => window.alert('mock 동작입니다.')}>
-        <CusTable data={pagedTransactions} columns={columns} onRowClick={setModalTransaction} />
-        <CusPagination page={page} totalPages={totalPages} totalCount={filteredTransactions.length} onPageChange={setPage} />
+        {isLoading ? (
+          <div className="py-10 text-center text-gray-500">데이터를 불러오는 중입니다...</div>
+        ) : (
+          <>
+            <CusTable data={pagedTransactions} columns={columns} onRowClick={setModalTransaction} />
+            <CusPagination page={page} totalPages={totalPages} totalCount={inpiInventory.length} onPageChange={setPage} />
+          </>
+        )}
       </Panel>
 
       <RowDetailModal

@@ -165,7 +165,7 @@ export function FacilityAccessManagePage() {
         ),
       },
     ],
-    [],
+    [accessRequest, searchParams],
   )
 
   const detailFields = [

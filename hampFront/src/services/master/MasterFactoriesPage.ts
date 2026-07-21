@@ -34,11 +34,11 @@ export const fetchFactories = async (params?: FactorySearchParams): Promise<Fact
       if (!params) return resolve(dummyFactories)
       
       const filtered = dummyFactories.filter(
-        (user) =>
-          (!params.code || user.code.includes(params.code)) &&
-          (!params.name || user.name.includes(params.name)) &&
-          (!params.manager || user.manager.includes(params.manager)) &&
-          (!params.status || user.status.includes(params.status)),
+        (factories) =>
+          (!params.code || factories.code.includes(params.code)) &&
+          (!params.name || factories.name.includes(params.name)) &&
+          (!params.manager || factories.manager.includes(params.manager)) &&
+          (!params.status || factories.status.includes(params.status)),
       )
       resolve(filtered)
     }, 300)

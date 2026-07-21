@@ -43,17 +43,17 @@ export const fetchOrders = async (params?: OrderSearchParams): Promise<OrderMana
       if (!params) return resolve(dummyOrders)
       
       const filtered = dummyOrders.filter(
-        (user) =>
-          (!params.client || user.client.includes(params.client)) &&
-          (!params.orderNo || user.orderNo.includes(params.orderNo)) &&
-          (!params.clientManager || user.clientManager.includes(params.clientManager)) &&
-          (!params.productItem || user.productItem.includes(params.productItem)) &&
-          (!params.quantity || user.quantity.includes(params.quantity)) &&
-          (!params.orderAmount || user.orderAmount.includes(params.orderAmount)) &&
-          (!params.dueDate || user.dueDate.includes(params.dueDate)) &&
-          (!params.status || user.status.includes(params.status)) &&
-          (!params.manager || user.manager.includes(params.manager)) &&
-          (!params.note || user.note.includes(params.note)),
+        (order) =>
+          (!params.client || order.client.includes(params.client)) &&
+          (!params.orderNo || order.orderNo.includes(params.orderNo)) &&
+          (!params.clientManager || order.clientManager.includes(params.clientManager)) &&
+          (!params.productItem || order.productItem.includes(params.productItem)) &&
+          (!params.quantity || order.quantity.includes(params.quantity)) &&
+          (!params.orderAmount || order.orderAmount.includes(params.orderAmount)) &&
+          (!params.dueDate || order.dueDate.includes(params.dueDate)) &&
+          (!params.status || order.status.includes(params.status)) &&
+          (!params.manager || order.manager.includes(params.manager)) &&
+          (!params.note || order.note.includes(params.note)),
 
       )
       resolve(filtered)
