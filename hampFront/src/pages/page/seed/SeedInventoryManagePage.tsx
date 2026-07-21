@@ -12,7 +12,7 @@ import {
   updateSeedInventory,
   type SeedInventoryRow,
   type SeedInventorySearchParams,
-} from '@/services/seed/seed'
+} from '@/services/seed/SeedInventoryManagePage'
 
 const PROCESS_TYPE_COLORS: Record<string, string> = {
   입고: '#34d399',

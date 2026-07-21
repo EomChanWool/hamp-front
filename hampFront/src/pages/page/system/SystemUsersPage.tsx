@@ -8,7 +8,7 @@ import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
 
 // ── [변경] API 서비스 함수 및 타입 가져오기 ──────────────────────────────
-import { fetchSystemUsers, deleteSystemUser, updateSystemUser, type SystemUser, type UserSearchParams } from '@/services/system/system'
+import { fetchSystemUsers, deleteSystemUser, updateSystemUser, type SystemUser, type UserSearchParams } from '@/services/system/SystemUsersPage'
 
 const PAGE_SIZE = 10
 
