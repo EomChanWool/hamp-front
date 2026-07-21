@@ -6,15 +6,13 @@ import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
 
-interface SeedInventoryRow {
-  processDate: string
-  processType: string
-  itemName: string
-  quantity: string
-  unit: string
-  manager: string
-  note: string
-}
+import {
+  fetchSeedInventory,
+  deleteSeedInventory,
+  updateSeedInventory,
+  type SeedInventoryRow,
+  type SeedInventorySearchParams,
+} from '@/services/seed/seed'
 
 const PROCESS_TYPE_COLORS: Record<string, string> = {
   입고: '#34d399',
@@ -22,19 +20,13 @@ const PROCESS_TYPE_COLORS: Record<string, string> = {
   조정: '#94a3b8',
 }
 
-const dummySeedInventory: SeedInventoryRow[] = [
-  { processDate: '2026-06-14', processType: '입고', itemName: '헴프 오일', quantity: '80', unit: 'kg', manager: '김민준', note: 'mock 재고 처리' },
-  { processDate: '2026-06-15', processType: '출고', itemName: '헴프 분말', quantity: '95', unit: 'kg', manager: '이서연', note: 'mock 재고 처리' },
-  { processDate: '2026-06-16', processType: '조정', itemName: '단백질 바', quantity: '110', unit: 'kg', manager: '박지훈', note: 'mock 재고 처리' },
-  { processDate: '2026-06-17', processType: '입고', itemName: '헴프 음료', quantity: '125', unit: 'kg', manager: '최유진', note: 'mock 재고 처리' },
-  { processDate: '2026-06-18', processType: '출고', itemName: '씨드 그래놀라', quantity: '140', unit: 'kg', manager: '정도윤', note: 'mock 재고 처리' },
-  { processDate: '2026-06-19', processType: '조정', itemName: '헴프 캡슐', quantity: '155', unit: 'kg', manager: '한수아', note: 'mock 재고 처리' },
-]
-
 const PAGE_SIZE = 10
 
 export function SeedInventoryManagePage() {
-  const [filteredSeedInventory, setFilteredSeedInventory] = useState<SeedInventoryRow[]>(dummySeedInventory)
+  // ── 상태 관리 ───────────────────────────────────────────────────
+  const [seedInventory, setSeedInventory] = useState<SeedInventoryRow[]>([])
+  const [searchParams, setSearchParams] = useState<SeedInventorySearchParams>({})
+  const [isLoading, setIsLoading] = useState(false)
   const [modalSeedInventory, setModalSeedInventory] = useState<SeedInventoryRow | null>(null)
   const [page, setPage] = useState(0)
 
@@ -49,22 +41,35 @@ export function SeedInventoryManagePage() {
     { type: 'input', label: '품목명', ref: itemNameRef },
   ]
 
-  const handleSearch = () => {
-    const start = processStartRef.current?.value ?? ''
-    const end = processEndRef.current?.value ?? ''
-    const processType = processTypeRef.current?.value.trim() ?? ''
-    const itemName = itemNameRef.current?.value.trim() ?? ''
+  // ── 데이터 로드 공통 로직 ───────────────────────────────────────
+  const loadSeedInventory = async (params: SeedInventorySearchParams) => {
+    setIsLoading(true)
+    try {
+      const data = await fetchSeedInventory(params)
+      setSeedInventory(data)
+      setPage(0) // 검색 시 첫 페이지로 초기화
+    } catch (error) {
+      console.error(error)
+      window.alert('데이터를 불러오는 중 오류가 발생했습니다.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
-    // 현재는 더미씨드재고에 필터로 걸러내고 있는데 추후에 api 연동할 것
-    setFilteredSeedInventory(
-      dummySeedInventory.filter(
-        (item) =>
-          (!start || item.processDate >= start) &&
-          (!end || item.processDate <= end) &&
-          (!processType || item.processType.includes(processType)) &&
-          (!itemName || item.itemName.includes(itemName)),
-      ),
-    )
+  // 검색 조건 변경 시 실행
+  useEffect(() => {
+    loadSeedInventory(searchParams)
+  }, [searchParams])
+
+  // ── 이벤트 핸들러 ──────────────────────────────────────────────
+  const handleSearch = () => {
+    const params: SeedInventorySearchParams = {
+      startDate: processStartRef.current?.value || undefined,
+      endDate: processEndRef.current?.value || undefined,
+      processType: processTypeRef.current?.value.trim() || undefined,
+      itemName: itemNameRef.current?.value.trim() || undefined,
+    }
+    setSearchParams(params)
   }
 
   const handleReset = () => {
@@ -73,29 +78,36 @@ export function SeedInventoryManagePage() {
     ;[processTypeRef, itemNameRef].forEach((ref) => {
       if (ref.current) ref.current.value = ''
     })
-    setFilteredSeedInventory(dummySeedInventory)
+    setSearchParams({})
   }
 
-  const handleDelete = (item: SeedInventoryRow) => {
-    if (window.confirm(`${item.processDate} 처리 내역을 삭제할까요?`)) {
-      setFilteredSeedInventory((prev) => prev.filter((i) => i !== item))
-      window.alert('mock data에서만 삭제되었습니다.')
+  const handleDelete = async (item: SeedInventoryRow) => {
+    if (window.confirm(`${item.processDate} ${item.itemName} 내역을 삭제할까요?`)) {
+      try {
+        await deleteSeedInventory(item)
+        window.alert('삭제되었습니다.')
+        loadSeedInventory(searchParams)
+      } catch (err) {
+        window.alert('삭제에 실패했습니다.')
+      }
     }
   }
 
-  const handleSave = (updated: Record<string, string>) => {
-    setFilteredSeedInventory((prev) => prev.map((i) => (i === modalSeedInventory ? ({ ...i, ...updated } as SeedInventoryRow) : i)))
-    setModalSeedInventory(null)
-    window.alert('화면 상태에만 저장되었습니다.')
+  const handleSave = async (updated: Record<string, string>) => {
+    if (!modalSeedInventory) return
+    try {
+      await updateSeedInventory(modalSeedInventory, updated)
+      window.alert('저장되었습니다.')
+      setModalSeedInventory(null)
+      loadSeedInventory(searchParams)
+    } catch (err) {
+      window.alert('저장에 실패했습니다.')
+    }
   }
 
-  // 검색 결과가 바뀌면 페이지를 처음으로 되돌리기
-  useEffect(() => {
-    setPage(0)
-  }, [filteredSeedInventory])
-
-  const totalPages = Math.max(1, Math.ceil(filteredSeedInventory.length / PAGE_SIZE))
-  const pagedSeedInventory = filteredSeedInventory.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+  // ── 페이징 계산 ────────────────────────────────────────────────
+  const totalPages = Math.max(1, Math.ceil(seedInventory.length / PAGE_SIZE))
+  const pagedSeedInventory = seedInventory.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
   const columns: ColumnDef<SeedInventoryRow>[] = useMemo(
     () => [
@@ -144,7 +156,7 @@ export function SeedInventoryManagePage() {
         ),
       },
     ],
-    [],
+    [seedInventory, searchParams],
   )
 
   const detailFields = [
@@ -161,9 +173,15 @@ export function SeedInventoryManagePage() {
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="씨드 재고관리 목록" action="등록" onAction={() => window.alert('mock 동작입니다.')}>
-        <CusTable data={pagedSeedInventory} columns={columns} onRowClick={setModalSeedInventory} />
-        <CusPagination page={page} totalPages={totalPages} totalCount={filteredSeedInventory.length} onPageChange={setPage} />
+      <Panel title="씨드 재고관리 목록" action="등록" onAction={() => window.alert('등록 기능은 API 연동 후 사용 가능합니다.')}>
+        {isLoading ? (
+          <div className="py-10 text-center text-gray-500">데이터를 불러오는 중입니다...</div>
+        ) : (
+          <>
+            <CusTable data={pagedSeedInventory} columns={columns} onRowClick={setModalSeedInventory} />
+            <CusPagination page={page} totalPages={totalPages} totalCount={seedInventory.length} onPageChange={setPage} />
+          </>
+        )}
       </Panel>
 
       <RowDetailModal
