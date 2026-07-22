@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import { apiClient } from '@/api/apiClient'
-import type { LoginRequest, LoginResponse } from '@/services/auth/auth'
+import type { LoginRequest, LoginResponse } from '@/types/auth/Auth'
 
 interface AuthContextValue {
   isAuthenticated: boolean
@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (credentials: LoginRequest) => {
     const response = await apiClient.post<LoginResponse>('/auth/login', credentials)
 
-    const token = response.data.accessToken
+    const token = response.data.data.accessToken;
 
     if (!token) {
       throw new Error('응답에 토큰이 존재하지 않습니다.')

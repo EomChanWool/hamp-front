@@ -7,7 +7,7 @@ import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
 
-import { fetchFactories, deleteFactories, updateFactories, type FactoryRow, type FactorySearchParams } from '@/services/master/MasterFactoriesPage'
+import { fetchFactories, deleteFactories, updateFactories, type FactoryRow, type FactorySearchParams } from '@/types/master/MasterFactoriesPage'
 
 
 const PAGE_SIZE = 10
