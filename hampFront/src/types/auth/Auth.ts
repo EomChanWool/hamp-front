@@ -1,17 +1,32 @@
-// 백엔드가 요청받는 데이터 타입
+// 로그인 시 요청 데이터 타입
 export interface LoginRequest {
   userId: string
   password: string
 }
 
-// 백엔드가 응답해 주는 데이터 타입
-export interface LoginResponse {
+// Api 공통 응답 데이터 타입
+export interface ApiResponseLoginResponse {
   status: string
-  message: string | null
+  code: string
+  message: string
   data: {
     accessToken: string
-    // 유저 정보가 data 안에 더 들어온다면 여기에 추가
-    // userId?: string
-    // role?: string
+    userId: string
+    userNm: string
+    phone: string
+    position: string
+    use: boolean
+    createdAt: string | Date;
   }
+}
+
+// 로그인 시 응답 데이터 타입
+export interface LoginResponse {
+  accessToken: string
+  userId: string
+  userNm: string
+  phone: string
+  position: string
+  use: boolean
+  createdAt: string | Date
 }

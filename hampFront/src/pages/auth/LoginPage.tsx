@@ -6,20 +6,18 @@ import { useState, type SyntheticEvent } from "react";
 export function LoginPage() {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
-  
+
   const navigate = useNavigate();
-  const { login } = useAuth(); 
+  const { login } = useAuth();
 
   const handleLogin = async (e: SyntheticEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
     try {
       await login({ userId, password });
-      alert('로그인 성공!');
       navigate('/');
     } catch (error: any) {
-      console.error('로그인 실패 상세 에러:', error);
-      alert(error.response?.data?.message || '로그인에 실패했습니다.');
+      alert(error.message || '로그인 처리에 실패했습니다.');
     }
   };
 
@@ -33,20 +31,20 @@ export function LoginPage() {
           </div>
           <div className="inputGroup">
             <label htmlFor="username">
-              <input 
-                id="username" 
-                type="text" 
-                placeholder="아이디" 
+              <input
+                id="username"
+                type="text"
+                placeholder="아이디"
                 value={userId}
                 onChange={(e) => setUserId(e.target.value)}
               />
               <UserCircleIcon className="inputIcon" />
             </label>
             <label htmlFor="password">
-              <input 
-                id="password" 
-                type="password" 
-                placeholder="비밀번호" 
+              <input
+                id="password"
+                type="password"
+                placeholder="비밀번호"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />

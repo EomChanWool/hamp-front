@@ -49,8 +49,8 @@ const FOOD_LINES: ProductionLine[] = [
   { id: "F-L2", name: "2라인", status: "warn", output: 820, target: 1200, process: "세척→건조→선별→포장" },
   { id: "F-L3", name: "3라인", status: "on", output: 960, target: 1000, process: "추출→농축→캡슐화" },
   { id: "F-L4", name: "4라인", status: "off", output: 0, target: 800, process: "오일→정제→병입" },
-  { id: "F-L4", name: "5라인", status: "off", output: 0, target: 800, process: "오일→정제→병입" },
-  { id: "F-L4", name: "6라인", status: "off", output: 0, target: 800, process: "오일→정제→병입" },
+  { id: "F-L5", name: "5라인", status: "off", output: 0, target: 800, process: "오일→정제→병입" },
+  { id: "F-L6", name: "6라인", status: "off", output: 0, target: 800, process: "오일→정제→병입" },
 ];
 
 const FIBER_LINES: ProductionLine[] = [
@@ -58,8 +58,8 @@ const FIBER_LINES: ProductionLine[] = [
   { id: "I-L2", name: "2라인", status: "on", output: 1100, target: 1100, process: "투입→개섬→정렬→포장" },
   { id: "I-L3", name: "3라인", status: "off", output: 0, target: 900, process: "압축→성형→검사" },
   { id: "I-L4", name: "4라인", status: "warn", output: 430, target: 800, process: "정렬→결속→출하" },
-  { id: "I-L4", name: "5라인", status: "warn", output: 430, target: 800, process: "정렬→결속→출하" },
-  { id: "I-L4", name: "6라인", status: "warn", output: 430, target: 800, process: "정렬→결속→출하" },
+  { id: "I-L5", name: "5라인", status: "warn", output: 430, target: 800, process: "정렬→결속→출하" },
+  { id: "I-L6", name: "6라인", status: "warn", output: 430, target: 800, process: "정렬→결속→출하" },
 ];
 
 const FOOD_DEFECTS: DefectStat[] = [

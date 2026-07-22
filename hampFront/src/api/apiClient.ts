@@ -73,6 +73,14 @@ apiClient.interceptors.response.use(
       logoutCallback?.()
     }
 
+    // 백엔드에서 내려준 에러 메시지 추출 로직 추가
+    if (axios.isAxiosError(error) && error.response?.data) {
+      const backendMessage = error.response.data.message
+      if (backendMessage) {
+        return Promise.reject(new Error(backendMessage))
+      }
+    }
+
     return Promise.reject(error)
   },
 )
