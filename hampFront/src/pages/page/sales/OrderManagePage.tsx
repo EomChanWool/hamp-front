@@ -6,18 +6,16 @@ import { RowDetailModal } from '@components/common/RowDetailModal'
 import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
-
-import { fetchOrders, deleteOrders, updateOrders, type OrderManage, type OrderSearchParams } from '@/types/sales/OrderManagePage'
-
-
-const PAGE_SIZE = 10
+import { paginate } from '@/utils/common'
+import { apiClient } from '@/api/apiClient'
+import { type OrderManageRow, type OrderManageSearchParams, mockOrderManage } from '@/types/sales/Sales'
 
 export function OrderManagePage() {
-  const [orders, setOrders] = useState<OrderManage[]>([]) // 서버(더미)에서 받은 원본 데이터
-  const [searchParams, setSearchParams] = useState<OrderSearchParams>({}) // 현재 검색 조건 상태
-  const [isLoading, setIsLoading] = useState(false) // 로딩 상태 추가
-  const [modalOrder, setModalOrder] = useState<OrderManage | null>(null)
-  const [page, setPage] = useState(0)
+  const [orders, setOrders] = useState<OrderManageRow[]>([])
+  const [searchParams, setSearchParams] = useState<OrderManageSearchParams>({})
+  const [isLoading, setIsLoading] = useState(false)
+  const [modalOrder, setModalOrder] = useState<OrderManageRow | null>(null)
+  const [currentPage, setCurrentPage] = useState(0)
 
   const clientRef = useRef<HTMLInputElement>(null)
   const orderNoRef = useRef<HTMLInputElement>(null)
@@ -43,12 +41,38 @@ export function OrderManagePage() {
     { type: 'input', label: '비고', ref: noteRef },
   ]
 
-  const loadOrder = async (params: OrderSearchParams) => {
+  const loadOrder = async (params: OrderManageSearchParams) => {
     setIsLoading(true)
     try {
-      const data = await fetchOrders(params)
-      setOrders(data)
-      setPage(0) // 검색 조건이 바뀌면 페이지를 첫 페이지로 초기화
+      // -------------------------------------------------------------
+      // [개발용 Mock Mode] 백엔드 연결 후 아래 블록은 삭제/주석 처리하세요.
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      let filtered = [...mockOrderManage]
+      if (params) {
+        filtered = filtered.filter(
+          (item) =>
+            (!params.client || item.client.includes(params.client)) &&
+            (!params.orderNo || item.orderNo.includes(params.orderNo)) &&
+            (!params.clientManager || item.clientManager.includes(params.clientManager)) &&
+            (!params.productItem || item.productItem.includes(params.productItem)) &&
+            (!params.quantity || item.quantity.includes(params.quantity)) &&
+            (!params.orderAmount || item.orderAmount.includes(params.orderAmount)) &&
+            (!params.dueDate || item.dueDate.includes(params.dueDate)) &&
+            (!params.status || item.status.includes(params.status)) &&
+            (!params.manager || item.manager.includes(params.manager)) &&
+            (!params.note || item.note.includes(params.note)),
+        )
+      }
+      setOrders(filtered)
+      // -------------------------------------------------------------
+
+      /*
+      // [실제 API 호출 Mode] 백엔드 완공 시 주석 해제하여 사용
+      const response = await apiClient.get<OrderManageRow[]>('/sales/order-manage', { params })
+      setOrders(response.data)
+      */
+
+      setCurrentPage(0)
     } catch (error) {
       console.error(error)
       window.alert('데이터를 불러오는 중 오류가 발생했습니다.')
@@ -61,38 +85,55 @@ export function OrderManagePage() {
     loadOrder(searchParams)
   }, [searchParams])
 
-
-
   const handleSearch = () => {
-    const params: OrderSearchParams = {
-      client: clientRef.current?.value.trim(),
-      orderNo: orderNoRef.current?.value.trim(),
-      clientManager: clientManagerRef.current?.value.trim(),
-      productItem: productItemRef.current?.value.trim(),
-      quantity: quantityRef.current?.value.trim(),
-      orderAmount: orderAmountRef.current?.value.trim(),
-      dueDate: dueDateRef.current?.value.trim(),
-      status: statusRef.current?.value.trim(),
-      manager: managerRef.current?.value.trim(),
-      note: noteRef.current?.value.trim(),
+    const params: OrderManageSearchParams = {
+      client: clientRef.current?.value.trim() || undefined,
+      orderNo: orderNoRef.current?.value.trim() || undefined,
+      clientManager: clientManagerRef.current?.value.trim() || undefined,
+      productItem: productItemRef.current?.value.trim() || undefined,
+      quantity: quantityRef.current?.value.trim() || undefined,
+      orderAmount: orderAmountRef.current?.value.trim() || undefined,
+      dueDate: dueDateRef.current?.value.trim() || undefined,
+      status: statusRef.current?.value.trim() || undefined,
+      manager: managerRef.current?.value.trim() || undefined,
+      note: noteRef.current?.value.trim() || undefined,
     }
-    setSearchParams(params) // 상태를 바꾸면 useEffect가 감지하여 로드합니다.
+    setSearchParams(params)
   }
 
   const handleReset = () => {
-    ;[clientRef, orderNoRef, clientManagerRef, productItemRef, quantityRef, orderAmountRef, dueDateRef, statusRef, managerRef, noteRef].forEach((ref) => {
+    ;[
+      clientRef,
+      orderNoRef,
+      clientManagerRef,
+      productItemRef,
+      quantityRef,
+      orderAmountRef,
+      dueDateRef,
+      statusRef,
+      managerRef,
+      noteRef,
+    ].forEach((ref) => {
       if (ref.current) ref.current.value = ''
     })
     setSearchParams({})
   }
 
-  const handleDelete = async (order: OrderManage) => {
-    if (window.confirm(`${order.orderNo} 수주를 삭제할까요?`)) {
+  const handleDelete = async (item: OrderManageRow) => {
+    if (window.confirm(`${item.orderNo} 수주를 삭제할까요?`)) {
       try {
-        await deleteOrders(order.orderNo)
+        // [개발용 Mock Mode]
+        setOrders((prev) => prev.filter((i) => i.id !== item.id))
+
+        /*
+        // [실제 API 호출 Mode]
+        await apiClient.delete(`/sales/order-manage/${item.id}`)
+        loadOrder(searchParams) // 삭제 후 re-fetch
+        */
+
         window.alert('삭제되었습니다.')
-        loadOrder(searchParams) // 삭제 후 목록 리로드
       } catch (err) {
+        console.error(err)
         window.alert('삭제에 실패했습니다.')
       }
     }
@@ -101,20 +142,28 @@ export function OrderManagePage() {
   const handleSave = async (updated: Record<string, string>) => {
     if (!modalOrder) return
     try {
-      await updateOrders(modalOrder.client, updated)
+      // [개발용 Mock Mode]
+      setOrders((prev) =>
+        prev.map((i) => (i.id === modalOrder.id ? { ...i, ...updated } : i)),
+      )
+
+      /*
+      // [실제 API 호출 Mode]
+      await apiClient.put(`/sales/order-manage/${modalOrder.id}`, updated)
+      loadOrder(searchParams) // 수정 후 re-fetch
+      */
+
       window.alert('저장되었습니다.')
       setModalOrder(null)
-      loadOrder(searchParams) // 수정 후 목록 리로드
     } catch (err) {
+      console.error(err)
       window.alert('저장에 실패했습니다.')
     }
   }
 
+  const { totalPages, pagedData } = paginate(orders, currentPage)
 
-  const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE))
-  const pagedOrders = orders.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
-
-  const columns: ColumnDef<OrderManage>[] = useMemo(
+  const columns: ColumnDef<OrderManageRow>[] = useMemo(
     () => [
       { accessorKey: 'client', header: '거래처' },
       { accessorKey: 'orderNo', header: '수주번호' },
@@ -126,7 +175,10 @@ export function OrderManagePage() {
       {
         accessorKey: 'status',
         header: '상태',
-        cell: ({ getValue }) => <Badge tone={getValue() === '진행중' ? 'warn' : 'muted'}>{getValue() as string}</Badge>,
+        cell: ({ getValue }) => {
+          const value = getValue() as string
+          return <Badge tone={value === '진행중' ? 'warn' : 'muted'}>{value}</Badge>
+        },
       },
       { accessorKey: 'manager', header: '담당자' },
       { accessorKey: 'note', header: '비고' },
@@ -185,9 +237,8 @@ export function OrderManagePage() {
           <div className="py-10 text-center text-gray-500">데이터를 불러오는 중입니다...</div>
         ) : (
           <>
-
-            <CusTable data={pagedOrders} columns={columns} onRowClick={setModalOrder} />
-            <CusPagination page={page} totalPages={totalPages} totalCount={orders.length} onPageChange={setPage} />
+            <CusTable data={pagedData} columns={columns} onRowClick={setModalOrder} />
+            <CusPagination page={currentPage} totalPages={totalPages} totalCount={orders.length} onPageChange={setCurrentPage} />
           </>
         )}
       </Panel>

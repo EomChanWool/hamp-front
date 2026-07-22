@@ -55,7 +55,7 @@ export function SeedInventoryManagePage() {
 
       /*
       // [실제 API 호출 Mode] 백엔드 완공 시 주석 해제하여 사용
-      const response = await apiClient.get<SeedInventoryRow[]>('/seed/inventory', { params })
+      const response = await apiClient.get<SeedInventoryRow[]>('/seed/inv-manage', { params })
       setSeedInventory(response.data)
       */
 
@@ -99,7 +99,7 @@ export function SeedInventoryManagePage() {
 
         /*
         // [실제 API 호출 Mode]
-        await apiClient.delete(`/seed/inventory/${item.id}`)
+        await apiClient.delete(`/seed/inv-manage/${item.id}`)
         loadSeedInventory(searchParams) // 삭제 후 re-fetch
         */
 
@@ -121,7 +121,7 @@ export function SeedInventoryManagePage() {
 
       /*
       // [실제 API 호출 Mode]
-      await apiClient.put(`/seed/inventory/${modalSeedInventory.id}`, updated)
+      await apiClient.put(`/seed/inv-manage/${modalSeedInventory.id}`, updated)
       loadSeedInventory(searchParams) // 수정 후 re-fetch
       */
 
