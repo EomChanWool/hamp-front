@@ -1,8 +1,7 @@
 import { LockClosedIcon, UserCircleIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext"; // 👈 Context 가져오기
-import { loginApi } from "@/services/auth/auth";
-import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useState, type SyntheticEvent } from "react";
 
 export function LoginPage() {
   const [userId, setUserId] = useState('');
@@ -11,20 +10,13 @@ export function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth(); 
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (e: SyntheticEvent) => {
+  e.preventDefault();
 
     try {
-      const data = await loginApi({ userId, password });
-      const token = data.accessToken || data.token;
-
-      if (token) {
-        login(token);
-        alert('로그인 성공!');
-        navigate('/');
-      } else {
-        alert('토큰을 전달받지 못했습니다.');
-      }
+      await login({ userId, password });
+      alert('로그인 성공!');
+      navigate('/');
     } catch (error: any) {
       console.error('로그인 실패 상세 에러:', error);
       alert(error.response?.data?.message || '로그인에 실패했습니다.');

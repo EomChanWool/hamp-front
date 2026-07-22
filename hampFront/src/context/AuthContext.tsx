@@ -1,31 +1,36 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
-
-const TOKEN_KEY = 'token'
+import { apiClient } from '@/api/apiClient'
+import type { LoginRequest, LoginResponse } from '@/services/auth/auth'
 
 interface AuthContextValue {
   isAuthenticated: boolean
-  login: (token: string) => void // 
+  login: (credentials: LoginRequest) => Promise<void>
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  // 앱 실행 시 localStorage에 토큰이 있는지 확인해서 로그인 여부 결정
+ 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
-    () => !!localStorage.getItem(TOKEN_KEY),
+    () => !!localStorage.getItem('token'),
   )
 
-  // 실제 로그인: API 성공 후 전달받은 토큰을 저장
-  const login = (token: string) => {
-    const tokenValue = token.startsWith('Bearer ') ? token : `Bearer ${token}`
-    localStorage.setItem(TOKEN_KEY, tokenValue)
+  const login = async (credentials: LoginRequest) => {
+    const response = await apiClient.post<LoginResponse>('/auth/login', credentials)
+
+    const token = response.data.accessToken
+
+    if (!token) {
+      throw new Error('응답에 토큰이 존재하지 않습니다.')
+    }
+
+    localStorage.setItem('token', token)
     setIsAuthenticated(true)
   }
 
-  // 실제 로그아웃: 토큰 삭제 후 상태 변경
   const logout = () => {
-    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem('token')
     setIsAuthenticated(false)
   }
 
