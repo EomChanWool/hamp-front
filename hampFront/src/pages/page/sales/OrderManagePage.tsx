@@ -7,7 +7,7 @@ import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
 
-import { fetchOrders, deleteOrders, updateOrders, type OrderManage, type OrderSearchParams } from '@/services/sales/OrderManagePage'
+import { fetchOrders, deleteOrders, updateOrders, type OrderManage, type OrderSearchParams } from '@/types/sales/OrderManagePage'
 
 
 const PAGE_SIZE = 10

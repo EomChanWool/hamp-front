@@ -14,7 +14,7 @@ import {
   updateAccessRequest,
   type AccessRequest,
   type AccessRequestSearchParams,
-} from '@/services/facility/FacilityAccessManagePage'
+} from '@/types/facility/FacilityAccessManagePage'
 
 const PURPOSE_COLORS: Record<string, string> = {
   정기점검: '#38bdf8',

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import { apiClient } from '@/api/apiClient'
-import type { LoginRequest, LoginResponse } from '@/services/auth/Auth'
+import type { LoginRequest, LoginResponse } from '@/types/auth/Auth'
 
 interface AuthContextValue {
   isAuthenticated: boolean

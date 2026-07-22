@@ -6,7 +6,7 @@ import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
 
-import { fetchInpiInventory, deleteInpiInventory, updateInpiInventory, type InpiInventoryTransaction, type InpiInventorySearchParam } from '@/services/inpi/InpiInventoryManagePage'
+import { fetchInpiInventory, deleteInpiInventory, updateInpiInventory, type InpiInventoryTransaction, type InpiInventorySearchParam } from '@/types/inpi/InpiInventoryManagePage'
 
 const TRANSACTION_TYPE_COLORS: Record<string, string> = {
   입고: '#34d399',
