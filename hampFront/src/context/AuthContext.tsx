@@ -1,28 +1,31 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
 
-const SESSION_KEY = 'hemp_mes_demo_session'
+const TOKEN_KEY = 'token'
 
 interface AuthContextValue {
   isAuthenticated: boolean
-  login: () => void
+  login: (token: string) => void // 
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    () => localStorage.getItem(SESSION_KEY) === 'true',
+  // 앱 실행 시 localStorage에 토큰이 있는지 확인해서 로그인 여부 결정
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
+    () => !!localStorage.getItem(TOKEN_KEY),
   )
 
-  // 백엔드 연동 전 임시 로그인: 자격 검증 없이 항상 성공 처리
-  const login = () => {
-    localStorage.setItem(SESSION_KEY, 'true')
+  // 실제 로그인: API 성공 후 전달받은 토큰을 저장
+  const login = (token: string) => {
+    const tokenValue = token.startsWith('Bearer ') ? token : `Bearer ${token}`
+    localStorage.setItem(TOKEN_KEY, tokenValue)
     setIsAuthenticated(true)
   }
 
+  // 실제 로그아웃: 토큰 삭제 후 상태 변경
   const logout = () => {
-    localStorage.removeItem(SESSION_KEY)
+    localStorage.removeItem(TOKEN_KEY)
     setIsAuthenticated(false)
   }
 

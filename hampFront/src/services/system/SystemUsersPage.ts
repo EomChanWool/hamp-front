@@ -1,4 +1,3 @@
-// src/api/system.ts
 import { apiClient } from '@/api/apiClient'
 
 // 1. 타입 정의
