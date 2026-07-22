@@ -1,28 +1,36 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
-
-const SESSION_KEY = 'hemp_mes_demo_session'
+import { apiClient } from '@/api/apiClient'
+import type { LoginRequest, LoginResponse } from '@/services/auth/auth'
 
 interface AuthContextValue {
   isAuthenticated: boolean
-  login: () => void
+  login: (credentials: LoginRequest) => Promise<void>
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    () => localStorage.getItem(SESSION_KEY) === 'true',
+ 
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
+    () => !!localStorage.getItem('token'),
   )
 
-  // 백엔드 연동 전 임시 로그인: 자격 검증 없이 항상 성공 처리
-  const login = () => {
-    localStorage.setItem(SESSION_KEY, 'true')
+  const login = async (credentials: LoginRequest) => {
+    const response = await apiClient.post<LoginResponse>('/auth/login', credentials)
+
+    const token = response.data.accessToken
+
+    if (!token) {
+      throw new Error('응답에 토큰이 존재하지 않습니다.')
+    }
+
+    localStorage.setItem('token', token)
     setIsAuthenticated(true)
   }
 
   const logout = () => {
-    localStorage.removeItem(SESSION_KEY)
+    localStorage.removeItem('token')
     setIsAuthenticated(false)
   }
 

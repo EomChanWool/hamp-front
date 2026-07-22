@@ -7,35 +7,16 @@ import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
 
-interface SystemUser {
-  userId: string
-  name: string
-  department: string
-  position: string
-  role: string
-  status: '사용' | '미사용'
-  lastLoginAt: string
-}
-
-const dummyUsers: SystemUser[] = [
-  { userId: 'user001', name: '김민준', department: '생산팀', position: '팀장', role: '시스템관리자', status: '사용', lastLoginAt: '2026-06-22 08:20' },
-  { userId: 'user002', name: '이서연', department: '품질팀', position: '매니저', role: '생산관리자', status: '사용', lastLoginAt: '2026-06-21 09:20' },
-  { userId: 'user003', name: '박지훈', department: '설비팀', position: '작업자', role: '품질관리자', status: '사용', lastLoginAt: '2026-06-20 10:20' },
-  { userId: 'user004', name: '최유진', department: '시스템팀', position: '관리자', role: '설비관리자', status: '사용', lastLoginAt: '2026-06-19 11:20' },
-  { userId: 'user005', name: '정도윤', department: '생산팀', position: '팀장', role: '일반작업자', status: '사용', lastLoginAt: '2026-06-18 12:20' },
-  { userId: 'user006', name: '한수아', department: '품질팀', position: '매니저', role: '시스템관리자', status: '사용', lastLoginAt: '2026-06-17 13:20' },
-  { userId: 'user007', name: '오현우', department: '설비팀', position: '작업자', role: '생산관리자', status: '사용', lastLoginAt: '2026-06-16 14:20' },
-  { userId: 'user008', name: '임하린', department: '시스템팀', position: '관리자', role: '품질관리자', status: '사용', lastLoginAt: '2026-06-15 15:20' },
-  { userId: 'user009', name: '강태오', department: '생산팀', position: '팀장', role: '설비관리자', status: '미사용', lastLoginAt: '2026-06-14 16:20' },
-  { userId: 'user010', name: '윤지아', department: '품질팀', position: '매니저', role: '일반작업자', status: '사용', lastLoginAt: '2026-06-22 08:20' },
-  { userId: 'user011', name: '서준호', department: '설비팀', position: '작업자', role: '시스템관리자', status: '사용', lastLoginAt: '2026-06-21 09:20' },
-  { userId: 'user012', name: '문채원', department: '시스템팀', position: '관리자', role: '생산관리자', status: '사용', lastLoginAt: '2026-06-20 10:20' },
-]
+// ── [변경] API 서비스 함수 및 타입 가져오기 ──────────────────────────────
+import { fetchSystemUsers, deleteSystemUser, updateSystemUser, type SystemUser, type UserSearchParams } from '@/services/system/SystemUsersPage'
 
 const PAGE_SIZE = 10
 
 export function SystemUsersPage() {
-  const [filteredUsers, setFilteredUsers] = useState<SystemUser[]>(dummyUsers)
+  // ── [변경] 상태 관리 구조 고도화 ────────────────────────────────────────
+  const [users, setUsers] = useState<SystemUser[]>([]) // 서버(더미)에서 받은 원본 데이터
+  const [searchParams, setSearchParams] = useState<UserSearchParams>({}) // 현재 검색 조건 상태
+  const [isLoading, setIsLoading] = useState(false) // 로딩 상태 추가
   const [modalUser, setModalUser] = useState<SystemUser | null>(null)
   const [page, setPage] = useState(0)
 
@@ -51,51 +32,72 @@ export function SystemUsersPage() {
     { type: 'input', label: '사용여부', ref: statusRef },
   ]
 
-  const handleSearch = () => {
-    const userId = userIdRef.current?.value.trim() ?? ''
-    const name = nameRef.current?.value.trim() ?? ''
-    const role = roleRef.current?.value.trim() ?? ''
-    const status = statusRef.current?.value.trim() ?? ''
+  // ── [추가] 데이터 로드 공통 로직 ────────────────────────────────────────
+  const loadUsers = async (params: UserSearchParams) => {
+    setIsLoading(true)
+    try {
+      const data = await fetchSystemUsers(params)
+      setUsers(data)
+      setPage(0) // 검색 조건이 바뀌면 페이지를 첫 페이지로 초기화
+    } catch (error) {
+      console.error(error)
+      window.alert('데이터를 불러오는 중 오류가 발생했습니다.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
-    // 현재는 더미유저즈에 필터로 걸러내고 있는데 추후에 api 연동할 것
-    setFilteredUsers(
-      dummyUsers.filter(
-        (user) =>
-          (!userId || user.userId.includes(userId)) &&
-          (!name || user.name.includes(name)) &&
-          (!role || user.role.includes(role)) &&
-          (!status || user.status.includes(status)),
-      ),
-    )
+  // 컴포넌트 마운트 및 검색 조건 변경 시 실행
+  useEffect(() => {
+    loadUsers(searchParams)
+  }, [searchParams])
+
+
+  // ── [변경] 핸들러들 API 호출 방식으로 변경 ───────────────────────────────
+  const handleSearch = () => {
+    const params: UserSearchParams = {
+      userId: userIdRef.current?.value.trim(),
+      name: nameRef.current?.value.trim(),
+      role: roleRef.current?.value.trim(),
+      status: statusRef.current?.value.trim(),
+    }
+    setSearchParams(params) // 상태를 바꾸면 useEffect가 감지하여 로드합니다.
   }
 
   const handleReset = () => {
     ;[userIdRef, nameRef, roleRef, statusRef].forEach((ref) => {
       if (ref.current) ref.current.value = ''
     })
-    setFilteredUsers(dummyUsers)
+    setSearchParams({})
   }
 
-  const handleDelete = (user: SystemUser) => {
+  const handleDelete = async (user: SystemUser) => {
     if (window.confirm(`${user.userId} 계정을 삭제할까요?`)) {
-      setFilteredUsers((prev) => prev.filter((u) => u !== user))
-      window.alert('mock data에서만 삭제되었습니다.')
+      try {
+        await deleteSystemUser(user.userId)
+        window.alert('삭제되었습니다.')
+        loadUsers(searchParams) // 삭제 후 목록 리로드
+      } catch (err) {
+        window.alert('삭제에 실패했습니다.')
+      }
     }
   }
 
-  const handleSave = (updated: Record<string, string>) => {
-    setFilteredUsers((prev) => prev.map((u) => (u === modalUser ? ({ ...u, ...updated } as SystemUser) : u)))
-    setModalUser(null)
-    window.alert('화면 상태에만 저장되었습니다.')
+  const handleSave = async (updated: Record<string, string>) => {
+    if (!modalUser) return
+    try {
+      await updateSystemUser(modalUser.userId, updated)
+      window.alert('저장되었습니다.')
+      setModalUser(null)
+      loadUsers(searchParams) // 수정 후 목록 리로드
+    } catch (err) {
+      window.alert('저장에 실패했습니다.')
+    }
   }
 
-  // 검색 결과가 바뀌면 페이지를 처음으로 되돌리기
-  useEffect(() => {
-    setPage(0)
-  }, [filteredUsers])
-
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE))
-  const pagedUsers = filteredUsers.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+  // ── [변경] 페이징 계산 대상 변경 ────────────────────────────────────────
+  const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE))
+  const pagedUsers = users.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
   const columns: ColumnDef<SystemUser>[] = useMemo(
     () => [
@@ -140,7 +142,7 @@ export function SystemUsersPage() {
         ),
       },
     ],
-    [],
+    [users, searchParams], // 의존성 추가로 상태 업데이트 동기화
   )
 
   const detailFields = [
@@ -158,8 +160,15 @@ export function SystemUsersPage() {
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
       <Panel title="사용자관리 목록" action="등록" onAction={() => window.alert('등록 기능은 API 연동 후 사용 가능합니다.')}>
-        <CusTable data={pagedUsers} columns={columns} onRowClick={setModalUser} />
-        <CusPagination page={page} totalPages={totalPages} totalCount={filteredUsers.length} onPageChange={setPage} />
+        {/* 로딩 표시 조건부 렌더링 */}
+        {isLoading ? (
+          <div className="py-10 text-center text-gray-500">데이터를 불러오는 중입니다...</div>
+        ) : (
+          <>
+            <CusTable data={pagedUsers} columns={columns} onRowClick={setModalUser} />
+            <CusPagination page={page} totalPages={totalPages} totalCount={users.length} onPageChange={setPage} />
+          </>
+        )}
       </Panel>
 
       <RowDetailModal

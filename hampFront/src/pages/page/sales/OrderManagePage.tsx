@@ -7,33 +7,16 @@ import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
 
-interface OrderRow {
-  client: string
-  orderNo: string
-  clientManager: string
-  productItem: string
-  quantity: string
-  orderAmount: string
-  dueDate: string
-  status: string
-  manager: string
-  note: string
-}
+import { fetchOrders, deleteOrders, updateOrders, type OrderManage, type OrderSearchParams } from '@/services/sales/OrderManagePage'
 
-const dummyOrders: OrderRow[] = [
-  { client: '(주)거래처A', orderNo: 'ORD-2026001', clientManager: '김영업', productItem: '헴프 오일 500ml', quantity: '1000', orderAmount: '5000000', dueDate: '2026-07-30', status: '진행중', manager: '이수주', note: '-' },
-  { client: '(주)거래처A', orderNo: 'ORD-2026002', clientManager: '김영업', productItem: '헴프 분말 1kg', quantity: '1000', orderAmount: '5000000', dueDate: '2026-07-30', status: '진행중', manager: '이수주', note: '-' },
-  { client: '(주)거래처A', orderNo: 'ORD-2026003', clientManager: '김영업', productItem: '프리미엄 단백질 바', quantity: '1000', orderAmount: '5000000', dueDate: '2026-07-30', status: '진행중', manager: '이수주', note: '-' },
-  { client: '(주)거래처A', orderNo: 'ORD-2026004', clientManager: '김영업', productItem: '유기농 헴프 음료', quantity: '1000', orderAmount: '5000000', dueDate: '2026-07-30', status: '진행중', manager: '이수주', note: '-' },
-  { client: '(주)거래처A', orderNo: 'ORD-2026005', clientManager: '김영업', productItem: '씨드 그래놀라 300g', quantity: '1000', orderAmount: '5000000', dueDate: '2026-07-30', status: '진행중', manager: '이수주', note: '-' },
-  { client: '(주)거래처A', orderNo: 'ORD-2026006', clientManager: '김영업', productItem: '고농축 헴프 캡슐', quantity: '1000', orderAmount: '5000000', dueDate: '2026-07-30', status: '진행중', manager: '이수주', note: '-' },
-]
 
 const PAGE_SIZE = 10
 
 export function OrderManagePage() {
-  const [filteredOrders, setFilteredOrders] = useState<OrderRow[]>(dummyOrders)
-  const [modalOrder, setModalOrder] = useState<OrderRow | null>(null)
+  const [orders, setOrders] = useState<OrderManage[]>([]) // 서버(더미)에서 받은 원본 데이터
+  const [searchParams, setSearchParams] = useState<OrderSearchParams>({}) // 현재 검색 조건 상태
+  const [isLoading, setIsLoading] = useState(false) // 로딩 상태 추가
+  const [modalOrder, setModalOrder] = useState<OrderManage | null>(null)
   const [page, setPage] = useState(0)
 
   const clientRef = useRef<HTMLInputElement>(null)
@@ -60,65 +43,78 @@ export function OrderManagePage() {
     { type: 'input', label: '비고', ref: noteRef },
   ]
 
-  const handleSearch = () => {
-    const client = clientRef.current?.value.trim() ?? ''
-    const orderNo = orderNoRef.current?.value.trim() ?? ''
-    const clientManager = clientManagerRef.current?.value.trim() ?? ''
-    const productItem = productItemRef.current?.value.trim() ?? ''
-    const quantity = quantityRef.current?.value.trim() ?? ''
-    const orderAmount = orderAmountRef.current?.value.trim() ?? ''
-    const dueDate = dueDateRef.current?.value.trim() ?? ''
-    const status = statusRef.current?.value.trim() ?? ''
-    const manager = managerRef.current?.value.trim() ?? ''
-    const note = noteRef.current?.value.trim() ?? ''
+  const loadOrder = async (params: OrderSearchParams) => {
+    setIsLoading(true)
+    try {
+      const data = await fetchOrders(params)
+      setOrders(data)
+      setPage(0) // 검색 조건이 바뀌면 페이지를 첫 페이지로 초기화
+    } catch (error) {
+      console.error(error)
+      window.alert('데이터를 불러오는 중 오류가 발생했습니다.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
-    // 현재는 더미수주에 필터로 걸러내고 있는데 추후에 api 연동할 것
-    setFilteredOrders(
-      dummyOrders.filter(
-        (order) =>
-          (!client || order.client.includes(client)) &&
-          (!orderNo || order.orderNo.includes(orderNo)) &&
-          (!clientManager || order.clientManager.includes(clientManager)) &&
-          (!productItem || order.productItem.includes(productItem)) &&
-          (!quantity || order.quantity.includes(quantity)) &&
-          (!orderAmount || order.orderAmount.includes(orderAmount)) &&
-          (!dueDate || order.dueDate.includes(dueDate)) &&
-          (!status || order.status.includes(status)) &&
-          (!manager || order.manager.includes(manager)) &&
-          (!note || order.note.includes(note)),
-      ),
-    )
+  useEffect(() => {
+    loadOrder(searchParams)
+  }, [searchParams])
+
+
+
+  const handleSearch = () => {
+    const params: OrderSearchParams = {
+      client: clientRef.current?.value.trim(),
+      orderNo: orderNoRef.current?.value.trim(),
+      clientManager: clientManagerRef.current?.value.trim(),
+      productItem: productItemRef.current?.value.trim(),
+      quantity: quantityRef.current?.value.trim(),
+      orderAmount: orderAmountRef.current?.value.trim(),
+      dueDate: dueDateRef.current?.value.trim(),
+      status: statusRef.current?.value.trim(),
+      manager: managerRef.current?.value.trim(),
+      note: noteRef.current?.value.trim(),
+    }
+    setSearchParams(params) // 상태를 바꾸면 useEffect가 감지하여 로드합니다.
   }
 
   const handleReset = () => {
     ;[clientRef, orderNoRef, clientManagerRef, productItemRef, quantityRef, orderAmountRef, dueDateRef, statusRef, managerRef, noteRef].forEach((ref) => {
       if (ref.current) ref.current.value = ''
     })
-    setFilteredOrders(dummyOrders)
+    setSearchParams({})
   }
 
-  const handleDelete = (order: OrderRow) => {
+  const handleDelete = async (order: OrderManage) => {
     if (window.confirm(`${order.orderNo} 수주를 삭제할까요?`)) {
-      setFilteredOrders((prev) => prev.filter((o) => o !== order))
-      window.alert('mock data에서만 삭제되었습니다.')
+      try {
+        await deleteOrders(order.orderNo)
+        window.alert('삭제되었습니다.')
+        loadOrder(searchParams) // 삭제 후 목록 리로드
+      } catch (err) {
+        window.alert('삭제에 실패했습니다.')
+      }
     }
   }
 
-  const handleSave = (updated: Record<string, string>) => {
-    setFilteredOrders((prev) => prev.map((o) => (o === modalOrder ? ({ ...o, ...updated } as OrderRow) : o)))
-    setModalOrder(null)
-    window.alert('화면 상태에만 저장되었습니다.')
+  const handleSave = async (updated: Record<string, string>) => {
+    if (!modalOrder) return
+    try {
+      await updateOrders(modalOrder.client, updated)
+      window.alert('저장되었습니다.')
+      setModalOrder(null)
+      loadOrder(searchParams) // 수정 후 목록 리로드
+    } catch (err) {
+      window.alert('저장에 실패했습니다.')
+    }
   }
 
-  // 검색 결과가 바뀌면 페이지를 처음으로 되돌리기
-  useEffect(() => {
-    setPage(0)
-  }, [filteredOrders])
 
-  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE))
-  const pagedOrders = filteredOrders.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+  const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE))
+  const pagedOrders = orders.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
-  const columns: ColumnDef<OrderRow>[] = useMemo(
+  const columns: ColumnDef<OrderManage>[] = useMemo(
     () => [
       { accessorKey: 'client', header: '거래처' },
       { accessorKey: 'orderNo', header: '수주번호' },
@@ -164,7 +160,7 @@ export function OrderManagePage() {
         ),
       },
     ],
-    [],
+    [orders, searchParams],
   )
 
   const detailFields = [
@@ -185,8 +181,15 @@ export function OrderManagePage() {
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
       <Panel title="수주관리 목록" action="등록" onAction={() => window.alert('등록 기능은 API 연동 후 사용 가능합니다.')}>
-        <CusTable data={pagedOrders} columns={columns} onRowClick={setModalOrder} />
-        <CusPagination page={page} totalPages={totalPages} totalCount={filteredOrders.length} onPageChange={setPage} />
+        {isLoading ? (
+          <div className="py-10 text-center text-gray-500">데이터를 불러오는 중입니다...</div>
+        ) : (
+          <>
+
+            <CusTable data={pagedOrders} columns={columns} onRowClick={setModalOrder} />
+            <CusPagination page={page} totalPages={totalPages} totalCount={orders.length} onPageChange={setPage} />
+          </>
+        )}
       </Panel>
 
       <RowDetailModal

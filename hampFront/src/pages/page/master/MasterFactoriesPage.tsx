@@ -7,29 +7,15 @@ import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
 
-interface FactoryRow {
-  code: string
-  name: string
-  location: string
-  manager: string
-  status: '사용' | '미사용'
-  registeredAt: string
-  note: string
-}
+import { fetchFactories, deleteFactories, updateFactories, type FactoryRow, type FactorySearchParams } from '@/services/master/MasterFactoriesPage'
 
-const dummyFactories: FactoryRow[] = [
-  { code: 'FAC-1', name: 'A동 원료실', location: '충북 음성 1구역', manager: '김민준', status: '사용', registeredAt: '2026-01-10', note: '생산/보관 구역' },
-  { code: 'FAC-2', name: 'B동 생산실', location: '충북 음성 2구역', manager: '이서연', status: '사용', registeredAt: '2026-01-11', note: '생산/보관 구역' },
-  { code: 'FAC-3', name: 'C동 포장실', location: '충북 음성 3구역', manager: '박지훈', status: '사용', registeredAt: '2026-01-12', note: '생산/보관 구역' },
-  { code: 'FAC-4', name: '품질검사실', location: '충북 음성 4구역', manager: '최유진', status: '사용', registeredAt: '2026-01-13', note: '생산/보관 구역' },
-  { code: 'FAC-5', name: '저온창고', location: '충북 음성 5구역', manager: '정도윤', status: '사용', registeredAt: '2026-01-14', note: '생산/보관 구역' },
-  { code: 'FAC-6', name: '출하장', location: '충북 음성 6구역', manager: '한수아', status: '미사용', registeredAt: '2026-01-15', note: '생산/보관 구역' },
-]
 
 const PAGE_SIZE = 10
 
 export function MasterFactoriesPage() {
-  const [filteredFactories, setFilteredFactories] = useState<FactoryRow[]>(dummyFactories)
+  const [factories, setFactories] = useState<FactoryRow[]>([])
+  const [searchParams, setSearchParams] = useState<FactorySearchParams>({})
+  const [isLoading, setIsLoading] = useState(false)
   const [modalFactory, setModalFactory] = useState<FactoryRow | null>(null)
   const [page, setPage] = useState(0)
 
@@ -45,51 +31,67 @@ export function MasterFactoriesPage() {
     { type: 'input', label: '사용여부', ref: statusRef },
   ]
 
-  const handleSearch = () => {
-    const code = codeRef.current?.value.trim() ?? ''
-    const name = nameRef.current?.value.trim() ?? ''
-    const manager = managerRef.current?.value.trim() ?? ''
-    const status = statusRef.current?.value.trim() ?? ''
+  const loadFactories = async (params: FactorySearchParams) => {
+    setIsLoading(true)
+    try {
+      const data = await fetchFactories(params)
+      setFactories(data)
+      setPage(0)
+    } catch (error) {
+      console.error(error)
+      window.alert('데이터를 불러오는 중 오류가 발생했습니다.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
-    // 현재는 더미공장에 필터로 걸러내고 있는데 추후에 api 연동할 것
-    setFilteredFactories(
-      dummyFactories.filter(
-        (factory) =>
-          (!code || factory.code.includes(code)) &&
-          (!name || factory.name.includes(name)) &&
-          (!manager || factory.manager.includes(manager)) &&
-          (!status || factory.status.includes(status)),
-      ),
-    )
+  useEffect(() => {
+    loadFactories(searchParams)
+  }, [searchParams])
+
+  const handleSearch = () => {
+    const params: FactorySearchParams = {
+      code: codeRef.current?.value.trim(),
+      name: nameRef.current?.value.trim(),
+      manager: managerRef.current?.value.trim(),
+      status: statusRef.current?.value.trim(),
+    }
+    setSearchParams(params)
   }
 
   const handleReset = () => {
     ;[codeRef, nameRef, managerRef, statusRef].forEach((ref) => {
       if (ref.current) ref.current.value = ''
     })
-    setFilteredFactories(dummyFactories)
+    setSearchParams({})
   }
 
-  const handleDelete = (factory: FactoryRow) => {
+  const handleDelete = async (factory: FactoryRow) => {
     if (window.confirm(`${factory.code} 공장을 삭제할까요?`)) {
-      setFilteredFactories((prev) => prev.filter((f) => f !== factory))
-      window.alert('mock data에서만 삭제되었습니다.')
+      try {
+        await deleteFactories(factory.code)
+        window.alert('삭제되었습니다.')
+        loadFactories(searchParams)
+      } catch (err) {
+        window.alert('삭제에 실패했습니다.')
+      }
     }
   }
 
-  const handleSave = (updated: Record<string, string>) => {
-    setFilteredFactories((prev) => prev.map((f) => (f === modalFactory ? ({ ...f, ...updated } as FactoryRow) : f)))
-    setModalFactory(null)
-    window.alert('화면 상태에만 저장되었습니다.')
+  const handleSave = async (updated: Record<string, string>) => {
+    if (!modalFactory) return
+    try {
+      await updateFactories(modalFactory.code, updated)
+      window.alert('저장되었습니다.')
+      setModalFactory(null)
+      loadFactories(searchParams) // 수정 후 목록 리로드
+    } catch (err) {
+      window.alert('저장에 실패했습니다.')
+    }
   }
 
-  // 검색 결과가 바뀌면 페이지를 처음으로 되돌리기
-  useEffect(() => {
-    setPage(0)
-  }, [filteredFactories])
-
-  const totalPages = Math.max(1, Math.ceil(filteredFactories.length / PAGE_SIZE))
-  const pagedFactories = filteredFactories.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+  const totalPages = Math.max(1, Math.ceil(factories.length / PAGE_SIZE))
+  const pagedFactories = factories.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
   const columns: ColumnDef<FactoryRow>[] = useMemo(
     () => [
@@ -134,7 +136,7 @@ export function MasterFactoriesPage() {
         ),
       },
     ],
-    [],
+    [factories, searchParams],
   )
 
   const detailFields = [
@@ -152,8 +154,15 @@ export function MasterFactoriesPage() {
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
       <Panel title="공장관리 목록" action="등록" onAction={() => window.alert('등록 기능은 API 연동 후 사용 가능합니다.')}>
-        <CusTable data={pagedFactories} columns={columns} onRowClick={setModalFactory} />
-        <CusPagination page={page} totalPages={totalPages} totalCount={filteredFactories.length} onPageChange={setPage} />
+
+        {isLoading ? (
+          <div className="py-10 text-center text-gray-500">데이터를 불러오는 중입니다...</div>
+        ) : (
+          <>
+            <CusTable data={pagedFactories} columns={columns} onRowClick={setModalFactory} />
+            <CusPagination page={page} totalPages={totalPages} totalCount={factories.length} onPageChange={setPage} />
+          </>
+        )}
       </Panel>
 
       <RowDetailModal

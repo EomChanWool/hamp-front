@@ -8,15 +8,13 @@ import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
 import type { StatusTone } from '@/types'
 
-interface AccessRequest {
-  visitorName: string
-  affiliation: string
-  zone: string
-  purpose: string
-  approvalStatus: string
-  scheduledAt: string
-  category: string
-}
+import {
+  fetchAccessRequest,
+  deleteAccessRequest,
+  updateAccessRequest,
+  type AccessRequest,
+  type AccessRequestSearchParams,
+} from '@/services/facility/FacilityAccessManagePage'
 
 const PURPOSE_COLORS: Record<string, string> = {
   정기점검: '#38bdf8',
@@ -32,21 +30,12 @@ function approvalTone(status: string): StatusTone {
   return 'muted'
 }
 
-const dummyAccessRequests: AccessRequest[] = [
-  { visitorName: '김민준', affiliation: '협력사', zone: 'A동 원료실', purpose: '정기점검', approvalStatus: '승인완료', scheduledAt: '2026-06-22 09:20', category: '작업자' },
-  { visitorName: '이서연', affiliation: '생산팀', zone: 'B동 생산실', purpose: '원료납품', approvalStatus: '승인대기', scheduledAt: '2026-06-21 10:20', category: '방문자' },
-  { visitorName: '박지훈', affiliation: '품질팀', zone: 'C동 포장실', purpose: '품질확인', approvalStatus: '반려', scheduledAt: '2026-06-20 11:20', category: '차량' },
-  { visitorName: '최유진', affiliation: '운송사', zone: '품질검사실', purpose: '출하', approvalStatus: '승인완료', scheduledAt: '2026-06-19 12:20', category: '작업자' },
-  { visitorName: '정도윤', affiliation: '협력사', zone: '저온창고', purpose: '정기점검', approvalStatus: '승인대기', scheduledAt: '2026-06-18 13:20', category: '방문자' },
-  { visitorName: '한수아', affiliation: '생산팀', zone: '출하장', purpose: '원료납품', approvalStatus: '반려', scheduledAt: '2026-06-17 14:20', category: '차량' },
-  { visitorName: '오현우', affiliation: '품질팀', zone: 'A동 원료실', purpose: '품질확인', approvalStatus: '승인완료', scheduledAt: '2026-06-16 15:20', category: '작업자' },
-  { visitorName: '임하린', affiliation: '운송사', zone: 'B동 생산실', purpose: '출하', approvalStatus: '승인대기', scheduledAt: '2026-06-15 16:20', category: '방문자' },
-]
-
 const PAGE_SIZE = 10
 
 export function FacilityAccessManagePage() {
-  const [filteredRequests, setFilteredRequests] = useState<AccessRequest[]>(dummyAccessRequests)
+  const [accessRequest, setAccessRequest] = useState<AccessRequest[]>([]) // 서버(더미)에서 받은 원본 데이터
+  const [searchParams, setSearchParams] = useState<AccessRequestSearchParams>({}) // 현재 검색 조건 상태
+  const [isLoading, setIsLoading] = useState(false) // 로딩 상태 추가
   const [modalRequest, setModalRequest] = useState<AccessRequest | null>(null)
   const [page, setPage] = useState(0)
 
@@ -62,51 +51,69 @@ export function FacilityAccessManagePage() {
     { type: 'input', label: '승인상태', ref: approvalStatusRef },
   ]
 
-  const handleSearch = () => {
-    const visitorName = visitorNameRef.current?.value.trim() ?? ''
-    const category = categoryRef.current?.value.trim() ?? ''
-    const zone = zoneRef.current?.value.trim() ?? ''
-    const approvalStatus = approvalStatusRef.current?.value.trim() ?? ''
+  const loadAccessManage = async (params: AccessRequestSearchParams) => {
+    setIsLoading(true)
+    try {
+      const data = await fetchAccessRequest(params)
+      setAccessRequest(data)
+      setPage(0) // 검색 조건이 바뀌면 페이지를 첫 페이지로 초기화
+    } catch (error) {
+      console.error(error)
+      window.alert('데이터를 불러오는 중 오류가 발생했습니다.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
-    // 현재는 더미출입정보에 필터로 걸러내고 있는데 추후에 api 연동할 것
-    setFilteredRequests(
-      dummyAccessRequests.filter(
-        (request) =>
-          (!visitorName || request.visitorName.includes(visitorName)) &&
-          (!category || request.category.includes(category)) &&
-          (!zone || request.zone.includes(zone)) &&
-          (!approvalStatus || request.approvalStatus.includes(approvalStatus)),
-      ),
-    )
+  // 컴포넌트 마운트 및 검색 조건 변경 시 실행
+  useEffect(() => {
+    loadAccessManage(searchParams)
+  }, [searchParams])
+
+
+  const handleSearch = () => {
+    const params: AccessRequestSearchParams = {
+      visitorName: visitorNameRef.current?.value.trim(),
+      category: categoryRef.current?.value.trim(),
+      zone: zoneRef.current?.value.trim(),
+      approvalStatus: approvalStatusRef.current?.value.trim(),
+    }
+    setSearchParams(params) // 상태를 바꾸면 useEffect가 감지하여 로드합니다.
   }
 
   const handleReset = () => {
     ;[visitorNameRef, categoryRef, zoneRef, approvalStatusRef].forEach((ref) => {
       if (ref.current) ref.current.value = ''
     })
-    setFilteredRequests(dummyAccessRequests)
+    setSearchParams({})
   }
 
-  const handleDelete = (request: AccessRequest) => {
+  const handleDelete = async (request: AccessRequest) => {
     if (window.confirm(`${request.visitorName}의 출입 신청을 삭제할까요?`)) {
-      setFilteredRequests((prev) => prev.filter((r) => r !== request))
-      window.alert('mock data에서만 삭제되었습니다.')
+      try {
+        await deleteAccessRequest(request.visitorName)
+        window.alert('삭제되었습니다.')
+        loadAccessManage(searchParams) // 삭제 후 목록 리로드
+      } catch (err) {
+        window.alert('삭제에 실패했습니다.')
+      }
     }
   }
 
-  const handleSave = (updated: Record<string, string>) => {
-    setFilteredRequests((prev) => prev.map((r) => (r === modalRequest ? ({ ...r, ...updated } as AccessRequest) : r)))
-    setModalRequest(null)
-    window.alert('화면 상태에만 저장되었습니다.')
+  const handleSave = async (updated: Record<string, string>) => {
+    if (!modalRequest) return
+    try {
+      await updateAccessRequest(modalRequest.visitorName, updated)
+      window.alert('저장되었습니다.')
+      setModalRequest(null)
+      loadAccessManage(searchParams) // 수정 후 목록 리로드
+    } catch (err) {
+      window.alert('저장에 실패했습니다.')
+    }
   }
 
-  // 검색 결과가 바뀌면 페이지를 처음으로 되돌리기
-  useEffect(() => {
-    setPage(0)
-  }, [filteredRequests])
-
-  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / PAGE_SIZE))
-  const pagedRequests = filteredRequests.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+  const totalPages = Math.max(1, Math.ceil(accessRequest.length / PAGE_SIZE))
+  const pagedRequests = accessRequest.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
   const columns: ColumnDef<AccessRequest>[] = useMemo(
     () => [
@@ -158,7 +165,7 @@ export function FacilityAccessManagePage() {
         ),
       },
     ],
-    [],
+    [accessRequest, searchParams],
   )
 
   const detailFields = [
@@ -176,8 +183,15 @@ export function FacilityAccessManagePage() {
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
       <Panel title="출입 관리 목록" action="등록" onAction={() => window.alert('mock 동작입니다.')}>
-        <CusTable data={pagedRequests} columns={columns} onRowClick={setModalRequest} />
-        <CusPagination page={page} totalPages={totalPages} totalCount={filteredRequests.length} onPageChange={setPage} />
+        {isLoading ? (
+          <div className="py-10 text-center text-gray-500">데이터를 불러오는 중입니다...</div>
+        ) : (
+          <>
+            <CusTable data={pagedRequests} columns={columns} onRowClick={setModalRequest} />
+            <CusPagination page={page} totalPages={totalPages} totalCount={accessRequest.length} onPageChange={setPage} />
+
+          </>
+        )}
       </Panel>
 
       <RowDetailModal
