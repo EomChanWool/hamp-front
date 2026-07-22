@@ -1,4 +1,4 @@
-import type { ScreenKey, StatusTone } from '@/types'
+import type { StatusTone } from '@/types'
 
 export type MesRow = Record<string, string>
 
@@ -51,7 +51,7 @@ function inventoryStatus(title: string, itemPrefix: '씨드' | '인피', itemNam
   }
 }
 
-function productionSet(prefix: '식품' | '인피', itemNames: string[], processes: string[]): Partial<Record<ScreenKey, MesScreenDefinition>> {
+function productionSet(prefix: '식품' | '인피', itemNames: string[], processes: string[]): Partial<Record<string, MesScreenDefinition>> {
   const keyPrefix = prefix === '식품' ? 'food' : 'inpi'
   return {
     [`${keyPrefix}WorkOrders`]: list(`${prefix} 작업지시관리`, ['작업일자 시작일', '작업일자 종료일', '품목명', '상태'], ['작업지시번호', '품목명', '지시수량', '단위', '작업일자', '공정', '상태', '관리'], itemNames.map((item, i) => [`WO-${prefix === '식품' ? 'F' : 'I'}-${2400 + i}`, item, `${900 + i * 120}`, 'kg', `2026-06-${22 - i}`, processes[i % processes.length], ['대기', '진행중', '완료', '보류'][i % 4], '수정/삭제'])),
@@ -87,10 +87,10 @@ function productionSet(prefix: '식품' | '인피', itemNames: string[], process
       rows: rows(itemNames.map((item, i) => [`LOT-${prefix === '식품' ? 'F' : 'I'}-2606-${i + 11}`, item, `2026-06-${20 - i}`, `RM-${8100 + i}`, `${700 + i * 80} kg`, ['생산완료', '검사대기', '검사완료', '출고완료'][i % 4], i % 3 === 0 ? '출고완료' : '미출고', '상세'])),
       panels: [{ title: 'LOT 흐름', items: ['원료 투입', '생산', '검사', '출고'].map((label, i) => ({ label, value: i < 3 ? '완료' : '대기', tone: i < 3 ? 'good' : 'muted' })) }],
     } as MesScreenDefinition,
-  } as Partial<Record<ScreenKey, MesScreenDefinition>>
+  } as Partial<Record<string, MesScreenDefinition>>
 }
 
-function qualitySet(prefix: '식품' | '인피', itemNames: string[]): Partial<Record<ScreenKey, MesScreenDefinition>> {
+function qualitySet(prefix: '식품' | '인피', itemNames: string[]): Partial<Record<string, MesScreenDefinition>> {
   const keyPrefix = prefix === '식품' ? 'food' : 'inpi'
   return {
     [`${keyPrefix}InspectionStandards`]: list(`${prefix} 검사기준서`, ['품목명', '검사유형', '사용여부', '적용 시작일'], ['기준서번호', '품목명', '검사유형', '검사 항목 수', '적용일자', '사용여부', '판정기준', '관리'], itemNames.map((item, i) => [`QS-${prefix === '식품' ? 'F' : 'I'}-${100 + i}`, item, ['입고검사', '공정검사', '출하검사'][i % 3], `${5 + i}개`, `2026-05-${10 + i}`, i === 4 ? '미사용' : '사용', '기준값/단위/허용오차', '상세'])),
@@ -109,7 +109,7 @@ function qualitySet(prefix: '식품' | '인피', itemNames: string[]): Partial<R
       ],
       chart: { title: '불량유형별 현황', items: ['이물', '중량미달', '파손', '색상불량'].map((label, i) => ({ label, value: 28 + i * 12, tone: i === 3 ? 'danger' : 'warn' })) },
     } as MesScreenDefinition,
-  } as Partial<Record<ScreenKey, MesScreenDefinition>>
+  } as Partial<Record<string, MesScreenDefinition>>
 }
 
 export const mesScreens = {
@@ -211,7 +211,7 @@ export const mesScreens = {
   deliveryManage: list('납품관리', ['수주번호', '거래처', '거래처담당자', '납품품목', '납품량', '납품장소', '담당자', '상태', '비고'], ['수주번호', '거래처', '거래처담당자', '납품품목', '납품량', '납품장소', '담당자', '상태', '비고'],deliveryItems.map((item, i) => [`ORD-${2026001 + i}`, '(주)거래처A', '김영업', item, '1000', '본사창고', '박납품', '완료', '-'])),
   orderStatus: list('수주현황', ['거래처', '수주번호', '거래처담당자', '생산품목', '생산량', '수주금액', '납기일', '담당자'], ['거래처', '수주번호', '거래처담당자', '생산품목', '생산량', '수주금액', '납기일', '담당자'],orderItems.map((item, i) => ['(주)거래처A', `ORD-${2026001 + i}`, '김영업', item, '1000', '5000000', '2026-07-30', '이수주'])),
   deliveryStatus: list('납품현황', ['수주번호', '거래처', '거래처담당자', '납품품목', '납품량', '납품장소', '담당자'], ['수주번호', '거래처', '거래처담당자', '납품품목', '납품량', '납품장소', '담당자'],deliveryItems.map((item, i) => [`ORD-${2026001 + i}`, '(주)거래처A', '김영업', item, '1000', '본사창고', '박납품'])),
-} as Record<ScreenKey, MesScreenDefinition>
+} satisfies Record<string, MesScreenDefinition>
 
 export function getStatusTone(status: string): StatusTone {
   if (/(위험|고장|거부|끊김|경고|실패|미달|폐기|반려|중지)/.test(status)) return 'danger'
