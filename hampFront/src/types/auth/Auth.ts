@@ -9,15 +9,7 @@ export interface ApiResponseLoginResponse {
   status: string
   code: string
   message: string
-  data: {
-    accessToken: string
-    userId: string
-    userNm: string
-    phone: string
-    position: string
-    use: boolean
-    createdAt: string | Date;
-  }
+  data: LoginResponse
 }
 
 // 로그인 시 응답 데이터 타입
