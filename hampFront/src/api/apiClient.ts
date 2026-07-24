@@ -1,6 +1,13 @@
 import axios from 'axios'
 import type { NavigateFunction } from 'react-router-dom'
 
+// Axios Request Config 타입 확장 (_retry 지원)
+declare module 'axios' {
+  export interface InternalAxiosRequestConfig {
+    _retry?: boolean
+  }
+}
+
 export const apiClient = axios.create({
   baseURL: '/api',
   timeout: 60000,
@@ -12,11 +19,9 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
 
-  // Authorization token Bearer 여부 체크
   if (token) {
-    config.headers.Authorization = token.startsWith('Bearer ') 
-      ? token 
-      : `Bearer ${token}`
+    const authHeader = token.startsWith('Bearer ') ? token : `Bearer ${token}`
+    config.headers.set('Authorization', authHeader)
   }
   return config
 })
@@ -88,26 +93,30 @@ apiClient.interceptors.response.use(
       const originalRequest = error.config
 
       if (originalRequest) {
-        // 1) 로그인 요청이나 토큰 재발급 요청 자체가 401을 받은 경우 (리프레시 토큰까지 만료됨)
-        if (originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/token')) {
+        const url = originalRequest.url ?? ''
+
+        // 로그인, 토큰 재발급, 로그아웃 요청 자체가 401인 경우 즉시 로그아웃
+        if (url.includes('/auth/login') || url.includes('/auth/token') || url.includes('/auth/logout')) {
+          return Promise.reject(error)
+        }
+
+        // 재시도했던 요청이 또 401인 경우 무한 루프 방지
+        if (originalRequest._retry) {
           logoutCallback?.()
           return Promise.reject(error)
         }
 
-        // 2) 이미 한 번 재시도했던 요청인데 또 401인 경우 (중복 순환 방지)
-        if ((originalRequest as { _retry?: boolean })._retry) {
-          logoutCallback?.()
-          return Promise.reject(error)
-        }
-
-        ;(originalRequest as { _retry?: boolean })._retry = true
+        originalRequest._retry = true
 
         try {
-          // 3) 이미 진행 중인 재발급이 없다면 새롭게 재발급 Promise 실행
+          // 이미 재발급 중인 요청이 없다면 단 하나의 Promise 생성 (동시 요청 처리)
           if (!refreshPromise) {
             refreshPromise = (async () => {
               try {
-                const response = await axios.post('/api/auth/token', {}, { withCredentials: true })
+                const baseURL = apiClient.defaults.baseURL ?? ''
+                const refreshUrl = `${baseURL.replace(/\/$/, '')}/auth/token`
+
+                const response = await axios.post(refreshUrl, {}, { withCredentials: true })
                 const newToken = response.data?.data?.accessToken
 
                 if (!newToken) {
@@ -117,33 +126,28 @@ apiClient.interceptors.response.use(
                 localStorage.setItem('token', newToken)
                 return newToken
               } catch (refreshError) {
-                // 리프레시 토큰 만료 시 안내 및 로그아웃
-                alert('로그인 세션이 만료되었습니다. 다시 로그인해 주세요.')
+                localStorage.removeItem('token')
                 logoutCallback?.()
                 throw refreshError
               } finally {
-                // 재발급 작업이 끝나면 Promise 변수 초기화
                 refreshPromise = null
               }
             })()
           }
 
-          // 4) 401을 맞이한 모든 요청이 '동일한 refreshPromise'의 결과(newToken)를 같이 기다렸다가 받음
+          // 모든 401 요청이 동일한 재발급 결과를 대기
           const newToken = await refreshPromise
-
-          // 원래 실패했던 요청에 새 토큰을 싣고 다시 실행
-          originalRequest.headers.Authorization = `Bearer ${newToken}`
+          
+          // 새 토큰으로 헤더 교체 후 요청 재시도
+          originalRequest.headers.set('Authorization', `Bearer ${newToken}`)
           return apiClient(originalRequest)
 
         } catch (refreshError) {
           return Promise.reject(refreshError)
         }
       }
-
-      // config가 없는 예외적인 401의 경우 바로 로그아웃
       logoutCallback?.()
     }
-
     return Promise.reject(error)
   },
 )

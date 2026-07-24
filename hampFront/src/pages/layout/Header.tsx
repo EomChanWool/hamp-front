@@ -17,7 +17,6 @@ type HeaderProps = {
   activeTitle: string;
   theme: "dark" | "light";
   onToggleTheme: () => void;
-  onLogout?: () => void | Promise<void>;
   collapsed: boolean;
   onToggleCollapsed: () => void;
   onLogoClick: () => void;
@@ -41,7 +40,6 @@ export function Header({
   activeTitle,
   theme,
   onToggleTheme,
-  onLogout,
   collapsed,
   onToggleCollapsed,
   onLogoClick,
@@ -55,11 +53,7 @@ export function Header({
   };
 
   const handleLogout = async () => {
-    if (onLogout) {
-      await onLogout();
-    } else {
-      await logout();
-    }
+    await logout();
   };
 
   return (
