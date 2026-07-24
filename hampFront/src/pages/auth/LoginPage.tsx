@@ -1,25 +1,40 @@
 import { LockClosedIcon, UserCircleIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { useState, type SyntheticEvent } from "react";
+import { useState, useEffect, type SyntheticEvent } from "react";
 
 export function LoginPage() {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleLogin = async (e: SyntheticEvent) => {
     e.preventDefault();
 
     try {
+      setIsSubmitting(true);
       await login({ userId, password });
-      navigate('/');
+      
+      navigate('/', { replace: true });
     } catch (error: any) {
       alert(error.message || '로그인 처리에 실패했습니다.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  if (isAuthenticated) {
+    return null;
+  }
 
   return (
     <main className="loginPage">
@@ -51,7 +66,7 @@ export function LoginPage() {
               <LockClosedIcon className="inputIcon" />
             </label>
           </div>
-          <button type="submit" className="primaryButton">
+          <button type="submit" className="primaryButton" disabled={isSubmitting}>
             로그인
           </button>
         </form>

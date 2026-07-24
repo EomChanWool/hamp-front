@@ -1,54 +1,98 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
-import { apiClient } from '@/api/apiClient'
-import type { LoginRequest, ApiResponseLoginResponse, LoginResponse } from '@/types/auth/Auth'
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
+import { apiClient, setLogoutCallback } from '@/api/apiClient'
+import type { 
+  LoginRequest, 
+  ApiResponseLoginResponse, 
+  LoginResponse,
+  ApiResponseTokenResponse,
+  ApiResponseVoid
+} from '@/types/auth/Auth'
 
 interface AuthContextValue {
   isAuthenticated: boolean
   user: LoginResponse | null
   login: (credentials: LoginRequest) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
+  refreshToken: () => Promise<string>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  // 1. 토큰 존재 여부로 로그인 상태 관리
+  
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
     () => !!localStorage.getItem('token'),
   )
 
-  // 2. 유저 정보 객체 상태 관리 (LoginResponse 타입 활용)
-  const [user, setUser] = useState<LoginResponse | null>(null)
+  const [user, setUser] = useState<LoginResponse | null>(() => {
+    const savedUser = localStorage.getItem('user')
+    return savedUser ? JSON.parse(savedUser) : null
+  })
+
+  const refreshToken = useCallback(async (): Promise<string> => {
+    try {
+      const response = await apiClient.post<ApiResponseTokenResponse>('/auth/token')
+      const newToken = response.data?.data?.accessToken
+
+      if (!newToken) {
+        throw new Error('재발급된 토큰이 존재하지 않습니다.')
+      }
+
+      localStorage.setItem('token', newToken)
+      setIsAuthenticated(true)
+      return newToken
+    } catch (error) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      setUser(null)
+      setIsAuthenticated(false)
+      throw error
+    }
+  }, [])
 
   const login = async (credentials: LoginRequest) => {
-    // 1) API 통신 단계: ApiResponseLoginResponse 타입을 지정합니다.
     const response = await apiClient.post<ApiResponseLoginResponse>('/auth/login', credentials)
 
-    // response.data(Axios) -> .data(백엔드) -> 실제 로그인 결과 데이터 (LoginResponse)
-    const loginData: LoginResponse = response.data.data
+    const apiResult = response.data
+    const loginData: LoginResponse = apiResult?.data
 
     const token = loginData?.accessToken
 
     if (!token) {
-      throw new Error('응답에 토큰이 존재하지 않습니다.')
+      throw new Error(apiResult?.message || '응답에 토큰이 존재하지 않습니다.')
     }
 
-    // 토큰 저장
     localStorage.setItem('token', token)
+    localStorage.setItem('user', JSON.stringify(loginData))
 
-    // 2) 상태 저장 단계: 추출한 LoginResponse 데이터를 유저 상태에 저장합니다.
     setUser(loginData)
     setIsAuthenticated(true)
   }
 
-  const logout = () => {
-    localStorage.removeItem('token')
-    setUser(null) // 로그아웃 시 유저 정보 초기화
-    setIsAuthenticated(false)
-  }
+  const logout = useCallback(async () => {
+    try {
+      await apiClient.post<ApiResponseVoid>('/auth/logout')
+    } catch (error) {
+      console.error('로그아웃 API 호출 중 오류 발생:', error)
+    } finally {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      setUser(null)
+      setIsAuthenticated(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    setLogoutCallback(() => {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      setUser(null)
+      setIsAuthenticated(false)
+    })
+  }, [])
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, refreshToken }}>
       {children}
     </AuthContext.Provider>
   )
