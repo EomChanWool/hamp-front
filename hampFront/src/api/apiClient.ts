@@ -96,7 +96,7 @@ apiClient.interceptors.response.use(
         const url = originalRequest.url ?? ''
 
         // 로그인, 토큰 재발급, 로그아웃 요청 자체가 401인 경우 즉시 로그아웃
-        if (url.includes('/auth/login') || url.includes('/auth/token') || url.includes('/auth/logout')) {
+        if (url.includes('/auth/login') || url.includes('/auth/refresh') || url.includes('/auth/logout')) {
           return Promise.reject(error)
         }
 
@@ -114,7 +114,7 @@ apiClient.interceptors.response.use(
             refreshPromise = (async () => {
               try {
                 const baseURL = apiClient.defaults.baseURL ?? ''
-                const refreshUrl = `${baseURL.replace(/\/$/, '')}/auth/token`
+                const refreshUrl = `${baseURL.replace(/\/$/, '')}/auth/refresh`
 
                 const response = await axios.post(refreshUrl, {}, { withCredentials: true })
                 const newToken = response.data?.data?.accessToken
