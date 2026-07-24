@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, matchPath } from "react-router-dom";
 import { FolderIcon, FolderOpenIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
-import { menuRoutes } from "@/router"; // 💡 프로젝트 실제 경로 확인
+import { menuRoutes } from "@/router";
 
 type SideMenuProps = {
   collapsed: boolean;
@@ -11,7 +11,7 @@ export function SideMenu({ collapsed }: SideMenuProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 1. 현재 URL 주소를 기반으로 활성화되어야 하는 대메뉴 그룹(group.title) 탐색
+  // 현재 URL 주소를 기반으로 활성화되어야 하는 대메뉴 그룹(group.title) 탐색
   const currentActiveGroupTitle = (() => {
     if (location.pathname === "/") return null;
 
@@ -26,7 +26,7 @@ export function SideMenu({ collapsed }: SideMenuProps) {
     return null;
   })();
 
-  // 2. 아코디언 메뉴 열림/닫힘 상태 관리
+  // 아코디언 메뉴 열림/닫힘 상태 관리
   const [openGroup, setOpenGroup] = useState<string | null>(currentActiveGroupTitle);
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
 

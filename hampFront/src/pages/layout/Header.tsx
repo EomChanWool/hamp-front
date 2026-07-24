@@ -7,15 +7,16 @@ import {
   ArrowRightStartOnRectangleIcon,
   HomeIcon,
   XMarkIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from "@heroicons/react/24/outline";
-import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { useAuth } from "@/context/AuthContext";
 
 type HeaderProps = {
   activeGroup: string;
   activeTitle: string;
   theme: "dark" | "light";
   onToggleTheme: () => void;
-  onLogout: () => void;
   collapsed: boolean;
   onToggleCollapsed: () => void;
   onLogoClick: () => void;
@@ -39,16 +40,20 @@ export function Header({
   activeTitle,
   theme,
   onToggleTheme,
-  onLogout,
   collapsed,
   onToggleCollapsed,
   onLogoClick,
 }: HeaderProps) {
+  const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
 
   const removeNotification = (id: string) => {
     setNotifications((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
@@ -155,20 +160,24 @@ export function Header({
           </button>
 
           <div className="headerDivider" />
-
-          {/* 유저 */}
           <div className="headerUser">
             <div className="headerAvatar">
               <UserIcon className="h-5 w-5" />
             </div>
             <div className="headerUserInfo">
-              <span>관리자</span>
-              <strong>admin</strong>
+              {/* LoginResponse의 타입 속성명에 맞게 조정 (예: userNm, userId 등) */}
+              <span>{user?.userNm || "사용자"}</span>
+              <strong>{user?.userId || "User"}</strong>
             </div>
           </div>
 
-          {/* 로그아웃 */}
-          <button type="button" className="headerIconBtn headerLogout" aria-label="로그아웃" onClick={onLogout}>
+          {/* 로그아웃 버튼 */}
+          <button
+            type="button"
+            className="headerIconBtn headerLogout"
+            aria-label="로그아웃"
+            onClick={handleLogout}
+          >
             <ArrowRightStartOnRectangleIcon className="h-5 w-5" />
           </button>
         </div>
