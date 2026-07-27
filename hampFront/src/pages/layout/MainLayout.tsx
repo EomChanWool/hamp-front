@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { AppShell } from '@pages/layout/AppShell'
 import { useAuth } from '@/context/AuthContext'
-import { setApiNavigator, setLogoutCallback } from '@/api/apiClient'
+import { setApiNavigator } from '@/api/apiClient'
 
 export function MainLayout() {
-  const { isAuthenticated, logout } = useAuth()
+  const { isAuthenticated } = useAuth()
   const [theme, setTheme] = useState<'dark' | 'light'>('light')
   const navigate = useNavigate()
 
@@ -16,12 +16,7 @@ export function MainLayout() {
       () => window.location.pathname + window.location.search + window.location.hash
     )
 
-    // 2. 401 Unauthorized 에러 발생 시 자동 로그아웃 콜백 주입
-    setLogoutCallback(() => {
-      logout() // AuthContext의 로그아웃 로직 실행 (토큰 제거 및 isAuthenticated false 전환)
-      // 아래의 if (!isAuthenticated) 조건문이 작동하면서 로그인 페이지로 튕겨 나갑니다.
-    })
-  }, [navigate, logout])
+  }, [navigate])
 
   // 테마(Theme) 상태 반영
   useEffect(() => {
@@ -39,15 +34,10 @@ export function MainLayout() {
     setTheme((t) => (t === 'light' ? 'dark' : 'light'))
   }
 
-  const handleLogout = () => {
-    logout()
-  }
-
   return (
     <AppShell
       theme={theme}
       onToggleTheme={handleToggleTheme}
-      onLogout={handleLogout}
     >
       <Outlet />
     </AppShell>
