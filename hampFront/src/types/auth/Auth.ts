@@ -7,7 +7,7 @@ export interface ApiResponse<T = unknown> {
 }
 
 /** 데이터가 없는 공통 API 응답 타입 */
-export type ApiResponseVoid = ApiResponse<any>;
+export type ApiResponseVoid = ApiResponse<void>;
 
 /** 토큰 응답 데이터 */
 export interface TokenResponse {
@@ -31,7 +31,7 @@ export interface LoginResponse {
   phone: string;
   position: string;
   use: boolean;
-  createdAt: string | Date;
+  createdAt: string;
 }
 
 /** 로그인 API 최종 응답 타입 */
