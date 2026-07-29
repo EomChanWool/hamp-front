@@ -1,3 +1,17 @@
+/**
+ * ISO 8601 날짜 문자열(ex: 2026-07-13T01:02:29)을
+ * YYYY-MM-DD HH:mm 형태의 로컬 시간 문자열로 변환할 때 사용하는 함수
+ *
+ * @param iso - 변환할 날짜 문자열
+ * @returns YYYY-MM-DD HH:mm 형식의 문자열
+ */
+export const formatDateTime = (iso: string) => {
+    const date = new Date(iso);
+    // 한자리 숫자 앞에 '0'을 붙여 두자리로 맞춰주기
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
 /**.
  * 백단에서 페이징 없이 전체 목록을 한번에 내려주는 API에서
  * 프론트단이 직접 페이지네이션을 구현할 때 사용하는 함수
