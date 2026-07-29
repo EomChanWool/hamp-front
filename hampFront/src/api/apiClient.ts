@@ -113,7 +113,8 @@ apiClient.interceptors.response.use(
     // 1. 서버 다운 또는 네트워크 단절 에러 처리
     if (isServerDownError(error)) {
       goServerDown()
-      return Promise.reject(error)
+      // 서버 다운 페이지로 전환되므로, 호출한 페이지의 catch 알림을 억제합니다.
+      return new Promise(() => {})
     }
 
     // 2. 401 Unauthorized 에러 핸들링
@@ -124,12 +125,13 @@ apiClient.interceptors.response.use(
 
       if (!originalRequest) {
         logoutCallback?.()
-        return Promise.reject(error)
+        // 강제 로그아웃 시 페이지단 catch 알림 차단
+        return new Promise(() => {})
       }
 
       const url = originalRequest.url ?? ''
 
-      // Auth 관련 엔드포인트에서 401 발생 시 바로 실패 반환
+      // Auth 관련 엔드포인트에서 401 발생 시 바로 실패 반환 (로그인 실패 등)
       if (
         url.includes('/auth/login') ||
         url.includes('/auth/logout') ||
@@ -141,13 +143,14 @@ apiClient.interceptors.response.use(
       // 다른 장치에서 중복 로그인된 경우 (즉시 강제 로그아웃)
       if (errorCode === 'SESSION_REPLACED') {
         logoutCallback?.(errorCode, errorMessage)
-        return Promise.reject(error)
+        // 호출한 페이지의 catch 블록이 실행되지 않도록 Pending Promise 반환
+        return new Promise(() => {})
       }
 
-      // 이미 재시도한 요청이 또 401인 경우 (재발급 토큰도 만료된 경우)
+      // 이미 재시도한 요청이 또 401인 경우 (재발급 받은 토큰도 만료/유효하지 않은 경우)
       if (originalRequest._retry) {
         logoutCallback?.(errorCode, errorMessage)
-        return Promise.reject(error)
+        return new Promise(() => {})
       }
 
       // Silent Refresh 시도
@@ -201,7 +204,8 @@ apiClient.interceptors.response.use(
 
         return apiClient(originalRequest)
       } catch (refreshError) {
-        return Promise.reject(refreshError)
+        // 토큰 재발급에 최종 실패하여 로그아웃 처리된 경우에도 페이지단 catch 알림을 차단
+        return new Promise(() => {})
       }
     }
 

@@ -6,146 +6,143 @@ import { RowDetailModal } from '@components/common/RowDetailModal'
 import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
+import { formatDateTime } from '@/utils/common'
 import { apiClient } from '@/api/apiClient'
-import { paginate } from '@/utils/common'
-import { type SystemUser, type UserSearchParams, mockUsers } from '@/types/system/System'
+import type {
+  UserResponse,
+  ApiResponseUserResponse,
+  ApiResponsePageUserResponse,
+  UserUpdateRequest,
+} from '@/types/User'
 
 export function SystemUsersPage() {
-  const [users, setUsers] = useState<SystemUser[]>([])
-  const [searchParams, setSearchParams] = useState<UserSearchParams>({})
+  const [users, setUsers] = useState<UserResponse[]>([])
+  const [totalElements, setTotalElements] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [searchParams, setSearchParams] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
-  const [modalUser, setModalUser] = useState<SystemUser | null>(null)
+  const [modalUser, setModalUser] = useState<UserResponse | null>(null)
   const [currentPage, setCurrentPage] = useState(0)
 
   const userIdRef = useRef<HTMLInputElement>(null)
-  const nameRef = useRef<HTMLInputElement>(null)
-  const roleRef = useRef<HTMLInputElement>(null)
-  const statusRef = useRef<HTMLInputElement>(null)
+  const userNmRef = useRef<HTMLInputElement>(null)
+  const userDepRef = useRef<HTMLInputElement>(null)
 
   const searchFields: SearchField[] = [
     { type: 'input', label: '사용자ID', ref: userIdRef },
-    { type: 'input', label: '이름', ref: nameRef },
-    { type: 'input', label: '권한', ref: roleRef },
-    { type: 'input', label: '사용여부', ref: statusRef },
+    { type: 'input', label: '이름', ref: userNmRef },
+    { type: 'input', label: '부서', ref: userDepRef },
   ]
 
-  const loadUsers = async (params: UserSearchParams) => {
+  // 회원 목록 조회
+  const loadUsers = async (page: number, params: Record<string, string>) => {
     setIsLoading(true)
     try {
-      // -------------------------------------------------------------
-      // [개발용 Mock Mode] 백엔드 연결 후 아래 블록은 삭제/주석 처리하세요.
-      await new Promise((resolve) => setTimeout(resolve, 300))
-      let filtered = [...mockUsers]
-      if (params) {
-        filtered = filtered.filter(
-          (user) =>
-            (!params.userId || user.userId.includes(params.userId)) &&
-            (!params.name || user.name.includes(params.name)) &&
-            (!params.role || user.role.includes(params.role)) &&
-            (!params.status || user.status.includes(params.status)),
-        )
-      }
-      setUsers(filtered)
-      // -------------------------------------------------------------
+      const cleanedParams = Object.entries(params).reduce((acc, [key, value]) => {
+        if (value && value.trim() !== '') {
+          acc[key] = value.trim()
+        }
+        return acc
+      }, {} as Record<string, string>)
 
-      /*
-      // [실제 API 호출 Mode] 백엔드 완공 시 주석 해제하여 사용
-      const response = await apiClient.get<SystemUser[]>('/system/users', { params })
-      setUsers(response.data)
-      */
+      const response = await apiClient.get<ApiResponsePageUserResponse>('/users', {
+        params: {
+          ...cleanedParams,
+          page,
+          size: 10,
+        },
+      })
 
-      setCurrentPage(0)
+      const pageData = response.data.data
+      setUsers(pageData.content ?? [])
+      setTotalElements(pageData.totalElements ?? 0)
+      setTotalPages(pageData.totalPages ?? 0)
     } catch (error) {
-      console.error(error)
+      console.error('사용자 목록 조회 실패:', error)
       window.alert('데이터를 불러오는 중 오류가 발생했습니다.')
     } finally {
       setIsLoading(false)
     }
   }
 
+  // 회원 단건 상세 조회 (GET /users/{userId})
+  const handleOpenDetail = async (userId: string) => {
+    try {
+      const response = await apiClient.get<ApiResponseUserResponse>(`/users/${userId}`)
+      setModalUser(response.data.data)
+    } catch (error) {
+      console.error('사용자 상세 조회 실패:', error)
+      window.alert('상세 정보를 불러오는 중 오류가 발생했습니다.')
+    }
+  }
+
   useEffect(() => {
-    loadUsers(searchParams)
-  }, [searchParams])
+    loadUsers(currentPage, searchParams)
+  }, [currentPage, searchParams])
 
   const handleSearch = () => {
-    const params: UserSearchParams = {
-      userId: userIdRef.current?.value.trim(),
-      name: nameRef.current?.value.trim(),
-      role: roleRef.current?.value.trim(),
-      status: statusRef.current?.value.trim(),
-    }
+    const params: Record<string, string> = {}
+    if (userIdRef.current?.value.trim()) params.userId = userIdRef.current.value.trim()
+    if (userNmRef.current?.value.trim()) params.userNm = userNmRef.current.value.trim()
+    if (userDepRef.current?.value.trim()) params.userDep = userDepRef.current.value.trim()
+
+    setCurrentPage(0)
     setSearchParams(params)
   }
 
   const handleReset = () => {
-    ;[userIdRef, nameRef, roleRef, statusRef].forEach((ref) => {
+    ;[userIdRef, userNmRef, userDepRef].forEach((ref) => {
       if (ref.current) ref.current.value = ''
     })
+    setCurrentPage(0)
     setSearchParams({})
-  }
-
-  const handleDelete = async (user: SystemUser) => {
-    if (window.confirm(`${user.userId} 계정을 삭제할까요?`)) {
-      try {
-        // [개발용 Mock Mode]
-        setUsers((prev) => prev.filter((u) => u.userId !== user.userId))
-
-        /*
-        // [실제 API 호출 Mode]
-        await apiClient.delete(`/system/users/${user.userId}`)
-        loadUsers(searchParams) // 삭제 후 re-fetch
-        */
-
-        window.alert('삭제되었습니다.')
-      } catch (err) {
-        console.error(err)
-        window.alert('삭제에 실패했습니다.')
-      }
-    }
   }
 
   const handleSave = async (updated: Record<string, string>) => {
     if (!modalUser) return
     try {
-      // [개발용 Mock Mode]
-      setUsers((prev) =>
-        prev.map((u) => (u.userId === modalUser.userId ? { ...u, ...updated } : u)),
-      )
+      const updatePayload: UserUpdateRequest = {
+        userNm: updated.userNm ?? modalUser.userNm,
+        phone: updated.phone ?? modalUser.phone,
+        position: updated.position ?? modalUser.position,
+      }
 
-      /*
-      // [실제 API 호출 Mode]
-      await apiClient.put(`/system/users/${modalUser.userId}`, updated)
-      loadUsers(searchParams) // 수정 후 re-fetch
-      */
+      await apiClient.put(`/users/${modalUser.userId}`, updatePayload)
 
       window.alert('저장되었습니다.')
       setModalUser(null)
+      loadUsers(currentPage, searchParams)
     } catch (err) {
-      console.error(err)
+      console.error('저장 실패:', err)
       window.alert('저장에 실패했습니다.')
     }
   }
 
-  const { totalPages, pagedData } = paginate(users, currentPage);
-
-
-  const columns: ColumnDef<SystemUser>[] = useMemo(
+  const columns: ColumnDef<UserResponse>[] = useMemo(
     () => [
       { accessorKey: 'userId', header: '사용자ID' },
-      { accessorKey: 'name', header: '이름' },
-      { accessorKey: 'department', header: '부서' },
-      { accessorKey: 'position', header: '직책' },
-      { accessorKey: 'role', header: '권한' },
+      { accessorKey: 'userNm', header: '이름' },
+      { accessorKey: 'phone', header: '전화번호' },
+      { accessorKey: 'position', header: '부서' },
       {
-        accessorKey: 'status',
+        accessorKey: 'use',
         header: '사용여부',
-        cell: ({ getValue }) => <Badge tone={getValue() === '사용' ? 'good' : 'muted'}>{getValue() as string}</Badge>,
+        cell: ({ getValue }) => (
+          <Badge tone={getValue<boolean>() ? 'good' : 'muted'}>
+            {getValue<boolean>() ? '사용' : '미사용'}
+          </Badge>
+        ),
       },
-      { accessorKey: 'lastLoginAt', header: '최근접속일시' },
+      {
+        accessorKey: 'createdAt',
+        header: '생성일시',
+        // 💡 formatDateTime 사용
+        cell: ({ getValue }) => formatDateTime(getValue<string>()),
+      },
       {
         id: 'actions',
         header: '관리',
-        meta: { width: '150px' },
+        meta: { width: '100px' },
         cell: ({ row }) => (
           <div className="rowActions">
             <button
@@ -153,51 +150,64 @@ export function SystemUsersPage() {
               className="miniButton"
               onClick={(e) => {
                 e.stopPropagation()
-                setModalUser(row.original)
+                handleOpenDetail(row.original.userId)
               }}
             >
               상세
-            </button>
-            <button
-              type="button"
-              className="miniButton danger"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleDelete(row.original)
-              }}
-            >
-              삭제
             </button>
           </div>
         ),
       },
     ],
-    [users, searchParams],
+    [],
   )
 
   const detailFields = [
     { label: '사용자ID', key: 'userId' },
-    { label: '이름', key: 'name' },
-    { label: '부서', key: 'department' },
+    { label: '이름', key: 'userNm' },
+    { label: '전화번호', key: 'phone' },
     { label: '직책', key: 'position' },
-    { label: '권한', key: 'role' },
-    { label: '사용여부', key: 'status' },
-    { label: '최근접속일시', key: 'lastLoginAt' },
+    { label: '사용여부', key: 'use' },
+    { label: '생성일시', key: 'createdAt' },
   ]
+
+  // 상세 모달에 전달할 데이터의 createdAt 포맷팅
+  const modalData = useMemo(() => {
+    if (!modalUser) return {}
+    return {
+      ...modalUser,
+      createdAt: formatDateTime(modalUser.createdAt),
+    }
+  }, [modalUser])
 
   return (
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="사용자관리 목록" action="등록" onAction={() => window.alert('등록 기능은 API 연동 후 사용 가능합니다.')}>
-        {isLoading ? (
-          <div className="py-10 text-center text-gray-500">데이터를 불러오는 중입니다...</div>
-        ) : (
-          <>
-            <CusTable data={pagedData} columns={columns} onRowClick={setModalUser} />
-            <CusPagination page={currentPage} totalPages={totalPages} totalCount={users.length} onPageChange={setCurrentPage} />
-          </>
-        )}
+      <Panel title="사용자관리 목록">
+        <div className="relative min-h-[300px]">
+          {/* 로딩 오버레이 (화면 깜빡임 및 위치 이동 방지) */}
+          {isLoading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
+              <div className="flex items-center gap-2 rounded-lg bg-gray-900/80 px-4 py-2 text-sm text-white shadow-md">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <span>데이터를 불러오는 중입니다...</span>
+              </div>
+            </div>
+          )}
+
+          <CusTable
+            data={users}
+            columns={columns}
+            onRowClick={(row) => handleOpenDetail(row.userId)}
+          />
+          <CusPagination
+            page={currentPage}
+            totalPages={totalPages}
+            totalCount={totalElements}
+            onPageChange={setCurrentPage}
+          />
+        </div>
       </Panel>
 
       <RowDetailModal
@@ -205,7 +215,7 @@ export function SystemUsersPage() {
         onClose={() => setModalUser(null)}
         onSave={handleSave}
         fields={detailFields}
-        data={(modalUser ?? {}) as unknown as Record<string, string>}
+        data={modalData as unknown as Record<string, string>}
       />
     </section>
   )

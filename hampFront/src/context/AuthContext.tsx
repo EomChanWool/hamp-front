@@ -9,11 +9,11 @@ import {
   type ReactNode,
 } from 'react'
 import { apiClient, setLogoutCallback } from '@/api/apiClient'
+import type { ApiResponseVoid } from '@/types/Common'
 import type {
   LoginRequest,
   ApiResponseLoginResponse,
   LoginResponse,
-  ApiResponseVoid,
 } from '@/types/auth/Auth'
 
 interface AuthContextValue {
