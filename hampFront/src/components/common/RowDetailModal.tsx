@@ -5,18 +5,34 @@ type Field = {
   editable?: boolean;
 };
 
+type DetailModalAction = {
+  label: string;
+  loadingLabel?: string;
+  onClick: () => void | Promise<void>;
+  isLoading?: boolean;
+};
+
 type RowDetailModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: Record<string, string>) => void;
   fields: Field[];
   data: Record<string, string>;
+  dangerAction?: DetailModalAction;
 };
 
 /** 테이블 행 클릭 시 상세 정보를 보여주고, 수정 모드로 전환해 저장/취소할 수 있는 모달 */
-export function RowDetailModal({ isOpen, onClose, onSave, fields, data }: RowDetailModalProps) {
+export function RowDetailModal({
+  isOpen,
+  onClose,
+  onSave,
+  fields,
+  data,
+  dangerAction,
+}: RowDetailModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState(data);
+  const isBusy = dangerAction?.isLoading === true;
 
   // ...컴포넌트 안에서
   useEffect(() => {
@@ -30,6 +46,8 @@ export function RowDetailModal({ isOpen, onClose, onSave, fields, data }: RowDet
   };
 
   const handleClose = () => {
+    if (isBusy) return;
+
     setForm(data); // 변경사항 롤백
     setIsEditing(false);
     onClose();
@@ -58,7 +76,12 @@ export function RowDetailModal({ isOpen, onClose, onSave, fields, data }: RowDet
             <span>사용자 정보 조회</span>
           </div>
 
-          <button className="detailModalClose" onClick={handleClose}>
+          <button
+            type="button"
+            className="detailModalClose"
+            onClick={handleClose}
+            disabled={isBusy}
+          >
             ✕
           </button>
         </div>
@@ -89,21 +112,48 @@ export function RowDetailModal({ isOpen, onClose, onSave, fields, data }: RowDet
         <div className="detailModalFooter">
           {isEditing ? (
             <>
-              <button className="ghostButton" onClick={() => setIsEditing(false)}>
+              {dangerAction && (
+                <button
+                  type="button"
+                  className="dangerButton detailModalDangerAction"
+                  onClick={() => void dangerAction.onClick()}
+                  disabled={isBusy}
+                >
+                  {isBusy
+                    ? (dangerAction.loadingLabel ?? dangerAction.label)
+                    : dangerAction.label}
+                </button>
+              )}
+
+              <button
+                type="button"
+                className="ghostButton"
+                onClick={() => setIsEditing(false)}
+                disabled={isBusy}
+              >
                 취소
               </button>
 
-              <button className="primaryButton" onClick={handleSave}>
+              <button
+                type="button"
+                className="primaryButton"
+                onClick={handleSave}
+                disabled={isBusy}
+              >
                 저장
               </button>
             </>
           ) : (
             <>
-              <button className="ghostButton" onClick={handleClose}>
+              <button type="button" className="ghostButton" onClick={handleClose}>
                 닫기
               </button>
 
-              <button className="primaryButton" onClick={() => setIsEditing(true)}>
+              <button
+                type="button"
+                className="primaryButton"
+                onClick={() => setIsEditing(true)}
+              >
                 수정
               </button>
             </>

@@ -373,6 +373,7 @@ button {
 
 .primaryButton,
 .ghostButton,
+.dangerButton,
 .iconButton {
   height: 40px;
   border-radius: 8px;
@@ -399,6 +400,15 @@ button {
 
 .ghostButton:hover {
   background: #1d4ed8;
+}
+
+.dangerButton {
+  background: #dc2626;
+  color: #fff;
+}
+
+.dangerButton:hover {
+  background: #b91c1c;
 }
 
 .iconButton {
@@ -1848,6 +1858,15 @@ tbody tr:hover td {
   border-top: 1px solid var(--border);
 
   background: var(--bg-subtle);
+}
+
+.detailModalDangerAction {
+  margin-right: auto;
+}
+
+.detailModal button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 /* ================================

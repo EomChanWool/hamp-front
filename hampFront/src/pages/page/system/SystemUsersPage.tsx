@@ -25,6 +25,7 @@ export function SystemUsersPage() {
   const [detailLoadingUserId, setDetailLoadingUserId] = useState<string | null>(
     null,
   );
+  const [isDeactivating, setIsDeactivating] = useState(false);
   const [modalUser, setModalUser] = useState<UserResponse | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const detailRequestIdRef = useRef(0);
@@ -159,6 +160,37 @@ export function SystemUsersPage() {
     }
   };
 
+  const handleDeactivate = async () => {
+    if (!modalUser || !modalUser.use || isDeactivating) return;
+
+    const confirmed = window.confirm(
+      `${modalUser.userNm}(${modalUser.userId}) 회원을 비활성화하시겠습니까?\n비활성화 후에는 로그인할 수 없습니다.`,
+    );
+
+    if (!confirmed) return;
+
+    setIsDeactivating(true);
+
+    try {
+      const encodedUserId = encodeURIComponent(modalUser.userId);
+      await apiClient.delete(`/users/${encodedUserId}`);
+
+      window.alert("회원이 비활성화되었습니다.");
+      setModalUser(null);
+      await loadUsers(currentPage, searchParams);
+    } catch (error) {
+      console.error("회원 비활성화 실패:", error);
+
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.message
+        : null;
+
+      window.alert(message || "회원 비활성화에 실패했습니다.");
+    } finally {
+      setIsDeactivating(false);
+    }
+  };
+
   const columns: ColumnDef<UserResponse>[] = useMemo(
     () => [
       { accessorKey: "userId", header: "사용자ID" },
@@ -264,10 +296,22 @@ export function SystemUsersPage() {
 
       <RowDetailModal
         isOpen={modalUser !== null}
-        onClose={() => setModalUser(null)}
+        onClose={() => {
+          if (!isDeactivating) setModalUser(null);
+        }}
         onSave={handleSave}
         fields={detailFields}
         data={modalData as unknown as Record<string, string>}
+        dangerAction={
+          modalUser?.use
+            ? {
+                label: "회원 비활성화",
+                loadingLabel: "비활성화 처리 중...",
+                onClick: handleDeactivate,
+                isLoading: isDeactivating,
+              }
+            : undefined
+        }
       />
     </section>
   );
