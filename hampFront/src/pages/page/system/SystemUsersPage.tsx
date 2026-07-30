@@ -8,6 +8,7 @@ import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
 import { formatDateTime } from '@/utils/common'
 import { apiClient } from '@/api/apiClient'
+import axios from 'axios'
 import type {
   UserResponse,
   ApiResponseUserResponse,
@@ -21,8 +22,10 @@ export function SystemUsersPage() {
   const [totalPages, setTotalPages] = useState(0)
   const [searchParams, setSearchParams] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
+  const [detailLoadingUserId, setDetailLoadingUserId] = useState<string | null>(null)
   const [modalUser, setModalUser] = useState<UserResponse | null>(null)
   const [currentPage, setCurrentPage] = useState(0)
+  const detailRequestIdRef = useRef(0)
 
   const userIdRef = useRef<HTMLInputElement>(null)
   const userNmRef = useRef<HTMLInputElement>(null)
@@ -67,12 +70,37 @@ export function SystemUsersPage() {
 
   // 회원 단건 상세 조회 (GET /users/{userId})
   const handleOpenDetail = async (userId: string) => {
+    const requestId = ++detailRequestIdRef.current
+    setDetailLoadingUserId(userId)
+
     try {
-      const response = await apiClient.get<ApiResponseUserResponse>(`/users/${userId}`)
-      setModalUser(response.data.data)
+      const encodedUserId = encodeURIComponent(userId)
+      const response = await apiClient.get<ApiResponseUserResponse>(`/users/${encodedUserId}`)
+      const user = response.data.data
+
+      if (!user) {
+        throw new Error('사용자 상세 데이터가 없습니다.')
+      }
+
+      if (requestId === detailRequestIdRef.current) {
+        setModalUser(user)
+      }
     } catch (error) {
       console.error('사용자 상세 조회 실패:', error)
-      window.alert('상세 정보를 불러오는 중 오류가 발생했습니다.')
+
+      if (requestId === detailRequestIdRef.current) {
+        const message = axios.isAxiosError(error)
+          ? error.response?.data?.message
+          : error instanceof Error
+            ? error.message
+            : null
+
+        window.alert(message || '상세 정보를 불러오는 중 오류가 발생했습니다.')
+      }
+    } finally {
+      if (requestId === detailRequestIdRef.current) {
+        setDetailLoadingUserId(null)
+      }
     }
   }
 
@@ -148,34 +176,39 @@ export function SystemUsersPage() {
             <button
               type="button"
               className="miniButton"
+              disabled={detailLoadingUserId === row.original.userId}
               onClick={(e) => {
                 e.stopPropagation()
                 handleOpenDetail(row.original.userId)
               }}
             >
-              상세
+              {detailLoadingUserId === row.original.userId ? '조회 중...' : '상세'}
             </button>
           </div>
         ),
       },
     ],
-    [],
+    [detailLoadingUserId],
   )
 
   const detailFields = [
-    { label: '사용자ID', key: 'userId' },
+    { label: '사용자ID', key: 'userId', editable: false },
     { label: '이름', key: 'userNm' },
     { label: '전화번호', key: 'phone' },
     { label: '직책', key: 'position' },
-    { label: '사용여부', key: 'use' },
-    { label: '생성일시', key: 'createdAt' },
+    { label: '사용여부', key: 'use', editable: false },
+    { label: '생성일시', key: 'createdAt', editable: false },
   ]
 
   // 상세 모달에 전달할 데이터의 createdAt 포맷팅
   const modalData = useMemo(() => {
     if (!modalUser) return {}
     return {
-      ...modalUser,
+      userId: modalUser.userId,
+      userNm: modalUser.userNm,
+      phone: modalUser.phone,
+      position: modalUser.position,
+      use: modalUser.use ? '사용' : '미사용',
       createdAt: formatDateTime(modalUser.createdAt),
     }
   }, [modalUser])

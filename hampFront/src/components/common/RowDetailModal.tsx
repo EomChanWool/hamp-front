@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 type Field = {
   label: string;
   key: string;
+  editable?: boolean;
 };
 
 type RowDetailModalProps = {
@@ -63,11 +64,11 @@ export function RowDetailModal({ isOpen, onClose, onSave, fields, data }: RowDet
         </div>
 
         <div className="detailModalBody">
-          {fields.map(({ label, key }) => (
+          {fields.map(({ label, key, editable }) => (
             <div key={key} className="detailField">
               <label>{label}</label>
 
-              {isEditing ? (
+              {isEditing && editable !== false ? (
                 <input
                   className="tableInput"
                   value={form[key] ?? ""}
