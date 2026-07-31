@@ -42,12 +42,15 @@ export function RowDetailModal({
     }
   }, [JSON.stringify(data)]);
 
-  // 2. 모달이 열리거나 닫힐 때 상태를 안전하게 리셋
+  // 2. 모달이 닫히거나 수정 모드가 종료될 때 form 상태를 원본 데이터로 리셋
   useEffect(() => {
     if (!isOpen) {
       setIsEditing(false);
+      setForm(data); // 모달 닫힐 때 Form 롤백
+    } else if (!isEditing) {
+      setForm(data); // 수정 모드 빠져나올 때 Form 롤백
     }
-  }, [isOpen]);
+  }, [isOpen, isEditing, data]);
 
   // 3. 비동기 저장이 완료된 후 또는 부모 흐름에 맞춰 setIsEditing 처리
   const handleSave = async () => {

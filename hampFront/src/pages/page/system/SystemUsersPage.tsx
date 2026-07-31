@@ -160,31 +160,41 @@ export function SystemUsersPage() {
 
     setIsUpdating(true);
     try {
-      // updated에 값이 존재하면 trim 후 검사, 빈값이면 null로 처리 (속성 자체가 없을 땐 기존 modalUser 값 유지)
+      // 1️updated 객체에 키가 존재하면 입력된 값(trim)을 사용하고, 속성이 없으면 기존 값을 사용합니다.
+      // 빈 문자열("")이 들어왔을 때 기존 값으로 덮어씌우지 않도록 || modalUser.userNm 구문을 제거했습니다.
+      const userNmVal = "userNm" in updated ? updated.userNm.trim() : modalUser.userNm;
       const phoneVal = "phone" in updated ? updated.phone : modalUser.phone;
       const positionVal = "position" in updated ? updated.position : modalUser.position;
 
       const updatePayload: UserUpdateRequest = {
-        userNm: ("userNm" in updated ? updated.userNm : modalUser.userNm)?.trim() || modalUser.userNm,
-
-        // 빈 문자열("") 또는 공백이면 null, 값이 있으면 trim된 문자열 전송
+        userNm: userNmVal,
         phone: phoneVal?.trim() ? phoneVal.trim() : null,
         position: positionVal?.trim() ? positionVal.trim() : null,
       };
 
       const encodedUserId = encodeURIComponent(modalUser.userId);
-      await apiClient.put(`/users/${encodedUserId}`, updatePayload);
 
-      window.alert("수정되었습니다.");
+      // API 응답 타입(ApiResponseUserResponse 등)을 지정하여 response 변수로 받습니다.
+      const response = await apiClient.put<ApiResponseUserResponse>(
+        `/users/${encodedUserId}`,
+        updatePayload
+      );
+
+      // 백엔드에서 내려준 성공 메시지 사용
+      const successMessage = response.data?.message || "수정되었습니다.";
+      window.alert(successMessage);
+
       setModalUser(null);
       await loadUsers(currentPage, searchParams);
     } catch (err) {
       console.error("저장 실패:", err);
-      // 백엔드 에러 메시지 노출 (400 VALIDATION_ERROR, 404 USER_NOT_FOUND 등)
-      const message = axios.isAxiosError(err)
+
+      // 백엔드에서 내려준 에러 메시지 노출 (400 VALIDATION_ERROR 등)
+      const errorMessage = axios.isAxiosError(err)
         ? err.response?.data?.message
         : null;
-      window.alert(message || "수정에 실패했습니다.");
+
+      window.alert(errorMessage || "수정에 실패했습니다.");
     } finally {
       setIsUpdating(false);
     }
