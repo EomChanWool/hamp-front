@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 type Field = {
   label: string;
   key: string;
@@ -15,7 +16,7 @@ type DetailModalAction = {
 type RowDetailModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: Record<string, string>) => void;
+  onSave: (data: Record<string, string>) => void | Promise<void>;
   fields: Field[];
   data: Record<string, string>;
   dangerAction?: DetailModalAction;
@@ -34,14 +35,23 @@ export function RowDetailModal({
   const [form, setForm] = useState(data);
   const isBusy = dangerAction?.isLoading === true;
 
-  // ...컴포넌트 안에서
+  // 1. data 객체의 내용이 실제로 바뀔 때만 form 동기화
   useEffect(() => {
-    setForm(data);
-    setIsEditing(false);
-  }, [data]);
+    if (data) {
+      setForm(data);
+    }
+  }, [JSON.stringify(data)]);
 
-  const handleSave = () => {
-    onSave(form);
+  // 2. 모달이 열리거나 닫힐 때 상태를 안전하게 리셋
+  useEffect(() => {
+    if (!isOpen) {
+      setIsEditing(false);
+    }
+  }, [isOpen]);
+
+  // 3. 비동기 저장이 완료된 후 또는 부모 흐름에 맞춰 setIsEditing 처리
+  const handleSave = async () => {
+    await onSave(form);
     setIsEditing(false);
   };
 
@@ -128,7 +138,10 @@ export function RowDetailModal({
               <button
                 type="button"
                 className="ghostButton"
-                onClick={() => setIsEditing(false)}
+                onClick={() => {
+                  setForm(data);
+                  setIsEditing(false);
+                }}
                 disabled={isBusy}
               >
                 취소
