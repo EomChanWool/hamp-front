@@ -135,7 +135,8 @@ apiClient.interceptors.response.use(
       if (
         url.includes('/auth/login') ||
         url.includes('/auth/logout') ||
-        url.includes('/auth/refresh')
+        url.includes('/auth/refresh') ||
+        url.includes('/auth/change-password')
       ) {
         return Promise.reject(error)
       }
@@ -144,6 +145,19 @@ apiClient.interceptors.response.use(
       if (errorCode === 'SESSION_REPLACED') {
         logoutCallback?.(errorCode, errorMessage)
         // 호출한 페이지의 catch 블록이 실행되지 않도록 Pending Promise 반환
+        return new Promise(() => {})
+      }
+
+      // 초기 비밀번호 변경 필요 시 강제 리다이렉트
+      if (errorCode === 'PASSWORD_CHANGE_REQUIRED') {
+        const nowPath = getCurrentPath()
+        
+        // 무한 리다이렉트 방지
+        if (!nowPath.includes('/change-password')) {
+          navigateFn?.('/change-password', { replace: true })
+        }
+        
+        // 화면 전환이 일어나므로 개별 컴포넌트의 catch(에러 토스트 등) 차단
         return new Promise(() => {})
       }
 

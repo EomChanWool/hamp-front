@@ -14,13 +14,16 @@ import type {
   LoginRequest,
   ApiResponseLoginResponse,
   LoginResponse,
+  ChangePasswordRequest,
+  ApiResponseTokenResponse,
 } from '@/types/auth/Auth'
 
 interface AuthContextValue {
   isAuthenticated: boolean
   user: LoginResponse | null
-  login: (credentials: LoginRequest) => Promise<void>
+  login: (credentials: LoginRequest) => Promise<LoginResponse>
   logout: () => Promise<void>
+  changePassword: (data: ChangePasswordRequest) => Promise<ApiResponseTokenResponse>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -83,6 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(loginData)
       setIsAuthenticated(true)
 
+      return loginData
     } catch (error: any) {
       console.error('로그인 실패:', error)
 
@@ -92,6 +96,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       )
     }
   }, [])
+
+  const changePassword = useCallback(async (data: ChangePasswordRequest) => {
+    try {
+      const response = await apiClient.post<ApiResponseTokenResponse>(
+        '/auth/change-password',
+        data,
+      )
+
+      const newToken = response.data.data.accessToken
+
+      if (!newToken) {
+        throw new Error('새 토큰이 전달되지 않았습니다.')
+      }
+
+      // 1. LocalStorage 토큰 업데이트
+      localStorage.setItem('token', newToken)
+
+      // 2. LocalStorage 유저 정보 및 user state 토큰 업데이트
+      if (user) {
+        const updatedUser = { ...user, accessToken: newToken }
+        localStorage.setItem('user', JSON.stringify(updatedUser))
+        setUser(updatedUser)
+      }
+      return response.data
+
+    } catch (error: any) {
+      console.error('비밀번호 변경 실패:', error)
+      throw new Error(
+        error.response?.data?.message || '비밀번호 변경 중 오류가 발생했습니다.'
+      )
+    }
+  }, [user])
 
   // 사용자 로그아웃
   const logout = useCallback(async () => {
@@ -177,8 +213,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       user,
       login,
       logout,
+      changePassword,
     }),
-    [isAuthenticated, user, login, logout],
+    [isAuthenticated, user, login, logout, changePassword],
   )
 
   return (
