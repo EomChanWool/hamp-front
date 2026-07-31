@@ -123,14 +123,7 @@ export function RowDetailModal({
         </div>
 
         {/* 푸터 영역 */}
-        <div
-          className="detailModalFooter"
-          style={{
-            display: "flex",
-            justifyContent: "space-between", // 좌우 양끝으로 분리
-            alignItems: "center",
-          }}
-        >
+        <div className="detailModalFooter">
           {/* 좌측: 수정 모드일 때만 나오는 위험 동작 (회원 비활성화) */}
           <div className="detailModalFooterLeft">
             {isEditing && dangerAction && (
@@ -148,10 +141,7 @@ export function RowDetailModal({
           </div>
 
           {/* 우측: 일반 액션 (수정 모드: 취소/저장, 조회 모드: 닫기/수정) */}
-          <div
-            className="detailModalFooterRight"
-            style={{ display: "flex", gap: "8px" }}
-          >
+          <div className="detailModalFooterRight">
             {isEditing ? (
               <>
                 <button

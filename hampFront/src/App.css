@@ -44,14 +44,17 @@
   background: var(--bg-app);
   color: var(--text-main);
 }
+
 [data-theme="dark"] .header {
   background: #1a1d27;
   border-bottom: 1px solid var(--border);
 }
+
 [data-theme="dark"] .sidebar {
   background: rgba(26, 29, 39, 0.95);
   border-right: 1px solid var(--border);
 }
+
 [data-theme="dark"] .workspace {
   background: var(--bg-app);
 }
@@ -63,6 +66,7 @@
   background: var(--bg-card);
   border-color: var(--border);
 }
+
 [data-theme="dark"] .metricCard span {
   color: #94a3b8;
 }
@@ -71,13 +75,16 @@
   background: var(--bg-subtle);
   color: var(--text-muted);
 }
+
 [data-theme="dark"] td {
   color: var(--text-body);
 }
+
 [data-theme="dark"] th,
 [data-theme="dark"] td {
   border-color: var(--border);
 }
+
 [data-theme="dark"] tr:hover td {
   background: #1e2130;
 }
@@ -87,6 +94,7 @@
   border-color: var(--border);
   color: var(--text-main);
 }
+
 [data-theme="dark"] input:focus {
   border-color: #57d3a1;
   box-shadow: 0 0 0 3px rgba(87, 211, 161, 0.15);
@@ -97,6 +105,7 @@
   border: 1px solid rgba(96, 165, 250, 0.32);
   color: #93c5fd;
 }
+
 [data-theme="dark"] .miniButton {
   background: #252a36;
   border: 1px solid #3a4150;
@@ -131,9 +140,11 @@
 [data-theme="dark"] .sidebarToggle {
   border-color: var(--border);
 }
+
 [data-theme="dark"] .sidebarToggle:hover {
   background: var(--border);
 }
+
 [data-theme="dark"] .sidebarToggle svg {
   color: var(--text-main);
 }
@@ -142,13 +153,16 @@
   background: #1e2130;
   color: var(--text-main);
 }
+
 [data-theme="dark"] .navItems button.active {
   background: #1a3a2e;
   color: #57d3a1;
 }
+
 [data-theme="dark"] .navItems button.active svg {
   color: #57d3a1;
 }
+
 [data-theme="dark"] .mainContent.collapsed .navItems {
   background: var(--bg-card);
   border-color: var(--border);
@@ -157,6 +171,7 @@
 [data-theme="dark"] .brandText strong {
   color: var(--text-main);
 }
+
 [data-theme="dark"] .brandText small {
   color: var(--text-muted);
 }
@@ -165,6 +180,7 @@
   background: var(--bg-subtle);
   border-color: var(--border);
 }
+
 [data-theme="dark"] .locationGrid span,
 [data-theme="dark"] .summaryList span,
 [data-theme="dark"] .detailList div,
@@ -173,6 +189,7 @@
   background: var(--bg-subtle);
   border-color: var(--border);
 }
+
 [data-theme="dark"] .panelHeader h2 {
   color: var(--text-heading);
 }
@@ -181,26 +198,33 @@
 [data-theme="dark"] .headerIconBtn {
   color: var(--text-muted);
 }
+
 [data-theme="dark"] .headerIconBtn:hover {
   background: #1e2130;
   color: var(--text-main);
 }
+
 [data-theme="dark"] .headerBadgeDot {
   border-color: #1a1d27;
 }
+
 [data-theme="dark"] .headerDivider {
   background: var(--border);
 }
+
 [data-theme="dark"] .headerAvatar {
   background: #2e3138;
   color: #94a3b8;
 }
+
 [data-theme="dark"] .headerUserInfo span {
   color: var(--text-muted);
 }
+
 [data-theme="dark"] .headerUserInfo strong {
   color: var(--text-main);
 }
+
 [data-theme="dark"] .headerLogout:hover {
   background: #2d1a1a;
   color: #dc2626;
@@ -304,7 +328,8 @@
   -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
   -webkit-text-fill-color: #fff !important;
   caret-color: #fff;
-  transition: background-color 5000s ease-in-out 0s; /* 배경 강제 적용 지연시켜서 안 보이게 */
+  transition: background-color 5000s ease-in-out 0s;
+  /* 배경 강제 적용 지연시켜서 안 보이게 */
 }
 
 .loginForm label svg {
@@ -328,7 +353,7 @@
   background: var(--primary);
 }
 
-.loginForm > p {
+.loginForm>p {
   color: #748094;
   font-size: 13px;
   text-align: center;
@@ -470,6 +495,7 @@ button {
   color: var(--text-body);
   border-color: #cbd5e1;
 }
+
 .pageBtn.active {
   background: var(--primary);
   border-color: var(--primary);
@@ -491,10 +517,12 @@ button {
   border-color: var(--border);
   color: var(--text-muted);
 }
+
 [data-theme="dark"] .pageBtn:hover {
   background: #1e2130;
   color: var(--text-main);
 }
+
 [data-theme="dark"] .pageBtn.active {
   background: var(--primary);
   border-color: var(--primary);
@@ -543,7 +571,7 @@ button {
   align-items: center;
   gap: 12px;
   overflow: hidden;
-  min-width: 0; 
+  min-width: 0;
 }
 
 .brandMark {
@@ -570,6 +598,7 @@ button {
   font-weight: 700;
   color: var(--text-main);
 }
+
 .brandText small {
   display: block;
   font-size: 11px;
@@ -670,6 +699,7 @@ button {
   width: 16px;
   height: 16px;
 }
+
 .sidebarToggle:hover {
   background: var(--bg-subtle);
   color: var(--text-heading);
@@ -855,11 +885,13 @@ button {
   line-height: 1;
   gap: 3px;
 }
+
 .headerUserInfo span {
   font-size: 10px;
   color: var(--text-muted);
   font-weight: 500;
 }
+
 .headerUserInfo strong {
   font-size: 13px;
   color: var(--text-heading);
@@ -869,6 +901,7 @@ button {
 .headerLogout {
   color: var(--text-muted);
 }
+
 .headerLogout:hover {
   background: #fee2e2;
   color: #dc2626;
@@ -913,6 +946,7 @@ button {
   display: grid;
   gap: 2px;
 }
+
 .navGroup {
   display: grid;
 }
@@ -941,11 +975,13 @@ button {
   gap: 10px;
   overflow: hidden;
 }
+
 .navGroupHeader .groupLabel svg {
   flex-shrink: 0;
   width: 18px;
   height: 18px;
 }
+
 .navGroupHeader .groupLabel span {
   font-size: 13px;
   font-weight: 500;
@@ -980,9 +1016,11 @@ button {
   height: 44px;
   padding: 0;
 }
+
 .mainContent.collapsed .navGroupHeader .groupLabel {
   justify-content: center;
 }
+
 .mainContent.collapsed .navGroupHeader .chevron {
   display: none;
 }
@@ -1031,6 +1069,7 @@ button {
   background: #eef7f1;
   color: var(--text-main);
 }
+
 .navItems button.active {
   background: var(--primary-light);
   color: #17875f;
@@ -1042,9 +1081,11 @@ button {
   height: 15px;
   color: #7d8a91;
 }
+
 .navItems button.active svg {
   color: #3ec58c;
 }
+
 .navItems button span {
   font-size: 13px;
   font-weight: 500;
@@ -1093,6 +1134,7 @@ button {
   transform: translateX(0);
   pointer-events: auto;
 }
+
 .mainContent.collapsed .navItems button {
   padding: 7px 10px;
   border-radius: 7px;
@@ -1145,7 +1187,8 @@ button {
   gap: 10px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  border-left: 1px solid var(--border); /* border-left 3px 제거 */
+  border-left: 1px solid var(--border);
+  /* border-left 3px 제거 */
   transition: box-shadow 0.15s;
 }
 
@@ -1210,18 +1253,23 @@ button {
 [data-theme="dark"] .metricCard:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
+
 [data-theme="dark"] .metricCard.good .metricIcon {
   background: #052e16;
 }
+
 [data-theme="dark"] .metricCard.warn .metricIcon {
   background: #431407;
 }
+
 [data-theme="dark"] .metricCard.danger .metricIcon {
   background: #450a0a;
 }
+
 [data-theme="dark"] .metricCard.info .metricIcon {
   background: #082f49;
 }
+
 [data-theme="dark"] .metricCard.muted .metricIcon {
   background: #1e293b;
 }
@@ -1230,6 +1278,7 @@ button {
   display: grid;
   gap: 18px;
 }
+
 .contentGrid.two {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
@@ -1246,6 +1295,7 @@ button {
   flex-wrap: wrap;
   gap: 8px;
 }
+
 .rowActions {
   display: flex;
   flex-wrap: wrap;
@@ -1271,20 +1321,24 @@ button {
   background: #e2e8f0;
   border-color: #cbd5e1;
 }
+
 .miniButton.primary {
   background: #dbeafe;
   border-color: #bfdbfe;
   color: #1e40af;
 }
+
 .miniButton.primary:hover {
   background: #bfdbfe;
   border-color: #93c5fd;
 }
+
 .miniButton.danger {
   background: #fde8e8;
   border-color: #fecaca;
   color: #991b1b;
 }
+
 .miniButton.danger:hover {
   background: #fecaca;
   border-color: #fca5a5;
@@ -1327,6 +1381,7 @@ button {
   justify-content: space-between;
   gap: 12px;
 }
+
 .panelHeader h2 {
   margin: 0;
   font-size: 16px;
@@ -1386,6 +1441,7 @@ tbody tr {
   cursor: pointer;
   transition: background 0.1s ease;
 }
+
 tbody tr:hover td {
   background: #fdfefe;
 }
@@ -1416,22 +1472,27 @@ tbody tr:hover td {
   background: #d1fae5;
   color: #065f46;
 }
+
 .badge.warn {
   background: #fef3c7;
   color: #92400e;
 }
+
 .badge.danger {
   background: #fde8e8;
   color: #991b1b;
 }
+
 .badge.info {
   background: #dbeafe;
   color: #1e40af;
 }
+
 .badge.muted {
   background: #f1f5f9;
   color: #475569;
 }
+
 .badge.limits {
   background: #f3e8ff;
   color: #6b21a8;
@@ -1479,6 +1540,7 @@ tbody tr:hover td {
   display: grid;
   gap: 2px;
 }
+
 .progressRow span,
 .progressRow em {
   color: var(--text-muted);
@@ -1492,6 +1554,7 @@ tbody tr:hover td {
   border-radius: 999px;
   overflow: hidden;
 }
+
 .progressBar i {
   display: block;
   height: 100%;
@@ -1620,6 +1683,7 @@ tbody tr:hover td {
   display: grid;
   gap: 5px;
 }
+
 .detailList span,
 .sensorPanel span {
   color: var(--text-muted);
@@ -1648,10 +1712,12 @@ tbody tr:hover td {
   color: #00a6a6;
   font-weight: 900;
 }
+
 .fieldHero h2 {
   margin: 0;
   font-size: 34px;
 }
+
 .fieldHero p {
   color: #d8dee9;
 }
@@ -1685,6 +1751,7 @@ tbody tr:hover td {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
+
 .equipmentGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1702,21 +1769,26 @@ tbody tr:hover td {
   margin: 4px 0 0;
   font-size: 24px;
 }
+
 .equipmentCard span,
 .equipmentCard small {
   color: var(--text-muted);
   font-weight: 600;
 }
+
 .equipmentCard strong {
   font-size: 32px;
 }
+
 .equipmentCard.warn {
   border-top-color: #f59e0b;
 }
+
 .equipmentCard.danger {
   border-top-color: #e94f37;
   color: #c23822;
 }
+
 .equipmentCard.muted {
   border-top-color: #94a3b8;
   color: #64748b;
@@ -1850,14 +1922,19 @@ tbody tr:hover td {
 
 .detailModalFooter {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: 8px;
-
   padding: 18px 28px;
-
   border-top: 1px solid var(--border);
-
   background: var(--bg-subtle);
+}
+
+.detailModalFooterRight {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
 }
 
 .detailModalDangerAction {
@@ -1976,6 +2053,7 @@ tbody tr:hover td {
 .matrixRow:last-child {
   border-bottom: none;
 }
+
 .matrixRow:hover {
   background: #fdfefe;
 }
@@ -2045,50 +2123,63 @@ tbody tr:hover td {
   background: var(--bg-card);
   border-color: var(--border);
 }
+
 [data-theme="dark"] .permissionTabs {
   border-right-color: var(--border);
 }
+
 [data-theme="dark"] .permissionTab {
   background: var(--bg-subtle);
   border-color: var(--border);
 }
+
 [data-theme="dark"] .permissionTab:hover {
   background: #1e2130;
   color: var(--text-main);
 }
+
 [data-theme="dark"] .permissionTab.active {
   background: var(--primary-light);
   color: #57d3a1;
 }
+
 [data-theme="dark"] .permissionTab.active .tabBadge {
   background: rgba(87, 211, 161, 0.15);
   color: #57d3a1;
   border-color: rgba(87, 211, 161, 0.2);
 }
+
 [data-theme="dark"] .matrixHeader {
   background: var(--bg-subtle);
 }
+
 [data-theme="dark"] .matrixRow:hover {
   background: #1e2130;
 }
+
 [data-theme="dark"] .matrixLabel {
   color: var(--text-body);
   background: none;
 }
+
 [data-theme="dark"] .matrixCheckCell {
   background: none;
 }
+
 [data-theme="dark"] .permissionDesc {
   background: var(--bg-subtle);
   border-color: var(--border);
 }
+
 [data-theme="dark"] .customCheck {
   border-color: var(--border);
   background: var(--bg-subtle);
 }
+
 [data-theme="dark"] .customCheck svg {
   color: var(--bg-subtle);
 }
+
 [data-theme="dark"] .customCheck.checked {
   background: var(--primary);
   border-color: var(--primary);
@@ -2103,10 +2194,12 @@ tbody tr:hover td {
 ================================ */
 
 @media (max-width: 1180px) {
+
   .metricGrid,
   .equipmentGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
   .searchBand,
   .formGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2114,6 +2207,7 @@ tbody tr:hover td {
 }
 
 @media (max-width: 860px) {
+
   .loginPanel,
   .contentGrid.two,
   .fieldBoard {
@@ -2150,6 +2244,7 @@ tbody tr:hover td {
   .permissionGrid {
     grid-template-columns: 1fr;
   }
+
   .progressRow {
     grid-template-columns: 1fr;
   }
@@ -2157,6 +2252,7 @@ tbody tr:hover td {
   .fieldActions {
     grid-template-columns: 1fr;
   }
+
   .fieldActions button.start {
     grid-column: auto;
   }
@@ -2176,7 +2272,7 @@ tbody tr:hover td {
   color: var(--text-muted);
 }
 
-.realtimeStrip > div {
+.realtimeStrip>div {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2203,10 +2299,12 @@ tbody tr:hover td {
 }
 
 @keyframes livePulse {
+
   0%,
   100% {
     box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
   }
+
   50% {
     box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.05);
   }
@@ -2302,13 +2400,11 @@ tbody tr:hover td {
   content: "";
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(255, 255, 255, 0.015) 2px,
-    rgba(255, 255, 255, 0.015) 4px
-  );
+  background: repeating-linear-gradient(0deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.015) 2px,
+      rgba(255, 255, 255, 0.015) 4px);
   pointer-events: none;
   z-index: 1;
 }
@@ -2477,10 +2573,12 @@ tbody tr:hover td {
 
 /* ── 애니메이션 ── */
 @keyframes cctvPulse {
+
   0%,
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.3;
   }
