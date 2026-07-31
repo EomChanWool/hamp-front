@@ -357,6 +357,8 @@
   color: #748094;
   font-size: 13px;
   text-align: center;
+  margin: -6px 0 6px; /* 위아래 간격 조정 */
+  word-break: keep-all; /* 한글 단어 단위 줄바꿈 */
 }
 
 /* ================================

@@ -49,11 +49,12 @@ export function ChangePasswordPage() {
                 <form className="loginForm" onSubmit={handleChangePassword}>
                     <div className="loginLogo">
                         <div className="brandMark">H</div>
-                        <h2>비밀번호 변경</h2>
-                        <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px' }}>
-                            안전한 서비스 이용을 위해 초기 비밀번호를 변경해 주세요.
-                        </p>
+                        <h2>HEMP-MES</h2>
                     </div>
+
+                    <p>
+                        안전한 서비스 이용을 위해 초기 비밀번호를 변경해 주세요.
+                    </p>
 
                     <div className="inputGroup">
                         {/* 현재 비밀번호 */}
