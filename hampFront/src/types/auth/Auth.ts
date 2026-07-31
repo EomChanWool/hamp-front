@@ -25,5 +25,12 @@ export interface LoginResponse {
   createdAt: string;
 }
 
+/** 비밀번호 변경 요청 */
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+
 /** 로그인 API 최종 응답 타입 */
 export type ApiResponseLoginResponse = ApiResponse<LoginResponse>;
