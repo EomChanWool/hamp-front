@@ -17,7 +17,11 @@ import { MainLayout } from '@pages/layout/MainLayout'
 import { LoginPage } from '@pages/auth/LoginPage'
 import { NotFound } from '@pages/error/NotFound'
 
-//메인페이지
+
+// 비밀번호 변경 페이지
+import { ChangePasswordPage } from '@pages/auth/ChangePasswordPage'
+
+// 메인페이지
 import { MainDashboardPage } from '@pages/page/dashboard/MainDashboardPage'
 
 // 시스템관리
@@ -327,6 +331,10 @@ export const routeObj: RouteObject[] = [
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/change-password',
+    element: <ChangePasswordPage />,
   },
   {
     path: '*',
