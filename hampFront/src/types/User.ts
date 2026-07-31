@@ -3,7 +3,6 @@ import type { ApiResponse, ApiResponsePage, PageResponse } from '@/types/Common'
 /** 회원 등록(가입) 요청 */
 export interface UserCreateRequest {
   userId: string;
-  password: string;
   userNm: string;
   phone: string;
   position: string;
@@ -23,6 +22,7 @@ export interface UserResponse {
   phone: string;
   position: string;
   use: boolean;
+  passwordChanged: boolean;
   createdAt: string;
 }
 
