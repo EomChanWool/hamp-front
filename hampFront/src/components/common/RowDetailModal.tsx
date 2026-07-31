@@ -119,58 +119,79 @@ export function RowDetailModal({
           ))}
         </div>
 
-        <div className="detailModalFooter">
-          {isEditing ? (
-            <>
-              {dangerAction && (
+        {/* 푸터 영역 */}
+        <div
+          className="detailModalFooter"
+          style={{
+            display: "flex",
+            justifyContent: "space-between", // 좌우 양끝으로 분리
+            alignItems: "center",
+          }}
+        >
+          {/* 좌측: 수정 모드일 때만 나오는 위험 동작 (회원 비활성화) */}
+          <div className="detailModalFooterLeft">
+            {isEditing && dangerAction && (
+              <button
+                type="button"
+                className="dangerButton detailModalDangerAction"
+                onClick={() => void dangerAction.onClick()}
+                disabled={isBusy}
+              >
+                {isBusy
+                  ? (dangerAction.loadingLabel ?? dangerAction.label)
+                  : dangerAction.label}
+              </button>
+            )}
+          </div>
+
+          {/* 우측: 일반 액션 (수정 모드: 취소/저장, 조회 모드: 닫기/수정) */}
+          <div
+            className="detailModalFooterRight"
+            style={{ display: "flex", gap: "8px" }}
+          >
+            {isEditing ? (
+              <>
                 <button
                   type="button"
-                  className="dangerButton detailModalDangerAction"
-                  onClick={() => void dangerAction.onClick()}
+                  className="ghostButton"
+                  onClick={() => {
+                    setForm(data);
+                    setIsEditing(false);
+                  }}
                   disabled={isBusy}
                 >
-                  {isBusy
-                    ? (dangerAction.loadingLabel ?? dangerAction.label)
-                    : dangerAction.label}
+                  취소
                 </button>
-              )}
 
-              <button
-                type="button"
-                className="ghostButton"
-                onClick={() => {
-                  setForm(data);
-                  setIsEditing(false);
-                }}
-                disabled={isBusy}
-              >
-                취소
-              </button>
+                <button
+                  type="button"
+                  className="primaryButton"
+                  onClick={handleSave}
+                  disabled={isBusy}
+                >
+                  저장
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="ghostButton"
+                  onClick={handleClose}
+                >
+                  닫기
+                </button>
 
-              <button
-                type="button"
-                className="primaryButton"
-                onClick={handleSave}
-                disabled={isBusy}
-              >
-                저장
-              </button>
-            </>
-          ) : (
-            <>
-              <button type="button" className="ghostButton" onClick={handleClose}>
-                닫기
-              </button>
-
-              <button
-                type="button"
-                className="primaryButton"
-                onClick={() => setIsEditing(true)}
-              >
-                수정
-              </button>
-            </>
-          )}
+                <button
+                  type="button"
+                  className="primaryButton"
+                  onClick={() => setIsEditing(true)}
+                >
+                  수정
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </>
