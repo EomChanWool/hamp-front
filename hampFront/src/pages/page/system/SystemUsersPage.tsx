@@ -3,6 +3,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@components/common/Badge";
 import { Panel } from "@components/card/Panel";
 import { RowDetailModal } from "@components/common/RowDetailModal";
+import { UserCreateModal } from "@components/common/UserCreateModal";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
@@ -14,6 +15,7 @@ import type {
   ApiResponseUserResponse,
   ApiResponsePageUserResponse,
   UserUpdateRequest,
+  UserCreateRequest,
 } from "@/types/User";
 
 export function SystemUsersPage() {
@@ -22,11 +24,17 @@ export function SystemUsersPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [searchParams, setSearchParams] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [detailLoadingUserId, setDetailLoadingUserId] = useState<string | null>(
-    null,
-  );
+  const [detailLoadingUserId, setDetailLoadingUserId] = useState<string | null>(null);
+  
+  // 상태 변경 및 로딩 관리
+  const [isUpdating, setIsUpdating] = useState(false);
   const [isDeactivating, setIsDeactivating] = useState(false);
   const [modalUser, setModalUser] = useState<UserResponse | null>(null);
+
+  // 등록 모달 및 생성 중 로딩 상태
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
   const [currentPage, setCurrentPage] = useState(0);
   const detailRequestIdRef = useRef(0);
 
@@ -46,24 +54,15 @@ export function SystemUsersPage() {
     try {
       const cleanedParams = Object.entries(params).reduce(
         (acc, [key, value]) => {
-          if (value && value.trim() !== "") {
-            acc[key] = value.trim();
-          }
+          if (value && value.trim() !== "") acc[key] = value.trim();
           return acc;
         },
-        {} as Record<string, string>,
+        {} as Record<string, string>
       );
 
-      const response = await apiClient.get<ApiResponsePageUserResponse>(
-        "/users",
-        {
-          params: {
-            ...cleanedParams,
-            page,
-            size: 10,
-          },
-        },
-      );
+      const response = await apiClient.get<ApiResponsePageUserResponse>("/users", {
+        params: { ...cleanedParams, page, size: 10 },
+      });
 
       const pageData = response.data.data;
       setUsers(pageData.content ?? []);
@@ -85,27 +84,23 @@ export function SystemUsersPage() {
     try {
       const encodedUserId = encodeURIComponent(userId);
       const response = await apiClient.get<ApiResponseUserResponse>(
-        `/users/${encodedUserId}`,
+        `/users/${encodedUserId}`
       );
       const user = response.data.data;
 
-      if (!user) {
-        throw new Error("사용자 상세 데이터가 없습니다.");
-      }
+      if (!user) throw new Error("사용자 상세 데이터가 없습니다.");
 
       if (requestId === detailRequestIdRef.current) {
         setModalUser(user);
       }
     } catch (error) {
       console.error("사용자 상세 조회 실패:", error);
-
       if (requestId === detailRequestIdRef.current) {
         const message = axios.isAxiosError(error)
           ? error.response?.data?.message
           : error instanceof Error
-            ? error.message
-            : null;
-
+          ? error.message
+          : null;
         window.alert(message || "상세 정보를 불러오는 중 오류가 발생했습니다.");
       }
     } finally {
@@ -119,19 +114,18 @@ export function SystemUsersPage() {
     loadUsers(currentPage, searchParams);
   }, [currentPage, searchParams]);
 
+  // 검색 핸들러
   const handleSearch = () => {
     const params: Record<string, string> = {};
-    if (userIdRef.current?.value.trim())
-      params.userId = userIdRef.current.value.trim();
-    if (userNmRef.current?.value.trim())
-      params.userNm = userNmRef.current.value.trim();
-    if (userDepRef.current?.value.trim())
-      params.userDep = userDepRef.current.value.trim();
+    if (userIdRef.current?.value.trim()) params.userId = userIdRef.current.value.trim();
+    if (userNmRef.current?.value.trim()) params.userNm = userNmRef.current.value.trim();
+    if (userDepRef.current?.value.trim()) params.userDep = userDepRef.current.value.trim();
 
     setCurrentPage(0);
     setSearchParams(params);
   };
 
+  // 검색 초기화
   const handleReset = () => {
     [userIdRef, userNmRef, userDepRef].forEach((ref) => {
       if (ref.current) ref.current.value = "";
@@ -140,57 +134,85 @@ export function SystemUsersPage() {
     setSearchParams({});
   };
 
-  const handleSave = async (updated: Record<string, string>) => {
-    if (!modalUser) return;
+  // 1. 신규 회원 등록 처리 (POST /users)
+  const handleCreateUser = async (formData: UserCreateRequest) => {
+    setIsCreating(true);
     try {
-      const updatePayload: UserUpdateRequest = {
-        userNm: updated.userNm ?? modalUser.userNm,
-        phone: updated.phone ?? modalUser.phone,
-        position: updated.position ?? modalUser.position,
-      };
-
-      await apiClient.put(`/users/${modalUser.userId}`, updatePayload);
-
-      window.alert("저장되었습니다.");
-      setModalUser(null);
+      await apiClient.post("/users", formData);
+      window.alert("성공적으로 등록되었습니다.");
+      setIsCreateModalOpen(false);
       loadUsers(currentPage, searchParams);
-    } catch (err) {
-      console.error("저장 실패:", err);
-      window.alert("저장에 실패했습니다.");
+    } catch (error) {
+      console.error("회원 등록 실패:", error);
+      // 백엔드 에러 메시지 노출 (400 VALIDATION_ERROR, 409 DUPLICATE_USER_ID 등)
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.message
+        : null;
+      window.alert(message || "회원 등록 중 오류가 발생했습니다.");
+    } finally {
+      setIsCreating(false);
     }
   };
 
+  // 2. 회원 정보 수정 처리 (PUT /users/{userId}) - Full Replace 적용
+  const handleSave = async (updated: Record<string, string>) => {
+    if (!modalUser || isUpdating) return;
+
+    setIsUpdating(true);
+    try {
+      // PUT 요청에 맞춰 전체 payload 구성 (수정폼에 값이 들어왔으면 해당 값, 아니면 기존 modalUser 값 사용)
+      const updatePayload: UserUpdateRequest = {
+        userNm: "userNm" in updated ? updated.userNm : modalUser.userNm,
+        phone: "phone" in updated ? updated.phone : modalUser.phone,
+        position: "position" in updated ? updated.position : modalUser.position,
+      };
+
+      const encodedUserId = encodeURIComponent(modalUser.userId);
+      await apiClient.put(`/users/${encodedUserId}`, updatePayload);
+
+      window.alert("수정되었습니다.");
+      setModalUser(null);
+      await loadUsers(currentPage, searchParams);
+    } catch (err) {
+      console.error("저장 실패:", err);
+      // 백엔드 에러 메시지 노출 (400 VALIDATION_ERROR, 404 USER_NOT_FOUND 등)
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.message
+        : null;
+      window.alert(message || "수정에 실패했습니다.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // 3. 회원 비활성화 처리 (DELETE /users/{userId})
   const handleDeactivate = async () => {
     if (!modalUser || !modalUser.use || isDeactivating) return;
 
     const confirmed = window.confirm(
-      `${modalUser.userNm}(${modalUser.userId}) 회원을 비활성화하시겠습니까?\n비활성화 후에는 로그인할 수 없습니다.`,
+      `${modalUser.userNm}(${modalUser.userId}) 회원을 비활성화하시겠습니까?\n비활성화 후에는 로그인할 수 없습니다.`
     );
-
     if (!confirmed) return;
 
     setIsDeactivating(true);
-
     try {
       const encodedUserId = encodeURIComponent(modalUser.userId);
       await apiClient.delete(`/users/${encodedUserId}`);
-
       window.alert("회원이 비활성화되었습니다.");
       setModalUser(null);
       await loadUsers(currentPage, searchParams);
     } catch (error) {
       console.error("회원 비활성화 실패:", error);
-
       const message = axios.isAxiosError(error)
         ? error.response?.data?.message
         : null;
-
       window.alert(message || "회원 비활성화에 실패했습니다.");
     } finally {
       setIsDeactivating(false);
     }
   };
 
+  // 테이블 컬럼 정의
   const columns: ColumnDef<UserResponse>[] = useMemo(
     () => [
       { accessorKey: "userId", header: "사용자ID" },
@@ -209,7 +231,6 @@ export function SystemUsersPage() {
       {
         accessorKey: "createdAt",
         header: "생성일시",
-        // 💡 formatDateTime 사용
         cell: ({ getValue }) => formatDateTime(getValue<string>()),
       },
       {
@@ -227,27 +248,24 @@ export function SystemUsersPage() {
                 handleOpenDetail(row.original.userId);
               }}
             >
-              {detailLoadingUserId === row.original.userId
-                ? "조회 중..."
-                : "상세"}
+              {detailLoadingUserId === row.original.userId ? "조회 중..." : "상세"}
             </button>
           </div>
         ),
       },
     ],
-    [detailLoadingUserId],
+    [detailLoadingUserId]
   );
 
   const detailFields = [
     { label: "사용자ID", key: "userId", editable: false },
     { label: "이름", key: "userNm" },
     { label: "전화번호", key: "phone" },
-    { label: "직책", key: "position" },
+    { label: "부서", key: "position" },
     { label: "사용여부", key: "use", editable: false },
     { label: "생성일시", key: "createdAt", editable: false },
   ];
 
-  // 상세 모달에 전달할 데이터의 createdAt 포맷팅
   const modalData = useMemo(() => {
     if (!modalUser) return {};
     return {
@@ -262,22 +280,12 @@ export function SystemUsersPage() {
 
   return (
     <section className="screenStack">
-      <SearchBand
-        fields={searchFields}
-        onSearch={handleSearch}
-        onReset={handleReset}
-      />
+      <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="사용자관리 목록">
+      <Panel title="사용자관리 목록" action="등록" onAction={() => setIsCreateModalOpen(true)}>
         <div className="relative min-h-[300px]">
-          {/* 로딩 오버레이 (화면 깜빡임 및 위치 이동 방지) */}
           {isLoading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
-              <div className="flex items-center gap-2 rounded-lg bg-gray-900/80 px-4 py-2 text-sm text-white shadow-md">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                <span>데이터를 불러오는 중입니다...</span>
-              </div>
-            </div>
+            <span>데이터를 불러오는 중입니다...</span>
           )}
 
           <CusTable
@@ -294,10 +302,11 @@ export function SystemUsersPage() {
         </div>
       </Panel>
 
+      {/* 회원 상세/수정 모달 */}
       <RowDetailModal
         isOpen={modalUser !== null}
         onClose={() => {
-          if (!isDeactivating) setModalUser(null);
+          if (!isDeactivating && !isUpdating) setModalUser(null);
         }}
         onSave={handleSave}
         fields={detailFields}
@@ -312,6 +321,14 @@ export function SystemUsersPage() {
               }
             : undefined
         }
+      />
+
+      {/* 신규 회원 등록 모달 */}
+      <UserCreateModal
+        isOpen={isCreateModalOpen}
+        isLoading={isCreating}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateUser}
       />
     </section>
   );
