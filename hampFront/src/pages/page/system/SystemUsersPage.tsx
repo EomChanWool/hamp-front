@@ -141,7 +141,7 @@ export function SystemUsersPage() {
       await apiClient.post("/users", formData);
       window.alert("성공적으로 등록되었습니다.");
       setIsCreateModalOpen(false);
-      loadUsers(currentPage, searchParams);
+      await loadUsers(currentPage, searchParams);
     } catch (error) {
       console.error("회원 등록 실패:", error);
       // 백엔드 에러 메시지 노출 (400 VALIDATION_ERROR, 409 DUPLICATE_USER_ID 등)

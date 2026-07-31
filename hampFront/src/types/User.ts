@@ -4,8 +4,8 @@ import type { ApiResponse, ApiResponsePage, PageResponse } from '@/types/Common'
 export interface UserCreateRequest {
   userId: string;
   userNm: string;
-  phone: string;
-  position: string;
+  phone?: string | null;
+  position?: string | null;
 }
 
 /** 회원 정보 수정 요청 */
