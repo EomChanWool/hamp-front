@@ -11,8 +11,8 @@ export interface UserCreateRequest {
 /** 회원 정보 수정 요청 */
 export interface UserUpdateRequest {
   userNm: string;
-  phone: string;
-  position: string;
+  phone?: string | null;
+  position?: string | null;
 }
 
 /** 회원 정보 응답 Data */

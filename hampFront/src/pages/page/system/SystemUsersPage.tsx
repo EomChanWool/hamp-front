@@ -25,7 +25,7 @@ export function SystemUsersPage() {
   const [searchParams, setSearchParams] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [detailLoadingUserId, setDetailLoadingUserId] = useState<string | null>(null);
-  
+
   // 상태 변경 및 로딩 관리
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeactivating, setIsDeactivating] = useState(false);
@@ -99,8 +99,8 @@ export function SystemUsersPage() {
         const message = axios.isAxiosError(error)
           ? error.response?.data?.message
           : error instanceof Error
-          ? error.message
-          : null;
+            ? error.message
+            : null;
         window.alert(message || "상세 정보를 불러오는 중 오류가 발생했습니다.");
       }
     } finally {
@@ -160,11 +160,16 @@ export function SystemUsersPage() {
 
     setIsUpdating(true);
     try {
-      // PUT 요청에 맞춰 전체 payload 구성 (수정폼에 값이 들어왔으면 해당 값, 아니면 기존 modalUser 값 사용)
+      // updated에 값이 존재하면 trim 후 검사, 빈값이면 null로 처리 (속성 자체가 없을 땐 기존 modalUser 값 유지)
+      const phoneVal = "phone" in updated ? updated.phone : modalUser.phone;
+      const positionVal = "position" in updated ? updated.position : modalUser.position;
+
       const updatePayload: UserUpdateRequest = {
-        userNm: "userNm" in updated ? updated.userNm : modalUser.userNm,
-        phone: "phone" in updated ? updated.phone : modalUser.phone,
-        position: "position" in updated ? updated.position : modalUser.position,
+        userNm: ("userNm" in updated ? updated.userNm : modalUser.userNm)?.trim() || modalUser.userNm,
+
+        // 빈 문자열("") 또는 공백이면 null, 값이 있으면 trim된 문자열 전송
+        phone: phoneVal?.trim() ? phoneVal.trim() : null,
+        position: positionVal?.trim() ? positionVal.trim() : null,
       };
 
       const encodedUserId = encodeURIComponent(modalUser.userId);
@@ -314,11 +319,11 @@ export function SystemUsersPage() {
         dangerAction={
           modalUser?.use
             ? {
-                label: "회원 비활성화",
-                loadingLabel: "비활성화 처리 중...",
-                onClick: handleDeactivate,
-                isLoading: isDeactivating,
-              }
+              label: "회원 비활성화",
+              loadingLabel: "비활성화 처리 중...",
+              onClick: handleDeactivate,
+              isLoading: isDeactivating,
+            }
             : undefined
         }
       />
