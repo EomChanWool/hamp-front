@@ -137,7 +137,7 @@ export function SystemUsersPage() {
     const params: Record<string, string> = {};
     if (userIdRef.current?.value.trim()) params.userId = userIdRef.current.value.trim();
     if (userNmRef.current?.value.trim()) params.userNm = userNmRef.current.value.trim();
-    if (userDepRef.current?.value.trim()) params.userDep = userDepRef.current.value.trim();
+    if (userDepRef.current?.value.trim()) params.position = userDepRef.current.value.trim();
 
     setCurrentPage(0);
     setSearchParams(params);
