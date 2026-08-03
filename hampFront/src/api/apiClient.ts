@@ -39,10 +39,14 @@ apiClient.interceptors.request.use((config) => {
 
 // ── Logout callback ─────────────────────────────────────────────────────────
 
-let logoutCallback: ((code?: string, message?: string) => void) | null = null
+let logoutCallback:
+  | ((code?: string, message?: string, requestToken?: string) => void)
+  | null = null
 
 export const setLogoutCallback = (
-  callback: ((code?: string, message?: string) => void) | null,
+  callback:
+    | ((code?: string, message?: string, requestToken?: string) => void)
+    | null,
 ) => {
   logoutCallback = callback
 }
@@ -104,6 +108,20 @@ const isServerDownError = (error: unknown) => {
   return false
 }
 
+// ── Request Header 토큰 추출 헬퍼 함수 ───────────────────────────────────────
+const extractRequestToken = (config: any): string | undefined => {
+  if (!config?.headers) return undefined
+  let authHeader: string | undefined
+
+  if (typeof config.headers.get === 'function') {
+    authHeader = config.headers.get('Authorization')
+  } else {
+    authHeader = config.headers['Authorization'] || config.headers['authorization']
+  }
+
+  return authHeader?.replace(/^Bearer\s+/i, '')
+}
+
 // ── Response interceptor ────────────────────────────────────────────────────
 
 apiClient.interceptors.response.use(
@@ -123,8 +141,10 @@ apiClient.interceptors.response.use(
       const errorCode = error.response?.data?.code
       const errorMessage = error.response?.data?.message
 
+      const requestToken = extractRequestToken(originalRequest)
+
       if (!originalRequest) {
-        logoutCallback?.()
+        logoutCallback?.(undefined, undefined, requestToken)
         // 강제 로그아웃 시 페이지단 catch 알림 차단
         return new Promise(() => {})
       }
@@ -143,7 +163,7 @@ apiClient.interceptors.response.use(
 
       // 다른 장치에서 중복 로그인된 경우 (즉시 강제 로그아웃)
       if (errorCode === 'SESSION_REPLACED') {
-        logoutCallback?.(errorCode, errorMessage)
+        logoutCallback?.(errorCode, errorMessage, requestToken)
         // 호출한 페이지의 catch 블록이 실행되지 않도록 Pending Promise 반환
         return new Promise(() => {})
       }
@@ -163,7 +183,7 @@ apiClient.interceptors.response.use(
 
       // 이미 재시도한 요청이 또 401인 경우 (재발급 받은 토큰도 만료/유효하지 않은 경우)
       if (originalRequest._retry) {
-        logoutCallback?.(errorCode, errorMessage)
+        logoutCallback?.(errorCode, errorMessage, requestToken)
         return new Promise(() => {})
       }
 
@@ -197,7 +217,7 @@ apiClient.interceptors.response.use(
                 errMsg = refreshError.response?.data?.message || errMsg
               }
 
-              logoutCallback?.(errCode, errMsg)
+              logoutCallback?.(errCode, errMsg, requestToken)
               throw refreshError
             } finally {
               refreshPromise = null

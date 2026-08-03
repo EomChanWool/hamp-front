@@ -153,20 +153,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // apiClient interceptor에서 전달되는 강제 로그아웃 콜백 처리
   useEffect(() => {
-    setLogoutCallback((code, message) => {
+    setLogoutCallback((code, message, requestToken) => {
       if (isLoggingIn.current || isForcedLogout.current) return
 
       const currentStoredToken = localStorage.getItem('token')
-      const currentStoredUser = localStorage.getItem('user')
-
-      if (currentStoredToken && currentStoredUser) {
-        try {
-          setUser(JSON.parse(currentStoredUser))
-          setIsAuthenticated(true)
-          return 
-        } catch (e) {
-          // 파싱 에러 시 진행
-        }
+      if (
+        code !== 'SESSION_REPLACED' &&
+        requestToken &&
+        currentStoredToken &&
+        requestToken !== currentStoredToken
+      ) {
+        return
       }
 
       isForcedLogout.current = true
