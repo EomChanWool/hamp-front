@@ -35,6 +35,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 동시 API 401(예: SESSION_REPLACED) 발생 시 강제 로그아웃 중복 처리 방지
   const isForcedLogout = useRef(false)
 
+  // 동시 API 401 발생 시 로그인 중복 처리 방지
+  const isLoggingIn = useRef(false)
+
+
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
     () => !!localStorage.getItem('token'),
   )
@@ -42,9 +46,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 저장된 사용자 정보 복원
   const [user, setUser] = useState<LoginResponse | null>(() => {
     const savedUser = localStorage.getItem('user')
-
     if (!savedUser) return null
-
     try {
       return JSON.parse(savedUser)
     } catch (error) {
@@ -65,6 +67,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // 로그인 처리
   const login = useCallback(async (credentials: LoginRequest) => {
+    isLoggingIn.current = true
+    isForcedLogout.current = false
+
     try {
       const response = await apiClient.post<ApiResponseLoginResponse>(
         '/auth/login',
@@ -78,18 +83,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error(response.data.message || '응답에 토큰이 없습니다.')
       }
 
-      localStorage.setItem('token', token)
       localStorage.setItem('user', JSON.stringify(loginData))
-
-      isForcedLogout.current = false
+      localStorage.setItem('token', token)
 
       setUser(loginData)
       setIsAuthenticated(true)
 
+      setTimeout(() => {
+        isLoggingIn.current = false
+      }, 500)
+
       return loginData
     } catch (error: any) {
+      isLoggingIn.current = false
       console.error('로그인 실패:', error)
-
       throw new Error(
         error.response?.data?.message ||
         '아이디 또는 비밀번호가 올바르지 않습니다.'
@@ -132,7 +139,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 사용자 로그아웃
   const logout = useCallback(async () => {
     if (isLoggingOut.current) return
-
     isLoggingOut.current = true
 
     try {
@@ -148,7 +154,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // apiClient interceptor에서 전달되는 강제 로그아웃 콜백 처리
   useEffect(() => {
     setLogoutCallback((code, message) => {
-      if (isForcedLogout.current) return
+      if (isLoggingIn.current || isForcedLogout.current) return
+
+      const currentStoredToken = localStorage.getItem('token')
+      const currentStoredUser = localStorage.getItem('user')
+
+      if (currentStoredToken && currentStoredUser) {
+        try {
+          setUser(JSON.parse(currentStoredUser))
+          setIsAuthenticated(true)
+          return 
+        } catch (e) {
+          // 파싱 에러 시 진행
+        }
+      }
 
       isForcedLogout.current = true
       clearAuthState()
@@ -176,29 +195,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [clearAuthState])
 
-  // 멀티탭 로그인/로그아웃 동기화
+  // StorageEvent 기반 실시간 동기화
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key !== 'token' && e.key !== 'user') return
 
-      const savedToken = localStorage.getItem('token')
-      const savedUser = localStorage.getItem('user')
+      if (isLoggingIn.current) return
 
-      // 다른 탭에서 로그아웃된 경우
-      if (!savedToken || !savedUser) {
+      // 삭제 이벤트(로그아웃)인 경우
+      if (e.newValue === null) {
         clearAuthState()
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login'
+        }
         return
       }
 
-      // 다른 탭에서 로그인된 경우
-      try {
-        setUser(JSON.parse(savedUser))
-        setIsAuthenticated(true)
-      } catch (error) {
-        console.error('Failed to parse user on storage change:', error)
-        clearAuthState()
-      }
+      // 저장/변경 이벤트(로그인)인 경우 약간의 타이밍 오차 방지
+      setTimeout(() => {
+        const savedToken = localStorage.getItem('token')
+        const savedUser = localStorage.getItem('user')
+
+        if (savedToken && savedUser) {
+          try {
+            const parsedUser = JSON.parse(savedUser)
+            setUser(parsedUser)
+            setIsAuthenticated(true)
+            isForcedLogout.current = false
+
+            // 현재 B탭이 /login 화면이면 메인 페이지로 즉시 이동
+            if (window.location.pathname === '/login') {
+              window.location.href = '/'
+            }
+          } catch (error) {
+            console.error('Failed to parse user on storage change:', error)
+            clearAuthState()
+          }
+        }
+      }, 50)
     }
+
 
     window.addEventListener('storage', handleStorageChange)
 
