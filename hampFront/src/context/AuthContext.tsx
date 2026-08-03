@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 동시 API 401(예: SESSION_REPLACED) 발생 시 강제 로그아웃 중복 처리 방지
   const isForcedLogout = useRef(false)
 
-  // 동시 API 401 발생 시 로그인 중복 처리 방지
+  // 로그인 처리 중 잔여 401 에러 및 스토리지 이벤트로 인한 상태 리셋 방지
   const isLoggingIn = useRef(false)
 
 
