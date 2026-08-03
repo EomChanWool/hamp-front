@@ -6,103 +6,88 @@ import { RowDetailModal } from '@components/common/RowDetailModal'
 import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
-
-interface PermissionRow {
-  roleGroup: string
-  description: string
-  userCount: string
-  view: '허용' | '제한'
-  create: '허용' | '제한'
-  edit: '허용' | '제한'
-  delete: '허용' | '제한'
-  approve: '허용' | '제한'
-}
-
-const dummyPermissions: PermissionRow[] = [
-  { roleGroup: '시스템관리자', description: '시스템관리자 메뉴 접근 권한', userCount: '12명', view: '허용', create: '허용', edit: '허용', delete: '허용', approve: '허용' },
-  { roleGroup: '생산관리자', description: '생산관리자 메뉴 접근 권한', userCount: '11명', view: '허용', create: '허용', edit: '허용', delete: '허용', approve: '허용' },
-  { roleGroup: '품질관리자', description: '품질관리자 메뉴 접근 권한', userCount: '10명', view: '허용', create: '허용', edit: '허용', delete: '제한', approve: '허용' },
-  { roleGroup: '설비관리자', description: '설비관리자 메뉴 접근 권한', userCount: '9명', view: '허용', create: '허용', edit: '허용', delete: '제한', approve: '제한' },
-  { roleGroup: '일반작업자', description: '일반작업자 메뉴 접근 권한', userCount: '8명', view: '허용', create: '제한', edit: '제한', delete: '제한', approve: '제한' },
-]
+import { apiClient } from '@/api/apiClient'
+import type { AuthGroupResponse, ApiResponseListAuthGroupResponse } from '@/types/auth/Auth'
 
 const PAGE_SIZE = 10
 
 export function SystemUserPermissionsPage() {
-  const [filteredPermissions, setFilteredPermissions] = useState<PermissionRow[]>(dummyPermissions)
-  const [modalPermission, setModalPermission] = useState<PermissionRow | null>(null)
+  const [authGroups, setAuthGroups] = useState<AuthGroupResponse[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [modalPermission, setModalPermission] = useState<AuthGroupResponse | null>(null)
   const [page, setPage] = useState(0)
 
-  const roleGroupRef = useRef<HTMLInputElement>(null)
-  const userCountRef = useRef<HTMLInputElement>(null)
-  const descriptionRef = useRef<HTMLInputElement>(null)
-  const approveRef = useRef<HTMLInputElement>(null)
+  // 검색 필드 Ref (권한그룹명, 권한ID)
+  const authNmRef = useRef<HTMLInputElement>(null)
+  const authIdRef = useRef<HTMLInputElement>(null)
 
   const searchFields: SearchField[] = [
-    { type: 'input', label: '권한그룹', ref: roleGroupRef },
-    { type: 'input', label: '사용자ID', ref: userCountRef },
-    { type: 'input', label: '메뉴명', ref: descriptionRef },
-    { type: 'input', label: '사용여부', ref: approveRef },
+    { type: 'input', label: '권한그룹명', ref: authNmRef },
+    { type: 'input', label: '권한ID', ref: authIdRef },
   ]
 
-  const handleSearch = () => {
-    const roleGroup = roleGroupRef.current?.value.trim() ?? ''
-    const userCount = userCountRef.current?.value.trim() ?? ''
-    const description = descriptionRef.current?.value.trim() ?? ''
-    const approve = approveRef.current?.value.trim() ?? ''
+  // GET /auth-groups 목록 조회 API 함수
+  const fetchAuthGroups = async () => {
+    setIsLoading(true)
+    try {
+      const response = await apiClient.get<ApiResponseListAuthGroupResponse>('/auth-groups')
+      setAuthGroups(response.data.data ?? [])
+    } catch (error) {
+      console.error('권한 그룹 목록 조회 실패:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
-    // 현재는 더미퍼미션에 필터로 걸러내고 있는데 추후에 api 연동할 것
-    setFilteredPermissions(
-      dummyPermissions.filter(
-        (permission) =>
-          (!roleGroup || permission.roleGroup.includes(roleGroup)) &&
-          (!userCount || permission.userCount.includes(userCount)) &&
-          (!description || permission.description.includes(description)) &&
-          (!approve || permission.approve.includes(approve)),
-      ),
-    )
+  useEffect(() => {
+    fetchAuthGroups()
+  }, [])
+
+  // 검색 핸들러 (프론트 단 필터링)
+  const handleSearch = () => {
+    const authNm = authNmRef.current?.value.trim() ?? ''
+    const authId = authIdRef.current?.value.trim() ?? ''
+
+    setPage(0)
+    // 원본 데이터에서 필터링하거나, 필요 시 백엔드 파라미터 검색으로 확장 가능
+    fetchAuthGroups()
   }
 
   const handleReset = () => {
-    ;[roleGroupRef, userCountRef, descriptionRef, approveRef].forEach((ref) => {
-      if (ref.current) ref.current.value = ''
-    })
-    setFilteredPermissions(dummyPermissions)
+    if (authNmRef.current) authNmRef.current.value = ''
+    if (authIdRef.current) authIdRef.current.value = ''
+    setPage(0)
+    fetchAuthGroups()
   }
 
-  const handleDelete = (permission: PermissionRow) => {
-    if (window.confirm(`${permission.roleGroup} 권한을 삭제할까요?`)) {
-      setFilteredPermissions((prev) => prev.filter((p) => p !== permission))
-      window.alert('mock data에서만 삭제되었습니다.')
+  const handleDelete = (permission: AuthGroupResponse) => {
+    if (window.confirm(`${permission.authNm}(${permission.authId}) 권한을 삭제할까요?`)) {
+      setAuthGroups((prev) => prev.filter((p) => p.authId !== permission.authId))
+      window.alert('DELETE API 미구현으로 화면 상태에서만 삭제되었습니다.')
     }
   }
 
   const handleSave = (updated: Record<string, string>) => {
-    setFilteredPermissions((prev) =>
-      prev.map((p) => (p === modalPermission ? ({ ...p, ...updated } as PermissionRow) : p)),
+    setAuthGroups((prev) =>
+      prev.map((p) => (p === modalPermission ? ({ ...p, ...updated } as AuthGroupResponse) : p)),
     )
     setModalPermission(null)
-    window.alert('화면 상태에만 저장되었습니다.')
+    window.alert('PUT API 미구현으로 화면 상태에만 저장되었습니다.')
   }
 
-  // 검색 결과가 바뀌면 페이지를 처음으로 되돌리기
+  // 검색 결과나 목록이 바뀌면 1페이지로 이동
   useEffect(() => {
     setPage(0)
-  }, [filteredPermissions])
+  }, [authGroups])
 
-  const totalPages = Math.max(1, Math.ceil(filteredPermissions.length / PAGE_SIZE))
-  const pagedPermissions = filteredPermissions.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+  const totalPages = Math.max(1, Math.ceil(authGroups.length / PAGE_SIZE))
+  const pagedPermissions = authGroups.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
-  const columns: ColumnDef<PermissionRow>[] = useMemo(
+  const columns: ColumnDef<AuthGroupResponse>[] = useMemo(
     () => [
-      { accessorKey: 'roleGroup', header: '권한그룹' },
-      { accessorKey: 'description', header: '설명' },
-      { accessorKey: 'userCount', header: '사용자수' },
-      { accessorKey: 'view', header: '조회' },
-      { accessorKey: 'create', header: '등록' },
-      { accessorKey: 'edit', header: '수정' },
-      { accessorKey: 'delete', header: '삭제' },
-      { accessorKey: 'approve', header: '승인' },
+      { accessorKey: 'authId', header: '권한ID' },
+      { accessorKey: 'authNm', header: '권한그룹명' },
+      { accessorKey: 'authDesc', header: '설명' },
       {
         id: 'actions',
         header: '관리',
@@ -137,14 +122,9 @@ export function SystemUserPermissionsPage() {
   )
 
   const detailFields = [
-    { label: '권한그룹', key: 'roleGroup' },
-    { label: '설명', key: 'description' },
-    { label: '사용자수', key: 'userCount' },
-    { label: '조회', key: 'view' },
-    { label: '등록', key: 'create' },
-    { label: '수정', key: 'edit' },
-    { label: '삭제', key: 'delete' },
-    { label: '승인', key: 'approve' },
+    { label: '권한ID', key: 'authId' },
+    { label: '권한그룹명', key: 'authNm' },
+    { label: '설명', key: 'authDesc' },
   ]
 
   return (
@@ -155,7 +135,12 @@ export function SystemUserPermissionsPage() {
 
       <Panel title="사용자 권한관리 목록">
         <CusTable data={pagedPermissions} columns={columns} onRowClick={setModalPermission} />
-        <CusPagination page={page} totalPages={totalPages} totalCount={filteredPermissions.length} onPageChange={setPage} />
+        <CusPagination
+          page={page}
+          totalPages={totalPages}
+          totalCount={authGroups.length}
+          onPageChange={setPage}
+        />
       </Panel>
 
       <RowDetailModal

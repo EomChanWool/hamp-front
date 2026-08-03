@@ -17,9 +17,11 @@ import type {
   UserUpdateRequest,
   UserCreateRequest,
 } from "@/types/User";
+import type { AuthGroupResponse, ApiResponseListAuthGroupResponse } from "@/types/auth/Auth";
 
 export function SystemUsersPage() {
   const [users, setUsers] = useState<UserResponse[]>([]);
+  const [authGroups, setAuthGroups] = useState<AuthGroupResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [searchParams, setSearchParams] = useState<Record<string, string>>({});
@@ -47,6 +49,16 @@ export function SystemUsersPage() {
     { type: "input", label: "이름", ref: userNmRef },
     { type: "input", label: "부서", ref: userDepRef },
   ];
+
+  // 권한 그룹 목록 조회
+  const loadAuthGroups = async () => {
+    try {
+      const response = await apiClient.get<ApiResponseListAuthGroupResponse>("/auth-groups");
+      setAuthGroups(response.data.data ?? []);
+    } catch (error) {
+      console.error("권한 그룹 목록 조회 실패:", error);
+    }
+  };
 
   // 회원 목록 조회
   const loadUsers = async (page: number, params: Record<string, string>) => {
@@ -113,6 +125,12 @@ export function SystemUsersPage() {
   useEffect(() => {
     loadUsers(currentPage, searchParams);
   }, [currentPage, searchParams]);
+
+  // 최초 로드 시 권한 목록 조회
+  useEffect(() => {
+    loadAuthGroups();
+  }, []);
+
 
   // 검색 핸들러
   const handleSearch = () => {
@@ -342,6 +360,7 @@ export function SystemUsersPage() {
       <UserCreateModal
         isOpen={isCreateModalOpen}
         isLoading={isCreating}
+        authGroups={authGroups}
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateUser}
       />

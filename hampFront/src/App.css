@@ -230,6 +230,25 @@
   color: #dc2626;
 }
 
+[data-theme="dark"] .authGroupList {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .authGroupItem:hover {
+  background: #1e2130;
+}
+
+[data-theme="dark"] .authGroupItem.checked {
+  background: var(--primary-light);
+  border-color: rgba(87, 211, 161, .25);
+}
+
+[data-theme="dark"] .authGroupEmpty {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+}
+
 /* ================================
    LOGIN
 ================================ */
@@ -357,8 +376,10 @@
   color: #748094;
   font-size: 13px;
   text-align: center;
-  margin: -6px 0 6px; /* 위아래 간격 조정 */
-  word-break: keep-all; /* 한글 단어 단위 줄바꿈 */
+  margin: -6px 0 6px;
+  /* 위아래 간격 조정 */
+  word-break: keep-all;
+  /* 한글 단어 단위 줄바꿈 */
 }
 
 /* ================================
@@ -1946,6 +1967,91 @@ tbody tr:hover td {
 .detailModal button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.requiredLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.required {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+/* ================================
+   AUTH GROUP
+================================ */
+
+.authGroupField {
+  grid-column: 1 / -1;
+}
+
+.authGroupList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+
+  max-height: 180px;
+  overflow-y: auto;
+
+  padding: 12px;
+
+  border: 1px solid var(--border);
+  border-radius: 8px;
+
+  background: var(--bg-subtle);
+}
+
+.authGroupItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 12px;
+
+  border: 1px solid transparent;
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  transition:
+    background .15s,
+    border-color .15s;
+}
+
+.authGroupItem:hover {
+  background: rgba(87, 211, 161, .08);
+}
+
+.authGroupItem.checked {
+  background: var(--primary-light);
+  border-color: rgba(87, 211, 161, .35);
+}
+
+.authGroupItem input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.authGroupItem span {
+  font-size: 13px;
+  color: var(--text-body);
+  font-weight: 500;
+}
+
+.authGroupEmpty {
+  padding: 14px;
+  border-radius: 8px;
+
+  border: 1px dashed var(--border);
+
+  color: var(--text-muted);
+  font-size: 13px;
+
+  background: var(--bg-subtle);
 }
 
 /* ================================

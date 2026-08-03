@@ -31,6 +31,16 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
+/** 권한 그룹 응답 */
+export interface AuthGroupResponse {
+  authId: string;
+  authNm: string;
+  authDesc: string;
+}
+
 
 /** 로그인 API 최종 응답 타입 */
 export type ApiResponseLoginResponse = ApiResponse<LoginResponse>;
+
+/** 권한 그룹 리스트 최종 응답 타입 */
+export type ApiResponseListAuthGroupResponse = ApiResponse<AuthGroupResponse[]>;
