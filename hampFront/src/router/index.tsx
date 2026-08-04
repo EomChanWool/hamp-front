@@ -41,9 +41,10 @@ import { FacilityDataManagePage } from '@pages/page/facility/FacilityDataManageP
 // 기준정보관리
 import { MasterFactoriesPage } from '@pages/page/master/MasterFactoriesPage'
 import { MasterEquipmentPage } from '@pages/page/master/MasterEquipmentPage'
-import { MasterProcessesPage } from '@pages/page/master/MasterProcessesPage'
+import { MasterOperationsPage } from '@/pages/page/master/MasterOperationPage'
 import { MasterItemsPage } from '@pages/page/master/MasterItemsPage'
 import { MasterDefectsPage } from '@pages/page/master/MasterDefectsPage'
+import { MasterDepartmentPage } from '@/pages/page/master/MasterDepartmentPage'
 
 // 설비관리
 import { EquipmentListPage } from '@pages/page/equipment/EquipmentListPage'
@@ -200,8 +201,9 @@ export const menuRoutes: MenuRouteGroup[] = [
       items: [
         { path: 'factories', name: '공장관리', element: <MasterFactoriesPage /> },
         { path: 'equipment', name: '장비관리', element: <MasterEquipmentPage /> },
-        { path: 'processes', name: '공정관리', element: <MasterProcessesPage /> },
+        { path: 'operation', name: '공정관리', element: <MasterOperationsPage /> },
         { path: 'items', name: '품목관리', element: <MasterItemsPage /> },
+        { path: 'department', name: '부서관리', element: <MasterDepartmentPage />},
         { path: 'defects', name: '불량관리', element: <MasterDefectsPage /> },
       ],
     },
