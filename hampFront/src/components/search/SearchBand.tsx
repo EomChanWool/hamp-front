@@ -8,6 +8,12 @@ type SearchInputField = {
   placeholder?: string
 }
 
+type SearchSingleDateField = {
+  type: 'single-date'
+  label: string
+  ref: RefObject<HTMLInputElement | null>
+}
+
 type SearchDateField = {
   type: 'date'
   label: string
@@ -22,7 +28,7 @@ type SearchSelectField = {
   options: { value: string; label: string }[]
 }
 
-export type SearchField = SearchInputField | SearchDateField | SearchSelectField
+export type SearchField = SearchInputField | SearchSingleDateField |SearchDateField | SearchSelectField
 
 type Props = {
   fields: SearchField[]
@@ -52,6 +58,16 @@ export function SearchBand({ fields, onSearch, onReset }: Props) {
                 ref={field.ref}
                 type="text"
                 placeholder={field.placeholder ?? `${field.label} 입력`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onSearch()
+                }}
+              />
+            )}
+
+            {field.type === 'single-date' && (
+              <input
+                ref={field.ref}
+                type="date"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') onSearch()
                 }}

@@ -60,7 +60,7 @@ export function MasterOperationsPage() {
         { label: "미사용", value: "N" },
       ],
     },
-    { type: "input", label: "표준시간", ref: stdTimeRef },
+    { type: "single-date", label: "표준시간", ref: stdTimeRef },
   ];
 
   // 공정 목록 조회 (GET /operations)
