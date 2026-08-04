@@ -16,10 +16,13 @@ import type {
   ApiResponsePageOperationResponse,
   OperationUpdateRequest,
   OperationCreateRequest,
+  OperationOptionResponse,
+  ApiResponseListOperationOptionResponse,
 } from "@/types/master/Operation";
 
 export function MasterOperationsPage() {
   const [operations, setOperations] = useState<OperationResponse[]>([]);
+  const [operationOptions, setOperationOptions] = useState<OperationOptionResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [searchParams, setSearchParams] = useState<Record<string, string>>({});
@@ -38,16 +41,43 @@ export function MasterOperationsPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const detailRequestIdRef = useRef(0);
 
-  // 검색 필드 Refs
-  const operCodeRef = useRef<HTMLInputElement>(null);
+  // 검색 필드 Refs (Select 요소 대응 가능하도록 Ref 타입 확장)
+  const operCodeRef = useRef<HTMLInputElement | HTMLSelectElement>(null);
   const depCodeRef = useRef<HTMLInputElement>(null);
   const operNmRef = useRef<HTMLInputElement>(null);
   const useYnRef = useRef<HTMLSelectElement>(null);
   const stdTimeRef = useRef<HTMLInputElement>(null);
 
-  // 검색 밴드 구성 (5가지 검색 파라미터 적용)
+  // 공정 옵션 목록 API 호출
+  const fetchOperationOptions = async () => {
+    try {
+      const response = await apiClient.get<ApiResponseListOperationOptionResponse>(
+        "/operations/options"
+      );
+      setOperationOptions(response.data.data ?? []);
+    } catch (error) {
+      console.error("공정 옵션 목록 조회 실패:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchOperationOptions();
+  }, []);
+
+  // 검색 밴드 구성 (공정코드를 셀렉트 드롭다운으로 변경)
   const searchFields: SearchField[] = [
-    { type: "input", label: "공정코드", ref: operCodeRef },
+    {
+      type: "select",
+      label: "공정코드",
+      ref: operCodeRef as any,
+      options: [
+        { label: "전체", value: "" },
+        ...operationOptions.map((opt) => ({
+          label: `${opt.operCode} (${opt.operNm})`,
+          value: opt.operCode,
+        })),
+      ],
+    },
     { type: "input", label: "부서코드", ref: depCodeRef },
     { type: "input", label: "공정명", ref: operNmRef },
     {
@@ -161,6 +191,9 @@ export function MasterOperationsPage() {
       window.alert("성공적으로 등록되었습니다.");
       setIsCreateModalOpen(false);
       await loadOperations(currentPage, searchParams);
+
+      // 공정 추가 후 옵션 드롭다운 데이터 동기화
+      await fetchOperationOptions();
     } catch (error) {
       console.error("공정 등록 실패:", error);
       const message = axios.isAxiosError(error)
@@ -200,6 +233,9 @@ export function MasterOperationsPage() {
 
       setModalOperation(null);
       await loadOperations(currentPage, searchParams);
+
+      // 공정명(operNm) 수정 시 옵션 드롭다운 데이터 동기화
+      await fetchOperationOptions();
     } catch (err) {
       console.error("저장 실패:", err);
 
@@ -229,6 +265,9 @@ export function MasterOperationsPage() {
       window.alert("공정이 비활성화되었습니다.");
       setModalOperation(null);
       await loadOperations(currentPage, searchParams);
+
+      // 비활성화 후 옵션 목록 동기화 (필요 시)
+      await fetchOperationOptions();
     } catch (error) {
       console.error("공정 비활성화 실패:", error);
       const message = axios.isAxiosError(error)
@@ -312,9 +351,7 @@ export function MasterOperationsPage() {
 
       <Panel title="공정 관리 목록" action="등록" onAction={() => setIsCreateModalOpen(true)}>
         <div className="relative min-h-[300px]">
-          {isLoading && (
-            <span>데이터를 불러오는 중입니다...</span>
-          )}
+          {isLoading && <span>데이터를 불러오는 중입니다...</span>}
 
           <CusTable
             data={operations}

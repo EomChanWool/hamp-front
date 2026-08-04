@@ -200,10 +200,10 @@ export const menuRoutes: MenuRouteGroup[] = [
       path: '/master',
       items: [
         { path: 'factories', name: '공장관리', element: <MasterFactoriesPage /> },
+        { path: 'department', name: '부서관리', element: <MasterDepartmentPage />},
+        { path: 'items', name: '품목관리', element: <MasterItemsPage /> },
         { path: 'equipment', name: '장비관리', element: <MasterEquipmentPage /> },
         { path: 'operation', name: '공정관리', element: <MasterOperationsPage /> },
-        { path: 'items', name: '품목관리', element: <MasterItemsPage /> },
-        { path: 'department', name: '부서관리', element: <MasterDepartmentPage />},
         { path: 'defects', name: '불량관리', element: <MasterDefectsPage /> },
       ],
     },

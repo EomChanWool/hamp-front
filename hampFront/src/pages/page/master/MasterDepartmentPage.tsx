@@ -15,10 +15,13 @@ import type {
   ApiResponsePageDepartmentResponse,
   DepartmentUpdateRequest,
   DepartmentCreateRequest,
+  DepartmentOptionResponse,
+  ApiResponseListDepartmentOptionResponse,
 } from "@/types/master/Department";
 
 export function MasterDepartmentPage() {
   const [departments, setDepartments] = useState<DepartmentResponse[]>([]);
+  const [departmentOptions, setDepartmentOptions] = useState<DepartmentOptionResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [searchParams, setSearchParams] = useState<Record<string, string>>({});
@@ -27,7 +30,7 @@ export function MasterDepartmentPage() {
 
   // 수정 및 삭제 상태 관리
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false); // 💡 삭제 상태 추가
+  const [isDeleting, setIsDeleting] = useState(false);
   const [modalDepartment, setModalDepartment] = useState<DepartmentResponse | null>(null);
 
   // 등록 모달 및 생성 중 로딩 상태
@@ -37,14 +40,42 @@ export function MasterDepartmentPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const detailRequestIdRef = useRef(0);
 
-  // 검색 필드 Refs
-  const depCodeRef = useRef<HTMLInputElement>(null);
+  // 검색 필드 Refs (select도 HTMLSelectElement / HTMLInputElement ref로 공유 가능)
+  const depCodeRef = useRef<HTMLInputElement | HTMLSelectElement>(null);
   const taskDescRef = useRef<HTMLInputElement>(null);
   const headRef = useRef<HTMLInputElement>(null);
   const headPhoneRef = useRef<HTMLInputElement>(null);
 
+  // 부서 옵션 API 호출
+  useEffect(() => {
+    const fetchDepartmentOptions = async () => {
+      try {
+        const response = await apiClient.get<ApiResponseListDepartmentOptionResponse>(
+          "/departments/options"
+        );
+        setDepartmentOptions(response.data.data ?? []);
+      } catch (error) {
+        console.error("부서 옵션 목록 조회 실패:", error);
+      }
+    };
+
+    fetchDepartmentOptions();
+  }, []);
+
+  // 검색 필드 정의 (부서코드를 셀렉트 박스로 사용)
   const searchFields: SearchField[] = [
-    { type: "input", label: "부서코드", ref: depCodeRef },
+    {
+      type: "select",
+      label: "부서코드",
+      ref: depCodeRef as any,
+      options: [
+        { label: "전체", value: "" },
+        ...departmentOptions.map((opt) => ({
+          label: `${opt.depCode} (${opt.taskDesc})`,
+          value: opt.depCode,
+        })),
+      ],
+    },
     { type: "input", label: "담당업무", ref: taskDescRef },
     { type: "input", label: "부서장", ref: headRef },
     { type: "input", label: "대표 연락처", ref: headPhoneRef },
@@ -136,7 +167,7 @@ export function MasterDepartmentPage() {
     setSearchParams({});
   };
 
-  // 신규 부서 등록
+  // 신규 부서 등록 (등록 성공 시 옵션 목록도 새로고침하도록 추가)
   const handleCreateDepartment = async (formData: DepartmentCreateRequest) => {
     setIsCreating(true);
     try {
@@ -144,6 +175,10 @@ export function MasterDepartmentPage() {
       window.alert("성공적으로 등록되었습니다.");
       setIsCreateModalOpen(false);
       await loadDepartments(currentPage, searchParams);
+      
+      // 부서 신규 생성 시 옵션 드롭다운 리스트도 동기화
+      const optRes = await apiClient.get<ApiResponseListDepartmentOptionResponse>("/departments/options");
+      setDepartmentOptions(optRes.data.data ?? []);
     } catch (error) {
       console.error("부서 등록 실패:", error);
       const message = axios.isAxiosError(error)
@@ -183,6 +218,10 @@ export function MasterDepartmentPage() {
 
       setModalDepartment(null);
       await loadDepartments(currentPage, searchParams);
+
+      // 옵션 응답의 taskDesc 정보가 바뀔 수 있으므로 재호출
+      const optRes = await apiClient.get<ApiResponseListDepartmentOptionResponse>("/departments/options");
+      setDepartmentOptions(optRes.data.data ?? []);
     } catch (err) {
       console.error("저장 실패:", err);
       const errorMessage = axios.isAxiosError(err)
@@ -194,7 +233,7 @@ export function MasterDepartmentPage() {
     }
   };
 
-  // 5. 부서 삭제 처리 (DELETE /departments/{depCode})
+  // 부서 삭제 처리
   const handleDeleteDepartment = async () => {
     if (!modalDepartment || isDeleting) return;
 
@@ -211,6 +250,10 @@ export function MasterDepartmentPage() {
       window.alert("부서가 삭제되었습니다.");
       setModalDepartment(null);
       await loadDepartments(currentPage, searchParams);
+
+      // 삭제 시 옵션 드롭다운 리스트 동기화
+      const optRes = await apiClient.get<ApiResponseListDepartmentOptionResponse>("/departments/options");
+      setDepartmentOptions(optRes.data.data ?? []);
     } catch (error) {
       console.error("부서 삭제 실패:", error);
       const message = axios.isAxiosError(error)
@@ -301,7 +344,7 @@ export function MasterDepartmentPage() {
         </div>
       </Panel>
 
-      {/* 부서 상세/수정 모달 - dangerAction 추가 */}
+      {/* 부서 상세/수정 모달 */}
       <RowDetailModal
         isOpen={modalDepartment !== null}
         onClose={() => {

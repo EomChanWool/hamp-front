@@ -26,6 +26,12 @@ export interface OperationResponse {
   updatedAt: string;
 }
 
+/** 공정 옵션 조회 응답 Data */
+export interface OperationOptionResponse {
+  operCode: string;
+  operNm: string;
+}
+
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 공정 단건 조회/등록/수정 API 최종 응답 타입 */
@@ -36,3 +42,6 @@ export type PageOperationResponse = PageResponse<OperationResponse>;
 
 /** 공정 목록 페이징 API 최종 응답 타입 */
 export type ApiResponsePageOperationResponse = ApiResponsePage<OperationResponse>;
+
+/** 공정 옵션 목록 API 최종 응답 타입 */
+export type ApiResponseListOperationOptionResponse = ApiResponse<OperationOptionResponse[]>;
