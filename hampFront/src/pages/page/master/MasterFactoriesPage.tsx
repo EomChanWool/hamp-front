@@ -3,7 +3,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@components/common/Badge";
 import { Panel } from "@components/card/Panel";
 import { RowDetailModal } from "@components/common/RowDetailModal";
-import { FactoryZoneCreateModal } from "@components/common/FactoryZoneModal";
+import { FactoryZoneCreateModal } from "@/components/common/FactoryZoneCreateModal";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
