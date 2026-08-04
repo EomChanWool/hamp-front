@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { EquipmentCreateRequest } from "@/types/equipment/equipment";
+import type { EquipmentCreateRequest } from "@/types/master/Equipment";
 
 interface EquipmentCreateModalProps {
     isOpen: boolean;

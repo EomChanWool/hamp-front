@@ -16,7 +16,7 @@ import type {
   ApiResponsePageEquipmentResponse,
   EquipmentCreateRequest,
   EquipmentUpdateRequest,
-} from "@/types/equipment/equipment";
+} from "@/types/master/Equipment";
 
 export function MasterEquipmentPage() {
   const [equipments, setEquipments] = useState<EquipmentResponse[]>([]);
