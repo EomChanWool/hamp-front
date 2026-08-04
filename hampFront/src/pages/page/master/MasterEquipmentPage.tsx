@@ -1,168 +1,340 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Badge } from '@components/common/Badge'
-import { Panel } from '@components/card/Panel'
-import { RowDetailModal } from '@components/common/RowDetailModal'
-import { SearchBand, type SearchField } from '@components/search/SearchBand'
-import { CusTable } from '@components/table/CusTable'
-import { CusPagination } from '@components/table/CusPagination'
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
+import { Panel } from "@components/card/Panel";
+import { RowDetailModal } from "@components/common/RowDetailModal";
+import { EquipmentCreateModal } from "@components/common/EquipmentCreateModal";
+import { SearchBand, type SearchField } from "@components/search/SearchBand";
+import { CusTable } from "@components/table/CusTable";
+import { CusPagination } from "@components/table/CusPagination";
+import { formatDateTime } from "@/utils/common";
+import { apiClient } from "@/api/apiClient";
+import axios from "axios";
 
-interface EquipmentRow {
-  code: string
-  name: string
-  type: string
-  installProcess: string
-  manufacturer: string
-  status: '사용' | '미사용'
-  calibrationDate: string
-}
-
-const dummyEquipment: EquipmentRow[] = [
-  { code: 'EQ-100', name: '추출기-01', type: '생산설비', installProcess: '원료투입', manufacturer: 'HMP Tech', status: '사용', calibrationDate: '2026-04-10' },
-  { code: 'EQ-101', name: '건조기-02', type: '검사설비', installProcess: '세척', manufacturer: 'MES Korea', status: '사용', calibrationDate: '2026-04-11' },
-  { code: 'EQ-102', name: '세척기-03', type: '물류설비', installProcess: '건조', manufacturer: 'Green Fab', status: '사용', calibrationDate: '2026-04-12' },
-  { code: 'EQ-103', name: '분쇄기-01', type: '생산설비', installProcess: '포장', manufacturer: 'HMP Tech', status: '사용', calibrationDate: '2026-04-13' },
-  { code: 'EQ-104', name: '포장기-04', type: '검사설비', installProcess: '원료투입', manufacturer: 'MES Korea', status: '미사용', calibrationDate: '2026-04-14' },
-  { code: 'EQ-105', name: '압축기-02', type: '물류설비', installProcess: '세척', manufacturer: 'Green Fab', status: '사용', calibrationDate: '2026-04-15' },
-]
-
-const PAGE_SIZE = 10
+import type {
+  EquipmentResponse,
+  ApiResponseEquipmentResponse,
+  ApiResponsePageEquipmentResponse,
+  EquipmentCreateRequest,
+  EquipmentUpdateRequest,
+} from "@/types/equipment/equipment";
 
 export function MasterEquipmentPage() {
-  const [filteredEquipment, setFilteredEquipment] = useState<EquipmentRow[]>(dummyEquipment)
-  const [modalEquipment, setModalEquipment] = useState<EquipmentRow | null>(null)
-  const [page, setPage] = useState(0)
+  const [equipments, setEquipments] = useState<EquipmentResponse[]>([]);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [searchParams, setSearchParams] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [detailLoadingEqCode, setDetailLoadingEqCode] = useState<string | null>(null);
 
-  const codeRef = useRef<HTMLInputElement>(null)
-  const nameRef = useRef<HTMLInputElement>(null)
-  const typeRef = useRef<HTMLInputElement>(null)
-  const statusRef = useRef<HTMLInputElement>(null)
+  // 수정 및 삭제(비활성화) 상태 관리
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [modalEquipment, setModalEquipment] = useState<EquipmentResponse | null>(null);
+
+  // 등록 모달 상태 관리
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(0);
+  const detailRequestIdRef = useRef(0);
+
+  // 검색 필드 Refs (API 명세 반영: eqCode, operCode, eqNm, eqType, manufacturer)
+  const eqCodeRef = useRef<HTMLInputElement>(null);
+  const operCodeRef = useRef<HTMLInputElement>(null);
+  const eqNmRef = useRef<HTMLInputElement>(null);
+  const eqTypeRef = useRef<HTMLInputElement>(null);
+  const manufacturerRef = useRef<HTMLInputElement>(null);
 
   const searchFields: SearchField[] = [
-    { type: 'input', label: '장비코드', ref: codeRef },
-    { type: 'input', label: '장비명', ref: nameRef },
-    { type: 'input', label: '장비유형', ref: typeRef },
-    { type: 'input', label: '사용여부', ref: statusRef },
-  ]
+    { type: "input", label: "장비코드", ref: eqCodeRef },
+    { type: "input", label: "공정코드", ref: operCodeRef },
+    { type: "input", label: "장비명", ref: eqNmRef },
+    { type: "input", label: "장비유형", ref: eqTypeRef },
+    { type: "input", label: "제조사", ref: manufacturerRef },
+  ];
 
-  const handleSearch = () => {
-    const code = codeRef.current?.value.trim() ?? ''
-    const name = nameRef.current?.value.trim() ?? ''
-    const type = typeRef.current?.value.trim() ?? ''
-    const status = statusRef.current?.value.trim() ?? ''
+  // 1. 장비 목록 조회 (GET /equipment)
+  const loadEquipments = async (page: number, params: Record<string, string>) => {
+    setIsLoading(true);
+    try {
+      const cleanedParams = Object.entries(params).reduce(
+        (acc, [key, value]) => {
+          if (value && value.trim() !== "") acc[key] = value.trim();
+          return acc;
+        },
+        {} as Record<string, string>
+      );
 
-    // 현재는 더미장비에 필터로 걸러내고 있는데 추후에 api 연동할 것
-    setFilteredEquipment(
-      dummyEquipment.filter(
-        (equipment) =>
-          (!code || equipment.code.includes(code)) &&
-          (!name || equipment.name.includes(name)) &&
-          (!type || equipment.type.includes(type)) &&
-          (!status || equipment.status.includes(status)),
-      ),
-    )
-  }
+      const response = await apiClient.get<ApiResponsePageEquipmentResponse>("/equipment", {
+        params: { ...cleanedParams, page, size: 10 },
+      });
 
-  const handleReset = () => {
-    ;[codeRef, nameRef, typeRef, statusRef].forEach((ref) => {
-      if (ref.current) ref.current.value = ''
-    })
-    setFilteredEquipment(dummyEquipment)
-  }
-
-  const handleDelete = (equipment: EquipmentRow) => {
-    if (window.confirm(`${equipment.code} 장비를 삭제할까요?`)) {
-      setFilteredEquipment((prev) => prev.filter((e) => e !== equipment))
-      window.alert('mock data에서만 삭제되었습니다.')
+      const pageData = response.data.data;
+      setEquipments(pageData.content ?? []);
+      setTotalElements(pageData.totalElements ?? 0);
+      setTotalPages(pageData.totalPages ?? 0);
+    } catch (error) {
+      console.error("장비 목록 조회 실패:", error);
+      window.alert("장비 목록을 불러오는 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
-  const handleSave = (updated: Record<string, string>) => {
-    setFilteredEquipment((prev) => prev.map((e) => (e === modalEquipment ? ({ ...e, ...updated } as EquipmentRow) : e)))
-    setModalEquipment(null)
-    window.alert('화면 상태에만 저장되었습니다.')
-  }
+  // 2. 장비 단건 상세 조회 (GET /equipment/{eqCode})
+  const handleOpenDetail = async (eqCode: string) => {
+    const requestId = ++detailRequestIdRef.current;
+    setDetailLoadingEqCode(eqCode);
 
-  // 검색 결과가 바뀌면 페이지를 처음으로 되돌리기
+    try {
+      const encodedEqCode = encodeURIComponent(eqCode);
+      const response = await apiClient.get<ApiResponseEquipmentResponse>(
+        `/equipment/${encodedEqCode}`
+      );
+      const equipment = response.data.data;
+
+      if (!equipment) throw new Error("장비 상세 데이터가 없습니다.");
+
+      if (requestId === detailRequestIdRef.current) {
+        setModalEquipment(equipment);
+      }
+    } catch (error) {
+      console.error("장비 상세 조회 실패:", error);
+      if (requestId === detailRequestIdRef.current) {
+        const message = axios.isAxiosError(error)
+          ? error.response?.data?.message
+          : error instanceof Error
+          ? error.message
+          : null;
+        window.alert(message || "상세 정보를 불러오는 중 오류가 발생했습니다.");
+      }
+    } finally {
+      if (requestId === detailRequestIdRef.current) {
+        setDetailLoadingEqCode(null);
+      }
+    }
+  };
+
   useEffect(() => {
-    setPage(0)
-  }, [filteredEquipment])
+    loadEquipments(currentPage, searchParams);
+  }, [currentPage, searchParams]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredEquipment.length / PAGE_SIZE))
-  const pagedEquipment = filteredEquipment.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+  // 검색 핸들러
+  const handleSearch = () => {
+    const params: Record<string, string> = {};
+    if (eqCodeRef.current?.value.trim()) params.eqCode = eqCodeRef.current.value.trim();
+    if (operCodeRef.current?.value.trim()) params.operCode = operCodeRef.current.value.trim();
+    if (eqNmRef.current?.value.trim()) params.eqNm = eqNmRef.current.value.trim();
+    if (eqTypeRef.current?.value.trim()) params.eqType = eqTypeRef.current.value.trim();
+    if (manufacturerRef.current?.value.trim()) params.manufacturer = manufacturerRef.current.value.trim();
 
-  const columns: ColumnDef<EquipmentRow>[] = useMemo(
+    setCurrentPage(0);
+    setSearchParams(params);
+  };
+
+  // 검색 초기화
+  const handleReset = () => {
+    [eqCodeRef, operCodeRef, eqNmRef, eqTypeRef, manufacturerRef].forEach((ref) => {
+      if (ref.current) ref.current.value = "";
+    });
+    setCurrentPage(0);
+    setSearchParams({});
+  };
+
+  // 3. 신규 장비 등록 처리 (POST /equipment)
+  const handleCreateEquipment = async (formData: EquipmentCreateRequest) => {
+    setIsCreating(true);
+    try {
+      await apiClient.post("/equipment", formData);
+      window.alert("장비가 성공적으로 등록되었습니다.");
+      setIsCreateModalOpen(false);
+      await loadEquipments(currentPage, searchParams);
+    } catch (error) {
+      console.error("장비 등록 실패:", error);
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.message
+        : null;
+      window.alert(message || "장비 등록 중 오류가 발생했습니다.");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  // 4. 장비 정보 수정 처리 (PUT /equipment/{eqCode})
+  const handleSave = async (updated: Record<string, string>) => {
+    if (!modalEquipment || isUpdating) return;
+
+    setIsUpdating(true);
+    try {
+      const operCodeVal = "operCode" in updated ? updated.operCode : modalEquipment.operCode;
+      const eqNmVal = "eqNm" in updated ? updated.eqNm : modalEquipment.eqNm;
+      const eqTypeVal = "eqType" in updated ? updated.eqType : modalEquipment.eqType;
+      const manufacturerVal = "manufacturer" in updated ? updated.manufacturer : modalEquipment.manufacturer;
+
+      const updatePayload: EquipmentUpdateRequest = {
+        operCode: operCodeVal?.trim() ? operCodeVal.trim() : null,
+        eqNm: eqNmVal?.trim() ? eqNmVal.trim() : null,
+        eqType: eqTypeVal?.trim() ? eqTypeVal.trim() : null,
+        manufacturer: manufacturerVal?.trim() ? manufacturerVal.trim() : null,
+      };
+
+      const encodedEqCode = encodeURIComponent(modalEquipment.eqCode);
+
+      const response = await apiClient.put<ApiResponseEquipmentResponse>(
+        `/equipment/${encodedEqCode}`,
+        updatePayload
+      );
+
+      const successMessage = response.data?.message || "수정되었습니다.";
+      window.alert(successMessage);
+
+      setModalEquipment(null);
+      await loadEquipments(currentPage, searchParams);
+    } catch (err) {
+      console.error("장비 수정 실패:", err);
+      const errorMessage = axios.isAxiosError(err)
+        ? err.response?.data?.message
+        : null;
+      window.alert(errorMessage || "수정에 실패했습니다.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // 5. 장비 삭제 처리 (DELETE /equipment/{eqCode})
+  const handleDeleteEquipment = async () => {
+    if (!modalEquipment || isDeleting) return;
+
+    const confirmed = window.confirm(
+      `${modalEquipment.eqNm ?? modalEquipment.eqCode} 장비를 삭제하시겠습니까?`
+    );
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    try {
+      const encodedEqCode = encodeURIComponent(modalEquipment.eqCode);
+      await apiClient.delete(`/equipment/${encodedEqCode}`);
+      window.alert("장비가 삭제되었습니다.");
+      setModalEquipment(null);
+      await loadEquipments(currentPage, searchParams);
+    } catch (error) {
+      console.error("장비 삭제 실패:", error);
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.message
+        : null;
+      window.alert(message || "장비 삭제에 실패했습니다.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // 테이블 컬럼 정의
+  const columns: ColumnDef<EquipmentResponse>[] = useMemo(
     () => [
-      { accessorKey: 'code', header: '장비코드' },
-      { accessorKey: 'name', header: '장비명' },
-      { accessorKey: 'type', header: '장비유형' },
-      { accessorKey: 'installProcess', header: '설치공정' },
-      { accessorKey: 'manufacturer', header: '제조사' },
+      { accessorKey: "eqCode", header: "장비코드" },
+      { accessorKey: "operCode", header: "공정코드" },
+      { accessorKey: "eqNm", header: "장비명" },
+      { accessorKey: "eqType", header: "장비유형" },
+      { accessorKey: "manufacturer", header: "제조사" },
       {
-        accessorKey: 'status',
-        header: '사용여부',
-        cell: ({ getValue }) => <Badge tone={getValue() === '사용' ? 'good' : 'muted'}>{getValue() as string}</Badge>,
+        accessorKey: "createdAt",
+        header: "생성일시",
+        cell: ({ getValue }) => formatDateTime(getValue<string>()),
       },
-      { accessorKey: 'calibrationDate', header: '검교정일' },
       {
-        id: 'actions',
-        header: '관리',
-        meta: { width: '150px' },
+        id: "actions",
+        header: "관리",
+        meta: { width: "100px" },
         cell: ({ row }) => (
           <div className="rowActions">
             <button
               type="button"
               className="miniButton"
+              disabled={detailLoadingEqCode === row.original.eqCode}
               onClick={(e) => {
-                e.stopPropagation()
-                setModalEquipment(row.original)
+                e.stopPropagation();
+                handleOpenDetail(row.original.eqCode);
               }}
             >
-              상세
-            </button>
-            <button
-              type="button"
-              className="miniButton danger"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleDelete(row.original)
-              }}
-            >
-              삭제
+              {detailLoadingEqCode === row.original.eqCode ? "조회 중..." : "상세"}
             </button>
           </div>
         ),
       },
     ],
-    [],
-  )
+    [detailLoadingEqCode]
+  );
 
+  // 모달 상세 필드 설정
   const detailFields = [
-    { label: '장비코드', key: 'code' },
-    { label: '장비명', key: 'name' },
-    { label: '장비유형', key: 'type' },
-    { label: '설치공정', key: 'installProcess' },
-    { label: '제조사', key: 'manufacturer' },
-    { label: '사용여부', key: 'status' },
-    { label: '검교정일', key: 'calibrationDate' },
-  ]
+    { label: "장비코드", key: "eqCode", editable: false },
+    { label: "공정코드", key: "operCode" },
+    { label: "장비명", key: "eqNm" },
+    { label: "장비유형", key: "eqType" },
+    { label: "제조사", key: "manufacturer" },
+    { label: "생성일시", key: "createdAt", editable: false },
+    { label: "수정일시", key: "updatedAt", editable: false },
+  ];
+
+  const modalData = useMemo(() => {
+    if (!modalEquipment) return {};
+    return {
+      eqCode: modalEquipment.eqCode,
+      operCode: modalEquipment.operCode ?? "",
+      eqNm: modalEquipment.eqNm ?? "",
+      eqType: modalEquipment.eqType ?? "",
+      manufacturer: modalEquipment.manufacturer ?? "",
+      createdAt: formatDateTime(modalEquipment.createdAt),
+      updatedAt: formatDateTime(modalEquipment.updatedAt),
+    };
+  }, [modalEquipment]);
 
   return (
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="장비관리 목록" action="등록" onAction={() => window.alert('등록 기능은 API 연동 후 사용 가능합니다.')}>
-        <CusTable data={pagedEquipment} columns={columns} onRowClick={setModalEquipment} />
-        <CusPagination page={page} totalPages={totalPages} totalCount={filteredEquipment.length} onPageChange={setPage} />
+      <Panel title="장비관리 목록" action="등록" onAction={() => setIsCreateModalOpen(true)}>
+        <div className="relative min-h-[300px]">
+          {isLoading && <span>데이터를 불러오는 중입니다...</span>}
+
+          <CusTable
+            data={equipments}
+            columns={columns}
+            onRowClick={(row) => handleOpenDetail(row.eqCode)}
+          />
+          <CusPagination
+            page={currentPage}
+            totalPages={totalPages}
+            totalCount={totalElements}
+            onPageChange={setCurrentPage}
+          />
+        </div>
       </Panel>
 
+      {/* 장비 상세/수정 모달 */}
       <RowDetailModal
         isOpen={modalEquipment !== null}
-        onClose={() => setModalEquipment(null)}
+        onClose={() => {
+          if (!isDeleting && !isUpdating) setModalEquipment(null);
+        }}
         onSave={handleSave}
         fields={detailFields}
-        data={(modalEquipment ?? {}) as unknown as Record<string, string>}
+        data={modalData as unknown as Record<string, string>}
+        dangerAction={{
+          label: "장비 삭제",
+          loadingLabel: "삭제 처리 중...",
+          onClick: handleDeleteEquipment,
+          isLoading: isDeleting,
+        }}
+      />
+
+      {/* 신규 장비 등록 모달 */}
+      <EquipmentCreateModal
+        isOpen={isCreateModalOpen}
+        isLoading={isCreating}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateEquipment}
       />
     </section>
-  )
+  );
 }
