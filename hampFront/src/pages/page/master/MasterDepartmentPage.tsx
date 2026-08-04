@@ -194,7 +194,7 @@ export function MasterDepartmentPage() {
     }
   };
 
-  // 💡 5. 부서 삭제 처리 (DELETE /departments/{depCode})
+  // 5. 부서 삭제 처리 (DELETE /departments/{depCode})
   const handleDeleteDepartment = async () => {
     if (!modalDepartment || isDeleting) return;
 

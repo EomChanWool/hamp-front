@@ -40,8 +40,6 @@ export function OperationCreateModal({
   };
 
   const handleSubmit = () => {
-    // 프론트엔드 자체 alert 검증을 제거하고, 빈 문자열 처리만 진행한 뒤 서버로 전송합니다.
-    // 서버(백엔드)에서 @NotBlank 등의 유효성 검사 실패 시 전달해주는 에러 메시지를 활용합니다.
     const payload: OperationCreateRequest = {
       operCode: form.operCode.trim(),
       depCode: form.depCode.trim(),
