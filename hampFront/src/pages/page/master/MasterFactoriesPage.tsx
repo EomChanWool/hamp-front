@@ -41,11 +41,22 @@ export function MasterFactoriesPage() {
   const facCodeRef = useRef<HTMLInputElement>(null);
   const facNmRef = useRef<HTMLInputElement>(null);
   const locationRef = useRef<HTMLInputElement>(null);
+  const useYnRef = useRef<HTMLSelectElement>(null);
 
   const searchFields: SearchField[] = [
     { type: "input", label: "공장코드", ref: facCodeRef },
     { type: "input", label: "공장명", ref: facNmRef },
     { type: "input", label: "위치", ref: locationRef },
+    {
+      type: "select",
+      label: "사용여부",
+      ref: useYnRef,
+      options: [
+        { label: "전체", value: "" },
+        { label: "사용", value: "Y" },
+        { label: "미사용", value: "N" },
+      ],
+    },
   ];
 
   // 공장 목록 조회 (GET /factory-zones)
@@ -123,6 +134,7 @@ export function MasterFactoriesPage() {
     if (facCodeRef.current?.value.trim()) params.facCode = facCodeRef.current.value.trim();
     if (facNmRef.current?.value.trim()) params.facNm = facNmRef.current.value.trim();
     if (locationRef.current?.value.trim()) params.location = locationRef.current.value.trim();
+    if (useYnRef.current?.value.trim()) params.useYn = useYnRef.current.value.trim();
 
     setCurrentPage(0);
     setSearchParams(params);
@@ -133,6 +145,9 @@ export function MasterFactoriesPage() {
     [facCodeRef, facNmRef, locationRef].forEach((ref) => {
       if (ref.current) ref.current.value = "";
     });
+    if (useYnRef.current) {
+      useYnRef.current.value = "";
+    }
     setCurrentPage(0);
     setSearchParams({});
   };
