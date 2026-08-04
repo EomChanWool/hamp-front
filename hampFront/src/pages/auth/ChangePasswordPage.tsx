@@ -12,27 +12,54 @@ export function ChangePasswordPage() {
     const navigate = useNavigate();
     const { changePassword, logout } = useAuth();
 
+    // 1차: 프론트엔드 유효성 검증
+    const validateForm = (): boolean => {
+        if (!currentPassword.trim()) {
+            alert('현재 비밀번호를 입력해주세요.');
+            return false;
+        }
+        if (!newPassword.trim()) {
+            alert('새 비밀번호를 입력해주세요.');
+            return false;
+        }
+        if (!confirmPassword.trim()) {
+            alert('새 비밀번호 확인을 입력해주세요.');
+            return false;
+        }
+        if (currentPassword === newPassword) {
+            alert('현재 비밀번호와 다른 새 비밀번호를 입력해주세요.');
+            return false;
+        }
+        if (newPassword !== confirmPassword) {
+            alert('새 비밀번호와 비밀번호 확인이 일치하지 않습니다.');
+            return false;
+        }
+        return true;
+    };
+
     const handleChangePassword = async (e: SyntheticEvent) => {
         e.preventDefault();
 
-        // 프론트엔드 1차 체크: 두 비밀번호가 일치하는지 확인
-        if (newPassword !== confirmPassword) {
-            alert('새 비밀번호와 비밀번호 확인이 일치하지 않습니다.');
-            return;
+        // [1차 검증] 프론트엔드 유효성 체크
+        if (!validateForm()) {
+            return; // 조건을 만족하지 못하면 API 요청 차단
         }
 
         try {
             setIsSubmitting(true);
 
-            // changePassword의 리턴값(res)을 받아옵니다.
+            // changePassword 호출 및 백엔드 응답 수신
             const res: any = await changePassword({ currentPassword, newPassword });
-            alert(res?.message || '비밀번호가 변경되었습니다.');
+            alert(res?.message || '비밀번호가 성공적으로 변경되었습니다.');
 
             // 변경 완료 후 메인 화면 이동
             navigate('/', { replace: true });
         } catch (error: any) {
-            // 백엔드 실패 예외 메시지 출력
-            alert(error.message || '비밀번호 변경 중 오류가 발생했습니다.');
+            // [2차 검증] 백엔드 응답 에러 메시지 노출 (Axios/Fetch 응답 구조 대응)
+            const apiErrorMessage =
+                error.response?.data?.message || error.message || '비밀번호 변경 중 오류가 발생했습니다.';
+
+            alert(apiErrorMessage);
         } finally {
             setIsSubmitting(false);
         }

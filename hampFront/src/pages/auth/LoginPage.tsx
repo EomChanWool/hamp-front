@@ -17,8 +17,26 @@ export function LoginPage() {
     }
   }, [isAuthenticated, navigate]);
 
+  // 1차: 프론트엔드 유효성 검증
+  const validateForm = (): boolean => {
+    if (!userId.trim()) {
+      alert('아이디를 입력해주세요.');
+      return false;
+    }
+    if (!password.trim()) {
+      alert('비밀번호를 입력해주세요.');
+      return false;
+    }
+    return true;
+  };
+
   const handleLogin = async (e: SyntheticEvent) => {
     e.preventDefault();
+
+    // [1차 검증] 프론트엔드 유효성 체크
+    if (!validateForm()) {
+      return; // 조건 미달 시 백엔드 API 요청 차단
+    }
 
     try {
       setIsSubmitting(true);
@@ -26,7 +44,11 @@ export function LoginPage() {
       
       navigate('/', { replace: true });
     } catch (error: any) {
-      alert(error.message || '로그인 처리에 실패했습니다.');
+      // [2차 검증] 백엔드에서 넘어오는 에러 메시지 우선 노출
+      const apiErrorMessage =
+        error.response?.data?.message || error.message || '로그인 처리에 실패했습니다.';
+      
+      alert(apiErrorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -67,7 +89,7 @@ export function LoginPage() {
             </label>
           </div>
           <button type="submit" className="primaryButton" disabled={isSubmitting}>
-            로그인
+            {isSubmitting ? '로그인 중...' : '로그인'}
           </button>
         </form>
       </section>
