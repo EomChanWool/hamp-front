@@ -944,6 +944,7 @@ button {
   grid-template-columns: 280px minmax(0, 1fr);
   transition: grid-template-columns 0.3s ease;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -963,6 +964,9 @@ button {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  height: 100%;
+  overflow-y: auto;     /* 화면 높이가 줄어들면 사이드바 내부 스크롤 생성 */
+  box-sizing: border-box;
   /* overflow-x: hidden; */
 }
 
@@ -1174,12 +1178,15 @@ button {
 
 .workspace {
   min-width: 0;
-  padding: 16px;
+  min-height: 0;
+  height: 100%;             
+  padding: 16px 16px 40px;  
   display: flex;
   flex-direction: column;
   gap: 18px;
   background: var(--bg-app);
-  overflow-y: auto;
+  overflow-y: auto;         
+  box-sizing: border-box;   
 }
 
 /* ================================
@@ -2007,6 +2014,29 @@ tbody tr:hover td {
 .required {
   color: #ef4444;
   font-weight: 700;
+}
+
+/* ================================
+   PAGE FORM
+================================ */
+
+.pageForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 24px;
+}
+
+.pageFormFooter {
+  grid-column: 1 / -1;
+
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+
+  margin-top: 8px;
+  padding-top: 20px;
+
+  border-top: 1px solid var(--border);
 }
 
 /* ================================
