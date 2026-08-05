@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Panel } from "@components/card/Panel";
 import { RowDetailModal } from "@components/common/RowDetailModal";
-import { DefectCreateModal } from "@components/common/DefectCreateModal";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
@@ -15,15 +15,16 @@ import type {
   DefectDetailResponse,
   ApiResponseDefectDetailResponse,
   ApiResponsePageDefectResponse,
-  DefectCreateRequest,
   DefectUpdateRequest,
 } from "@/types/master/Defect";
 
 export function MasterDefectsPage() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [defects, setDefects] = useState<DefectResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [searchParams, setSearchParams] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [detailLoadingDefCode, setDetailLoadingDefCode] = useState<string | null>(null);
 
@@ -32,14 +33,18 @@ export function MasterDefectsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [modalDefect, setModalDefect] = useState<DefectDetailResponse | null>(null);
 
-  // 등록 모달 상태 관리
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-
-  const [currentPage, setCurrentPage] = useState(0);
   const detailRequestIdRef = useRef(0);
 
-  // 검색 필드 Refs (defCode, operCode, defNm, defType, severity, useYn)
+  // URL에서 현재 페이지 및 검색어 추출
+  const currentPage = Number(searchParams.get("page") || "0");
+  const queryDefCode = searchParams.get("defCode") || "";
+  const queryOperCode = searchParams.get("operCode") || "";
+  const queryDefNm = searchParams.get("defNm") || "";
+  const queryDefType = searchParams.get("defType") || "";
+  const querySeverity = searchParams.get("severity") || "";
+  const queryUseYn = searchParams.get("useYn") || "";
+
+  // 검색 필드 Refs
   const defCodeRef = useRef<HTMLInputElement>(null);
   const operCodeRef = useRef<HTMLInputElement>(null);
   const defNmRef = useRef<HTMLInputElement>(null);
@@ -65,20 +70,41 @@ export function MasterDefectsPage() {
     },
   ];
 
-  // 1. 불량 목록 조회 (GET /defects)
-  const loadDefects = async (page: number, params: Record<string, string>) => {
+  // URL Query가 바뀔 때 Input/Select 필드 값 복원
+  useEffect(() => {
+    if (defCodeRef.current) defCodeRef.current.value = queryDefCode;
+    if (operCodeRef.current) operCodeRef.current.value = queryOperCode;
+    if (defNmRef.current) defNmRef.current.value = queryDefNm;
+    if (defTypeRef.current) defTypeRef.current.value = queryDefType;
+    if (severityRef.current) severityRef.current.value = querySeverity;
+    if (useYnRef.current) useYnRef.current.value = queryUseYn;
+  }, [
+    queryDefCode,
+    queryOperCode,
+    queryDefNm,
+    queryDefType,
+    querySeverity,
+    queryUseYn,
+  ]);
+
+  // 1. 불량 목록 조회 (useCallback으로 메모이제이션)
+  const loadDefects = useCallback(async () => {
     setIsLoading(true);
     try {
-      const cleanedParams = Object.entries(params).reduce(
-        (acc, [key, value]) => {
-          if (value && value.trim() !== "") acc[key] = value.trim();
-          return acc;
-        },
-        {} as Record<string, string>
-      );
+      const params: Record<string, string | number> = {
+        page: currentPage,
+        size: 10,
+      };
+
+      if (queryDefCode) params.defCode = queryDefCode;
+      if (queryOperCode) params.operCode = queryOperCode;
+      if (queryDefNm) params.defNm = queryDefNm;
+      if (queryDefType) params.defType = queryDefType;
+      if (querySeverity) params.severity = querySeverity;
+      if (queryUseYn) params.useYn = queryUseYn;
 
       const response = await apiClient.get<ApiResponsePageDefectResponse>("/defects", {
-        params: { ...cleanedParams, page, size: 10 },
+        params,
       });
 
       const pageData = response.data.data;
@@ -91,9 +117,59 @@ export function MasterDefectsPage() {
     } finally {
       setIsLoading(false);
     }
+  }, [
+    currentPage,
+    queryDefCode,
+    queryOperCode,
+    queryDefNm,
+    queryDefType,
+    querySeverity,
+    queryUseYn,
+  ]);
+
+  // URL 쿼리 파라미터 변경 시 자동 재조회
+  useEffect(() => {
+    loadDefects();
+  }, [loadDefects]);
+
+  // 검색 버튼 클릭 시
+  const handleSearch = () => {
+    const nextParams: Record<string, string> = { page: "0" };
+
+    const defCode = defCodeRef.current?.value.trim();
+    const operCode = operCodeRef.current?.value.trim();
+    const defNm = defNmRef.current?.value.trim();
+    const defType = defTypeRef.current?.value.trim();
+    const severity = severityRef.current?.value.trim();
+    const useYn = useYnRef.current?.value.trim();
+
+    if (defCode) nextParams.defCode = defCode;
+    if (operCode) nextParams.operCode = operCode;
+    if (defNm) nextParams.defNm = defNm;
+    if (defType) nextParams.defType = defType;
+    if (severity) nextParams.severity = severity;
+    if (useYn) nextParams.useYn = useYn;
+
+    setSearchParams(nextParams);
   };
 
-  // 2. 불량 단건 상세 조회 (GET /defects/{defCode})
+  // 검색 초기화 시
+  const handleReset = () => {
+    [defCodeRef, operCodeRef, defNmRef, defTypeRef, severityRef].forEach((ref) => {
+      if (ref.current) ref.current.value = "";
+    });
+    if (useYnRef.current) useYnRef.current.value = "";
+    setSearchParams({ page: "0" });
+  };
+
+  // 페이지 이동 시
+  const handlePageChange = (newPage: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", String(newPage));
+    setSearchParams(nextParams);
+  };
+
+  // 2. 불량 상세 조회 (GET /defects/{defCode})
   const handleOpenDetail = async (defCode: string) => {
     const requestId = ++detailRequestIdRef.current;
     setDetailLoadingDefCode(defCode);
@@ -127,52 +203,10 @@ export function MasterDefectsPage() {
     }
   };
 
-  useEffect(() => {
-    loadDefects(currentPage, searchParams);
-  }, [currentPage, searchParams]);
-
-  // 검색 핸들러
-  const handleSearch = () => {
-    const params: Record<string, string> = {};
-    if (defCodeRef.current?.value.trim()) params.defCode = defCodeRef.current.value.trim();
-    if (operCodeRef.current?.value.trim()) params.operCode = operCodeRef.current.value.trim();
-    if (defNmRef.current?.value.trim()) params.defNm = defNmRef.current.value.trim();
-    if (defTypeRef.current?.value.trim()) params.defType = defTypeRef.current.value.trim();
-    if (severityRef.current?.value.trim()) params.severity = severityRef.current.value.trim();
-    if (useYnRef.current?.value.trim()) params.useYn = useYnRef.current.value.trim();
-
-    setCurrentPage(0);
-    setSearchParams(params);
-  };
-
-  // 검색 초기화
-  const handleReset = () => {
-    [defCodeRef, operCodeRef, defNmRef, defTypeRef, severityRef].forEach((ref) => {
-      if (ref.current) ref.current.value = "";
-    });
-    if (useYnRef.current) useYnRef.current.value = "";
-
-    setCurrentPage(0);
-    setSearchParams({});
-  };
-
-  // 3. 신규 불량 등록 처리 (POST /defects)
-  const handleCreateDefect = async (formData: DefectCreateRequest) => {
-    setIsCreating(true);
-    try {
-      await apiClient.post("/defects", formData);
-      window.alert("불량 항목이 성공적으로 등록되었습니다.");
-      setIsCreateModalOpen(false);
-      await loadDefects(currentPage, searchParams);
-    } catch (error) {
-      console.error("불량 등록 실패:", error);
-      const message = axios.isAxiosError(error)
-        ? error.response?.data?.message
-        : null;
-      window.alert(message || "불량 등록 중 오류가 발생했습니다.");
-    } finally {
-      setIsCreating(false);
-    }
+  // 3. 등록 페이지로 이동
+  const handleCreate = () => {
+    const queryString = searchParams.toString();
+    navigate(queryString ? `/master/defects/create?${queryString}` : "/master/defects/create");
   };
 
   // 4. 불량 정보 수정 처리 (PUT /defects/{defCode})
@@ -201,7 +235,7 @@ export function MasterDefectsPage() {
       window.alert(successMessage);
 
       setModalDefect(null);
-      await loadDefects(currentPage, searchParams);
+      await loadDefects();
     } catch (err) {
       console.error("불량 수정 실패:", err);
       const errorMessage = axios.isAxiosError(err)
@@ -213,7 +247,7 @@ export function MasterDefectsPage() {
     }
   };
 
-  // 5. 불량 정보 삭제 처리 (DELETE /defects/{defCode})
+  // 5. 불량 삭제 처리 (DELETE /defects/{defCode})
   const handleDeleteDefect = async () => {
     if (!modalDefect || isDeleting) return;
 
@@ -228,7 +262,7 @@ export function MasterDefectsPage() {
       await apiClient.delete(`/defects/${encodedDefCode}`);
       window.alert("불량 항목이 삭제되었습니다.");
       setModalDefect(null);
-      await loadDefects(currentPage, searchParams);
+      await loadDefects();
     } catch (error) {
       console.error("불량 삭제 실패:", error);
       const message = axios.isAxiosError(error)
@@ -278,7 +312,7 @@ export function MasterDefectsPage() {
     [detailLoadingDefCode]
   );
 
-  // 모달 상세 필드 설정 (상세 조회 추가 응답 항목 포함)
+  // 모달 상세 필드 설정
   const detailFields = [
     { label: "불량코드", key: "defCode", editable: false },
     { label: "공정코드", key: "operCode" },
@@ -316,7 +350,7 @@ export function MasterDefectsPage() {
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="불량관리 목록" action="등록" onAction={() => setIsCreateModalOpen(true)}>
+      <Panel title="불량관리 목록" action="등록" onAction={handleCreate}>
         <div className="relative min-h-[300px]">
           {isLoading && <span>데이터를 불러오는 중입니다...</span>}
 
@@ -329,7 +363,7 @@ export function MasterDefectsPage() {
             page={currentPage}
             totalPages={totalPages}
             totalCount={totalElements}
-            onPageChange={setCurrentPage}
+            onPageChange={handlePageChange}
           />
         </div>
       </Panel>
@@ -349,14 +383,6 @@ export function MasterDefectsPage() {
           onClick: handleDeleteDefect,
           isLoading: isDeleting,
         }}
-      />
-
-      {/* 신규 불량 등록 모달 */}
-      <DefectCreateModal
-        isOpen={isCreateModalOpen}
-        isLoading={isCreating}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateDefect}
       />
     </section>
   );

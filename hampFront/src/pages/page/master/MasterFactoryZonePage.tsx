@@ -18,7 +18,7 @@ import type {
   FactoryZoneCreateRequest,
 } from "@/types/master/FactoryZone";
 
-export function MasterFactoriesPage() {
+export function MasterFactoryZonePage() {
   const [factoryZones, setFactoryZones] = useState<FactoryZoneResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);

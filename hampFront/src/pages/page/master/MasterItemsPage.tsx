@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Panel } from "@components/card/Panel";
 import { RowDetailModal } from "@components/common/RowDetailModal";
-import { ItemCreateModal } from "@components/common/ItemCreateModal";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
@@ -17,17 +17,18 @@ import {
   type ItemDetailResponse,
   type ApiResponseItemDetailResponse,
   type ApiResponsePageItemResponse,
-  type ItemCreateRequest,
   type ItemUpdateRequest,
   type ProductType,
   type ItemCategory,
 } from "@/types/master/Item";
 
 export function MasterItemsPage() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [items, setItems] = useState<ItemResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [searchParams, setSearchParams] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [detailLoadingItemCode, setDetailLoadingItemCode] = useState<string | null>(null);
 
@@ -36,14 +37,19 @@ export function MasterItemsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [modalItem, setModalItem] = useState<ItemDetailResponse | null>(null);
 
-  // 등록 모달 상태 관리
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-
-  const [currentPage, setCurrentPage] = useState(0);
   const detailRequestIdRef = useRef(0);
 
-  // 검색 필드 Refs (API 명세 반영: itemCode, productType, category, itemNm, unit, standard, useYn)
+  // URL에서 현재 페이지 및 검색어 추출
+  const currentPage = Number(searchParams.get("page") || "0");
+  const queryItemCode = searchParams.get("itemCode") || "";
+  const queryProductType = searchParams.get("productType") || "";
+  const queryCategory = searchParams.get("category") || "";
+  const queryItemNm = searchParams.get("itemNm") || "";
+  const queryUnit = searchParams.get("unit") || "";
+  const queryStandard = searchParams.get("standard") || "";
+  const queryUseYn = searchParams.get("useYn") || "";
+
+  // 검색 필드 Refs
   const itemCodeRef = useRef<HTMLInputElement>(null);
   const productTypeRef = useRef<HTMLSelectElement>(null);
   const categoryRef = useRef<HTMLSelectElement>(null);
@@ -90,20 +96,44 @@ export function MasterItemsPage() {
     },
   ];
 
-  // 1. 품목 목록 조회 (GET /items)
-  const loadItems = async (page: number, params: Record<string, string>) => {
+  // URL Query가 바뀔 때 Input/Select 필드 값 복원
+  useEffect(() => {
+    if (itemCodeRef.current) itemCodeRef.current.value = queryItemCode;
+    if (productTypeRef.current) productTypeRef.current.value = queryProductType;
+    if (categoryRef.current) categoryRef.current.value = queryCategory;
+    if (itemNmRef.current) itemNmRef.current.value = queryItemNm;
+    if (unitRef.current) unitRef.current.value = queryUnit;
+    if (standardRef.current) standardRef.current.value = queryStandard;
+    if (useYnRef.current) useYnRef.current.value = queryUseYn;
+  }, [
+    queryItemCode,
+    queryProductType,
+    queryCategory,
+    queryItemNm,
+    queryUnit,
+    queryStandard,
+    queryUseYn,
+  ]);
+
+  // 1. 품목 목록 조회 (useCallback으로 메모이제이션)
+  const loadItems = useCallback(async () => {
     setIsLoading(true);
     try {
-      const cleanedParams = Object.entries(params).reduce(
-        (acc, [key, value]) => {
-          if (value && value.trim() !== "") acc[key] = value.trim();
-          return acc;
-        },
-        {} as Record<string, string>
-      );
+      const params: Record<string, string | number> = {
+        page: currentPage,
+        size: 10,
+      };
+
+      if (queryItemCode) params.itemCode = queryItemCode;
+      if (queryProductType) params.productType = queryProductType;
+      if (queryCategory) params.category = queryCategory;
+      if (queryItemNm) params.itemNm = queryItemNm;
+      if (queryUnit) params.unit = queryUnit;
+      if (queryStandard) params.standard = queryStandard;
+      if (queryUseYn) params.useYn = queryUseYn;
 
       const response = await apiClient.get<ApiResponsePageItemResponse>("/items", {
-        params: { ...cleanedParams, page, size: 10 },
+        params,
       });
 
       const pageData = response.data.data;
@@ -116,6 +146,61 @@ export function MasterItemsPage() {
     } finally {
       setIsLoading(false);
     }
+  }, [
+    currentPage,
+    queryItemCode,
+    queryProductType,
+    queryCategory,
+    queryItemNm,
+    queryUnit,
+    queryStandard,
+    queryUseYn,
+  ]);
+
+  // URL 쿼리 파라미터 변경 시 자동 재조회
+  useEffect(() => {
+    loadItems();
+  }, [loadItems]);
+
+  // 검색 버튼 클릭 시
+  const handleSearch = () => {
+    const nextParams: Record<string, string> = { page: "0" };
+
+    const itemCode = itemCodeRef.current?.value.trim();
+    const productType = productTypeRef.current?.value.trim();
+    const category = categoryRef.current?.value.trim();
+    const itemNm = itemNmRef.current?.value.trim();
+    const unit = unitRef.current?.value.trim();
+    const standard = standardRef.current?.value.trim();
+    const useYn = useYnRef.current?.value.trim();
+
+    if (itemCode) nextParams.itemCode = itemCode;
+    if (productType) nextParams.productType = productType;
+    if (category) nextParams.category = category;
+    if (itemNm) nextParams.itemNm = itemNm;
+    if (unit) nextParams.unit = unit;
+    if (standard) nextParams.standard = standard;
+    if (useYn) nextParams.useYn = useYn;
+
+    setSearchParams(nextParams);
+  };
+
+  // 검색 초기화 시
+  const handleReset = () => {
+    [itemCodeRef, itemNmRef, unitRef, standardRef].forEach((ref) => {
+      if (ref.current) ref.current.value = "";
+    });
+    [productTypeRef, categoryRef, useYnRef].forEach((ref) => {
+      if (ref.current) ref.current.value = "";
+    });
+    setSearchParams({ page: "0" });
+  };
+
+  // 페이지 이동 시
+  const handlePageChange = (newPage: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", String(newPage));
+    setSearchParams(nextParams);
   };
 
   // 2. 품목 상세 조회 (GET /items/{itemCode})
@@ -152,54 +237,10 @@ export function MasterItemsPage() {
     }
   };
 
-  useEffect(() => {
-    loadItems(currentPage, searchParams);
-  }, [currentPage, searchParams]);
-
-  // 검색 핸들러
-  const handleSearch = () => {
-    const params: Record<string, string> = {};
-    if (itemCodeRef.current?.value.trim()) params.itemCode = itemCodeRef.current.value.trim();
-    if (productTypeRef.current?.value.trim()) params.productType = productTypeRef.current.value.trim();
-    if (categoryRef.current?.value.trim()) params.category = categoryRef.current.value.trim();
-    if (itemNmRef.current?.value.trim()) params.itemNm = itemNmRef.current.value.trim();
-    if (unitRef.current?.value.trim()) params.unit = unitRef.current.value.trim();
-    if (standardRef.current?.value.trim()) params.standard = standardRef.current.value.trim();
-    if (useYnRef.current?.value.trim()) params.useYn = useYnRef.current.value.trim();
-
-    setCurrentPage(0);
-    setSearchParams(params);
-  };
-
-  // 검색 초기화
-  const handleReset = () => {
-    [itemCodeRef, itemNmRef, unitRef, standardRef].forEach((ref) => {
-      if (ref.current) ref.current.value = "";
-    });
-    [productTypeRef, categoryRef, useYnRef].forEach((ref) => {
-      if (ref.current) ref.current.value = "";
-    });
-    setCurrentPage(0);
-    setSearchParams({});
-  };
-
-  // 3. 신규 품목 등록 처리 (POST /items)
-  const handleCreateItem = async (formData: ItemCreateRequest) => {
-    setIsCreating(true);
-    try {
-      await apiClient.post("/items", formData);
-      window.alert("품목이 성공적으로 등록되었습니다.");
-      setIsCreateModalOpen(false);
-      await loadItems(currentPage, searchParams);
-    } catch (error) {
-      console.error("품목 등록 실패:", error);
-      const message = axios.isAxiosError(error)
-        ? error.response?.data?.message
-        : null;
-      window.alert(message || "품목 등록 중 오류가 발생했습니다.");
-    } finally {
-      setIsCreating(false);
-    }
+  // 3. 등록 페이지로 이동
+  const handleCreate = () => {
+    const queryString = searchParams.toString();
+    navigate(queryString ? `/master/items/create?${queryString}` : "/master/items/create");
   };
 
   // 4. 품목 정보 수정 처리 (PUT /items/{itemCode})
@@ -230,7 +271,7 @@ export function MasterItemsPage() {
       window.alert(successMessage);
 
       setModalItem(null);
-      await loadItems(currentPage, searchParams);
+      await loadItems();
     } catch (err) {
       console.error("품목 수정 실패:", err);
       const errorMessage = axios.isAxiosError(err)
@@ -257,7 +298,7 @@ export function MasterItemsPage() {
       await apiClient.delete(`/items/${encodedItemCode}`);
       window.alert("품목이 삭제되었습니다.");
       setModalItem(null);
-      await loadItems(currentPage, searchParams);
+      await loadItems();
     } catch (error) {
       console.error("품목 삭제 실패:", error);
       const message = axios.isAxiosError(error)
@@ -348,7 +389,7 @@ export function MasterItemsPage() {
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="품목관리 목록" action="등록" onAction={() => setIsCreateModalOpen(true)}>
+      <Panel title="품목관리 목록" action="등록" onAction={handleCreate}>
         <div className="relative min-h-[300px]">
           {isLoading && <span>데이터를 불러오는 중입니다...</span>}
 
@@ -361,7 +402,7 @@ export function MasterItemsPage() {
             page={currentPage}
             totalPages={totalPages}
             totalCount={totalElements}
-            onPageChange={setCurrentPage}
+            onPageChange={handlePageChange}
           />
         </div>
       </Panel>
@@ -381,14 +422,6 @@ export function MasterItemsPage() {
           onClick: handleDeleteItem,
           isLoading: isDeleting,
         }}
-      />
-
-      {/* 신규 품목 등록 모달 */}
-      <ItemCreateModal
-        isOpen={isCreateModalOpen}
-        isLoading={isCreating}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateItem}
       />
     </section>
   );

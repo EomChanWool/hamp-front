@@ -1,4 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState, type SyntheticEvent } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Panel } from "@components/card/Panel";
+import { apiClient } from "@/api/apiClient";
+import axios from "axios";
 import {
   PRODUCT_TYPE_LABEL,
   CATEGORY_LABEL,
@@ -6,21 +10,16 @@ import {
   type ProductType,
   type ItemCategory,
   type ItemRoutingRequest,
+  type ApiResponseItemResponse,
 } from "@/types/master/Item";
 
-interface ItemCreateModalProps {
-  isOpen: boolean;
-  isLoading: boolean;
-  onClose: () => void;
-  onSubmit: (data: ItemCreateRequest) => void;
-}
+export function MasterItemsCreatePage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-export function ItemCreateModal({
-  isOpen,
-  isLoading,
-  onClose,
-  onSubmit,
-}: ItemCreateModalProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 기본 폼 상태
   const [form, setForm] = useState<{
     itemCode: string;
     productType: string;
@@ -40,27 +39,10 @@ export function ItemCreateModal({
   // 공정 라우팅 목록 상태
   const [routings, setRoutings] = useState<ItemRoutingRequest[]>([]);
 
-  // 모달 닫힐 때 폼 및 라우팅 상태 초기화
-  useEffect(() => {
-    if (!isOpen) {
-      setForm({
-        itemCode: "",
-        productType: "",
-        category: "",
-        itemNm: "",
-        unit: "",
-        standard: "",
-      });
-      setRoutings([]);
-    }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
   const handleChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
 
-    // 품목구분이 원료('0')로 바뀌면 라우팅 정보 초기화
+    // 품목구분이 원료('0')로 변경되거나 초기화되면 라우팅 정보 삭제
     if (key === "category" && value === "0") {
       setRoutings([]);
     }
@@ -91,17 +73,18 @@ export function ItemCreateModal({
   const handleRoutingChange = (
     index: number,
     field: keyof ItemRoutingRequest,
-    value: any
+    value: unknown
   ) => {
     setRoutings((prev) =>
       prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
     );
   };
 
-  const handleSubmit = () => {
+  // [1차 검증] 프론트엔드 유효성 체크
+  const validateForm = (): boolean => {
     if (!form.itemCode.trim()) {
-      window.alert("품목 코드를 입력해주세요.");
-      return;
+      alert("품목 코드를 입력해주세요.");
+      return false;
     }
 
     const selectedCategory =
@@ -110,18 +93,36 @@ export function ItemCreateModal({
     // 반제품(1) 또는 완제품(2)일 때 라우팅 필수 검증
     if (selectedCategory === 1 || selectedCategory === 2) {
       if (routings.length === 0) {
-        window.alert("반제품/완제품 등록 시 공정 라우팅을 최소 1개 이상 추가해야 합니다.");
-        return;
+        alert("반제품/완제품 등록 시 공정 라우팅을 최소 1개 이상 추가해야 합니다.");
+        return false;
       }
 
       const hasEmptyOperCode = routings.some(
         (r) => !r.operCode || !r.operCode.trim()
       );
       if (hasEmptyOperCode) {
-        window.alert("공정 코드를 모두 입력해주세요.");
-        return;
+        alert("공정 코드를 모두 입력해주세요.");
+        return false;
       }
     }
+
+    return true;
+  };
+
+  // 목록 페이지로 이동 (기존 검색 파라미터 보존)
+  const handleCancel = () => {
+    const queryString = searchParams.toString();
+    navigate(queryString ? `/master/items?${queryString}` : "/master/items");
+  };
+
+  // 등록 제출 핸들러
+  const handleSubmit = async (e: SyntheticEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) return;
+
+    const selectedCategory =
+      form.category !== "" ? (Number(form.category) as ItemCategory) : null;
 
     const payload: ItemCreateRequest = {
       itemCode: form.itemCode.trim(),
@@ -131,7 +132,6 @@ export function ItemCreateModal({
       itemNm: form.itemNm.trim() || null,
       unit: form.unit.trim() || null,
       standard: form.standard.trim() || null,
-      // 원료('0')이거나 미선택 시 null, 반제품/완제품 시 routings 배열 전달
       routings:
         selectedCategory === 1 || selectedCategory === 2
           ? routings.map((r) => ({
@@ -142,41 +142,30 @@ export function ItemCreateModal({
           : null,
     };
 
-    onSubmit(payload);
+    setIsSubmitting(true);
+    try {
+      await apiClient.post<ApiResponseItemResponse>("/items", payload);
+      alert("성공적으로 등록되었습니다.");
+
+      // 등록 완료 후 기존 검색조건(쿼리파라미터)을 유지하며 품목 목록으로 이동
+      handleCancel();
+    } catch (error) {
+      console.error("품목 등록 실패:", error);
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.message
+        : null;
+      alert(message || "품목 등록 중 오류가 발생했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const isRoutingRequired = form.category === "1" || form.category === "2";
 
   return (
-    <>
-      <div
-        onClick={isLoading ? undefined : onClose}
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0,0,0,0.4)",
-          backdropFilter: "blur(2px)",
-          zIndex: 200,
-        }}
-      />
-
-      <div className="detailModal">
-        <div className="detailModalHeader">
-          <div>
-            <h3>신규 품목 등록</h3>
-            <span>품목 정보 등록</span>
-          </div>
-          <button
-            type="button"
-            className="detailModalClose"
-            onClick={onClose}
-            disabled={isLoading}
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="detailModalBody">
+    <section className="screenStack">
+      <Panel title="신규 품목 등록">
+        <form className="pageForm" onSubmit={handleSubmit}>
           {/* 품목 코드 (필수) */}
           <div className="detailField">
             <label className="requiredLabel">
@@ -185,7 +174,7 @@ export function ItemCreateModal({
             <input
               className="tableInput"
               value={form.itemCode}
-              disabled={isLoading}
+              disabled={isSubmitting}
               onChange={(e) => handleChange("itemCode", e.target.value)}
               placeholder="예: ITM001"
             />
@@ -197,7 +186,7 @@ export function ItemCreateModal({
             <select
               className="tableInput"
               value={form.productType}
-              disabled={isLoading}
+              disabled={isSubmitting}
               onChange={(e) => handleChange("productType", e.target.value)}
             >
               <option value="">선택</option>
@@ -212,7 +201,7 @@ export function ItemCreateModal({
             <select
               className="tableInput"
               value={form.category}
-              disabled={isLoading}
+              disabled={isSubmitting}
               onChange={(e) => handleChange("category", e.target.value)}
             >
               <option value="">선택</option>
@@ -228,7 +217,7 @@ export function ItemCreateModal({
             <input
               className="tableInput"
               value={form.itemNm}
-              disabled={isLoading}
+              disabled={isSubmitting}
               onChange={(e) => handleChange("itemNm", e.target.value)}
               placeholder="예: 사과 통조림"
             />
@@ -240,7 +229,7 @@ export function ItemCreateModal({
             <input
               className="tableInput"
               value={form.unit}
-              disabled={isLoading}
+              disabled={isSubmitting}
               onChange={(e) => handleChange("unit", e.target.value)}
               placeholder="예: EA, BOX, KG"
             />
@@ -252,7 +241,7 @@ export function ItemCreateModal({
             <input
               className="tableInput"
               value={form.standard}
-              disabled={isLoading}
+              disabled={isSubmitting}
               onChange={(e) => handleChange("standard", e.target.value)}
               placeholder="예: 500g"
             />
@@ -272,7 +261,7 @@ export function ItemCreateModal({
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  marginBottom: "8px",
+                  marginBottom: "12px",
                 }}
               >
                 <label className="requiredLabel" style={{ fontWeight: 600 }}>
@@ -281,7 +270,7 @@ export function ItemCreateModal({
                 <button
                   type="button"
                   className="miniButton primary"
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                   onClick={handleAddRouting}
                 >
                   + 공정 추가
@@ -291,7 +280,7 @@ export function ItemCreateModal({
               {routings.length === 0 ? (
                 <div
                   style={{
-                    padding: "12px",
+                    padding: "16px",
                     textAlign: "center",
                     color: "#6b7280",
                     fontSize: "13px",
@@ -327,7 +316,7 @@ export function ItemCreateModal({
                         style={{ flex: 1 }}
                         placeholder="공정 코드 (예: OP01)"
                         value={route.operCode ?? ""}
-                        disabled={isLoading}
+                        disabled={isSubmitting}
                         onChange={(e) =>
                           handleRoutingChange(index, "operCode", e.target.value)
                         }
@@ -336,7 +325,7 @@ export function ItemCreateModal({
                         className="tableInput"
                         style={{ width: "110px", flexShrink: 0 }}
                         value={route.finalYn ?? "N"}
-                        disabled={isLoading}
+                        disabled={isSubmitting}
                         onChange={(e) =>
                           handleRoutingChange(index, "finalYn", e.target.value)
                         }
@@ -347,7 +336,7 @@ export function ItemCreateModal({
                       <button
                         type="button"
                         className="miniButton danger"
-                        disabled={isLoading}
+                        disabled={isSubmitting}
                         onClick={() => handleRemoveRouting(index)}
                       >
                         삭제
@@ -358,29 +347,27 @@ export function ItemCreateModal({
               )}
             </div>
           )}
-        </div>
 
-        <div className="detailModalFooter">
-          <div className="detailModalFooterRight">
+          {/* 하단 버튼 영역 */}
+          <div className="pageFormFooter">
             <button
               type="button"
               className="ghostButton"
-              onClick={onClose}
-              disabled={isLoading}
+              onClick={handleCancel}
+              disabled={isSubmitting}
             >
               취소
             </button>
             <button
-              type="button"
+              type="submit"
               className="primaryButton"
-              onClick={handleSubmit}
-              disabled={isLoading}
+              disabled={isSubmitting}
             >
-              {isLoading ? "등록 중..." : "등록"}
+              {isSubmitting ? "등록 중..." : "등록"}
             </button>
           </div>
-        </div>
-      </div>
-    </>
+        </form>
+      </Panel>
+    </section>
   );
 }

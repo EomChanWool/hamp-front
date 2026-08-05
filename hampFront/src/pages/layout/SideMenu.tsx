@@ -12,6 +12,7 @@ export function SideMenu({ collapsed }: SideMenuProps) {
   const navigate = useNavigate();
 
   // 현재 URL 주소를 기반으로 활성화되어야 하는 대메뉴 그룹(group.title) 탐색
+  // (hidden 항목까지 포함하여 찾으므로, 등록 페이지 접속 시에도 해당 대메뉴가 열립니다)
   const currentActiveGroupTitle = (() => {
     if (location.pathname === "/") return null;
 
@@ -48,6 +49,12 @@ export function SideMenu({ collapsed }: SideMenuProps) {
           const isOpen = openGroup === group.title;
           const hasActiveItem = currentActiveGroupTitle === group.title;
 
+          // 1. 화면 사이드바에 실제로 표시할 메뉴 항목 (hidden이 안 붙은 메뉴들만 필터링)
+          const visibleItems = group.items.filter((item) => !item.hidden);
+
+          // 만약 그룹 내 표시할 visibleItems가 하나도 없다면 해당 대메뉴 그룹 자체를 안 그림
+          if (visibleItems.length === 0) return null;
+
           return (
             <section
               key={group.title}
@@ -76,9 +83,10 @@ export function SideMenu({ collapsed }: SideMenuProps) {
 
               {/* 소메뉴 아이템 리스트 영역 */}
               <div className={`navItems ${isOpen && !collapsed ? "open" : ""}`}>
-                {group.items.map((item) => {
+                {/* 2. group.items 대신 visibleItems로 반복문 실행 */}
+                {visibleItems.map((item) => {
                   const fullPath = `${group.path}/${item.path}`.replace(/\/+/g, "/");
-                  
+
                   // 현재 주소와 일치하는지 여부 판별
                   const isItemActive = matchPath({ path: fullPath, end: true }, location.pathname);
                   const Icon = isItemActive ? FolderOpenIcon : FolderIcon;
