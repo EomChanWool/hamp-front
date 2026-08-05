@@ -965,7 +965,8 @@ button {
   flex-direction: column;
   gap: 8px;
   height: 100%;
-  overflow-y: auto;     /* 화면 높이가 줄어들면 사이드바 내부 스크롤 생성 */
+  overflow-y: auto;
+  /* 화면 높이가 줄어들면 사이드바 내부 스크롤 생성 */
   box-sizing: border-box;
   /* overflow-x: hidden; */
 }
@@ -1179,14 +1180,14 @@ button {
 .workspace {
   min-width: 0;
   min-height: 0;
-  height: 100%;             
-  padding: 16px 16px 40px;  
+  height: 100%;
+  padding: 16px 16px 40px;
   display: flex;
   flex-direction: column;
   gap: 18px;
   background: var(--bg-app);
-  overflow-y: auto;         
-  box-sizing: border-box;   
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 /* ================================
@@ -1333,24 +1334,24 @@ button {
 
 .rowActions {
   display: flex;
-  flex-wrap: nowrap;       
+  flex-wrap: nowrap;
   align-items: center;
   gap: 6px;
 }
 
 .miniButton {
-  height: 28px;             
-  line-height: 26px;       
-  box-sizing: border-box;  
+  height: 28px;
+  line-height: 26px;
+  box-sizing: border-box;
   border-radius: 6px;
   background: #f1f5f9;
-  border: 1px solid #e2e8f0; 
+  border: 1px solid #e2e8f0;
   color: #475569;
   padding: 0 10px;
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
-  display: inline-flex;   
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   transition:
@@ -1603,10 +1604,13 @@ tbody tr:hover td {
   border-radius: inherit;
 }
 
+/* ===================================================
+   SearchBand 전체 레이아웃
+   =================================================== */
 .searchBand {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   padding: 16px;
 }
 
@@ -1620,16 +1624,13 @@ tbody tr:hover td {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 6px;
   font-size: 13px;
   padding: 6px 14px;
   background: #ffffff;
   color: #475569;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
   transition: all 0.2s ease;
 }
 
@@ -1658,10 +1659,13 @@ tbody tr:hover td {
   width: 15px;
 }
 
+/* ===================================================
+   필터 입력 영역 (4열 고정 격자)
+   =================================================== */
 .searchBand .serchItem {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px 12px;
   align-items: end;
 }
 
@@ -1724,6 +1728,82 @@ tbody tr:hover td {
 .searchBand .serchItem .dateRangeGroup input {
   flex: 1;
   min-width: 0;
+}
+
+/* ===================================================
+   하단 우측 고정 버튼 영역 (.searchActions)
+   ★ 선택자 경로를 정확히 작성하여 grid-column: 4 적용
+   =================================================== */
+.searchBand .serchItem .searchActions {
+  grid-column: 4; /* 무조건 4번째 열(맨 오른쪽) 위치 고정 */
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  width: 100%;
+}
+
+/* 조회 버튼 스타일 */
+.searchBand .searchActions .primaryButton {
+  min-width: 70px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+/* 상세검색 / 접기 버튼 스타일 */
+.searchBand .searchActions .expandButton {
+  height: 40px;
+  min-width: 96px;
+  padding: 0 16px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  border-radius: 8px;
+  border: 1px solid #d8dee9;
+
+  background: #ffffff;
+  color: #475569;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  white-space: nowrap;
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.searchBand .searchActions .expandButton:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #334155;
+}
+
+.searchBand .searchActions .expandButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+[data-theme="dark"] .searchBand .searchActions .expandButton {
+  background-color: #334155;
+  border-color: #475569;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .searchBand .searchActions .expandButton:hover {
+  background: #334155;
+  color: #f8fafc;
 }
 
 .locationGrid,
@@ -2012,9 +2092,9 @@ tbody tr:hover td {
 }
 
 .requiredLabel {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .required {
