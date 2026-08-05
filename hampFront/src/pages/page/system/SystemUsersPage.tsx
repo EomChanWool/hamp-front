@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@components/common/Badge";
 import { Panel } from "@components/card/Panel";
 import { RowDetailModal } from "@components/common/RowDetailModal";
-import { UserCreateModal } from "@components/common/UserCreateModal";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
@@ -15,65 +15,65 @@ import type {
   ApiResponseUserResponse,
   ApiResponsePageUserResponse,
   UserUpdateRequest,
-  UserCreateRequest,
 } from "@/types/User";
-import type { AuthGroupResponse, ApiResponseListAuthGroupResponse } from "@/types/auth/Auth";
 
 export function SystemUsersPage() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [users, setUsers] = useState<UserResponse[]>([]);
-  const [authGroups, setAuthGroups] = useState<AuthGroupResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [searchParams, setSearchParams] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [detailLoadingUserId, setDetailLoadingUserId] = useState<string | null>(null);
 
-  // 상태 변경 및 로딩 관리
+  // 상세/수정 모달 관련 상태
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeactivating, setIsDeactivating] = useState(false);
   const [modalUser, setModalUser] = useState<UserResponse | null>(null);
 
-  // 등록 모달 및 생성 중 로딩 상태
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-
-  const [currentPage, setCurrentPage] = useState(0);
   const detailRequestIdRef = useRef(0);
 
+  // URL에서 현재 페이지 및 검색어 추출
+  const currentPage = Number(searchParams.get("page") || "0");
+  const queryUserId = searchParams.get("userId") || "";
+  const queryUserNm = searchParams.get("userNm") || "";
+  const queryUserDep = searchParams.get("userDep") || "";
+
+  // input ref 초기값 설정
   const userIdRef = useRef<HTMLInputElement>(null);
   const userNmRef = useRef<HTMLInputElement>(null);
   const userDepRef = useRef<HTMLInputElement>(null);
 
+  // 검색 폼 UI 항목 정의
   const searchFields: SearchField[] = [
     { type: "input", label: "사용자ID", ref: userIdRef },
     { type: "input", label: "이름", ref: userNmRef },
     { type: "input", label: "부서", ref: userDepRef },
   ];
 
-  // 권한 그룹 목록 조회
-  const loadAuthGroups = async () => {
-    try {
-      const response = await apiClient.get<ApiResponseListAuthGroupResponse>("/auth-groups");
-      setAuthGroups(response.data.data ?? []);
-    } catch (error) {
-      console.error("권한 그룹 목록 조회 실패:", error);
-    }
-  };
+  // URL Query가 바뀔 때 Input 텍스트 필드 값 복원
+  useEffect(() => {
+    if (userIdRef.current) userIdRef.current.value = queryUserId;
+    if (userNmRef.current) userNmRef.current.value = queryUserNm;
+    if (userDepRef.current) userDepRef.current.value = queryUserDep;
+  }, [queryUserId, queryUserNm, queryUserDep]);
 
-  // 회원 목록 조회
-  const loadUsers = async (page: number, params: Record<string, string>) => {
+  // 회원 목록 조회 (useCallback으로 메모이제이션 처리)
+  const loadUsers = useCallback(async () => {
     setIsLoading(true);
     try {
-      const cleanedParams = Object.entries(params).reduce(
-        (acc, [key, value]) => {
-          if (value && value.trim() !== "") acc[key] = value.trim();
-          return acc;
-        },
-        {} as Record<string, string>
-      );
+      const params: Record<string, string | number> = {
+        page: currentPage,
+        size: 10,
+      };
+
+      if (queryUserId) params.userId = queryUserId;
+      if (queryUserNm) params.userNm = queryUserNm;
+      if (queryUserDep) params.position = queryUserDep;
 
       const response = await apiClient.get<ApiResponsePageUserResponse>("/users", {
-        params: { ...cleanedParams, page, size: 10 },
+        params,
       });
 
       const pageData = response.data.data;
@@ -86,9 +86,44 @@ export function SystemUsersPage() {
     } finally {
       setIsLoading(false);
     }
+  }, [currentPage, queryUserId, queryUserNm, queryUserDep]);
+
+  // URL 쿼리 파라미터가 변경될 때 자동 재조회
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  // 검색 버튼 클릭 시
+  const handleSearch = () => {
+    const nextParams: Record<string, string> = { page: "0" };
+
+    const userId = userIdRef.current?.value.trim();
+    const userNm = userNmRef.current?.value.trim();
+    const userDep = userDepRef.current?.value.trim();
+
+    if (userId) nextParams.userId = userId;
+    if (userNm) nextParams.userNm = userNm;
+    if (userDep) nextParams.position = userDep;
+
+    setSearchParams(nextParams);
   };
 
-  // 회원 단건 상세 조회 (GET /users/{userId})
+  // 검색 초기화 시
+  const handleReset = () => {
+    [userIdRef, userNmRef, userDepRef].forEach((ref) => {
+      if (ref.current) ref.current.value = "";
+    });
+    setSearchParams({ page: "0" });
+  };
+
+  // 페이지 이동 시
+  const handlePageChange = (newPage: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", String(newPage));
+    setSearchParams(nextParams);
+  };
+
+  // 회원 단건 상세 조회
   const handleOpenDetail = async (userId: string) => {
     const requestId = ++detailRequestIdRef.current;
     setDetailLoadingUserId(userId);
@@ -122,64 +157,12 @@ export function SystemUsersPage() {
     }
   };
 
-  useEffect(() => {
-    loadUsers(currentPage, searchParams);
-  }, [currentPage, searchParams]);
-
-  // 최초 로드 시 권한 목록 조회
-  useEffect(() => {
-    loadAuthGroups();
-  }, []);
-
-
-  // 검색 핸들러
-  const handleSearch = () => {
-    const params: Record<string, string> = {};
-    if (userIdRef.current?.value.trim()) params.userId = userIdRef.current.value.trim();
-    if (userNmRef.current?.value.trim()) params.userNm = userNmRef.current.value.trim();
-    if (userDepRef.current?.value.trim()) params.position = userDepRef.current.value.trim();
-
-    setCurrentPage(0);
-    setSearchParams(params);
-  };
-
-  // 검색 초기화
-  const handleReset = () => {
-    [userIdRef, userNmRef, userDepRef].forEach((ref) => {
-      if (ref.current) ref.current.value = "";
-    });
-    setCurrentPage(0);
-    setSearchParams({});
-  };
-
-  // 1. 신규 회원 등록 처리 (POST /users)
-  const handleCreateUser = async (formData: UserCreateRequest) => {
-    setIsCreating(true);
-    try {
-      await apiClient.post("/users", formData);
-      window.alert("성공적으로 등록되었습니다.");
-      setIsCreateModalOpen(false);
-      await loadUsers(currentPage, searchParams);
-    } catch (error) {
-      console.error("회원 등록 실패:", error);
-      // 백엔드 에러 메시지 노출 (400 VALIDATION_ERROR, 409 DUPLICATE_USER_ID 등)
-      const message = axios.isAxiosError(error)
-        ? error.response?.data?.message
-        : null;
-      window.alert(message || "회원 등록 중 오류가 발생했습니다.");
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  // 2. 회원 정보 수정 처리 (PUT /users/{userId}) - Full Replace 적용
+  // 회원 정보 수정 처리
   const handleSave = async (updated: Record<string, string>) => {
     if (!modalUser || isUpdating) return;
 
     setIsUpdating(true);
     try {
-      // 1️updated 객체에 키가 존재하면 입력된 값(trim)을 사용하고, 속성이 없으면 기존 값을 사용합니다.
-      // 빈 문자열("")이 들어왔을 때 기존 값으로 덮어씌우지 않도록 || modalUser.userNm 구문을 제거했습니다.
       const userNmVal = "userNm" in updated ? updated.userNm.trim() : modalUser.userNm;
       const phoneVal = "phone" in updated ? updated.phone : modalUser.phone;
       const positionVal = "position" in updated ? updated.position : modalUser.position;
@@ -192,22 +175,19 @@ export function SystemUsersPage() {
 
       const encodedUserId = encodeURIComponent(modalUser.userId);
 
-      // API 응답 타입(ApiResponseUserResponse 등)을 지정하여 response 변수로 받습니다.
       const response = await apiClient.put<ApiResponseUserResponse>(
         `/users/${encodedUserId}`,
         updatePayload
       );
 
-      // 백엔드에서 내려준 성공 메시지 사용
       const successMessage = response.data?.message || "수정되었습니다.";
       window.alert(successMessage);
 
       setModalUser(null);
-      await loadUsers(currentPage, searchParams);
+      await loadUsers();
     } catch (err) {
       console.error("저장 실패:", err);
 
-      // 백엔드에서 내려준 에러 메시지 노출 (400 VALIDATION_ERROR 등)
       const errorMessage = axios.isAxiosError(err)
         ? err.response?.data?.message
         : null;
@@ -218,7 +198,7 @@ export function SystemUsersPage() {
     }
   };
 
-  // 3. 회원 비활성화 처리 (DELETE /users/{userId})
+  // 회원 비활성화 처리
   const handleDeactivate = async () => {
     if (!modalUser || !modalUser.use || isDeactivating) return;
 
@@ -233,7 +213,7 @@ export function SystemUsersPage() {
       await apiClient.delete(`/users/${encodedUserId}`);
       window.alert("회원이 비활성화되었습니다.");
       setModalUser(null);
-      await loadUsers(currentPage, searchParams);
+      await loadUsers();
     } catch (error) {
       console.error("회원 비활성화 실패:", error);
       const message = axios.isAxiosError(error)
@@ -315,11 +295,16 @@ export function SystemUsersPage() {
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="사용자관리 목록" action="등록" onAction={() => setIsCreateModalOpen(true)}>
+      <Panel
+        title="사용자관리 목록"
+        action="등록"
+        onAction={() => {
+          const queryString = searchParams.toString();
+          navigate(queryString ? `/system/users/create?${queryString}` : "/system/users/create");
+        }}
+      >
         <div className="relative min-h-[300px]">
-          {isLoading && (
-            <span>데이터를 불러오는 중입니다...</span>
-          )}
+          {isLoading && <span>데이터를 불러오는 중입니다...</span>}
 
           <CusTable
             data={users}
@@ -330,7 +315,7 @@ export function SystemUsersPage() {
             page={currentPage}
             totalPages={totalPages}
             totalCount={totalElements}
-            onPageChange={setCurrentPage}
+            onPageChange={handlePageChange}
           />
         </div>
       </Panel>
@@ -347,22 +332,13 @@ export function SystemUsersPage() {
         dangerAction={
           modalUser?.use
             ? {
-              label: "회원 비활성화",
-              loadingLabel: "비활성화 처리 중...",
-              onClick: handleDeactivate,
-              isLoading: isDeactivating,
-            }
+                label: "회원 비활성화",
+                loadingLabel: "비활성화 처리 중...",
+                onClick: handleDeactivate,
+                isLoading: isDeactivating,
+              }
             : undefined
         }
-      />
-
-      {/* 신규 회원 등록 모달 */}
-      <UserCreateModal
-        isOpen={isCreateModalOpen}
-        isLoading={isCreating}
-        authGroups={authGroups}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateUser}
       />
     </section>
   );

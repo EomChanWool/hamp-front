@@ -26,6 +26,7 @@ import { MainDashboardPage } from '@pages/page/dashboard/MainDashboardPage'
 
 // 시스템관리
 import { SystemUsersPage } from '@pages/page/system/SystemUsersPage'
+import { SystemUsersCreatePage } from '@pages/page/system/SystemUsersCreatePage'
 import { SystemUserPermissionsPage } from '@pages/page/system/SystemUserPermissionsPage'
 import { SystemAccessLogsPage } from '@pages/page/system/SystemAccessLogsPage'
 
@@ -325,6 +326,8 @@ export const routeObj: RouteObject[] = [
           };
         }),
       ),
+      
+      { path: '/system/users/create', element: <SystemUsersCreatePage /> },
 
       // 매칭되지 않는 하위 경로는 대시보드로
       { path: '*', element: <Navigate to="/" replace /> },
