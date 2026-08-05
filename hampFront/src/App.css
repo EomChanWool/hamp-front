@@ -2116,8 +2116,9 @@ tbody tr:hover td {
   grid-column: 1 / -1;
 
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+  justify-content: flex-end; /* 우측 정렬 */
+  align-items: center;
+  gap: 8px; /* 버튼 사이 간격 8px */
 
   margin-top: 8px;
   padding-top: 20px;
@@ -2125,6 +2126,42 @@ tbody tr:hover td {
   border-top: 1px solid var(--border);
 }
 
+.pageFormFooterSpaceBetween {
+  grid-column: 1 / -1;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-top: 8px;
+  padding-top: 20px;
+
+  border-top: 1px solid var(--border);
+}
+
+.detailField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detailField label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.detailValue {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-body);
+  font-size: 13px;
+}
 /* ================================
    AUTH GROUP
 ================================ */
