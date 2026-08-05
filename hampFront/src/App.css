@@ -1333,20 +1333,26 @@ button {
 
 .rowActions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;       
+  align-items: center;
   gap: 6px;
 }
 
 .miniButton {
-  min-height: 28px;
+  height: 28px;             
+  line-height: 26px;       
+  box-sizing: border-box;  
   border-radius: 6px;
   background: #f1f5f9;
-  border-color: #e2e8f0;
+  border: 1px solid #e2e8f0; 
   color: #475569;
   padding: 0 10px;
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
+  display: inline-flex;   
+  align-items: center;
+  justify-content: center;
   transition:
     background 0.15s ease,
     border-color 0.15s ease;

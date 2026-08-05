@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Panel } from "@components/card/Panel";
-import { RowDetailModal } from "@components/common/RowDetailModal";
 import { DepartmentCreateModal } from "@components/common/DepartmentCreateModal";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
@@ -26,43 +25,46 @@ export function MasterDepartmentPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [searchParams, setSearchParams] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [detailLoadingDepCode, setDetailLoadingDepCode] = useState<string | null>(null);
 
-  // 수정 및 삭제 상태 관리
+  // 인라인 수정 상태 관리 (현재 수정 중인 부서코드와 폼 데이터)
+  const [editingDepCode, setEditingDepCode] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<DepartmentUpdateRequest>({
+    head: "",
+    headPhone: "",
+    taskDesc: "",
+  });
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [modalDepartment, setModalDepartment] = useState<DepartmentResponse | null>(null);
+  const [isDeletingDepCode, setIsDeletingDepCode] = useState<string | null>(null);
 
-  // 등록 모달 및 생성 중 로딩 상태
+  // 등록 모달 상태
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(0);
-  const detailRequestIdRef = useRef(0);
 
-  // 검색 필드 Refs (select도 HTMLSelectElement / HTMLInputElement ref로 공유 가능)
+  // 검색 필드 Refs
   const depCodeRef = useRef<HTMLInputElement | HTMLSelectElement>(null);
   const taskDescRef = useRef<HTMLInputElement>(null);
   const headRef = useRef<HTMLInputElement>(null);
   const headPhoneRef = useRef<HTMLInputElement>(null);
 
   // 부서 옵션 API 호출
-  useEffect(() => {
-    const fetchDepartmentOptions = async () => {
-      try {
-        const response = await apiClient.get<ApiResponseListDepartmentOptionResponse>(
-          "/departments/options"
-        );
-        setDepartmentOptions(response.data.data ?? []);
-      } catch (error) {
-        console.error("부서 옵션 목록 조회 실패:", error);
-      }
-    };
+  const loadDepartmentOptions = async () => {
+    try {
+      const response = await apiClient.get<ApiResponseListDepartmentOptionResponse>(
+        "/departments/options"
+      );
+      setDepartmentOptions(response.data.data ?? []);
+    } catch (error) {
+      console.error("부서 옵션 목록 조회 실패:", error);
+    }
+  };
 
-    fetchDepartmentOptions();
+  useEffect(() => {
+    loadDepartmentOptions();
   }, []);
 
-  // 검색 필드 정의 (부서코드를 셀렉트 박스로 사용)
+  // 검색 필드 정의
   const searchFields: SearchField[] = [
     {
       type: "select",
@@ -109,40 +111,6 @@ export function MasterDepartmentPage() {
     }
   };
 
-  // 부서 상세 조회
-  const handleOpenDetail = async (depCode: string) => {
-    const requestId = ++detailRequestIdRef.current;
-    setDetailLoadingDepCode(depCode);
-
-    try {
-      const encodedDepCode = encodeURIComponent(depCode);
-      const response = await apiClient.get<ApiResponseDepartmentResponse>(
-        `/departments/${encodedDepCode}`
-      );
-      const department = response.data.data;
-
-      if (!department) throw new Error("부서 상세 데이터가 없습니다.");
-
-      if (requestId === detailRequestIdRef.current) {
-        setModalDepartment(department);
-      }
-    } catch (error) {
-      console.error("부서 상세 조회 실패:", error);
-      if (requestId === detailRequestIdRef.current) {
-        const message = axios.isAxiosError(error)
-          ? error.response?.data?.message
-          : error instanceof Error
-            ? error.message
-            : null;
-        window.alert(message || "상세 정보를 불러오는 중 오류가 발생했습니다.");
-      }
-    } finally {
-      if (requestId === detailRequestIdRef.current) {
-        setDetailLoadingDepCode(null);
-      }
-    }
-  };
-
   useEffect(() => {
     loadDepartments(currentPage, searchParams);
   }, [currentPage, searchParams]);
@@ -155,6 +123,7 @@ export function MasterDepartmentPage() {
     if (headPhoneRef.current?.value.trim()) params.headPhone = headPhoneRef.current.value.trim();
 
     setCurrentPage(0);
+    setEditingDepCode(null); // 검색 시 편집 모드 해제
     setSearchParams(params);
   };
 
@@ -164,10 +133,11 @@ export function MasterDepartmentPage() {
     });
 
     setCurrentPage(0);
+    setEditingDepCode(null);
     setSearchParams({});
   };
 
-  // 신규 부서 등록 (등록 성공 시 옵션 목록도 새로고침하도록 추가)
+  // 신규 부서 등록
   const handleCreateDepartment = async (formData: DepartmentCreateRequest) => {
     setIsCreating(true);
     try {
@@ -175,103 +145,148 @@ export function MasterDepartmentPage() {
       window.alert("성공적으로 등록되었습니다.");
       setIsCreateModalOpen(false);
       await loadDepartments(currentPage, searchParams);
-      
-      // 부서 신규 생성 시 옵션 드롭다운 리스트도 동기화
-      const optRes = await apiClient.get<ApiResponseListDepartmentOptionResponse>("/departments/options");
-      setDepartmentOptions(optRes.data.data ?? []);
+      await loadDepartmentOptions();
     } catch (error) {
       console.error("부서 등록 실패:", error);
-      const message = axios.isAxiosError(error)
-        ? error.response?.data?.message
-        : null;
+      const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
       window.alert(message || "부서 등록 중 오류가 발생했습니다.");
     } finally {
       setIsCreating(false);
     }
   };
 
-  // 부서 정보 수정
-  const handleSave = async (updated: Record<string, string>) => {
-    if (!modalDepartment || isUpdating) return;
+  // 인라인 편집 시작
+  const handleStartEdit = (row: DepartmentResponse) => {
+    setEditingDepCode(row.depCode);
+    setEditForm({
+      head: row.head ?? "",
+      headPhone: row.headPhone ?? "",
+      taskDesc: row.taskDesc ?? "",
+    });
+  };
+
+  // 인라인 편집 취소
+  const handleCancelEdit = () => {
+    setEditingDepCode(null);
+    setEditForm({ head: "", headPhone: "", taskDesc: "" });
+  };
+
+  // 인라인 수정 저장
+  const handleSaveEdit = async (depCode: string) => {
+    if (isUpdating) return;
 
     setIsUpdating(true);
     try {
-      const taskDescVal = "taskDesc" in updated ? updated.taskDesc : modalDepartment.taskDesc;
-      const headVal = "head" in updated ? updated.head : modalDepartment.head;
-      const headPhoneVal = "headPhone" in updated ? updated.headPhone : modalDepartment.headPhone;
-
       const updatePayload: DepartmentUpdateRequest = {
-        taskDesc: taskDescVal?.trim() ? taskDescVal.trim() : null,
-        head: headVal?.trim() ? headVal.trim() : null,
-        headPhone: headPhoneVal?.trim() ? headPhoneVal.trim() : null,
+        head: editForm.head?.trim() ? editForm.head.trim() : null,
+        headPhone: editForm.headPhone?.trim() ? editForm.headPhone.trim() : null,
+        taskDesc: editForm.taskDesc?.trim() ? editForm.taskDesc.trim() : null,
       };
 
-      const encodedDepCode = encodeURIComponent(modalDepartment.depCode);
-
+      const encodedDepCode = encodeURIComponent(depCode);
       const response = await apiClient.put<ApiResponseDepartmentResponse>(
         `/departments/${encodedDepCode}`,
         updatePayload
       );
 
-      const successMessage = response.data?.message || "수정되었습니다.";
-      window.alert(successMessage);
-
-      setModalDepartment(null);
+      window.alert(response.data?.message || "수정되었습니다.");
+      setEditingDepCode(null);
       await loadDepartments(currentPage, searchParams);
-
-      // 옵션 응답의 taskDesc 정보가 바뀔 수 있으므로 재호출
-      const optRes = await apiClient.get<ApiResponseListDepartmentOptionResponse>("/departments/options");
-      setDepartmentOptions(optRes.data.data ?? []);
+      await loadDepartmentOptions();
     } catch (err) {
-      console.error("저장 실패:", err);
-      const errorMessage = axios.isAxiosError(err)
-        ? err.response?.data?.message
-        : null;
+      console.error("수정 실패:", err);
+      const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
       window.alert(errorMessage || "수정에 실패했습니다.");
     } finally {
       setIsUpdating(false);
     }
   };
 
-  // 부서 삭제 처리
-  const handleDeleteDepartment = async () => {
-    if (!modalDepartment || isDeleting) return;
+  // 행 삭제
+  const handleDeleteDepartment = async (depCode: string) => {
+    if (isDeletingDepCode) return;
 
-    const confirmed = window.confirm(
-      `[${modalDepartment.depCode}] 부서를 삭제하시겠습니까?`
-    );
+    const confirmed = window.confirm(`[${depCode}] 부서를 삭제하시겠습니까?`);
     if (!confirmed) return;
 
-    setIsDeleting(true);
+    setIsDeletingDepCode(depCode);
     try {
-      const encodedDepCode = encodeURIComponent(modalDepartment.depCode);
+      const encodedDepCode = encodeURIComponent(depCode);
       await apiClient.delete(`/departments/${encodedDepCode}`);
-      
-      window.alert("부서가 삭제되었습니다.");
-      setModalDepartment(null);
-      await loadDepartments(currentPage, searchParams);
 
-      // 삭제 시 옵션 드롭다운 리스트 동기화
-      const optRes = await apiClient.get<ApiResponseListDepartmentOptionResponse>("/departments/options");
-      setDepartmentOptions(optRes.data.data ?? []);
+      window.alert("부서가 삭제되었습니다.");
+      await loadDepartments(currentPage, searchParams);
+      await loadDepartmentOptions();
     } catch (error) {
       console.error("부서 삭제 실패:", error);
-      const message = axios.isAxiosError(error)
-        ? error.response?.data?.message
-        : null;
+      const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
       window.alert(message || "부서 삭제에 실패했습니다.");
     } finally {
-      setIsDeleting(false);
+      setIsDeletingDepCode(null);
     }
   };
 
-  // 테이블 컬럼 정의
+  // 테이블 컬럼 정의 (인라인 수정 모드 반영)
   const columns: ColumnDef<DepartmentResponse>[] = useMemo(
     () => [
-      { accessorKey: "depCode", header: "부서코드" },
-      { accessorKey: "head", header: "부서장" },
-      { accessorKey: "headPhone", header: "대표 연락처" },
-      { accessorKey: "taskDesc", header: "담당업무" },
+      {
+        accessorKey: "depCode",
+        header: "부서코드",
+      },
+      {
+        accessorKey: "head",
+        header: "부서장",
+        cell: ({ row }) => {
+          const isEditing = row.original.depCode === editingDepCode;
+          if (isEditing) {
+            return (
+              <input
+                className="tableInput"
+                value={editForm.head ?? ""}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, head: e.target.value }))}
+                placeholder="부서장 입력"
+              />
+            );
+          }
+          return row.original.head || "-";
+        },
+      },
+      {
+        accessorKey: "headPhone",
+        header: "대표 연락처",
+        cell: ({ row }) => {
+          const isEditing = row.original.depCode === editingDepCode;
+          if (isEditing) {
+            return (
+              <input
+                className="tableInput"
+                value={editForm.headPhone ?? ""}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, headPhone: e.target.value }))}
+                placeholder="연락처 입력"
+              />
+            );
+          }
+          return row.original.headPhone || "-";
+        },
+      },
+      {
+        accessorKey: "taskDesc",
+        header: "담당업무",
+        cell: ({ row }) => {
+          const isEditing = row.original.depCode === editingDepCode;
+          if (isEditing) {
+            return (
+              <input
+                className="tableInput"
+                value={editForm.taskDesc ?? ""}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, taskDesc: e.target.value }))}
+                placeholder="담당업무 입력"
+              />
+            );
+          }
+          return row.original.taskDesc || "-";
+        },
+      },
       {
         accessorKey: "createdAt",
         header: "생성일시",
@@ -280,47 +295,59 @@ export function MasterDepartmentPage() {
       {
         id: "actions",
         header: "관리",
-        meta: { width: "100px" },
-        cell: ({ row }) => (
-          <div className="rowActions">
-            <button
-              type="button"
-              className="miniButton"
-              disabled={detailLoadingDepCode === row.original.depCode}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenDetail(row.original.depCode);
-              }}
-            >
-              {detailLoadingDepCode === row.original.depCode ? "조회 중..." : "상세"}
-            </button>
-          </div>
-        ),
+        meta: { width: "130px" },
+        cell: ({ row }) => {
+          const isEditing = row.original.depCode === editingDepCode;
+          const isDeleting = isDeletingDepCode === row.original.depCode;
+
+          if (isEditing) {
+            return (
+              <div className="rowActions" style={{ display: "flex", gap: "4px" }}>
+                <button
+                  type="button"
+                  className="miniButton primary"
+                  disabled={isUpdating}
+                  onClick={() => handleSaveEdit(row.original.depCode)}
+                >
+                  {isUpdating ? "저장 중" : "저장"}
+                </button>
+                <button
+                  type="button"
+                  className="miniButton ghostButton"
+                  disabled={isUpdating}
+                  onClick={handleCancelEdit}
+                >
+                  취소
+                </button>
+              </div>
+            );
+          }
+
+          return (
+            <div className="rowActions" style={{ display: "flex", gap: "4px" }}>
+              <button
+                type="button"
+                className="miniButton"
+                disabled={editingDepCode !== null || isDeleting}
+                onClick={() => handleStartEdit(row.original)}
+              >
+                수정
+              </button>
+              <button
+                type="button"
+                className="miniButton danger"
+                disabled={editingDepCode !== null || isDeleting}
+                onClick={() => handleDeleteDepartment(row.original.depCode)}
+              >
+                {isDeleting ? "삭제 중" : "삭제"}
+              </button>
+            </div>
+          );
+        },
       },
     ],
-    [detailLoadingDepCode]
+    [editingDepCode, editForm, isUpdating, isDeletingDepCode]
   );
-
-  const detailFields = [
-    { label: "부서코드", key: "depCode", editable: false },
-    { label: "부서장", key: "head" },
-    { label: "대표 연락처", key: "headPhone" },
-    { label: "담당업무", key: "taskDesc" },
-    { label: "생성일시", key: "createdAt", editable: false },
-    { label: "수정일시", key: "updatedAt", editable: false },
-  ];
-
-  const modalData = useMemo(() => {
-    if (!modalDepartment) return {};
-    return {
-      depCode: modalDepartment.depCode,
-      head: modalDepartment.head ?? "",
-      headPhone: modalDepartment.headPhone ?? "",
-      taskDesc: modalDepartment.taskDesc ?? "",
-      createdAt: formatDateTime(modalDepartment.createdAt),
-      updatedAt: formatDateTime(modalDepartment.updatedAt),
-    };
-  }, [modalDepartment]);
 
   return (
     <section className="screenStack">
@@ -333,33 +360,19 @@ export function MasterDepartmentPage() {
           <CusTable
             data={departments}
             columns={columns}
-            onRowClick={(row) => handleOpenDetail(row.depCode)}
+            // 인라인 수정을 사용할 경우 행 클릭 이벤트를 제거하거나, 클릭 시 자동 수정 모드로 진입하게 설정
           />
           <CusPagination
             page={currentPage}
             totalPages={totalPages}
             totalCount={totalElements}
-            onPageChange={setCurrentPage}
+            onPageChange={(page) => {
+              setEditingDepCode(null); // 페이지 변경 시 편집 상태 초기화
+              setCurrentPage(page);
+            }}
           />
         </div>
       </Panel>
-
-      {/* 부서 상세/수정 모달 */}
-      <RowDetailModal
-        isOpen={modalDepartment !== null}
-        onClose={() => {
-          if (!isDeleting && !isUpdating) setModalDepartment(null);
-        }}
-        onSave={handleSave}
-        fields={detailFields}
-        data={modalData as unknown as Record<string, string>}
-        dangerAction={{
-          label: "부서 삭제",
-          loadingLabel: "삭제 처리 중...",
-          onClick: handleDeleteDepartment,
-          isLoading: isDeleting,
-        }}
-      />
 
       {/* 신규 부서 등록 모달 */}
       <DepartmentCreateModal
