@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@components/common/Badge";
 import { Panel } from "@components/card/Panel";
 import { RowDetailModal } from "@components/common/RowDetailModal";
-import { FactoryZoneCreateModal } from "@/components/common/FactoryZoneCreateModal";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
@@ -15,14 +15,15 @@ import type {
   ApiResponseFactoryZoneResponse,
   ApiResponsePageFactoryZoneResponse,
   FactoryZoneUpdateRequest,
-  FactoryZoneCreateRequest,
 } from "@/types/master/FactoryZone";
 
 export function MasterFactoryZonePage() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [factoryZones, setFactoryZones] = useState<FactoryZoneResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [searchParams, setSearchParams] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [detailLoadingFacCode, setDetailLoadingFacCode] = useState<string | null>(null);
 
@@ -31,12 +32,13 @@ export function MasterFactoryZonePage() {
   const [isDeactivating, setIsDeactivating] = useState(false);
   const [modalFactoryZone, setModalFactoryZone] = useState<FactoryZoneResponse | null>(null);
 
-  // 등록 모달 관리
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-
-  const [currentPage, setCurrentPage] = useState(0);
   const detailRequestIdRef = useRef(0);
+
+  const currentPage = Number(searchParams.get("page") || "0");
+  const queryFacCode = searchParams.get("facCode") || "";
+  const queryFacNm = searchParams.get("facNm") || "";
+  const queryLocation = searchParams.get("location") || "";
+  const queryUseYn = searchParams.get("useYn") || "";
 
   const facCodeRef = useRef<HTMLInputElement>(null);
   const facNmRef = useRef<HTMLInputElement>(null);
@@ -59,24 +61,33 @@ export function MasterFactoryZonePage() {
     },
   ];
 
-  // 공장 목록 조회 (GET /factory-zones)
-  const loadFactoryZones = async (page: number, params: Record<string, string>) => {
+  useEffect(() => {
+    if (facCodeRef.current) facCodeRef.current.value = queryFacCode;
+    if (facNmRef.current) facNmRef.current.value = queryFacNm;
+    if (locationRef.current) locationRef.current.value = queryLocation;
+    if (useYnRef.current) useYnRef.current.value = queryUseYn;
+  }, [
+    queryFacCode,
+    queryFacNm,
+    queryLocation,
+    queryUseYn,
+  ]);
+
+  // 1. 공장 목록 조회 (GET /factory-zones)
+  const loadFactoryZones = useCallback(async () => {
     setIsLoading(true);
     try {
-      const cleanedParams = Object.entries(params).reduce(
-        (acc, [key, value]) => {
-          if (value && value.trim() !== "") acc[key] = value.trim();
-          return acc;
-        },
-        {} as Record<string, string>
-      );
-
-      const response = await apiClient.get<ApiResponsePageFactoryZoneResponse>(
-        "/factory-zones",
-        {
-          params: { ...cleanedParams, page, size: 10 },
-        }
-      );
+      const params: Record<string, string | number> = {
+        page: currentPage,
+        size: 10,
+      };
+      if (queryFacCode) params.facCode = queryFacCode;
+      if (queryFacNm) params.facNm = queryFacNm;
+      if (queryLocation) params.location = queryLocation;
+      if (queryUseYn) params.useYn = queryUseYn;
+      const response = await apiClient.get<ApiResponsePageFactoryZoneResponse>("/factory-zones", {
+        params,
+      });
 
       const pageData = response.data.data;
       setFactoryZones(pageData.content ?? []);
@@ -88,9 +99,58 @@ export function MasterFactoryZonePage() {
     } finally {
       setIsLoading(false);
     }
+
+  }, [
+    currentPage,
+    queryFacCode,
+    queryFacNm,
+    queryLocation,
+    queryUseYn,
+  ]);
+
+   useEffect(() => {
+    loadFactoryZones();
+  }, [loadFactoryZones]);
+
+  // 검색 핸들러
+  const handleSearch = () => {
+    const nextParams: Record<string, string> = {
+      page: "0",
+    };
+
+    const facCode = facCodeRef.current?.value.trim();
+    const facNm = facNmRef.current?.value.trim();
+    const location = locationRef.current?.value.trim();
+    const useYn = useYnRef.current?.value.trim();
+
+    if (facCode) nextParams.facCode = facCode;
+    if (facNm) nextParams.facNm = facNm;
+    if (location) nextParams.location = location;
+    if (useYn) nextParams.useYn = useYn;
+
+    setSearchParams(nextParams);
   };
 
-  // 공장 단건 상세 조회 (GET /factory-zones/{facCode})
+  // 검색 초기화
+  const handleReset = () => {
+    [facCodeRef, facNmRef, locationRef].forEach((ref) => {
+      if (ref.current) ref.current.value = "";
+    });
+    if (useYnRef.current) {
+      useYnRef.current.value = "";
+    }
+    setSearchParams({
+      page: "0",
+    });
+  };
+
+  const handlePageChange = (newPage: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", String(newPage));
+    setSearchParams(nextParams);
+  };
+
+  // 2. 공장 단건 상세 조회 (GET /factory-zones/{facCode})
   const handleOpenDetail = async (facCode: string) => {
     const requestId = ++detailRequestIdRef.current;
     setDetailLoadingFacCode(facCode);
@@ -124,54 +184,17 @@ export function MasterFactoryZonePage() {
     }
   };
 
-  useEffect(() => {
-    loadFactoryZones(currentPage, searchParams);
-  }, [currentPage, searchParams]);
+  // 3. 등록 페이지로 이동
+  const handleCreate = () => {
+    const queryString = searchParams.toString();
+    navigate(
+        queryString
+            ? `/master/factory-zones/create?${queryString}`
+            : "/master/factory-zones/create"
+    );
+};
 
-  // 검색 핸들러
-  const handleSearch = () => {
-    const params: Record<string, string> = {};
-    if (facCodeRef.current?.value.trim()) params.facCode = facCodeRef.current.value.trim();
-    if (facNmRef.current?.value.trim()) params.facNm = facNmRef.current.value.trim();
-    if (locationRef.current?.value.trim()) params.location = locationRef.current.value.trim();
-    if (useYnRef.current?.value.trim()) params.useYn = useYnRef.current.value.trim();
-
-    setCurrentPage(0);
-    setSearchParams(params);
-  };
-
-  // 검색 초기화
-  const handleReset = () => {
-    [facCodeRef, facNmRef, locationRef].forEach((ref) => {
-      if (ref.current) ref.current.value = "";
-    });
-    if (useYnRef.current) {
-      useYnRef.current.value = "";
-    }
-    setCurrentPage(0);
-    setSearchParams({});
-  };
-
-  // 1. 공장 등록 처리 (POST /factory-zones)
-  const handleCreateFactoryZone = async (formData: FactoryZoneCreateRequest) => {
-    setIsCreating(true);
-    try {
-      await apiClient.post("/factory-zones", formData);
-      window.alert("성공적으로 등록되었습니다.");
-      setIsCreateModalOpen(false);
-      await loadFactoryZones(currentPage, searchParams);
-    } catch (error) {
-      console.error("공장 등록 실패:", error);
-      const message = axios.isAxiosError(error)
-        ? error.response?.data?.message
-        : null;
-      window.alert(message || "공장 등록 중 오류가 발생했습니다.");
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  // 2. 공장 정보 수정 처리 (PUT /factory-zones/{facCode})
+  // 4. 공장 정보 수정 처리 (PUT /factory-zones/{facCode})
   const handleSave = async (updated: Record<string, string>) => {
     if (!modalFactoryZone || isUpdating) return;
 
@@ -198,7 +221,7 @@ export function MasterFactoryZonePage() {
       window.alert(successMessage);
 
       setModalFactoryZone(null);
-      await loadFactoryZones(currentPage, searchParams);
+      await loadFactoryZones();
     } catch (err) {
       console.error("저장 실패:", err);
       const errorMessage = axios.isAxiosError(err)
@@ -211,7 +234,7 @@ export function MasterFactoryZonePage() {
     }
   };
 
-  // 3. 공장 비활성화 처리 (DELETE /factory-zones/{facCode})
+  // 5. 공장 비활성화 처리 (DELETE /factory-zones/{facCode})
   const handleDeactivate = async () => {
     if (!modalFactoryZone || modalFactoryZone.useYn !== "Y" || isDeactivating) return;
 
@@ -226,7 +249,7 @@ export function MasterFactoryZonePage() {
       await apiClient.delete(`/factory-zones/${encodedFacCode}`);
       window.alert("공장이 비활성화되었습니다.");
       setModalFactoryZone(null);
-      await loadFactoryZones(currentPage, searchParams);
+      await loadFactoryZones();
     } catch (error) {
       console.error("공장 비활성화 실패:", error);
       const message = axios.isAxiosError(error)
@@ -313,7 +336,7 @@ export function MasterFactoryZonePage() {
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="공장관리 목록" action="등록" onAction={() => setIsCreateModalOpen(true)}>
+      <Panel title="공장관리 목록" action="등록" onAction={handleCreate}>
         <div className="relative min-h-[300px]">
           {isLoading && <span>데이터를 불러오는 중입니다...</span>}
 
@@ -326,7 +349,7 @@ export function MasterFactoryZonePage() {
             page={currentPage}
             totalPages={totalPages}
             totalCount={totalElements}
-            onPageChange={setCurrentPage}
+            onPageChange={handlePageChange}
           />
         </div>
       </Panel>
@@ -343,22 +366,15 @@ export function MasterFactoryZonePage() {
         dangerAction={
           modalFactoryZone?.useYn === "Y"
             ? {
-                label: "공장 비활성화",
-                loadingLabel: "비활성화 처리 중...",
-                onClick: handleDeactivate,
-                isLoading: isDeactivating,
-              }
+              label: "공장 비활성화",
+              loadingLabel: "비활성화 처리 중...",
+              onClick: handleDeactivate,
+              isLoading: isDeactivating,
+            }
             : undefined
         }
       />
 
-      {/* 신규 공장 등록 모달 */}
-      <FactoryZoneCreateModal
-        isOpen={isCreateModalOpen}
-        isLoading={isCreating}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateFactoryZone}
-      />
     </section>
   );
 }

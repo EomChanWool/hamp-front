@@ -6,7 +6,7 @@ import axios from "axios";
 import type {
   DepartmentCreateRequest,
   ApiResponseDepartmentResponse,
-} from "@/types/master/Department"; // 부서 타입 경로에 맞게 조정해주세요.
+} from "@/types/master/Department";
 
 export function MasterDepartmentCreatePage() {
   const navigate = useNavigate();
@@ -34,7 +34,7 @@ export function MasterDepartmentCreatePage() {
   // 이전 검색조건을 유지하면서 목록으로 이동
   const handleGoBack = () => {
     navigate({
-      pathname: "/master/departments",
+      pathname: "/master/department",
       search: location.search,
     });
   };
@@ -103,9 +103,9 @@ export function MasterDepartmentCreatePage() {
             />
           </div>
 
-          {/* 작업 설명 */}
+          {/* 담당 업무 설명 */}
           <div className="detailField">
-            <label>작업설명</label>
+            <label>담당업무</label>
             <input
               className="tableInput"
               value={form.taskDesc}

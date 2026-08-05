@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Panel } from "@components/card/Panel";
-import { DepartmentCreateModal } from "@components/common/DepartmentCreateModal";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
@@ -13,17 +13,18 @@ import type {
   ApiResponseDepartmentResponse,
   ApiResponsePageDepartmentResponse,
   DepartmentUpdateRequest,
-  DepartmentCreateRequest,
   DepartmentOptionResponse,
   ApiResponseListDepartmentOptionResponse,
 } from "@/types/master/Department";
 
 export function MasterDepartmentPage() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [departments, setDepartments] = useState<DepartmentResponse[]>([]);
   const [departmentOptions, setDepartmentOptions] = useState<DepartmentOptionResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [searchParams, setSearchParams] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
   // 인라인 수정 상태 관리 (현재 수정 중인 부서코드와 폼 데이터)
@@ -36,20 +37,21 @@ export function MasterDepartmentPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeletingDepCode, setIsDeletingDepCode] = useState<string | null>(null);
 
-  // 등록 모달 상태
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-
-  const [currentPage, setCurrentPage] = useState(0);
+  // URL 쿼리 파라미터 값 추출
+  const currentPage = Number(searchParams.get("page") || "0");
+  const queryDepCode = searchParams.get("depCode") || "";
+  const queryTaskDesc = searchParams.get("taskDesc") || "";
+  const queryHead = searchParams.get("head") || "";
+  const queryHeadPhone = searchParams.get("headPhone") || "";
 
   // 검색 필드 Refs
-  const depCodeRef = useRef<HTMLInputElement | HTMLSelectElement>(null);
+  const depCodeRef = useRef<HTMLSelectElement>(null);
   const taskDescRef = useRef<HTMLInputElement>(null);
   const headRef = useRef<HTMLInputElement>(null);
   const headPhoneRef = useRef<HTMLInputElement>(null);
 
   // 부서 옵션 API 호출
-  const loadDepartmentOptions = async () => {
+  const loadDepartmentOptions = useCallback(async () => {
     try {
       const response = await apiClient.get<ApiResponseListDepartmentOptionResponse>(
         "/departments/options"
@@ -58,11 +60,24 @@ export function MasterDepartmentPage() {
     } catch (error) {
       console.error("부서 옵션 목록 조회 실패:", error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadDepartmentOptions();
-  }, []);
+  }, [loadDepartmentOptions]);
+
+  // 검색 필드 DOM 값과 URL 쿼리 파라미터 동기화
+  useEffect(() => {
+    if (depCodeRef.current) depCodeRef.current.value = queryDepCode;
+    if (taskDescRef.current) taskDescRef.current.value = queryTaskDesc;
+    if (headRef.current) headRef.current.value = queryHead;
+    if (headPhoneRef.current) headPhoneRef.current.value = queryHeadPhone;
+  }, [
+    queryDepCode,
+    queryTaskDesc,
+    queryHead,
+    queryHeadPhone,
+  ]);
 
   // 검색 필드 정의
   const searchFields: SearchField[] = [
@@ -84,19 +99,20 @@ export function MasterDepartmentPage() {
   ];
 
   // 부서 목록 조회
-  const loadDepartments = async (page: number, params: Record<string, string>) => {
+  const loadDepartments = useCallback(async () => {
     setIsLoading(true);
     try {
-      const cleanedParams = Object.entries(params).reduce(
-        (acc, [key, value]) => {
-          if (value && value.trim() !== "") acc[key] = value.trim();
-          return acc;
-        },
-        {} as Record<string, string>
-      );
+      const params: Record<string, string | number> = {
+        page: currentPage,
+        size: 10,
+      };
+      if (queryDepCode) params.depCode = queryDepCode;
+      if (queryTaskDesc) params.taskDesc = queryTaskDesc;
+      if (queryHead) params.head = queryHead;
+      if (queryHeadPhone) params.headPhone = queryHeadPhone;
 
       const response = await apiClient.get<ApiResponsePageDepartmentResponse>("/departments", {
-        params: { ...cleanedParams, page, size: 10 },
+        params,
       });
 
       const pageData = response.data.data;
@@ -109,50 +125,64 @@ export function MasterDepartmentPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [
+    currentPage,
+    queryDepCode,
+    queryTaskDesc,
+    queryHead,
+    queryHeadPhone,
+  ]);
 
   useEffect(() => {
-    loadDepartments(currentPage, searchParams);
-  }, [currentPage, searchParams]);
+    loadDepartments();
+  }, [loadDepartments]);
 
   const handleSearch = () => {
-    const params: Record<string, string> = {};
-    if (depCodeRef.current?.value.trim()) params.depCode = depCodeRef.current.value.trim();
-    if (taskDescRef.current?.value.trim()) params.taskDesc = taskDescRef.current.value.trim();
-    if (headRef.current?.value.trim()) params.head = headRef.current.value.trim();
-    if (headPhoneRef.current?.value.trim()) params.headPhone = headPhoneRef.current.value.trim();
+    const nextParams: Record<string, string> = {
+      page: "0",
+    };
 
-    setCurrentPage(0);
+    const depCode = depCodeRef.current?.value.trim();
+    const taskDesc = taskDescRef.current?.value.trim();
+    const head = headRef.current?.value.trim();
+    const headPhone = headPhoneRef.current?.value.trim();
+
+    if (depCode) nextParams.depCode = depCode;
+    if (taskDesc) nextParams.taskDesc = taskDesc;
+    if (head) nextParams.head = head;
+    if (headPhone) nextParams.headPhone = headPhone;
+
     setEditingDepCode(null); // 검색 시 편집 모드 해제
-    setSearchParams(params);
+    setSearchParams(nextParams);
   };
 
   const handleReset = () => {
-    [depCodeRef, taskDescRef, headRef, headPhoneRef].forEach((ref) => {
+    [taskDescRef, headRef, headPhoneRef].forEach((ref) => {
       if (ref.current) ref.current.value = "";
     });
+    if (depCodeRef.current) depCodeRef.current.value = "";
 
-    setCurrentPage(0);
     setEditingDepCode(null);
-    setSearchParams({});
+    setSearchParams({
+      page: "0",
+    });
   };
 
-  // 신규 부서 등록
-  const handleCreateDepartment = async (formData: DepartmentCreateRequest) => {
-    setIsCreating(true);
-    try {
-      await apiClient.post("/departments", formData);
-      window.alert("성공적으로 등록되었습니다.");
-      setIsCreateModalOpen(false);
-      await loadDepartments(currentPage, searchParams);
-      await loadDepartmentOptions();
-    } catch (error) {
-      console.error("부서 등록 실패:", error);
-      const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
-      window.alert(message || "부서 등록 중 오류가 발생했습니다.");
-    } finally {
-      setIsCreating(false);
-    }
+  const handlePageChange = (newPage: number) => {
+    setEditingDepCode(null); // 페이지 변경 시 편집 상태 초기화
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", String(newPage));
+    setSearchParams(nextParams);
+  };
+
+  // 등록 페이지로 이동 (검색 조건 유지)
+  const handleCreate = () => {
+    const queryString = searchParams.toString();
+    navigate(
+      queryString
+        ? `/master/department/create?${queryString}`
+        : "/master/department/create"
+    );
   };
 
   // 인라인 편집 시작
@@ -191,7 +221,7 @@ export function MasterDepartmentPage() {
 
       window.alert(response.data?.message || "수정되었습니다.");
       setEditingDepCode(null);
-      await loadDepartments(currentPage, searchParams);
+      await loadDepartments();
       await loadDepartmentOptions();
     } catch (err) {
       console.error("수정 실패:", err);
@@ -215,7 +245,7 @@ export function MasterDepartmentPage() {
       await apiClient.delete(`/departments/${encodedDepCode}`);
 
       window.alert("부서가 삭제되었습니다.");
-      await loadDepartments(currentPage, searchParams);
+      await loadDepartments();
       await loadDepartmentOptions();
     } catch (error) {
       console.error("부서 삭제 실패:", error);
@@ -353,34 +383,22 @@ export function MasterDepartmentPage() {
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="부서 관리 목록" action="등록" onAction={() => setIsCreateModalOpen(true)}>
+      <Panel title="부서 관리 목록" action="등록" onAction={handleCreate}>
         <div className="relative min-h-[300px]">
           {isLoading && <span>데이터를 불러오는 중입니다...</span>}
 
           <CusTable
             data={departments}
             columns={columns}
-            // 인라인 수정을 사용할 경우 행 클릭 이벤트를 제거하거나, 클릭 시 자동 수정 모드로 진입하게 설정
           />
           <CusPagination
             page={currentPage}
             totalPages={totalPages}
             totalCount={totalElements}
-            onPageChange={(page) => {
-              setEditingDepCode(null); // 페이지 변경 시 편집 상태 초기화
-              setCurrentPage(page);
-            }}
+            onPageChange={handlePageChange}
           />
         </div>
       </Panel>
-
-      {/* 신규 부서 등록 모달 */}
-      <DepartmentCreateModal
-        isOpen={isCreateModalOpen}
-        isLoading={isCreating}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateDepartment}
-      />
     </section>
   );
 }

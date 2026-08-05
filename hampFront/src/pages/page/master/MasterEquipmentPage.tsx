@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Panel } from "@components/card/Panel";
 import { RowDetailModal } from "@components/common/RowDetailModal";
-import { EquipmentCreateModal } from "@components/common/EquipmentCreateModal";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
@@ -14,15 +14,16 @@ import type {
   EquipmentResponse,
   ApiResponseEquipmentResponse,
   ApiResponsePageEquipmentResponse,
-  EquipmentCreateRequest,
   EquipmentUpdateRequest,
 } from "@/types/master/Equipment";
 
 export function MasterEquipmentPage() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [equipments, setEquipments] = useState<EquipmentResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [searchParams, setSearchParams] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [detailLoadingEqCode, setDetailLoadingEqCode] = useState<string | null>(null);
 
@@ -31,12 +32,15 @@ export function MasterEquipmentPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [modalEquipment, setModalEquipment] = useState<EquipmentResponse | null>(null);
 
-  // 등록 모달 상태 관리
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-
-  const [currentPage, setCurrentPage] = useState(0);
   const detailRequestIdRef = useRef(0);
+
+  // URL 쿼리스트링에서 상태 추출
+  const currentPage = Number(searchParams.get("page") || "0");
+  const queryEqCode = searchParams.get("eqCode") || "";
+  const queryOperCode = searchParams.get("operCode") || "";
+  const queryEqNm = searchParams.get("eqNm") || "";
+  const queryEqType = searchParams.get("eqType") || "";
+  const queryManufacturer = searchParams.get("manufacturer") || "";
 
   // 검색 필드 Refs (API 명세 반영: eqCode, operCode, eqNm, eqType, manufacturer)
   const eqCodeRef = useRef<HTMLInputElement>(null);
@@ -53,20 +57,37 @@ export function MasterEquipmentPage() {
     { type: "input", label: "제조사", ref: manufacturerRef },
   ];
 
+  // URL 쿼리스트링 값과 검색창 input 값 동기화
+  useEffect(() => {
+    if (eqCodeRef.current) eqCodeRef.current.value = queryEqCode;
+    if (operCodeRef.current) operCodeRef.current.value = queryOperCode;
+    if (eqNmRef.current) eqNmRef.current.value = queryEqNm;
+    if (eqTypeRef.current) eqTypeRef.current.value = queryEqType;
+    if (manufacturerRef.current) manufacturerRef.current.value = queryManufacturer;
+  }, [
+    queryEqCode,
+    queryOperCode,
+    queryEqNm,
+    queryEqType,
+    queryManufacturer,
+  ]);
+
   // 1. 장비 목록 조회 (GET /equipment)
-  const loadEquipments = async (page: number, params: Record<string, string>) => {
+  const loadEquipments = useCallback(async () => {
     setIsLoading(true);
     try {
-      const cleanedParams = Object.entries(params).reduce(
-        (acc, [key, value]) => {
-          if (value && value.trim() !== "") acc[key] = value.trim();
-          return acc;
-        },
-        {} as Record<string, string>
-      );
+      const params: Record<string, string | number> = {
+        page: currentPage,
+        size: 10,
+      };
+      if (queryEqCode) params.eqCode = queryEqCode;
+      if (queryOperCode) params.operCode = queryOperCode;
+      if (queryEqNm) params.eqNm = queryEqNm;
+      if (queryEqType) params.eqType = queryEqType;
+      if (queryManufacturer) params.manufacturer = queryManufacturer;
 
       const response = await apiClient.get<ApiResponsePageEquipmentResponse>("/equipment", {
-        params: { ...cleanedParams, page, size: 10 },
+        params,
       });
 
       const pageData = response.data.data;
@@ -79,6 +100,55 @@ export function MasterEquipmentPage() {
     } finally {
       setIsLoading(false);
     }
+  }, [
+    currentPage,
+    queryEqCode,
+    queryOperCode,
+    queryEqNm,
+    queryEqType,
+    queryManufacturer,
+  ]);
+
+  useEffect(() => {
+    loadEquipments();
+  }, [loadEquipments]);
+
+  // 검색 핸들러
+  const handleSearch = () => {
+    const nextParams: Record<string, string> = {
+      page: "0",
+    };
+
+    const eqCode = eqCodeRef.current?.value.trim();
+    const operCode = operCodeRef.current?.value.trim();
+    const eqNm = eqNmRef.current?.value.trim();
+    const eqType = eqTypeRef.current?.value.trim();
+    const manufacturer = manufacturerRef.current?.value.trim();
+
+    if (eqCode) nextParams.eqCode = eqCode;
+    if (operCode) nextParams.operCode = operCode;
+    if (eqNm) nextParams.eqNm = eqNm;
+    if (eqType) nextParams.eqType = eqType;
+    if (manufacturer) nextParams.manufacturer = manufacturer;
+
+    setSearchParams(nextParams);
+  };
+
+  // 검색 초기화
+  const handleReset = () => {
+    [eqCodeRef, operCodeRef, eqNmRef, eqTypeRef, manufacturerRef].forEach((ref) => {
+      if (ref.current) ref.current.value = "";
+    });
+    setSearchParams({
+      page: "0",
+    });
+  };
+
+  // 페이지네이션 핸들러
+  const handlePageChange = (newPage: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", String(newPage));
+    setSearchParams(nextParams);
   };
 
   // 2. 장비 단건 상세 조회 (GET /equipment/{eqCode})
@@ -115,49 +185,14 @@ export function MasterEquipmentPage() {
     }
   };
 
-  useEffect(() => {
-    loadEquipments(currentPage, searchParams);
-  }, [currentPage, searchParams]);
-
-  // 검색 핸들러
-  const handleSearch = () => {
-    const params: Record<string, string> = {};
-    if (eqCodeRef.current?.value.trim()) params.eqCode = eqCodeRef.current.value.trim();
-    if (operCodeRef.current?.value.trim()) params.operCode = operCodeRef.current.value.trim();
-    if (eqNmRef.current?.value.trim()) params.eqNm = eqNmRef.current.value.trim();
-    if (eqTypeRef.current?.value.trim()) params.eqType = eqTypeRef.current.value.trim();
-    if (manufacturerRef.current?.value.trim()) params.manufacturer = manufacturerRef.current.value.trim();
-
-    setCurrentPage(0);
-    setSearchParams(params);
-  };
-
-  // 검색 초기화
-  const handleReset = () => {
-    [eqCodeRef, operCodeRef, eqNmRef, eqTypeRef, manufacturerRef].forEach((ref) => {
-      if (ref.current) ref.current.value = "";
-    });
-    setCurrentPage(0);
-    setSearchParams({});
-  };
-
-  // 3. 신규 장비 등록 처리 (POST /equipment)
-  const handleCreateEquipment = async (formData: EquipmentCreateRequest) => {
-    setIsCreating(true);
-    try {
-      await apiClient.post("/equipment", formData);
-      window.alert("장비가 성공적으로 등록되었습니다.");
-      setIsCreateModalOpen(false);
-      await loadEquipments(currentPage, searchParams);
-    } catch (error) {
-      console.error("장비 등록 실패:", error);
-      const message = axios.isAxiosError(error)
-        ? error.response?.data?.message
-        : null;
-      window.alert(message || "장비 등록 중 오류가 발생했습니다.");
-    } finally {
-      setIsCreating(false);
-    }
+  // 3. 등록 페이지로 이동 (현재 검색조건 및 페이징 쿼리스트링 유지)
+  const handleCreate = () => {
+    const queryString = searchParams.toString();
+    navigate(
+      queryString
+        ? `/master/equipment/create?${queryString}`
+        : "/master/equipment/create"
+    );
   };
 
   // 4. 장비 정보 수정 처리 (PUT /equipment/{eqCode})
@@ -189,7 +224,7 @@ export function MasterEquipmentPage() {
       window.alert(successMessage);
 
       setModalEquipment(null);
-      await loadEquipments(currentPage, searchParams);
+      await loadEquipments();
     } catch (err) {
       console.error("장비 수정 실패:", err);
       const errorMessage = axios.isAxiosError(err)
@@ -216,7 +251,7 @@ export function MasterEquipmentPage() {
       await apiClient.delete(`/equipment/${encodedEqCode}`);
       window.alert("장비가 삭제되었습니다.");
       setModalEquipment(null);
-      await loadEquipments(currentPage, searchParams);
+      await loadEquipments();
     } catch (error) {
       console.error("장비 삭제 실패:", error);
       const message = axios.isAxiosError(error)
@@ -293,7 +328,7 @@ export function MasterEquipmentPage() {
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="장비관리 목록" action="등록" onAction={() => setIsCreateModalOpen(true)}>
+      <Panel title="장비관리 목록" action="등록" onAction={handleCreate}>
         <div className="relative min-h-[300px]">
           {isLoading && <span>데이터를 불러오는 중입니다...</span>}
 
@@ -306,7 +341,7 @@ export function MasterEquipmentPage() {
             page={currentPage}
             totalPages={totalPages}
             totalCount={totalElements}
-            onPageChange={setCurrentPage}
+            onPageChange={handlePageChange}
           />
         </div>
       </Panel>
@@ -326,14 +361,6 @@ export function MasterEquipmentPage() {
           onClick: handleDeleteEquipment,
           isLoading: isDeleting,
         }}
-      />
-
-      {/* 신규 장비 등록 모달 */}
-      <EquipmentCreateModal
-        isOpen={isCreateModalOpen}
-        isLoading={isCreating}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateEquipment}
       />
     </section>
   );
