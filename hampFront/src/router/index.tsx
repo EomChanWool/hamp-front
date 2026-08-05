@@ -26,6 +26,7 @@ import { MainDashboardPage } from '@pages/page/dashboard/MainDashboardPage'
 // 시스템관리
 import { SystemUsersPage } from '@pages/page/system/SystemUsersPage'
 import { SystemUsersCreatePage } from '@pages/page/system/SystemUsersCreatePage'
+import { SystemUserDetailPage } from '@pages/page/system/SystemUsersDetailPage'
 import { SystemUserPermissionsPage } from '@pages/page/system/SystemUserPermissionsPage'
 import { SystemAccessLogsPage } from '@pages/page/system/SystemAccessLogsPage'
 
@@ -39,14 +40,18 @@ import { FacilityCctvPage } from '@pages/page/facility/FacilityCctvPage'
 import { FacilityDataManagePage } from '@pages/page/facility/FacilityDataManagePage'
 
 // 기준정보관리
-import { MasterFactoryZonePage } from '@/pages/page/master/MasterFactoryZonePage'
+import { MasterFactoryZonePage } from '@pages/page/master/MasterFactoryZonePage'
+import { MasterFactoryZoneCreatePage } from '@pages/page/master/MasterFactoryZoneCreatePage'
 import { MasterEquipmentPage } from '@pages/page/master/MasterEquipmentPage'
-import { MasterOperationsPage } from '@/pages/page/master/MasterOperationPage'
+import { MasterEquipmentCreatePage } from '@pages/page/master/MasterEquipmentCreatePage'
+import { MasterOperationPage } from '@pages/page/master/MasterOperationPage'
+import { MasterOperationCreatePage } from '@pages/page/master/MasterOperationCreatePage'
 import { MasterItemsPage } from '@pages/page/master/MasterItemsPage'
 import { MasterItemsCreatePage } from '@pages/page/master/MasterItemsCreatePage'
 import { MasterDefectsPage } from '@pages/page/master/MasterDefectsPage'
 import { MasterDefectsCreatePage } from '@pages/page/master/MasterDefectsCreatePage'
-import { MasterDepartmentPage } from '@/pages/page/master/MasterDepartmentPage'
+import { MasterDepartmentPage } from '@pages/page/master/MasterDepartmentPage'
+import { MasterDepartmentCreatePage } from '@pages/page/master/MasterDepartmentCreatePage'
 
 // 설비관리
 import { EquipmentListPage } from '@pages/page/equipment/EquipmentListPage'
@@ -164,6 +169,7 @@ export const menuRoutes: MenuRouteGroup[] = [
     items: [
       { path: 'users', name: '사용자관리', element: <SystemUsersPage /> },
       { path: 'users/create', name: '사용자 등록', element: <SystemUsersCreatePage />, hidden: true },
+      { path: 'users/:userId', name: '사용자 상세', element: <SystemUserDetailPage />, hidden: true },
       { path: 'auths', name: '사용자 권한관리', element: <SystemUserPermissionsPage /> },
       { path: 'userlog', name: '사용자접속기록', element: <SystemAccessLogsPage /> },
     ],
@@ -195,12 +201,16 @@ export const menuRoutes: MenuRouteGroup[] = [
     icon: RectangleStackIcon,
     path: '/master',
     items: [
-      { path: 'factory-zone', name: '공장관리', element: <MasterFactoryZonePage /> },
+      { path: 'factory-zones', name: '공장관리', element: <MasterFactoryZonePage /> },
+      { path: 'factory-zones/create', name: '신규 공장 등록', element: <MasterFactoryZoneCreatePage />, hidden: true },
       { path: 'department', name: '부서관리', element: <MasterDepartmentPage /> },
+      { path: 'department/create', name: '신규 부서 등록', element: <MasterDepartmentCreatePage />, hidden: true },
       { path: 'items', name: '품목관리', element: <MasterItemsPage /> },
       { path: 'items/create', name: '신규 품목 등록', element: <MasterItemsCreatePage />, hidden: true },
       { path: 'equipment', name: '장비관리', element: <MasterEquipmentPage /> },
-      { path: 'operation', name: '공정관리', element: <MasterOperationsPage /> },
+      { path: 'equipment/create', name: '신규 장비 등록', element: <MasterEquipmentCreatePage />, hidden: true },
+      { path: 'operation', name: '공정관리', element: <MasterOperationPage /> },
+      { path: 'operation/create', name: '신규 공정 등록', element: <MasterOperationCreatePage />, hidden: true },
       { path: 'defects', name: '불량관리', element: <MasterDefectsPage /> },
       { path: 'defects/create', name: '신규 불량 등록', element: <MasterDefectsCreatePage />, hidden: true },
 
