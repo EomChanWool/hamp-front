@@ -53,8 +53,8 @@ export function MasterOperationCreatePage() {
 
     navigate(
       queryString
-        ? `/master/operations?${queryString}`
-        : "/master/operations"
+        ? `/master/operation?${queryString}`
+        : "/master/operation"
     );
   };
 
