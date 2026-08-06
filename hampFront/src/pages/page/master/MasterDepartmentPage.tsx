@@ -27,13 +27,16 @@ export function MasterDepartmentPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 인라인 수정 상태 관리 (현재 수정 중인 부서코드와 폼 데이터)
+  // 인라인 수정 상태 관리 (현재 수정 중인 부서코드)
   const [editingDepCode, setEditingDepCode] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<DepartmentUpdateRequest>({
+  
+  // 타이핑 시 리렌더링을 방지하여 한 글자 입력 버그를 원천 차단하는 Ref
+  const editFormRef = useRef<DepartmentUpdateRequest>({
     head: "",
     headPhone: "",
     taskDesc: "",
   });
+
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeletingDepCode, setIsDeletingDepCode] = useState<string | null>(null);
 
@@ -77,6 +80,7 @@ export function MasterDepartmentPage() {
     queryTaskDesc,
     queryHead,
     queryHeadPhone,
+    departmentOptions,
   ]);
 
   // 검색 필드 정의
@@ -152,7 +156,7 @@ export function MasterDepartmentPage() {
     if (head) nextParams.head = head;
     if (headPhone) nextParams.headPhone = headPhone;
 
-    setEditingDepCode(null); // 검색 시 편집 모드 해제
+    setEditingDepCode(null);
     setSearchParams(nextParams);
   };
 
@@ -169,13 +173,12 @@ export function MasterDepartmentPage() {
   };
 
   const handlePageChange = (newPage: number) => {
-    setEditingDepCode(null); // 페이지 변경 시 편집 상태 초기화
+    setEditingDepCode(null);
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("page", String(newPage));
     setSearchParams(nextParams);
   };
 
-  // 등록 페이지로 이동 (검색 조건 유지)
   const handleCreate = () => {
     const queryString = searchParams.toString();
     navigate(
@@ -187,18 +190,18 @@ export function MasterDepartmentPage() {
 
   // 인라인 편집 시작
   const handleStartEdit = (row: DepartmentResponse) => {
-    setEditingDepCode(row.depCode);
-    setEditForm({
+    editFormRef.current = {
       head: row.head ?? "",
       headPhone: row.headPhone ?? "",
       taskDesc: row.taskDesc ?? "",
-    });
+    };
+    setEditingDepCode(row.depCode);
   };
 
   // 인라인 편집 취소
   const handleCancelEdit = () => {
     setEditingDepCode(null);
-    setEditForm({ head: "", headPhone: "", taskDesc: "" });
+    editFormRef.current = { head: "", headPhone: "", taskDesc: "" };
   };
 
   // 인라인 수정 저장
@@ -208,9 +211,9 @@ export function MasterDepartmentPage() {
     setIsUpdating(true);
     try {
       const updatePayload: DepartmentUpdateRequest = {
-        head: editForm.head?.trim() ? editForm.head.trim() : null,
-        headPhone: editForm.headPhone?.trim() ? editForm.headPhone.trim() : null,
-        taskDesc: editForm.taskDesc?.trim() ? editForm.taskDesc.trim() : null,
+        head: editFormRef.current.head?.trim() ? editFormRef.current.head.trim() : null,
+        headPhone: editFormRef.current.headPhone?.trim() ? editFormRef.current.headPhone.trim() : null,
+        taskDesc: editFormRef.current.taskDesc?.trim() ? editFormRef.current.taskDesc.trim() : null,
       };
 
       const encodedDepCode = encodeURIComponent(depCode);
@@ -220,6 +223,21 @@ export function MasterDepartmentPage() {
       );
 
       window.alert(response.data?.message || "수정되었습니다.");
+
+      // 로컬 데이터 목록 즉시 갱신 (Optimistic Update)
+      setDepartments((prev) =>
+        prev.map((item) =>
+          item.depCode === depCode
+            ? {
+                ...item,
+                head: updatePayload.head ?? item.head,
+                headPhone: updatePayload.headPhone ?? item.headPhone,
+                taskDesc: updatePayload.taskDesc ?? item.taskDesc,
+              }
+            : item
+        )
+      );
+
       setEditingDepCode(null);
       await loadDepartments();
       await loadDepartmentOptions();
@@ -256,7 +274,7 @@ export function MasterDepartmentPage() {
     }
   };
 
-  // 테이블 컬럼 정의 (인라인 수정 모드 반영)
+  // 테이블 컬럼 정의
   const columns: ColumnDef<DepartmentResponse>[] = useMemo(
     () => [
       {
@@ -272,8 +290,10 @@ export function MasterDepartmentPage() {
             return (
               <input
                 className="tableInput"
-                value={editForm.head ?? ""}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, head: e.target.value }))}
+                defaultValue={editFormRef.current.head ?? ""}
+                onChange={(e) => {
+                  editFormRef.current.head = e.target.value;
+                }}
                 placeholder="부서장 입력"
               />
             );
@@ -290,8 +310,10 @@ export function MasterDepartmentPage() {
             return (
               <input
                 className="tableInput"
-                value={editForm.headPhone ?? ""}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, headPhone: e.target.value }))}
+                defaultValue={editFormRef.current.headPhone ?? ""}
+                onChange={(e) => {
+                  editFormRef.current.headPhone = e.target.value;
+                }}
                 placeholder="연락처 입력"
               />
             );
@@ -308,8 +330,10 @@ export function MasterDepartmentPage() {
             return (
               <input
                 className="tableInput"
-                value={editForm.taskDesc ?? ""}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, taskDesc: e.target.value }))}
+                defaultValue={editFormRef.current.taskDesc ?? ""}
+                onChange={(e) => {
+                  editFormRef.current.taskDesc = e.target.value;
+                }}
                 placeholder="담당업무 입력"
               />
             );
@@ -376,7 +400,7 @@ export function MasterDepartmentPage() {
         },
       },
     ],
-    [editingDepCode, editForm, isUpdating, isDeletingDepCode]
+    [editingDepCode, isUpdating, isDeletingDepCode]
   );
 
   return (

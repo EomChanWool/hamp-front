@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@components/common/Badge";
 import { Panel } from "@components/card/Panel";
-import { RowDetailModal } from "@components/common/RowDetailModal";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
@@ -28,14 +27,19 @@ export function MasterOperationPage() {
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [detailLoadingOperCode, setDetailLoadingOperCode] = useState<string | null>(null);
 
-  // 수정 및 비활성화 상태 관리
+  // 인라인 수정 상태 관리 (현재 수정 중인 공정코드)
+  const [editingOperCode, setEditingOperCode] = useState<string | null>(null);
+
+  // 타이핑 시 리렌더링 방지를 위한 폼 상태 Ref
+  const editFormRef = useRef<OperationUpdateRequest>({
+    depCode: "",
+    operNm: "",
+    stdTime: "",
+  });
+
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isDeactivating, setIsDeactivating] = useState(false);
-  const [modalOperation, setModalOperation] = useState<OperationResponse | null>(null);
-
-  const detailRequestIdRef = useRef(0);
+  const [isDeletingOperCode, setIsDeletingOperCode] = useState<string | null>(null);
 
   // URL 쿼리 파라미터 값 추출
   const currentPage = Number(searchParams.get("page") || "0");
@@ -68,19 +72,24 @@ export function MasterOperationPage() {
     fetchOperationOptions();
   }, [fetchOperationOptions]);
 
-  // 검색 필드 DOM 값과 URL 쿼리 파라미터 동기화
+  // 검색 필드 DOM 값과 URL 쿼리 파라미터 동기화 (타이밍 이슈 방지 setTimeout 적용)
   useEffect(() => {
-    if (operCodeRef.current) operCodeRef.current.value = queryOperCode;
-    if (depCodeRef.current) depCodeRef.current.value = queryDepCode;
-    if (operNmRef.current) operNmRef.current.value = queryOperNm;
-    if (useYnRef.current) useYnRef.current.value = queryUseYn;
-    if (stdTimeRef.current) stdTimeRef.current.value = queryStdTime;
+    const timer = setTimeout(() => {
+      if (operCodeRef.current) operCodeRef.current.value = queryOperCode;
+      if (depCodeRef.current) depCodeRef.current.value = queryDepCode;
+      if (operNmRef.current) operNmRef.current.value = queryOperNm;
+      if (useYnRef.current) useYnRef.current.value = queryUseYn;
+      if (stdTimeRef.current) stdTimeRef.current.value = queryStdTime;
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [
     queryOperCode,
     queryDepCode,
     queryOperNm,
     queryUseYn,
     queryStdTime,
+    operationOptions,
   ]);
 
   // 검색 밴드 구성
@@ -112,7 +121,7 @@ export function MasterOperationPage() {
     { type: "single-date", label: "표준시간", ref: stdTimeRef },
   ];
 
-  // 1. 공정 목록 조회 (GET /operations)
+  // 공정 목록 조회
   const loadOperations = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -171,6 +180,7 @@ export function MasterOperationPage() {
     if (useYn) nextParams.useYn = useYn;
     if (stdTime) nextParams.stdTime = stdTime;
 
+    setEditingOperCode(null);
     setSearchParams(nextParams);
   };
 
@@ -182,128 +192,112 @@ export function MasterOperationPage() {
     if (operCodeRef.current) operCodeRef.current.value = "";
     if (useYnRef.current) useYnRef.current.value = "";
 
+    setEditingOperCode(null);
     setSearchParams({
       page: "0",
     });
   };
 
   const handlePageChange = (newPage: number) => {
+    setEditingOperCode(null);
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("page", String(newPage));
     setSearchParams(nextParams);
   };
 
-  // 2. 공정 단건 상세 조회 (GET /operations/{operCode})
-  const handleOpenDetail = async (operCode: string) => {
-    const requestId = ++detailRequestIdRef.current;
-    setDetailLoadingOperCode(operCode);
-
-    try {
-      const encodedOperCode = encodeURIComponent(operCode);
-      const response = await apiClient.get<ApiResponseOperationResponse>(
-        `/operations/${encodedOperCode}`
-      );
-      const operation = response.data.data;
-
-      if (!operation) throw new Error("공정 상세 데이터가 없습니다.");
-
-      if (requestId === detailRequestIdRef.current) {
-        setModalOperation(operation);
-      }
-    } catch (error) {
-      console.error("공정 상세 조회 실패:", error);
-      if (requestId === detailRequestIdRef.current) {
-        const message = axios.isAxiosError(error)
-          ? error.response?.data?.message
-          : error instanceof Error
-            ? error.message
-            : null;
-        window.alert(message || "상세 정보를 불러오는 중 오류가 발생했습니다.");
-      }
-    } finally {
-      if (requestId === detailRequestIdRef.current) {
-        setDetailLoadingOperCode(null);
-      }
-    }
-  };
-
-  // 3. 등록 페이지로 이동 (검색 조건 유지)
+  // 등록 페이지로 이동
   const handleCreate = () => {
     const queryString = searchParams.toString();
     navigate(
       queryString
-        ? `/master/operations/create?${queryString}`
-        : "/master/operations/create"
+        ? `/master/operation/create?${queryString}`
+        : "/master/operation/create"
     );
   };
 
-  // 4. 공정 정보 수정 처리 (PUT /operations/{operCode})
-  const handleSave = async (updated: Record<string, string>) => {
-    if (!modalOperation || isUpdating) return;
+  // 인라인 편집 시작
+  const handleStartEdit = (row: OperationResponse) => {
+    editFormRef.current = {
+      depCode: row.depCode ?? "",
+      operNm: row.operNm ?? "",
+      stdTime: row.stdTime?.toString() ?? "",
+    };
+    setEditingOperCode(row.operCode);
+  };
+
+  // 인라인 편집 취소
+  const handleCancelEdit = () => {
+    setEditingOperCode(null);
+    editFormRef.current = { depCode: "", operNm: "", stdTime: "" };
+  };
+
+  // 인라인 수정 저장
+  const handleSaveEdit = async (operCode: string) => {
+    if (isUpdating) return;
 
     setIsUpdating(true);
     try {
-      const depCodeVal = "depCode" in updated ? updated.depCode : modalOperation.depCode;
-      const operNmVal = "operNm" in updated ? updated.operNm : modalOperation.operNm;
-      const stdTimeVal = "stdTime" in updated ? updated.stdTime : modalOperation.stdTime;
-
       const updatePayload: OperationUpdateRequest = {
-        depCode: depCodeVal?.trim() ? depCodeVal.trim() : null,
-        operNm: operNmVal?.trim() ? operNmVal.trim() : null,
-        stdTime: stdTimeVal?.trim() ? stdTimeVal.trim() : null,
+        depCode: editFormRef.current.depCode?.trim() ? editFormRef.current.depCode.trim() : null,
+        operNm: editFormRef.current.operNm?.trim() ? editFormRef.current.operNm.trim() : null,
+        stdTime: editFormRef.current.stdTime?.toString().trim() ? editFormRef.current.stdTime.toString().trim() : null,
       };
 
-      const encodedOperCode = encodeURIComponent(modalOperation.operCode);
-
+      const encodedOperCode = encodeURIComponent(operCode);
       const response = await apiClient.put<ApiResponseOperationResponse>(
         `/operations/${encodedOperCode}`,
         updatePayload
       );
 
-      const successMessage = response.data?.message || "수정되었습니다.";
-      window.alert(successMessage);
+      window.alert(response.data?.message || "수정되었습니다.");
 
-      setModalOperation(null);
+      // 로컬 데이터 목록 즉시 갱신 (Optimistic Update)
+      setOperations((prev) =>
+        prev.map((item) =>
+          item.operCode === operCode
+            ? {
+                ...item,
+                depCode: updatePayload.depCode ?? item.depCode,
+                operNm: updatePayload.operNm ?? item.operNm,
+                stdTime: updatePayload.stdTime ?? item.stdTime,
+              }
+            : item
+        )
+      );
+
+      setEditingOperCode(null);
       await loadOperations();
       await fetchOperationOptions();
     } catch (err) {
-      console.error("저장 실패:", err);
-
-      const errorMessage = axios.isAxiosError(err)
-        ? err.response?.data?.message
-        : null;
-
+      console.error("수정 실패:", err);
+      const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
       window.alert(errorMessage || "수정에 실패했습니다.");
     } finally {
       setIsUpdating(false);
     }
   };
 
-  // 5. 공정 비활성화 처리 (DELETE /operations/{operCode})
-  const handleDeactivate = async () => {
-    if (!modalOperation || modalOperation.useYn !== "Y" || isDeactivating) return;
+  // 공정 삭제(비활성화) 처리
+  const handleDeleteOperation = async (row: OperationResponse) => {
+    if (isDeletingOperCode || row.useYn !== "Y") return;
 
-    const confirmed = window.confirm(
-      `${modalOperation.operNm || modalOperation.operCode} 공정을 비활성화하시겠습니까?`
-    );
+    const confirmed = window.confirm(`[${row.operCode}] ${row.operNm || ""} 공정을 삭제(비활성화)하시겠습니까?`);
     if (!confirmed) return;
 
-    setIsDeactivating(true);
+    setIsDeletingOperCode(row.operCode);
     try {
-      const encodedOperCode = encodeURIComponent(modalOperation.operCode);
+      const encodedOperCode = encodeURIComponent(row.operCode);
       await apiClient.delete(`/operations/${encodedOperCode}`);
-      window.alert("공정이 비활성화되었습니다.");
-      setModalOperation(null);
+
+      window.alert("공정이 삭제(비활성화)되었습니다.");
       await loadOperations();
       await fetchOperationOptions();
     } catch (error) {
-      console.error("공정 비활성화 실패:", error);
-      const message = axios.isAxiosError(error)
-        ? error.response?.data?.message
-        : null;
-      window.alert(message || "공정 비활성화에 실패했습니다.");
+      console.error("공정 삭제 실패:", error);
+      const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
+      window.alert(message || "공정 삭제에 실패했습니다.");
     } finally {
-      setIsDeactivating(false);
+      setIsDeletingOperCode(null);
     }
   };
 
@@ -311,9 +305,67 @@ export function MasterOperationPage() {
   const columns: ColumnDef<OperationResponse>[] = useMemo(
     () => [
       { accessorKey: "operCode", header: "공정코드" },
-      { accessorKey: "depCode", header: "부서코드" },
-      { accessorKey: "operNm", header: "공정명" },
-      { accessorKey: "stdTime", header: "표준시간" },
+      {
+        accessorKey: "depCode",
+        header: "부서코드",
+        cell: ({ row }) => {
+          const isEditing = row.original.operCode === editingOperCode;
+          if (isEditing) {
+            return (
+              <input
+                className="tableInput"
+                defaultValue={editFormRef.current.depCode ?? ""}
+                onChange={(e) => {
+                  editFormRef.current.depCode = e.target.value;
+                }}
+                placeholder="부서코드 입력"
+              />
+            );
+          }
+          return row.original.depCode || "-";
+        },
+      },
+      {
+        accessorKey: "operNm",
+        header: "공정명",
+        cell: ({ row }) => {
+          const isEditing = row.original.operCode === editingOperCode;
+          if (isEditing) {
+            return (
+              <input
+                className="tableInput"
+                defaultValue={editFormRef.current.operNm ?? ""}
+                onChange={(e) => {
+                  editFormRef.current.operNm = e.target.value;
+                }}
+                placeholder="공정명 입력"
+              />
+            );
+          }
+          return row.original.operNm || "-";
+        },
+      },
+      {
+        accessorKey: "stdTime",
+        header: "표준시간",
+        cell: ({ row }) => {
+          const isEditing = row.original.operCode === editingOperCode;
+          if (isEditing) {
+            return (
+              <input
+                className="tableInput"
+                type="text"
+                defaultValue={editFormRef.current.stdTime?.toString() ?? ""}
+                onChange={(e) => {
+                  editFormRef.current.stdTime = e.target.value;
+                }}
+                placeholder="표준시간 입력"
+              />
+            );
+          }
+          return row.original.stdTime || "-";
+        },
+      },
       {
         accessorKey: "useYn",
         header: "사용여부",
@@ -334,47 +386,60 @@ export function MasterOperationPage() {
       {
         id: "actions",
         header: "관리",
-        meta: { width: "100px" },
-        cell: ({ row }) => (
-          <div className="rowActions">
-            <button
-              type="button"
-              className="miniButton"
-              disabled={detailLoadingOperCode === row.original.operCode}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenDetail(row.original.operCode);
-              }}
-            >
-              {detailLoadingOperCode === row.original.operCode ? "조회 중..." : "상세"}
-            </button>
-          </div>
-        ),
+        meta: { width: "130px" },
+        cell: ({ row }) => {
+          const isEditing = row.original.operCode === editingOperCode;
+          const isDeleting = isDeletingOperCode === row.original.operCode;
+          const isUsed = row.original.useYn === "Y";
+
+          if (isEditing) {
+            return (
+              <div className="rowActions" style={{ display: "flex", gap: "4px" }}>
+                <button
+                  type="button"
+                  className="miniButton primary"
+                  disabled={isUpdating}
+                  onClick={() => handleSaveEdit(row.original.operCode)}
+                >
+                  {isUpdating ? "저장 중" : "저장"}
+                </button>
+                <button
+                  type="button"
+                  className="miniButton ghostButton"
+                  disabled={isUpdating}
+                  onClick={handleCancelEdit}
+                >
+                  취소
+                </button>
+              </div>
+            );
+          }
+
+          return (
+            <div className="rowActions" style={{ display: "flex", gap: "4px" }}>
+              <button
+                type="button"
+                className="miniButton"
+                disabled={editingOperCode !== null || isDeleting}
+                onClick={() => handleStartEdit(row.original)}
+              >
+                수정
+              </button>
+              <button
+                type="button"
+                className="miniButton danger"
+                disabled={editingOperCode !== null || isDeleting || !isUsed}
+                onClick={() => handleDeleteOperation(row.original)}
+              >
+                {isDeleting ? "삭제 중" : "삭제"}
+              </button>
+            </div>
+          );
+        },
       },
     ],
-    [detailLoadingOperCode]
+    [editingOperCode, isUpdating, isDeletingOperCode]
   );
-
-  const detailFields = [
-    { label: "공정코드", key: "operCode", editable: false },
-    { label: "부서코드", key: "depCode" },
-    { label: "공정명", key: "operNm" },
-    { label: "표준시간", key: "stdTime" },
-    { label: "사용여부", key: "useYn", editable: false },
-    { label: "생성일시", key: "createdAt", editable: false },
-  ];
-
-  const modalData = useMemo(() => {
-    if (!modalOperation) return {};
-    return {
-      operCode: modalOperation.operCode,
-      depCode: modalOperation.depCode,
-      operNm: modalOperation.operNm ?? "",
-      stdTime: modalOperation.stdTime ?? "",
-      useYn: modalOperation.useYn === "Y" ? "사용" : "미사용",
-      createdAt: formatDateTime(modalOperation.createdAt),
-    };
-  }, [modalOperation]);
 
   return (
     <section className="screenStack">
@@ -387,7 +452,6 @@ export function MasterOperationPage() {
           <CusTable
             data={operations}
             columns={columns}
-            onRowClick={(row) => handleOpenDetail(row.operCode)}
           />
           <CusPagination
             page={currentPage}
@@ -397,27 +461,6 @@ export function MasterOperationPage() {
           />
         </div>
       </Panel>
-
-      {/* 공정 상세/수정 모달 */}
-      <RowDetailModal
-        isOpen={modalOperation !== null}
-        onClose={() => {
-          if (!isDeactivating && !isUpdating) setModalOperation(null);
-        }}
-        onSave={handleSave}
-        fields={detailFields}
-        data={modalData as unknown as Record<string, string>}
-        dangerAction={
-          modalOperation?.useYn === "Y"
-            ? {
-                label: "공정 비활성화",
-                loadingLabel: "비활성화 처리 중...",
-                onClick: handleDeactivate,
-                isLoading: isDeactivating,
-              }
-            : undefined
-        }
-      />
     </section>
   );
 }
