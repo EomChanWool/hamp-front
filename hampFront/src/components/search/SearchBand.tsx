@@ -1,4 +1,5 @@
 import { useState, type RefObject } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   AdjustmentsHorizontalIcon,
   ArrowPathIcon,
@@ -53,7 +54,21 @@ type Props = {
 
 /** 목록 화면 상단의 검색/필터 입력 영역. 값은 ref로 읽고, '조회' 클릭(또는 Enter)에만 onSearch를 호출한다 */
 export function SearchBand({ fields, onSearch, onReset }: Props) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const location = useLocation()
+  // 페이지 주소(예: /master/operation)마다 고유한 키 생성
+  const storageKey = `searchBand_expanded_${location.pathname}`
+
+  const [isExpanded, setIsExpanded] = useState(() => {
+    return sessionStorage.getItem(storageKey) === "true"
+  })
+
+  const handleToggleExpand = () => {
+    setIsExpanded((prev) => {
+      const next = !prev
+      sessionStorage.setItem(storageKey, String(next))
+      return next
+    })
+  }
 
   // 1. isPrimary: true 가 붙은 필터를 우선 추출하고, 없으면 순서대로 앞에서 가져옴
   const getInitialVisibleFields = () => {
@@ -156,7 +171,7 @@ export function SearchBand({ fields, onSearch, onReset }: Props) {
             <button
               type="button"
               className="expandButton"
-              onClick={() => setIsExpanded((prev) => !prev)}
+              onClick={handleToggleExpand}
             >
               {isExpanded ? (
                 <>
