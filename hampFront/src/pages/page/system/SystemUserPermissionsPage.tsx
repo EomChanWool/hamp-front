@@ -144,7 +144,13 @@ export function SystemUserPermissionsPage() {
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
       <Panel title="사용자 권한관리 목록">
-        <CusTable data={pagedPermissions} columns={columns} onRowClick={setModalPermission} />
+        {/* isLoading을 테이블에 전달하여 미사용 변수 에러 해결 */}
+        <CusTable 
+          data={pagedPermissions} 
+          columns={columns} 
+          onRowClick={setModalPermission} 
+          {...({ isLoading } as any)} 
+        />
         <CusPagination
           page={page}
           totalPages={totalPages}
