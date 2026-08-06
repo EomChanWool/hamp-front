@@ -109,7 +109,7 @@ export function MasterOperationCreatePage() {
               value={form.operCode}
               disabled={isSubmitting}
               onChange={(e) => handleChange("operCode", e.target.value)}
-              placeholder="예: OPR001"
+              placeholder="예: OPER001"
             />
           </div>
 

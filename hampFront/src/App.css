@@ -2091,6 +2091,74 @@ tbody tr:hover td {
   opacity: 0.6;
 }
 
+/* 모달 내부 커스텀 스타일 */
+.modalBodyFlex {
+  display: flex;
+  flex-direction: column;
+}
+
+.modalSearchInput {
+  width: 100%;
+}
+
+.modalCountText {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.modalListContainer {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-height: 300px;
+  background: var(--bg-subtle);
+}
+
+.modalEmptyText {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.modalListItem {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modalListItemChecked {
+  background-color: var(--bg-card);
+}
+
+.modalListItemContent {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+}
+
+.modalListItemTitle {
+  font-weight: 500;
+  color: var(--text-body);
+}
+
+.modalListItemCode {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.modalSelectAllRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+
 .requiredLabel {
   display: inline-flex;
   align-items: center;
@@ -2162,6 +2230,75 @@ tbody tr:hover td {
   color: var(--text-body);
   font-size: 13px;
 }
+
+/* ================================
+   ROUTING SECTION
+================================ */
+.routingSection {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.routingHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.routingEmptyBox {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  background: var(--bg-subtle);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.routingGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.routingItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-subtle);
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+}
+
+.routingSeq {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  width: 60px;
+  flex-shrink: 0;
+}
+
+.routingInfo {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-body);
+}
+
+.routingSelect {
+  width: 100px;
+  flex-shrink: 0;
+}
+
+.routingActionButtons {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 /* ================================
    AUTH GROUP
 ================================ */
