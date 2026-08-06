@@ -17,6 +17,8 @@ export function SystemUserPermissionsPage() {
   const [modalPermission, setModalPermission] = useState<AuthGroupResponse | null>(null)
   const [page, setPage] = useState(0)
 
+  const [searchParams, setSearchParams] = useState<Record<string, string>>({})
+
   // 검색 필드 Ref (권한그룹명, 권한ID)
   const authNmRef = useRef<HTMLInputElement>(null)
   const authIdRef = useRef<HTMLInputElement>(null)
@@ -26,11 +28,21 @@ export function SystemUserPermissionsPage() {
     { type: 'input', label: '권한ID', ref: authIdRef },
   ]
 
-  // GET /auth-groups 목록 조회 API 함수
-  const fetchAuthGroups = async () => {
+  // GET /auth-groups 목록 조회 API 함수 (params 매개변수 추가 및 공백 제거)
+  const fetchAuthGroups = async (params: Record<string, string> = {}) => {
     setIsLoading(true)
     try {
-      const response = await apiClient.get<ApiResponseListAuthGroupResponse>('/auth-groups')
+      const cleanedParams = Object.entries(params).reduce(
+        (acc, [key, value]) => {
+          if (value && value.trim() !== '') acc[key] = value.trim()
+          return acc
+        },
+        {} as Record<string, string>,
+      )
+
+      const response = await apiClient.get<ApiResponseListAuthGroupResponse>('/auth-groups', {
+        params: cleanedParams,
+      })
       setAuthGroups(response.data.data ?? [])
     } catch (error) {
       console.error('권한 그룹 목록 조회 실패:', error)
@@ -40,24 +52,23 @@ export function SystemUserPermissionsPage() {
   }
 
   useEffect(() => {
-    fetchAuthGroups()
-  }, [])
+    fetchAuthGroups(searchParams)
+  }, [searchParams])
 
-  // 검색 핸들러 (프론트 단 필터링)
   const handleSearch = () => {
-    const authNm = authNmRef.current?.value.trim() ?? ''
-    const authId = authIdRef.current?.value.trim() ?? ''
+    const params: Record<string, string> = {}
+    if (authNmRef.current?.value.trim()) params.authNm = authNmRef.current.value.trim()
+    if (authIdRef.current?.value.trim()) params.authId = authIdRef.current.value.trim()
 
     setPage(0)
-    // 원본 데이터에서 필터링하거나, 필요 시 백엔드 파라미터 검색으로 확장 가능
-    fetchAuthGroups()
+    setSearchParams(params)
   }
 
   const handleReset = () => {
     if (authNmRef.current) authNmRef.current.value = ''
     if (authIdRef.current) authIdRef.current.value = ''
     setPage(0)
-    fetchAuthGroups()
+    setSearchParams({})
   }
 
   const handleDelete = (permission: AuthGroupResponse) => {
@@ -75,7 +86,6 @@ export function SystemUserPermissionsPage() {
     window.alert('PUT API 미구현으로 화면 상태에만 저장되었습니다.')
   }
 
-  // 검색 결과나 목록이 바뀌면 1페이지로 이동
   useEffect(() => {
     setPage(0)
   }, [authGroups])
