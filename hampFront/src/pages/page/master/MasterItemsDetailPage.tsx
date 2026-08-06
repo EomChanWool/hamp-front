@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Panel } from "@components/card/Panel";
 import { Badge } from "@components/common/Badge";
@@ -44,8 +44,17 @@ export function MasterItemsDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
   
-  // 라우팅 목록 상태 (상세 조회 시 불러온 데이터 및 수정 중 변경되는 데이터 관리)
+  // 라우팅 목록 상태
   const [routings, setRoutings] = useState<ItemRoutingRequest[]>([]);
+
+  // 드래그 앤 드롭을 위한 상태 관리 훅
+  const draggedItemIndex = useRef<number | null>(null);
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+
+  // 다중 선택 팝업 모달 관련 상태
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalSearchKeyword, setModalSearchKeyword] = useState("");
+  const [tempSelectedCodes, setTempSelectedCodes] = useState<string[]>([]);
 
   const isBusy = isUpdating || isDeleting;
 
@@ -121,7 +130,6 @@ export function MasterItemsDetailPage() {
             updatedAt: formatDateTime(itemData.updatedAt),
           });
 
-          // 서버에서 가져온 기존 라우팅 정보 세팅 (ItemRoutingResponse 구조 반영)
           if (itemData.routings && Array.isArray(itemData.routings)) {
             setRoutings(
               itemData.routings.map((r, idx) => ({
@@ -154,7 +162,7 @@ export function MasterItemsDetailPage() {
     };
   }, [itemCode, navigate, location.search]);
 
-  // 수정 모드 취소 시 데이터 롤백
+  // 수정 모드 취소 시 롤백
   useEffect(() => {
     if (item && !isEditing) {
       setForm({
@@ -183,7 +191,7 @@ export function MasterItemsDetailPage() {
     }
   }, [isEditing, item]);
 
-  // 품목구분이 원료('0')로 변경되면 라우팅 초기화
+  // 품목구분 변경 시 원료('0')면 라우팅 초기화
   const handleFieldChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     if (key === "category" && value === "0") {
@@ -191,19 +199,6 @@ export function MasterItemsDetailPage() {
     }
   };
 
-  // 공정 추가
-  const handleAddRouting = () => {
-    setRoutings((prev) => [
-      ...prev,
-      {
-        operCode: "",
-        operSeq: prev.length + 1,
-        finalYn: "N",
-      },
-    ]);
-  };
-
-  // 공정 삭제 (순서 자동 정렬)
   const handleRemoveRouting = (index: number) => {
     setRoutings((prev) =>
       prev
@@ -212,7 +207,6 @@ export function MasterItemsDetailPage() {
     );
   };
 
-  // 공정 데이터 변경
   const handleRoutingChange = (
     index: number,
     field: keyof ItemRoutingRequest,
@@ -223,29 +217,117 @@ export function MasterItemsDetailPage() {
     );
   };
 
-  // 저장 전 유효성 검증
+  // --- 드래그 앤 드롭 핸들러들  ---
+  const handleDragStart = (index: number) => {
+    draggedItemIndex.current = index;
+    setDraggingIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (targetIndex: number) => {
+    const sourceIndex = draggedItemIndex.current;
+    if (sourceIndex === null || sourceIndex === targetIndex) return;
+
+    setRoutings((prev) => {
+      const newRoutings = [...prev];
+      const [movedItem] = newRoutings.splice(sourceIndex, 1);
+      newRoutings.splice(targetIndex, 0, movedItem);
+
+      return newRoutings.map((item, i) => ({ ...item, operSeq: i + 1 }));
+    });
+
+    draggedItemIndex.current = null;
+    setDraggingIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    draggedItemIndex.current = null;
+    setDraggingIndex(null);
+  };
+
+  // --- 팝업 모달 관련 핸들러 ---
+  const handleOpenModal = () => {
+    setModalSearchKeyword("");
+    const currentCodes = routings.map((r) => r.operCode).filter(Boolean) as string[];
+    setTempSelectedCodes(currentCodes);
+    setIsModalOpen(true);
+  };
+
+  const handleToggleCheckbox = (operCode: string) => {
+    setTempSelectedCodes((prev) =>
+      prev.includes(operCode)
+        ? prev.filter((code) => code !== operCode)
+        : [...prev, operCode]
+    );
+  };
+
+  const filteredOperations = useMemo(() => {
+    if (!modalSearchKeyword.trim()) return operations;
+    const keyword = modalSearchKeyword.toLowerCase();
+    return operations.filter(
+      (op) =>
+        op.operCode.toLowerCase().includes(keyword) ||
+        op.operNm.toLowerCase().includes(keyword)
+    );
+  }, [operations, modalSearchKeyword]);
+
+  const handleToggleSelectAll = () => {
+    const filteredCodes = filteredOperations.map((op) => op.operCode);
+    const isAllCurrentlySelected = filteredCodes.every((code) =>
+      tempSelectedCodes.includes(code)
+    );
+
+    if (isAllCurrentlySelected) {
+      setTempSelectedCodes((prev) =>
+        prev.filter((code) => !filteredCodes.includes(code))
+      );
+    } else {
+      setTempSelectedCodes((prev) => {
+        const merged = new Set([...prev, ...filteredCodes]);
+        return Array.from(merged);
+      });
+    }
+  };
+
+  const handleConfirmModal = () => {
+    setRoutings((prev) => {
+      const existingMap = new Map(prev.map((r) => [r.operCode, r]));
+
+      const newRoutings: ItemRoutingRequest[] = tempSelectedCodes.map((code) => {
+        const existing = existingMap.get(code);
+        return {
+          operCode: code,
+          operSeq: 0,
+          finalYn: existing ? existing.finalYn : "N",
+        };
+      });
+
+      return newRoutings.map((item, idx) => ({ ...item, operSeq: idx + 1 }));
+    });
+
+    setIsModalOpen(false);
+  };
+
+  const isAllFilteredSelected =
+    filteredOperations.length > 0 &&
+    filteredOperations.every((op) => tempSelectedCodes.includes(op.operCode));
+
   const validateForm = (): boolean => {
     const selectedCategory =
       form.category !== "" ? (Number(form.category) as ItemCategory) : null;
 
-    // 반제품(1) 또는 완제품(2)일 때 라우팅 필수 검증
     if (selectedCategory === 1 || selectedCategory === 2) {
       if (routings.length === 0) {
         alert("반제품/완제품은 공정 라우팅을 최소 1개 이상 설정해야 합니다.");
-        return false;
-      }
-      const hasEmptyOperCode = routings.some(
-        (r) => !r.operCode || !r.operCode.trim()
-      );
-      if (hasEmptyOperCode) {
-        alert("모든 행의 공정 코드를 선택해주세요.");
         return false;
       }
     }
     return true;
   };
 
-  // 저장 처리 핸들러
   const handleSave = async () => {
     if (!item || isUpdating) return;
     if (!validateForm()) return;
@@ -282,7 +364,6 @@ export function MasterItemsDetailPage() {
 
       alert(response.data?.message || "수정되었습니다.");
 
-      // 로컬 상세 상태 갱신 (서버 응답 규격인 ItemRoutingResponse 형태로 변환하여 반영)
       setItem((prev) =>
         prev
           ? {
@@ -294,7 +375,7 @@ export function MasterItemsDetailPage() {
               standard: updatePayload.standard ?? prev.standard,
               routings: updatePayload.routings
                 ? updatePayload.routings.map((r, idx) => ({
-                    routingId: 0, // 임시 ID 또는 백엔드 응답값 의존
+                    routingId: 0,
                     itemCode: prev.itemCode,
                     operCode: r.operCode ?? "",
                     operSeq: r.operSeq ?? idx + 1,
@@ -317,7 +398,6 @@ export function MasterItemsDetailPage() {
     }
   };
 
-  // 품목 삭제 처리
   const handleDelete = async () => {
     if (!item || isDeleting) return;
 
@@ -366,6 +446,7 @@ export function MasterItemsDetailPage() {
             handleSave();
           }}
         >
+          {/* 상단 기본 필드들 */}
           {fields.map(({ label, key, editable, type, options }) => {
             const isFieldEditable = isEditing && editable !== false;
 
@@ -415,149 +496,100 @@ export function MasterItemsDetailPage() {
             );
           })}
 
-          {/* 공정 라우팅 영역 */}
+          {/* 공정 라우팅 정보 */}
           {(isRoutingRequired || (routings && routings.length > 0)) && (
-            <div className="detailField" style={{ alignItems: "flex-start" }}>
-              <label style={{ color: isRoutingRequired ? "inherit" : "#4b5563" }}>
-                공정 라우팅 정보{" "}
-                {isRoutingRequired && <span className="required">*</span>}
-              </label>
-
-              <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div className="routingSection">
+              <div className="routingHeader">
+                <label className="requiredLabel" style={{ fontWeight: 600 }}>
+                  공정 라우팅 설정{" "}
+                  {isRoutingRequired && <span className="required">*</span>}
+                </label>
                 {isEditing && (
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "4px" }}>
-                    <button
-                      type="button"
-                      className="miniButton primary"
-                      disabled={isBusy}
-                      onClick={handleAddRouting}
-                    >
-                      + 공정 추가
-                    </button>
-                  </div>
-                )}
-
-                {routings.length === 0 ? (
-                  <div
-                    style={{
-                      padding: "16px",
-                      textAlign: "center",
-                      color: "#6b7280",
-                      fontSize: "13px",
-                      background: "#f9fafb",
-                      borderRadius: "4px",
-                    }}
+                  <button
+                    type="button"
+                    className="miniButton primary"
+                    disabled={isBusy}
+                    onClick={handleOpenModal}
                   >
-                    등록된 공정 라우팅이 없습니다.
-                  </div>
-                ) : (
-                  <div
-                    style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}
-                  >
-                    {routings.map((route, index) => {
-                      const matchedOp = operations.find(
-                        (op) => op.operCode === route.operCode
-                      );
-
-                      return (
-                        <div
-                          key={index}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            width: "100%",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: "12px",
-                              color: "#4b5563",
-                              width: "50px",
-                              flexShrink: 0,
-                            }}
-                          >
-                            순서 {route.operSeq}
-                          </span>
-
-                          {isEditing ? (
-                            <select
-                              className="tableInput"
-                              style={{ flex: 1 }}
-                              value={route.operCode ?? ""}
-                              disabled={isBusy}
-                              onChange={(e) =>
-                                handleRoutingChange(index, "operCode", e.target.value)
-                              }
-                            >
-                              <option value="">공정 선택</option>
-                              {operations.map((op) => (
-                                <option key={op.operCode} value={op.operCode}>
-                                  {op.operCode} ({op.operNm})
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <div
-                              className="tableInput"
-                              style={{
-                                flex: 1,
-                                display: "flex",
-                                alignItems: "center",
-                                background: "#f9fafb",
-                                padding: "4px 8px",
-                              }}
-                            >
-                              {route.operCode} {matchedOp ? `(${matchedOp.operNm})` : ""}
-                            </div>
-                          )}
-
-                          {isEditing ? (
-                            <select
-                              className="tableInput"
-                              style={{ width: "110px", flexShrink: 0 }}
-                              value={route.finalYn ?? "N"}
-                              disabled={isBusy}
-                              onChange={(e) =>
-                                handleRoutingChange(index, "finalYn", e.target.value)
-                              }
-                            >
-                              <option value="N">일반공정</option>
-                              <option value="Y">최종공정</option>
-                            </select>
-                          ) : (
-                            <div
-                              style={{
-                                width: "110px",
-                                flexShrink: 0,
-                                fontSize: "13px",
-                                textAlign: "center",
-                              }}
-                            >
-                              {route.finalYn === "Y" ? "최종공정" : "일반공정"}
-                            </div>
-                          )}
-
-                          {isEditing && (
-                            <button
-                              type="button"
-                              className="miniButton danger"
-                              disabled={isBusy}
-                              onClick={() => handleRemoveRouting(index)}
-                            >
-                              삭제
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                    공정 선택 / 추가
+                  </button>
                 )}
               </div>
+
+              {routings.length === 0 ? (
+                <div className="routingEmptyBox">
+                  등록된 공정 라우팅이 없습니다.
+                </div>
+              ) : (
+                <div className="routingGrid">
+                  {routings.map((route, index) => {
+                    const matchedOp = operations.find(
+                      (op) => op.operCode === route.operCode
+                    );
+                    const isDragging = draggingIndex === index;
+
+                    return (
+                      <div
+                        key={route.operCode || index}
+                        className={`routingItem ${isDragging ? "dragging" : ""}`}
+                        draggable={isEditing && !isBusy}
+                        onDragStart={() => handleDragStart(index)}
+                        onDragOver={handleDragOver}
+                        onDrop={() => handleDrop(index)}
+                        onDragEnd={handleDragEnd}
+                      >
+                        {isEditing && (
+                          <span className="dragHandle" title="드래그하여 순서 변경">
+                            ☰
+                          </span>
+                        )}
+
+                        <span className="routingSeq">
+                          순서 {route.operSeq}
+                        </span>
+
+                        <div className="routingInfo">
+                          {route.operCode} {matchedOp ? `(${matchedOp.operNm})` : ""}
+                        </div>
+
+                        {isEditing ? (
+                          <select
+                            className="tableInput routingSelect"
+                            value={route.finalYn ?? "N"}
+                            disabled={isBusy}
+                            onChange={(e) =>
+                              handleRoutingChange(index, "finalYn", e.target.value)
+                            }
+                          >
+                            <option value="N">일반공정</option>
+                            <option value="Y">최종공정</option>
+                          </select>
+                        ) : (
+                          <div className="tableInput routingSelect flex items-center justify-center text-xs">
+                            {route.finalYn === "Y" ? "최종공정" : "일반공정"}
+                          </div>
+                        )}
+
+                        {isEditing && (
+                          <button
+                            type="button"
+                            className="miniButton danger"
+                            disabled={isBusy}
+                            onClick={() => handleRemoveRouting(index)}
+                          >
+                            제외
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
-          <div className="pageFormFooterSpaceBetween">
+          {/* 하단 액션 버튼 영역 */}
+          <div className="pageFormFooterSpaceBetween" style={{ gridColumn: "1 / -1", marginTop: "16px" }}>
             <div>
               {isEditing && (
                 <button
@@ -620,6 +652,107 @@ export function MasterItemsDetailPage() {
           </div>
         </form>
       </Panel>
+
+      {/* 공정 다중 선택 팝업 모달 */}
+      {isModalOpen && (
+        <div className="modalOverlay">
+          <div className="detailModal">
+            <div className="detailModalHeader">
+              <div>
+                <h3>공정 선택</h3>
+                <span>품목에 추가할 공정 라우팅을 선택하세요.</span>
+              </div>
+              <button
+                type="button"
+                className="detailModalClose"
+                onClick={() => setIsModalOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="detailModalBody modalBodyFlex">
+              <div>
+                <input
+                  type="text"
+                  className="tableInput modalSearchInput"
+                  placeholder="공정 코드 또는 공정명 검색..."
+                  value={modalSearchKeyword}
+                  onChange={(e) => setModalSearchKeyword(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              <div className="modalSelectAllRow">
+                <div className="modalCountText">
+                  선택된 공정 수: <strong>{tempSelectedCodes.length}</strong>개
+                </div>
+                <button
+                  type="button"
+                  className="miniButton ghostButton"
+                  onClick={handleToggleSelectAll}
+                  style={{ fontSize: "11px", padding: "2px 8px" }}
+                >
+                  {isAllFilteredSelected ? "전체 해제" : "전체 선택"}
+                </button>
+              </div>
+
+              <div className="modalListContainer">
+                {filteredOperations.length === 0 ? (
+                  <div className="modalEmptyText">
+                    검색된 공정이 없습니다.
+                  </div>
+                ) : (
+                  filteredOperations.map((op) => {
+                    const isChecked = tempSelectedCodes.includes(op.operCode);
+                    return (
+                      <div
+                        key={op.operCode}
+                        onClick={() => handleToggleCheckbox(op.operCode)}
+                        className={`modalListItem ${isChecked ? "modalListItemChecked" : ""}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {}}
+                          style={{ cursor: "pointer" }}
+                        />
+                        <div className="modalListItemContent">
+                          <span className="modalListItemTitle">
+                            {op.operNm}
+                          </span>
+                          <span className="modalListItemCode">
+                            {op.operCode}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            <div className="detailModalFooter">
+              <button
+                type="button"
+                className="ghostButton"
+                onClick={() => setIsModalOpen(false)}
+              >
+                취소
+              </button>
+              <div className="detailModalFooterRight">
+                <button
+                  type="button"
+                  className="primaryButton"
+                  onClick={handleConfirmModal}
+                >
+                  선택 완료 ({tempSelectedCodes.length}개 적용)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
