@@ -7,7 +7,6 @@ import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
 import { paginate } from '@/utils/common'
-import { apiClient } from '@/api/apiClient'
 import { type OrderManageRow, type OrderManageSearchParams, mockOrderManage } from '@/types/sales/Sales'
 
 export function OrderManagePage() {

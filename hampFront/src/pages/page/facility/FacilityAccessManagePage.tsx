@@ -8,13 +8,54 @@ import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
 import type { StatusTone } from '@/types'
 
-import {
-  fetchAccessRequest,
-  deleteAccessRequest,
-  updateAccessRequest,
-  type AccessRequest,
-  type AccessRequestSearchParams,
-} from '@/types/facility/FacilityAccessManagePage'
+// --- 타입 정의 ---
+export interface AccessRequest {
+  visitorName: string
+  affiliation: string
+  zone: string
+  purpose: string
+  approvalStatus: string
+  scheduledAt: string
+  category: string
+}
+
+export interface AccessRequestSearchParams {
+  visitorName?: string
+  category?: string
+  zone?: string
+  approvalStatus?: string
+}
+
+// --- 더미 데이터 초기값 ---
+const INITIAL_DUMMY_DATA: AccessRequest[] = [
+  {
+    visitorName: '홍길동',
+    affiliation: '(주)한국이엔지',
+    zone: 'A동 제 1공장',
+    purpose: '정기점검',
+    approvalStatus: '승인완료',
+    scheduledAt: '2026-06-10 09:00',
+    category: '방문객',
+  },
+  {
+    visitorName: '김철수',
+    affiliation: '태성물류',
+    zone: 'B동 물류창고',
+    purpose: '원료납품',
+    approvalStatus: '승인대기',
+    scheduledAt: '2026-06-11 14:30',
+    category: '납품업체',
+  },
+  {
+    visitorName: '이영희',
+    affiliation: '한국품질검증',
+    zone: 'C동 연구소',
+    purpose: '품질확인',
+    approvalStatus: '반려',
+    scheduledAt: '2026-06-12 10:00',
+    category: '외부심사',
+  },
+]
 
 const PURPOSE_COLORS: Record<string, string> = {
   정기점검: '#38bdf8',
@@ -33,9 +74,10 @@ function approvalTone(status: string): StatusTone {
 const PAGE_SIZE = 10
 
 export function FacilityAccessManagePage() {
-  const [accessRequest, setAccessRequest] = useState<AccessRequest[]>([]) // 서버(더미)에서 받은 원본 데이터
-  const [searchParams, setSearchParams] = useState<AccessRequestSearchParams>({}) // 현재 검색 조건 상태
-  const [isLoading, setIsLoading] = useState(false) // 로딩 상태 추가
+  const [rawData, setRawData] = useState<AccessRequest[]>(INITIAL_DUMMY_DATA)
+  const [accessRequest, setAccessRequest] = useState<AccessRequest[]>(INITIAL_DUMMY_DATA)
+  const [searchParams, setSearchParams] = useState<AccessRequestSearchParams>({})
+  const [isLoading, setIsLoading] = useState(false)
   const [modalRequest, setModalRequest] = useState<AccessRequest | null>(null)
   const [page, setPage] = useState(0)
 
@@ -51,12 +93,37 @@ export function FacilityAccessManagePage() {
     { type: 'input', label: '승인상태', ref: approvalStatusRef },
   ]
 
+  // 내부 더미 API 연동 로직
   const loadAccessManage = async (params: AccessRequestSearchParams) => {
     setIsLoading(true)
     try {
-      const data = await fetchAccessRequest(params)
-      setAccessRequest(data)
-      setPage(0) // 검색 조건이 바뀌면 페이지를 첫 페이지로 초기화
+      await new Promise((resolve) => setTimeout(resolve, 200)) // 가상 딜레이
+
+      let filtered = [...rawData]
+
+      if (params.visitorName) {
+        filtered = filtered.filter((item) =>
+          item.visitorName.toLowerCase().includes(params.visitorName!.toLowerCase())
+        )
+      }
+      if (params.category) {
+        filtered = filtered.filter((item) =>
+          item.category.toLowerCase().includes(params.category!.toLowerCase())
+        )
+      }
+      if (params.zone) {
+        filtered = filtered.filter((item) =>
+          item.zone.toLowerCase().includes(params.zone!.toLowerCase())
+        )
+      }
+      if (params.approvalStatus) {
+        filtered = filtered.filter((item) =>
+          item.approvalStatus.toLowerCase().includes(params.approvalStatus!.toLowerCase())
+        )
+      }
+
+      setAccessRequest(filtered)
+      setPage(0)
     } catch (error) {
       console.error(error)
       window.alert('데이터를 불러오는 중 오류가 발생했습니다.')
@@ -65,11 +132,9 @@ export function FacilityAccessManagePage() {
     }
   }
 
-  // 컴포넌트 마운트 및 검색 조건 변경 시 실행
   useEffect(() => {
     loadAccessManage(searchParams)
-  }, [searchParams])
-
+  }, [searchParams, rawData])
 
   const handleSearch = () => {
     const params: AccessRequestSearchParams = {
@@ -78,7 +143,7 @@ export function FacilityAccessManagePage() {
       zone: zoneRef.current?.value.trim(),
       approvalStatus: approvalStatusRef.current?.value.trim(),
     }
-    setSearchParams(params) // 상태를 바꾸면 useEffect가 감지하여 로드합니다.
+    setSearchParams(params)
   }
 
   const handleReset = () => {
@@ -91,9 +156,8 @@ export function FacilityAccessManagePage() {
   const handleDelete = async (request: AccessRequest) => {
     if (window.confirm(`${request.visitorName}의 출입 신청을 삭제할까요?`)) {
       try {
-        await deleteAccessRequest(request.visitorName)
+        setRawData((prev) => prev.filter((item) => item !== request))
         window.alert('삭제되었습니다.')
-        loadAccessManage(searchParams) // 삭제 후 목록 리로드
       } catch (err) {
         window.alert('삭제에 실패했습니다.')
       }
@@ -103,10 +167,13 @@ export function FacilityAccessManagePage() {
   const handleSave = async (updated: Record<string, string>) => {
     if (!modalRequest) return
     try {
-      await updateAccessRequest(modalRequest.visitorName, updated)
+      setRawData((prev) =>
+        prev.map((item) =>
+          item === modalRequest ? ({ ...item, ...updated } as AccessRequest) : item
+        )
+      )
       window.alert('저장되었습니다.')
       setModalRequest(null)
-      loadAccessManage(searchParams) // 수정 후 목록 리로드
     } catch (err) {
       window.alert('저장에 실패했습니다.')
     }
@@ -182,14 +249,13 @@ export function FacilityAccessManagePage() {
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="출입 관리 목록" action="등록" onAction={() => window.alert('mock 동작입니다.')}>
+      <Panel title="출입 관리 목록" action="등록" onAction={() => window.alert('mock 등록 동작입니다.')}>
         {isLoading ? (
           <div className="py-10 text-center text-gray-500">데이터를 불러오는 중입니다...</div>
         ) : (
           <>
             <CusTable data={pagedRequests} columns={columns} onRowClick={setModalRequest} />
             <CusPagination page={page} totalPages={totalPages} totalCount={accessRequest.length} onPageChange={setPage} />
-
           </>
         )}
       </Panel>

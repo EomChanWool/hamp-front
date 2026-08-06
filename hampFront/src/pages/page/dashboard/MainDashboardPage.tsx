@@ -7,10 +7,10 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  Radar,
+  // RadarChart,
+  // PolarGrid,
+  // PolarAngleAxis,
+  // Radar,
 } from "recharts";
 import styles from "./MainDashboardPage.module.css";
 
@@ -122,7 +122,7 @@ const FIBER_TREND: TrendPoint[] = [
 const statusLabel: Record<LineStatus, string> = { on: "가동중", off: "정지", warn: "주의" };
 const badgeClass: Record<LineStatus, string> = { on: styles.badgeOn, off: styles.badgeOff, warn: styles.badgeWarn };
 const dotClass: Record<LineStatus, string> = { on: styles.dotOn, off: styles.dotOff, warn: styles.dotWarn };
-const nodeClass: Record<LineStatus, string> = { on: styles.nodeOn, off: styles.nodeOff, warn: styles.nodeWarn };
+// const nodeClass: Record<LineStatus, string> = { on: styles.nodeOn, off: styles.nodeOff, warn: styles.nodeWarn };
 
 function sum(nums: number[]) {
   return nums.reduce((a, b) => a + b, 0);
@@ -171,42 +171,42 @@ function KpiCard({
 }
 
 // ── 공정 흐름도 ───────────────────────────────────────────────────────────────
-function ProcessFlow({ processes }: { processes: ProcessUnit[] }) {
-  return (
-    <div className={styles.processFlow}>
-      {processes.map((p, i) => (
-        <div key={p.label} className={styles.processStep}>
-          <div className={`${styles.processNode} ${nodeClass[p.status]}`}>
-            <span className={`${styles.processDot} ${dotClass[p.status]}`} />
-            <span className={styles.processLabel}>{p.label}</span>
-          </div>
-          {i < processes.length - 1 && (
-            <div className={`${styles.processArrow} ${p.status === "off" ? styles.arrowOff : ""}`}>
-              <svg width="26" height="12" viewBox="0 0 26 12" fill="none">
-                <line
-                  x1="0"
-                  y1="6"
-                  x2="18"
-                  y2="6"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeDasharray={p.status === "off" ? "4 3" : "none"}
-                />
-                <polyline
-                  points="14,2 20,6 14,10"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  fill="none"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
+// function ProcessFlow({ processes }: { processes: ProcessUnit[] }) {
+//   return (
+//     <div className={styles.processFlow}>
+//       {processes.map((p, i) => (
+//         <div key={p.label} className={styles.processStep}>
+//           <div className={`${styles.processNode} ${nodeClass[p.status]}`}>
+//             <span className={`${styles.processDot} ${dotClass[p.status]}`} />
+//             <span className={styles.processLabel}>{p.label}</span>
+//           </div>
+//           {i < processes.length - 1 && (
+//             <div className={`${styles.processArrow} ${p.status === "off" ? styles.arrowOff : ""}`}>
+//               <svg width="26" height="12" viewBox="0 0 26 12" fill="none">
+//                 <line
+//                   x1="0"
+//                   y1="6"
+//                   x2="18"
+//                   y2="6"
+//                   stroke="currentColor"
+//                   strokeWidth="1.5"
+//                   strokeDasharray={p.status === "off" ? "4 3" : "none"}
+//                 />
+//                 <polyline
+//                   points="14,2 20,6 14,10"
+//                   stroke="currentColor"
+//                   strokeWidth="1.5"
+//                   fill="none"
+//                   strokeLinejoin="round"
+//                 />
+//               </svg>
+//             </div>
+//           )}
+//         </div>
+//       ))}
+//     </div>
+//   );
+// }
 
 // ── 생산라인 카드 ─────────────────────────────────────────────────────────────
 function LineCard({ line }: { line: ProductionLine }) {
@@ -285,78 +285,76 @@ function TrendChart({ data, accent }: { data: TrendPoint[]; accent: string }) {
 }
 
 // ── 불량 구성비 레이더차트 ─────────────────────────────────────────────────────
-function DefectRadar({ defects, accent }: { defects: DefectStat[]; accent: string }) {
-  const total = sum(defects.map((d) => d.count));
+// function DefectRadar({ defects, accent }: { defects: DefectStat[]; accent: string }) {
+//   const total = sum(defects.map((d) => d.count));
 
-  return (
-    <div className={styles.donutRow}>
-      <div className={styles.radarChartWrap}>
-        <ResponsiveContainer width={220} height={200}>
-          <RadarChart data={defects} outerRadius="80%">
-            <PolarGrid stroke="var(--border)" />
-            <PolarAngleAxis dataKey="type" tick={{ fontSize: 10, fill: "var(--text-muted)" }} />
-            <Radar
-              dataKey="count"
-              stroke={accent}
-              fill={accent}
-              fillOpacity={0.18}
-              strokeWidth={2}
-              dot={(dotProps: any) => {
-                const { cx, cy, index, key } = dotProps;
-                const color = defects[index]?.color ?? accent;
-                return (
-                  <circle key={key} cx={cx} cy={cy} r={5} fill={color} stroke="var(--bg-card)" strokeWidth={1.5} />
-                );
-              }}
-            />
-            <Tooltip
-              contentStyle={{
-                background: "var(--bg-card)",
-                border: "1px solid var(--border)",
-                borderRadius: 8,
-                fontSize: 12,
-              }}
-              labelStyle={{ color: "var(--text-muted)" }}
-              formatter={(v) => [`${Number(v)}건`, "불량건수"]}
-            />
-          </RadarChart>
-        </ResponsiveContainer>
-        <span className={styles.radarTotal}>
-          총 <strong>{total}</strong>건
-        </span>
-      </div>
-      <div className={styles.defectList}>
-        {defects.map((d) => (
-          <div key={d.type} className={styles.defectRow}>
-            <span className={styles.defectDot} style={{ background: d.color }} />
-            <span className={styles.defectType}>{d.type}</span>
-            <div className={styles.defectBar}>
-              <div
-                className={styles.defectBarFill}
-                style={{
-                  width: `${(d.count / Math.max(...defects.map((x) => x.count), 1)) * 100}%`,
-                  background: `linear-gradient(90deg, ${d.color}cc, ${d.color}55)`,
-                }}
-              />
-            </div>
-            <span className={styles.defectCount} style={{ color: d.color }}>
-              {d.count}건
-            </span>
-            <span className={styles.defectRate}>{d.rate}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+//   return (
+//     <div className={styles.donutRow}>
+//       <div className={styles.radarChartWrap}>
+//         <ResponsiveContainer width={220} height={200}>
+//           <RadarChart data={defects} outerRadius="80%">
+//             <PolarGrid stroke="var(--border)" />
+//             <PolarAngleAxis dataKey="type" tick={{ fontSize: 10, fill: "var(--text-muted)" }} />
+//             <Radar
+//               dataKey="count"
+//               stroke={accent}
+//               fill={accent}
+//               fillOpacity={0.18}
+//               strokeWidth={2}
+//               dot={(dotProps: any) => {
+//                 const { cx, cy, index, key } = dotProps;
+//                 const color = defects[index]?.color ?? accent;
+//                 return (
+//                   <circle key={key} cx={cx} cy={cy} r={5} fill={color} stroke="var(--bg-card)" strokeWidth={1.5} />
+//                 );
+//               }}
+//             />
+//             <Tooltip
+//               contentStyle={{
+//                 background: "var(--bg-card)",
+//                 border: "1px solid var(--border)",
+//                 borderRadius: 8,
+//                 fontSize: 12,
+//               }}
+//               labelStyle={{ color: "var(--text-muted)" }}
+//               formatter={(v) => [`${Number(v)}건`, "불량건수"]}
+//             />
+//           </RadarChart>
+//         </ResponsiveContainer>
+//         <span className={styles.radarTotal}>
+//           총 <strong>{total}</strong>건
+//         </span>
+//       </div>
+//       <div className={styles.defectList}>
+//         {defects.map((d) => (
+//           <div key={d.type} className={styles.defectRow}>
+//             <span className={styles.defectDot} style={{ background: d.color }} />
+//             <span className={styles.defectType}>{d.type}</span>
+//             <div className={styles.defectBar}>
+//               <div
+//                 className={styles.defectBarFill}
+//                 style={{
+//                   width: `${(d.count / Math.max(...defects.map((x) => x.count), 1)) * 100}%`,
+//                   background: `linear-gradient(90deg, ${d.color}cc, ${d.color}55)`,
+//                 }}
+//               />
+//             </div>
+//             <span className={styles.defectCount} style={{ color: d.color }}>
+//               {d.count}건
+//             </span>
+//             <span className={styles.defectRate}>{d.rate}%</span>
+//           </div>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// }
 
 // ── 공정 섹션 ─────────────────────────────────────────────────────────────────
 function ProcessSection({
   title,
   accent,
   lines,
-  processes,
-  defects,
   trend,
 }: {
   title: string;

@@ -6,7 +6,6 @@ import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
 import { paginate } from '@/utils/common'
-import { apiClient } from '@/api/apiClient'
 import { type SeedInventoryRow, type SeedInventorySearchParams, mockSeedInventory } from '@/types/seed/Seed'
 
 const PROCESS_TYPE_COLORS: Record<string, string> = {

@@ -5,17 +5,17 @@ import { CctvGrid } from '@components/cctv/CctvGrid'
 // import { useSearchFields } from '@/hooks/useSearchFields'
 // import { TablePanel } from '@components/table/TablePanel'
 import { useTableData } from '@/hooks/useTableData'
-import { buildTableRows } from '@/utils/buildTableRows'
+// import { buildTableRows } from '@/utils/buildTableRows'
 
 const DEF = mesScreens.facilityCctv
 
 export function FacilityCctvPage() {
-  const { filteredRows, setKeyword, modalRow, setModalRow, handleDelete, handleSave } =
+  const { filteredRows } =
     useTableData(DEF.rows)
   // const { fields: searchFields, getValue, resetFields } = useSearchFields(DEF.filters)
 
-  const fields = DEF.columns.map((label, i) => ({ label, key: `c${i}` }))
-  const tableRows = buildTableRows(filteredRows, DEF.columns.length, setModalRow, handleDelete, DEF.columns)
+  // const fields = DEF.columns.map((label, i) => ({ label, key: `c${i}` }))
+  // const tableRows = buildTableRows(filteredRows, DEF.columns.length, setModalRow, handleDelete, DEF.columns)
 
   return (
     <section className="screenStack">
