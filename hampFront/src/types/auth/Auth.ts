@@ -1,4 +1,5 @@
 import type { ApiResponse } from '@/types/Common';
+import type { MenuPermissionRequest, MenuPermissionResponse } from '@/types/Menu';
 
 /** 토큰 응답 데이터 */
 export interface TokenResponse {
@@ -31,16 +32,47 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
-/** 권한 그룹 응답 */
+/** 권한 그룹 응답 (리스트용) */
 export interface AuthGroupResponse {
   authId: string;
   authNm: string;
   authDesc: string;
 }
 
+/** 권한 그룹 생성 요청 */
+export interface AuthGroupCreateRequest {
+  authId: string;
+  authNm: string;
+  authDesc?: string;
+  menuPermissions: MenuPermissionRequest[];
+}
+
+/** 권한 그룹 수정 요청 */
+export interface AuthGroupUpdateRequest {
+  authNm: string;
+  authDesc?: string;
+  menuPermissions: MenuPermissionRequest[];
+}
+
+/** 권한 그룹 상세 응답 데이터 */
+export interface AuthGroupDetailResponse {
+  authId: string;
+  authNm: string;
+  authDesc: string;
+  userCount: number;
+  menuPermissions: MenuPermissionResponse[];
+}
+
+// ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 로그인 API 최종 응답 타입 */
 export type ApiResponseLoginResponse = ApiResponse<LoginResponse>;
 
+/** 권한 그룹 단건 응답 타입 */
+export type ApiResponseAuthGroupResponse = ApiResponse<AuthGroupResponse>;
+
 /** 권한 그룹 리스트 최종 응답 타입 */
 export type ApiResponseListAuthGroupResponse = ApiResponse<AuthGroupResponse[]>;
+
+/** 권한 그룹 상세 응답 타입 */
+export type ApiResponseAuthGroupDetailResponse = ApiResponse<AuthGroupDetailResponse>;
