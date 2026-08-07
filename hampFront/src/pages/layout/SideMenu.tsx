@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, matchPath } from "react-router-dom";
 import { FolderIcon, FolderOpenIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { menuRoutes } from "@/router";
+import { apiClient } from "@/api/apiClient";
+import type { ApiResponseListMenuResponse, MenuResponse } from "@/types/Menu";
 
 type SideMenuProps = {
   collapsed: boolean;
@@ -11,8 +13,28 @@ export function SideMenu({ collapsed }: SideMenuProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const [myMenus, setMyMenus] = useState<MenuResponse[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // 컴포넌트 마운트 시 /api/menus/my 호출
+  useEffect(() => {
+    const fetchMyMenus = async () => {
+      try {
+        const response = await apiClient.get<ApiResponseListMenuResponse>("/menus/my");
+        if (response.data && response.data.data) {
+          setMyMenus(response.data.data);
+        }
+      } catch (error) {
+        console.error("내 메뉴 목록 조회 실패:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMyMenus();
+  }, []);
+
   // 현재 URL 주소를 기반으로 활성화되어야 하는 대메뉴 그룹(group.title) 탐색
-  // (hidden 항목까지 포함하여 찾으므로, 등록 페이지 접속 시에도 해당 대메뉴가 열립니다)
   const currentActiveGroupTitle = (() => {
     if (location.pathname === "/") return null;
 
@@ -42,17 +64,41 @@ export function SideMenu({ collapsed }: SideMenuProps) {
     setOpenGroup((current) => (current === title ? null : title));
   };
 
+  if (isLoading) {
+    return (
+      <aside className="sidebar">
+        <div className="p-4 text-sm text-gray-400">메뉴 로딩중...</div>
+      </aside>
+    );
+  }
+
   return (
     <aside className="sidebar">
       <nav className="navMenu" aria-label="주 메뉴">
         {menuRoutes.map((group) => {
+          // 1. API(myMenus)에서 현재 대메뉴(group.title)와 일치하는 데이터 찾기
+          const matchedApiMenu = myMenus.find((m) => m.menuNm === group.title);
+
+          // 권한이 없으면(매칭되는 대메뉴가 없으면) 렌더링 안 함
+          if (!matchedApiMenu) return null;
+
+          // 2. 백엔드에서 허용된 소메뉴의 urlPath 목록 추출
+          const allowedSubUrls = matchedApiMenu.children
+            ? matchedApiMenu.children.map((child) => child.urlPath)
+            : [];
+
           const isOpen = openGroup === group.title;
           const hasActiveItem = currentActiveGroupTitle === group.title;
 
-          // 1. 화면 사이드바에 실제로 표시할 메뉴 항목 (hidden이 안 붙은 메뉴들만 필터링)
-          const visibleItems = group.items.filter((item) => !item.hidden);
+          // 3. 소메뉴 필터링: hidden이 아니면서, 백엔드가 허용한 urlPath에 포함되는 것만 추출
+          const visibleItems = group.items.filter((item) => {
+            if (item.hidden) return false;
 
-          // 만약 그룹 내 표시할 visibleItems가 하나도 없다면 해당 대메뉴 그룹 자체를 안 그림
+            const fullPath = `${group.path}/${item.path}`.replace(/\/+/g, "/");
+            return allowedSubUrls.includes(fullPath);
+          });
+
+          // 만약 권한이 있는 소메뉴가 하나도 없다면 해당 대메뉴 그룹 자체를 숨김
           if (visibleItems.length === 0) return null;
 
           return (
@@ -83,7 +129,6 @@ export function SideMenu({ collapsed }: SideMenuProps) {
 
               {/* 소메뉴 아이템 리스트 영역 */}
               <div className={`navItems ${isOpen && !collapsed ? "open" : ""}`}>
-                {/* 2. group.items 대신 visibleItems로 반복문 실행 */}
                 {visibleItems.map((item) => {
                   const fullPath = `${group.path}/${item.path}`.replace(/\/+/g, "/");
 

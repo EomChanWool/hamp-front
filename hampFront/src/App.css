@@ -953,9 +953,8 @@ button {
 }
 
 /* ================================
-   SIDEBAR
+   SIDEBAR (메인 틀: 스크롤 및 숨김 처리 제거)
 ================================ */
-
 .sidebar {
   color: var(--text-main);
   background: var(--bg-card);
@@ -964,11 +963,22 @@ button {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  height: 100%;
-  overflow-y: auto;
-  /* 화면 높이가 줄어들면 사이드바 내부 스크롤 생성 */
+  height: 100%; /* 전체 높이는 유지하되 */
+  /* overflow-y: auto; <-- 이 줄을 제거하여 서브메뉴가 바깥으로 튀어나갈 수 있게 함 */
+  overflow: visible; /* 팝업이 잘리지 않도록 허용 */
   box-sizing: border-box;
-  /* overflow-x: hidden; */
+}
+
+/* ================================
+   SIDEBAR MENU WRAPPER (내부 스크롤 영역)
+================================ */
+.sidebarMenuWrapper {
+  flex: 1;              /* 남은 공간을 모두 차지 */
+  overflow-y: auto;     /* 메뉴가 많을 경우 여기만 스크롤 생성 */
+  overflow-x: visible;  /* 가로 넘침은 허용 */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* ================================
