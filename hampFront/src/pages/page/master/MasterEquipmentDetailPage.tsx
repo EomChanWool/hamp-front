@@ -5,7 +5,8 @@ import { formatDateTime } from "@/utils/common";
 import { apiClient } from "@/api/apiClient";
 import axios from "axios";
 import type {
-  EquipmentResponse,
+  EquipmentDetailResponse,
+  ApiResponseEquipmentDetailResponse,
   ApiResponseEquipmentResponse,
   EquipmentUpdateRequest,
 } from "@/types/master/Equipment";
@@ -21,7 +22,7 @@ export function MasterEquipmentDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [equipment, setEquipment] = useState<EquipmentResponse | null>(null);
+  const [equipment, setEquipment] = useState<EquipmentDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -34,9 +35,13 @@ export function MasterEquipmentDetailPage() {
   const fields: Field[] = [
     { label: "장비코드", key: "eqCode", editable: false },
     { label: "공정코드", key: "operCode" },
+    { label: "공정명", key: "operNm", editable: false },
+    { label: "공정사용여부", key: "operUseYn", editable: false },
+    { label: "부서코드", key: "depCode", editable: false },
     { label: "장비명", key: "eqNm" },
     { label: "장비유형", key: "eqType" },
     { label: "제조사", key: "manufacturer" },
+    { label: "작업설명", key: "taskDesc" },
     { label: "생성일시", key: "createdAt", editable: false },
     { label: "수정일시", key: "updatedAt", editable: false },
   ];
@@ -51,7 +56,7 @@ export function MasterEquipmentDetailPage() {
 
       try {
         const encodedEqCode = encodeURIComponent(eqCode);
-        const response = await apiClient.get<ApiResponseEquipmentResponse>(
+        const response = await apiClient.get<ApiResponseEquipmentDetailResponse>(
           `/equipment/${encodedEqCode}`
         );
         const eqData = response.data.data;
@@ -61,9 +66,13 @@ export function MasterEquipmentDetailPage() {
           setForm({
             eqCode: eqData.eqCode,
             operCode: eqData.operCode || "",
+            operNm: eqData.operNm || "",
+            operUseYn: eqData.operUseYn || "",
+            depCode: eqData.depCode || "",
             eqNm: eqData.eqNm || "",
             eqType: eqData.eqType || "",
             manufacturer: eqData.manufacturer || "",
+            taskDesc: eqData.taskDesc || "",
             createdAt: formatDateTime(eqData.createdAt),
             updatedAt: formatDateTime(eqData.updatedAt),
           });
@@ -94,9 +103,13 @@ export function MasterEquipmentDetailPage() {
       setForm({
         eqCode: equipment.eqCode,
         operCode: equipment.operCode || "",
+        operNm: equipment.operNm || "",
+        operUseYn: equipment.operUseYn || "",
+        depCode: equipment.depCode || "",
         eqNm: equipment.eqNm || "",
         eqType: equipment.eqType || "",
         manufacturer: equipment.manufacturer || "",
+        taskDesc: equipment.taskDesc || "",
         createdAt: formatDateTime(equipment.createdAt),
         updatedAt: formatDateTime(equipment.updatedAt),
       });
@@ -124,6 +137,8 @@ export function MasterEquipmentDetailPage() {
 
       alert(response.data?.message || "수정되었습니다.");
 
+      // 수정 후 상세 정보를 다시 불러오거나 로컬 상태를 갱신합니다.
+      // (여기서는 수정된 입력값 반영)
       setEquipment((prev) =>
         prev
           ? {
