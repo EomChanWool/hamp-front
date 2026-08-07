@@ -6,42 +6,62 @@ import { formatDateTime } from "@/utils/common";
 import { apiClient } from "@/api/apiClient";
 import axios from "axios";
 import type { 
-  UserResponse, 
-  ApiResponseUserResponse, 
+  UserDetailResponse, 
+  ApiResponseUserDetailResponse, 
   UserUpdateRequest 
 } from "@/types/User";
-
-type Field = {
-  label: string;
-  key: string;
-  editable?: boolean;
-};
+import type { AuthGroupResponse, ApiResponseListAuthGroupResponse } from "@/types/auth/Auth";
 
 export function SystemUserDetailPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [user, setUser] = useState<UserResponse | null>(null);
+  const [user, setUser] = useState<UserDetailResponse | null>(null);
+  const [authGroups, setAuthGroups] = useState<AuthGroupResponse[]>([]);
+  
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeactivating, setIsDeactivating] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState<Record<string, string>>({});
+  
+  const [form, setForm] = useState<{
+    userNm: string;
+    phone: string;
+    position: string;
+    authIds: string[];
+  }>({
+    userNm: "",
+    phone: "",
+    position: "",
+    authIds: [],
+  });
 
-  const isBusy = isUpdating || isDeactivating;
+  const isBusy = isUpdating || isDeactivating || isLoadingGroups;
 
-  const fields: Field[] = [
-    { label: "사용자ID", key: "userId", editable: false },
-    { label: "이름", key: "userNm" },
-    { label: "전화번호", key: "phone" },
-    { label: "부서", key: "position" },
-    { label: "사용여부", key: "use", editable: false },
-    { label: "생성일시", key: "createdAt", editable: false },
-  ];
+  // 1. 전체 권한 그룹 목록 조회 (수정 모드 체크박스용)
+  useEffect(() => {
+    let isMounted = true;
+    const loadAuthGroups = async () => {
+      setIsLoadingGroups(true);
+      try {
+        const response = await apiClient.get<ApiResponseListAuthGroupResponse>("/auth-groups");
+        if (isMounted) {
+          setAuthGroups(response.data.data ?? []);
+        }
+      } catch (error) {
+        console.error("권한 그룹 목록 조회 실패:", error);
+      } finally {
+        if (isMounted) setIsLoadingGroups(false);
+      }
+    };
+    loadAuthGroups();
+    return () => { isMounted = false; };
+  }, []);
 
-  // 상세 데이터 조회
+  // 2. 사용자 상세 데이터 조회 (ApiResponseUserDetailResponse 사용)
   useEffect(() => {
     let isMounted = true;
 
@@ -51,18 +71,19 @@ export function SystemUserDetailPage() {
 
       try {
         const encodedUserId = encodeURIComponent(userId);
-        const response = await apiClient.get<ApiResponseUserResponse>(`/users/${encodedUserId}`);
+        const response = await apiClient.get<ApiResponseUserDetailResponse>(`/users/${encodedUserId}`);
         const userData = response.data.data;
 
         if (userData && isMounted) {
           setUser(userData);
+          // 서버에서 온 authGroups 객체 배열에서 authId들만 추출하여 폼에 세팅
+          const initialAuthIds = userData.authGroups?.map((g) => g.authId) || [];
+          
           setForm({
-            userId: userData.userId,
             userNm: userData.userNm || "",
             phone: userData.phone || "",
             position: userData.position || "",
-            use: userData.use ? "사용" : "미사용",
-            createdAt: formatDateTime(userData.createdAt),
+            authIds: initialAuthIds,
           });
         }
       } catch (error) {
@@ -72,32 +93,42 @@ export function SystemUserDetailPage() {
           navigate({ pathname: "/system/users", search: location.search });
         }
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     };
 
     fetchUserDetail();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [userId, navigate, location.search]);
 
   // 수정 모드 취소 시 롤백
   useEffect(() => {
     if (user && !isEditing) {
       setForm({
-        userId: user.userId,
         userNm: user.userNm || "",
         phone: user.phone || "",
         position: user.position || "",
-        use: user.use ? "사용" : "미사용",
-        createdAt: formatDateTime(user.createdAt),
+        authIds: user.authGroups?.map((g) => g.authId) || [],
       });
     }
   }, [isEditing, user]);
+
+  const handleChange = (key: "userNm" | "phone" | "position", value: string) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // 권한 체크박스 토글 핸들러
+  const handleAuthCheck = (authId: string, checked: boolean) => {
+    setForm((prev) => {
+      const currentAuthIds = prev.authIds || [];
+      return {
+        ...prev,
+        authIds: checked
+          ? [...currentAuthIds, authId]
+          : currentAuthIds.filter((id) => id !== authId),
+      };
+    });
+  };
 
   // 저장 처리 핸들러
   const handleSave = async () => {
@@ -107,6 +138,10 @@ export function SystemUserDetailPage() {
       alert("이름을 입력해주세요.");
       return;
     }
+    if (!form.authIds || form.authIds.length === 0) {
+      alert("최소 하나 이상의 권한 그룹을 선택해주세요.");
+      return;
+    }
 
     setIsUpdating(true);
     try {
@@ -114,24 +149,29 @@ export function SystemUserDetailPage() {
         userNm: form.userNm.trim(),
         phone: form.phone?.trim() ? form.phone.trim() : null,
         position: form.position?.trim() ? form.position.trim() : null,
+        authIds: form.authIds,
       };
 
       const encodedUserId = encodeURIComponent(user.userId);
-      const response = await apiClient.put<ApiResponseUserResponse>(
-        `/users/${encodedUserId}`,
-        updatePayload
-      );
+      await apiClient.put(`/users/${encodedUserId}`, updatePayload);
 
-      alert(response.data?.message || "수정되었습니다.");
+      alert("수정되었습니다.");
       
+      // 수정한 권한 목록을 기반으로 user state 내부의 authGroups도 즉시 갱신
+      const updatedAuthGroups = form.authIds.map((id) => {
+        const found = authGroups.find((g) => g.authId === id);
+        return { authId: id, authNm: found ? found.authNm : id };
+      });
+
       setUser((prev) => prev ? { 
         ...prev, 
         userNm: updatePayload.userNm,
         phone: updatePayload.phone ?? "",
         position: updatePayload.position ?? "",
+        authGroups: updatedAuthGroups,
       } : null);
       
-      setIsEditing(false); // 정상 저장 완료 후 조회 모드로 복귀
+      setIsEditing(false);
     } catch (err) {
       console.error("저장 실패:", err);
       const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
@@ -169,7 +209,7 @@ export function SystemUserDetailPage() {
     return (
       <section className="screenStack">
         <Panel title="사용자 상세 정보">
-          <div className="p-8 text-center">데이터를 불러오는 중입니다...</div>
+          <div className="p-8 text-center text-gray-400">데이터를 불러오는 중입니다...</div>
         </Panel>
       </section>
     );
@@ -180,40 +220,124 @@ export function SystemUserDetailPage() {
   return (
     <section className="screenStack">
       <Panel title={isEditing ? "사용자 정보 수정" : "사용자 상세 정보"}>
-        <form className="pageForm" onSubmit={handleSave}>
-          {fields.map(({ label, key, editable }) => (
-            <div key={key} className="detailField">
-              <label>{label}</label>
+        <form className="pageForm" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
+          
+          {/* 사용자 ID */}
+          <div className="detailField">
+            <label>사용자ID</label>
+            <div className="detailValue">{user.userId}</div>
+          </div>
 
-              {isEditing && editable !== false ? (
-                <input
-                  className="tableInput"
-                  value={form[key] ?? ""}
-                  disabled={isBusy}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      [key]: e.target.value,
-                    }))
-                  }
-                />
-              ) : (
-                <div className="detailValue">
-                  {key === "use" ? (
-                    <Badge tone={user.use ? "good" : "muted"}>
-                      {user.use ? "사용" : "미사용"}
-                    </Badge>
-                  ) : (
-                    form[key] || "-"
-                  )}
-                </div>
-              )}
+          {/* 이름 */}
+          <div className="detailField">
+            <label className={isEditing ? "requiredLabel" : ""}>
+              이름 {isEditing && <span className="required">*</span>}
+            </label>
+            {isEditing ? (
+              <input
+                className="tableInput"
+                value={form.userNm}
+                disabled={isBusy}
+                onChange={(e) => handleChange("userNm", e.target.value)}
+                placeholder="이름 입력"
+              />
+            ) : (
+              <div className="detailValue">{user.userNm || "-"}</div>
+            )}
+          </div>
+
+          {/* 전화번호 */}
+          <div className="detailField">
+            <label>전화번호</label>
+            {isEditing ? (
+              <input
+                className="tableInput"
+                value={form.phone}
+                disabled={isBusy}
+                onChange={(e) => handleChange("phone", e.target.value)}
+                placeholder="010-0000-0000"
+              />
+            ) : (
+              <div className="detailValue">{user.phone || "-"}</div>
+            )}
+          </div>
+
+          {/* 부서 */}
+          <div className="detailField">
+            <label>부서</label>
+            {isEditing ? (
+              <input
+                className="tableInput"
+                value={form.position}
+                disabled={isBusy}
+                onChange={(e) => handleChange("position", e.target.value)}
+                placeholder="부서 입력"
+              />
+            ) : (
+              <div className="detailValue">{user.position || "-"}</div>
+            )}
+          </div>
+
+          {/* 사용여부 */}
+          <div className="detailField">
+            <label>사용여부</label>
+            <div className="detailValue">
+              <Badge tone={user.use ? "good" : "muted"}>
+                {user.use ? "사용" : "미사용"}
+              </Badge>
             </div>
-          ))}
+          </div>
 
-          {/* 상세 페이지용 푸터 (좌우 분리) */}
+          {/* 생성일시 */}
+          <div className="detailField">
+            <label>생성일시</label>
+            <div className="detailValue">{formatDateTime(user.createdAt)}</div>
+          </div>
+
+          {/* 권한 그룹 섹션 */}
+          <div className="detailField authGroupField">
+            <label className={isEditing ? "requiredLabel" : ""}>
+              권한 그룹 {isEditing && <span className="required">*</span>}
+            </label>
+
+            {isEditing ? (
+              isLoadingGroups ? (
+                <div className="authGroupEmpty">권한 그룹 목록을 불러오는 중...</div>
+              ) : authGroups.length === 0 ? (
+                <div className="authGroupEmpty">선택 가능한 권한 그룹이 없습니다.</div>
+              ) : (
+                <div className="authGroupList">
+                  {authGroups.map((auth) => {
+                    const isChecked = form.authIds?.includes(auth.authId) ?? false;
+                    return (
+                      <label
+                        key={auth.authId}
+                        className={`authGroupItem ${isChecked ? "checked" : ""}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          disabled={isBusy}
+                          onChange={(e) => handleAuthCheck(auth.authId, e.target.checked)}
+                        />
+                        <span>{auth.authNm}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )
+            ) : (
+              /* 조회 모드: 서버가 준 authGroups의 authNm들을 바로 나열 */
+              <div className="detailValue">
+                {user.authGroups && user.authGroups.length > 0
+                  ? user.authGroups.map((g) => g.authNm).join(", ")
+                  : "-"}
+              </div>
+            )}
+          </div>
+
+          {/* 하단 푸터 버튼 */}
           <div className="pageFormFooterSpaceBetween">
-            {/* 좌측: 수정 모드일 때만 나오는 비활성화 버튼 */}
             <div>
               {isEditing && user.use && (
                 <button
@@ -227,7 +351,6 @@ export function SystemUserDetailPage() {
               )}
             </div>
 
-            {/* 우측: 버튼 그룹 (인라인 스타일로 간격 8px 강제 적용) */}
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               {isEditing ? (
                 <>
