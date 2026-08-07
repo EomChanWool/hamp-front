@@ -39,6 +39,12 @@ export interface AuthGroupResponse {
   authDesc: string;
 }
 
+/** 권한 그룹 옵션 응답 데이터 */
+export interface AuthGroupOptionResponse {
+  authId: string;
+  authNm: string;
+}
+
 /** 권한 그룹 생성 요청 */
 export interface AuthGroupCreateRequest {
   authId: string;
@@ -73,6 +79,9 @@ export type ApiResponseAuthGroupResponse = ApiResponse<AuthGroupResponse>;
 
 /** 권한 그룹 리스트 최종 응답 타입 */
 export type ApiResponseListAuthGroupResponse = ApiResponse<AuthGroupResponse[]>;
+
+/** 권한 그룹 옵션 리스트 최종 응답 타입 */
+export type ApiResponseListAuthGroupOptionResponse = ApiResponse<AuthGroupOptionResponse[]>;
 
 /** 권한 그룹 상세 응답 타입 */
 export type ApiResponseAuthGroupDetailResponse = ApiResponse<AuthGroupDetailResponse>;
