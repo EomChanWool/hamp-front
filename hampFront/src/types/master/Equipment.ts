@@ -28,10 +28,28 @@ export interface EquipmentResponse {
   updatedAt: string;
 }
 
+/** 장비 상세 정보 응답 Data */
+export interface EquipmentDetailResponse {
+  eqCode: string;
+  operCode: string;
+  depCode: string;
+  taskDesc: string;
+  operNm: string;
+  operUseYn: string;
+  eqNm: string;
+  eqType: string;
+  manufacturer: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 장비 단건 조회/등록/수정 API 최종 응답 타입 */
 export type ApiResponseEquipmentResponse = ApiResponse<EquipmentResponse>;
+
+/** 장비 상세 조회 API 최종 응답 타입 */
+export type ApiResponseEquipmentDetailResponse = ApiResponse<EquipmentDetailResponse>;
 
 /** 장비 목록 페이징 데이터 타입 */
 export type PageEquipmentResponse = PageResponse<EquipmentResponse>;
