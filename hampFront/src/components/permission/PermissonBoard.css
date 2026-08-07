@@ -1,0 +1,739 @@
+/* ================================
+   PERMISSION BOARD
+   컬럼 폭은 --check-col 하나로 통일해서
+   헤더 / 서브행이 항상 픽셀 단위로 정렬되도록 함
+================================ */
+
+.permissionBoard {
+  --check-col: 56px;
+  --nav-col: 250px;
+  --radius-lg: 12px;
+  --radius-md: 8px;
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+
+.permBoardActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── 토스트 ── */
+
+.permToast {
+  position: absolute;
+  top: -14px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  animation: permToastIn 0.2s var(--ease);
+  z-index: 5;
+}
+
+.permToast svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.permToast.success {
+  background: #17875f;
+  color: #fff;
+}
+
+.permToast.error {
+  background: #d64545;
+  color: #fff;
+}
+
+@keyframes permToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── 역할 탭 (상단, 가로) ── */
+
+.permissionTabsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.permissionTabsBox {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.permissionTabsEmpty {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 8px 4px;
+}
+
+.permissionTab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 999px;
+  background: #fafafa;
+  white-space: nowrap;
+  transition: color 0.15s var(--ease), background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+
+.permissionTab:hover:not(:disabled) {
+  background: var(--bg-subtle);
+  color: var(--text-body);
+}
+
+.permissionTab:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.permissionTab.active {
+  background: #17875f;
+  color: #fff;
+  font-weight: 600;
+  border-color: transparent;
+}
+
+.permTabDirtyDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #e0a030;
+  flex-shrink: 0;
+}
+
+.permissionTab.active .permTabDirtyDot {
+  background: #fff;
+}
+
+.permissionDesc {
+  flex: 1 1 260px;
+  min-width: 200px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  padding: 8px 14px;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-subtle);
+  word-break: keep-all;
+  text-align: right;
+}
+
+/* ── 매트릭스 패널 (대메뉴 탭 + 서브메뉴 상세) ── */
+
+.permMatrixPanel {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* ── 툴바: 검색 + 변경사항 배지 ── */
+
+.permMatrixToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+}
+
+.permSearchBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 0 1 240px;
+}
+
+.permSearchIcon {
+  position: absolute;
+  left: 9px;
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.permSearchBox input {
+  width: 100%;
+  padding: 6px 28px 6px 28px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  color: var(--text-body);
+  outline: none;
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
+}
+
+.permSearchBox input:focus {
+  border-color: #17875f;
+  background: var(--bg-card);
+}
+
+.permSearchClear {
+  position: absolute;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 999px;
+}
+
+.permSearchClear:hover {
+  background: var(--border);
+}
+
+.permSearchClear svg {
+  width: 12px;
+  height: 12px;
+}
+
+.permDirtyBadge {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+}
+
+.permDirtyBadge.active {
+  color: #a5690a;
+  background: #fdf1de;
+  border-color: #f0d9ae;
+}
+
+[data-theme="dark"] .permDirtyBadge.active {
+  color: #e0a030;
+  background: rgba(224, 160, 48, 0.12);
+  border-color: rgba(224, 160, 48, 0.3);
+}
+
+/* ── 본문: 좌측 대메뉴 탭 + 우측 서브메뉴 상세 ── */
+
+.permMatrixBody {
+  display: flex;
+  min-height: 0;
+}
+
+/* ── 좌측 대메뉴 세로 탭 ── */
+
+.permMenuNav {
+  flex: 0 0 var(--nav-col);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border-right: 1px solid var(--border);
+  background: var(--bg-subtle);
+  max-height: min(560px, 60vh);
+  overflow-y: auto;
+}
+
+.permMenuNavItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-body);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+
+.permMenuNavItem:hover {
+  background: var(--bg-card);
+}
+
+.permMenuNavItem.active {
+  background: var(--bg-card);
+  color: #17875f;
+  font-weight: 700;
+}
+
+.permMenuNavLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.permMenuNavCount {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.permMenuNavItem.active .permMenuNavCount {
+  background: var(--primary-light);
+  color: #17875f;
+  border-color: transparent;
+}
+
+.permMenuNavArrow {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.15s var(--ease);
+}
+
+.permMenuNavItem.active .permMenuNavArrow {
+  opacity: 1;
+  color: #17875f;
+}
+
+.permNavEmpty {
+  padding: 16px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.permNavSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.permNavSkeletonRow {
+  height: 34px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-subtle) 37%, var(--bg-card) 63%);
+  background-size: 400% 100%;
+  animation: permShimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes permShimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+/* ── 우측 서브메뉴 상세 ── */
+
+.permMenuDetail {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.permDetailEmpty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.permMatrixHeader {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background: #eceff4;
+  border-bottom: 1px solid var(--border);
+}
+
+.permMatrixHeaderLabel {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.permCheckCellHeader {
+  flex-direction: column;
+  gap: 3px;
+}
+
+.permCheckCellHeader span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.permGroupListScroll {
+  max-height: min(560px, 60vh);
+  overflow-y: auto;
+}
+
+.permGroupListScroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.permGroupListScroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
+.permEmptyState {
+  padding: 40px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ── 하위 메뉴 트리 (depth 인덴트 가이드) ── */
+
+.permSubChildren {
+  display: flex;
+  flex-direction: column;
+}
+
+.permSubChildren .permSubChildren {
+  margin-left: 20px;
+  border-left: 1px dashed var(--border);
+}
+
+.permSubRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 16px;
+  transition: background 0.15s var(--ease);
+}
+
+.permSubRow:hover {
+  background: var(--bg-subtle);
+}
+
+.permSubLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-body);
+  min-width: 0;
+}
+
+.permSubToggleIcon {
+  width: 12px;
+  height: 12px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform 0.2s var(--ease);
+}
+
+.permSubToggleIcon.open {
+  transform: rotate(90deg);
+}
+
+.permSubDot {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+
+/* ── 체크박스 그룹 (헤더/서브 공용, --check-col 폭으로 완전 정렬) ── */
+
+.permCheckGroup {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.permCheckCell {
+  width: var(--check-col);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.permCheck {
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  border-radius: 5px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.1s var(--ease);
+}
+
+.permCheck:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+.permCheck:focus-visible {
+  outline: 2px solid #17875f;
+  outline-offset: 2px;
+}
+
+.permCheck.checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.permCheck.mixed {
+  background: var(--bg-card);
+  border-color: var(--primary);
+}
+
+.permCheck.mixed svg {
+  color: var(--primary);
+}
+
+.permCheck:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.permCheck svg {
+  width: 11px;
+  height: 11px;
+  color: #fff;
+}
+
+/* ── 하단 버튼 ── */
+
+.ghostButton {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+
+.ghostButton:hover:not(:disabled) {
+  background: var(--bg-subtle);
+  color: var(--text-body);
+}
+
+.primaryButton {
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: #17875f;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s var(--ease), opacity 0.15s var(--ease);
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: #146f4d;
+}
+
+.ghostButton:disabled,
+.primaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ── 반응형 ── */
+
+@media (max-width: 860px) {
+  .permissionBoard {
+    --nav-col: 160px;
+  }
+
+  .permissionDesc {
+    text-align: left;
+  }
+}
+
+@media (max-width: 640px) {
+  .permMatrixBody {
+    flex-direction: column;
+  }
+
+  .permMenuNav {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-height: none;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .permMenuNavItem {
+    flex-shrink: 0;
+    width: auto;
+  }
+
+  .permMenuNavLabel {
+    white-space: nowrap;
+  }
+}
+
+/* ── 다크모드 ── */
+
+[data-theme="dark"] .permissionBoard {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .permissionTab {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .permissionTab:hover:not(:disabled) {
+  background: #1e2130;
+  color: var(--text-main);
+}
+
+[data-theme="dark"] .permissionTab.active {
+  background: #17875f;
+  color: #fff;
+}
+
+[data-theme="dark"] .permissionDesc {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .permMatrixToolbar {
+  background: var(--bg-card);
+}
+
+[data-theme="dark"] .permSearchBox input {
+  background: var(--bg-subtle);
+}
+
+[data-theme="dark"] .permMenuNav {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .permMenuNavItem:hover {
+  background: #1e2130;
+}
+
+[data-theme="dark"] .permMenuNavItem.active {
+  background: #1e2130;
+  color: #57d3a1;
+  box-shadow: inset 3px 0 0 #57d3a1;
+}
+
+[data-theme="dark"] .permMenuNavIndicator.checked {
+  background: #57d3a1;
+}
+
+[data-theme="dark"] .permMatrixHeader {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .permSubRow:hover {
+  background: #1e2130;
+}
+
+[data-theme="dark"] .permCheck {
+  border-color: var(--border);
+  background: var(--bg-subtle);
+}
+
+[data-theme="dark"] .permCheck.checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+[data-theme="dark"] .permCheck.mixed {
+  background: var(--bg-card);
+}
+
+[data-theme="dark"] .permNavSkeletonRow {
+  background: linear-gradient(90deg, var(--bg-card) 25%, #1e2130 37%, var(--bg-card) 63%);
+  background-size: 400% 100%;
+}
+
+/* ── 모션 최소화 환경 ── */
+
+@media (prefers-reduced-motion: reduce) {
+  .permissionTab,
+  .permMenuNavItem,
+  .permSubRow,
+  .permCheck,
+  .permSubToggleIcon,
+  .permMenuNavArrow,
+  .permToast,
+  .permNavSkeletonRow {
+    transition: none;
+    animation: none;
+  }
+}
