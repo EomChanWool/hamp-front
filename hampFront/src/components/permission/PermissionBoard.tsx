@@ -72,7 +72,11 @@ function PermCheckbox({
   );
 }
 
-export function PermissionBoard() {
+interface PermissionBoardProps {
+  searchParams?: Record<string, string>;
+}
+
+export function PermissionBoard({ searchParams = {}}: PermissionBoardProps) {
   const [authGroups, setAuthGroups] = useState<AuthGroupResponse[]>([]);
   const [activeAuthId, setActiveAuthId] = useState<string | null>(null);
   const [groupDetail, setGroupDetail] = useState<AuthGroupDetailResponse | null>(null);
@@ -104,8 +108,16 @@ export function PermissionBoard() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
+         const cleanedParams = Object.entries(searchParams).reduce(
+          (acc, [key, value]) => {
+            if (value && value.trim() !== '') acc[key] = value.trim();
+            return acc;
+          },
+          {} as Record<string, string>,
+        );
+
         const [authRes, menuRes] = await Promise.all([
-          apiClient.get<ApiResponseListAuthGroupResponse>("/auth-groups"),
+          apiClient.get<ApiResponseListAuthGroupResponse>("/auth-groups", {params: cleanedParams,}),
           apiClient.get<ApiResponseListMenuResponse>("/menus"),
         ]);
 
@@ -131,7 +143,7 @@ export function PermissionBoard() {
 
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!activeAuthId || menus.length === 0) return;
