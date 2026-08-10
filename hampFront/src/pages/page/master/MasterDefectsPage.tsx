@@ -384,6 +384,7 @@ export function MasterDefectsPage() {
         cell: ({ row }) => {
           const isEditing = row.original.defCode === editingDefCode;
           const isDeleting = isDeletingDefCode === row.original.defCode;
+          const isUsed = row.original.useYn === "Y";
 
           if (isEditing) {
             return (
@@ -421,7 +422,7 @@ export function MasterDefectsPage() {
               <button
                 type="button"
                 className="miniButton danger"
-                disabled={editingDefCode !== null || isDeleting}
+                disabled={editingDefCode !== null || isDeleting || !isUsed}
                 onClick={() => handleDeleteDefect(row.original.defCode)}
               >
                 {isDeleting ? "삭제 중" : "삭제"}
