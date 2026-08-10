@@ -8,6 +8,16 @@ declare module 'axios' {
   }
 }
 
+// ── 브라우저 완전 종료 감지 및 토큰 정리 ──────────────────────────────────────
+// 새로고침 시에는 sessionStorage가 유지되지만, 브라우저/탭을 닫으면 사라집니다.
+// 이를 이용해 브라우저가 새로 켜진 것인지(종료 후 재시작) 판별합니다.
+if (!sessionStorage.getItem('session_alive')) {
+  // 브라우저를 완전히 닫았다가 켰을 때만 로컬스토리지의 토큰을 강제 삭제
+  localStorage.removeItem('token')
+}
+// 현재 세션이 살아있음을 표시
+sessionStorage.setItem('session_alive', 'true')
+
 export const apiClient = axios.create({
   baseURL: '/api',
   timeout: 60000,
