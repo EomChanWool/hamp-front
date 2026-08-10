@@ -137,25 +137,6 @@ export function SystemUsersPage() {
         header: "생성일시",
         cell: ({ getValue }) => formatDateTime(getValue<string>()),
       },
-      {
-        id: "actions",
-        header: "관리",
-        meta: { width: "100px" },
-        cell: ({ row }) => (
-          <div className="rowActions">
-            <button
-              type="button"
-              className="miniButton"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleRowClick(row.original.userId);
-              }}
-            >
-              상세
-            </button>
-          </div>
-        ),
-      },
     ],
     [searchParams]
   );

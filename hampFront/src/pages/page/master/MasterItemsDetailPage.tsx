@@ -636,7 +636,7 @@ export function MasterItemsDetailPage() {
                     }
                     disabled={isBusy}
                   >
-                    취소
+                    목록
                   </button>
                   <button
                     type="button"
