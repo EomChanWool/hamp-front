@@ -211,21 +211,36 @@ export function MasterItemsPage() {
         header: "품목구분",
         cell: ({ getValue }) => CATEGORY_LABEL[getValue<ItemCategory>()] ?? getValue(),
       },
-      { accessorKey: "itemNm", header: "품목명" },
-      { accessorKey: "unit", header: "단위" },
-      { accessorKey: "standard", header: "규격" },
-       {
-              accessorKey: "useYn",
-              header: "사용여부",
-              cell: ({ getValue }) => {
-                const isUse = getValue<string>() === "Y";
-                return (
-                  <Badge tone={isUse ? "good" : "muted"}>
-                    {isUse ? "사용" : "미사용"}
-                  </Badge>
-                );
-              },
-            },
+      {
+        accessorKey: "itemNm", header: "품목명", cell: ({ getValue }) => {
+          const val = getValue<string>();
+          return val ? val : "-";
+        },
+      },
+      {
+        accessorKey: "unit", header: "단위", cell: ({ getValue }) => {
+          const val = getValue<string>();
+          return val ? val : "-";
+        },
+      },
+      {
+        accessorKey: "standard", header: "규격", cell: ({ getValue }) => {
+          const val = getValue<string>();
+          return val ? val : "-";
+        },
+      },
+      {
+        accessorKey: "useYn",
+        header: "사용여부",
+        cell: ({ getValue }) => {
+          const isUse = getValue<string>() === "Y";
+          return (
+            <Badge tone={isUse ? "good" : "muted"}>
+              {isUse ? "사용" : "미사용"}
+            </Badge>
+          );
+        },
+      },
       {
         accessorKey: "createdAt",
         header: "생성일시",

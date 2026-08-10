@@ -249,6 +249,34 @@ export function PermissionBoard({ searchParams = {} }: PermissionBoardProps) {
   const handleSave = async () => {
     if (!groupDetail || isSaving || !isDirty) return;
 
+    // '사용자 권한관리' 메뉴의 수정(update) 권한이 해제되는지 확인 (조회는 백엔드에서 처리하므로 제외)
+    const flattenMenus = (menuList: MenuResponse[]): MenuResponse[] =>
+      menuList.reduce<MenuResponse[]>((acc, menu) => {
+        acc.push(menu);
+        if (menu.children && menu.children.length > 0) {
+          acc.push(...flattenMenus(menu.children));
+        }
+        return acc;
+      }, []);
+
+    const allMenus = flattenMenus(menus);
+    const permManagementMenus = allMenus.filter(
+      (m) => m.menuNm.includes("권한관리") || m.menuNm.includes("사용자 권한")
+    );
+
+    const isRevokingAuthMgmtUpdate = permManagementMenus.some((menu) => {
+      const targetPerm = permState[menu.menuId];
+      return targetPerm && targetPerm.update === false;
+    });
+
+    if (isRevokingAuthMgmtUpdate) {
+      const confirmRevoke = window.confirm(
+        "사용자 권한관리 메뉴의 수정 권한을 해제하려고 합니다.\n" +
+        "저장할 경우 더 이상 이 페이지에서 권한을 수정할 수 없게 됩니다.\n\n정말 변경하시겠습니까?"
+      );
+      if (!confirmRevoke) return;
+    }
+
     setIsSaving(true);
     try {
       const menuPermissions: MenuPermissionRequest[] = Object.entries(permState).map(([menuIdStr, perms]) => ({

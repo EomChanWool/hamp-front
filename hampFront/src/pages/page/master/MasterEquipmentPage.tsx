@@ -163,10 +163,22 @@ export function MasterEquipmentPage() {
   const columns: ColumnDef<EquipmentResponse>[] = useMemo(
     () => [
       { accessorKey: "eqCode", header: "장비코드" },
-      { accessorKey: "operCode", header: "공정코드" },
-      { accessorKey: "eqNm", header: "장비명" },
-      { accessorKey: "eqType", header: "장비유형" },
-      { accessorKey: "manufacturer", header: "제조사" },
+      { accessorKey: "operCode", header: "공정코드", cell: ({ getValue }) => {
+          const val = getValue<string>();
+          return val ? val : "-";
+        }, },
+      { accessorKey: "eqNm", header: "장비명", cell: ({ getValue }) => {
+          const val = getValue<string>();
+          return val ? val : "-";
+        }, },
+      { accessorKey: "eqType", header: "장비유형", cell: ({ getValue }) => {
+          const val = getValue<string>();
+          return val ? val : "-";
+        }, },
+      { accessorKey: "manufacturer", header: "제조사", cell: ({ getValue }) => {
+          const val = getValue<string>();
+          return val ? val : "-";
+        }, },
       {
         accessorKey: "createdAt",
         header: "생성일시",

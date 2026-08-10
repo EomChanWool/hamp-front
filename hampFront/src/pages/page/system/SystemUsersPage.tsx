@@ -121,8 +121,16 @@ export function SystemUsersPage() {
     () => [
       { accessorKey: "userId", header: "사용자ID" },
       { accessorKey: "userNm", header: "이름" },
-      { accessorKey: "phone", header: "전화번호" },
-      { accessorKey: "position", header: "부서" },
+      {
+        accessorKey: "phone", header: "전화번호", cell: ({ getValue }) => {
+          const val = getValue<string>();
+          return val ? val : "-";
+        },
+      },
+      { accessorKey: "position", header: "부서", cell: ({ getValue }) => {
+          const val = getValue<string>();
+          return val ? val : "-";
+        }, },
       {
         accessorKey: "use",
         header: "사용여부",
@@ -135,7 +143,10 @@ export function SystemUsersPage() {
       {
         accessorKey: "createdAt",
         header: "생성일시",
-        cell: ({ getValue }) => formatDateTime(getValue<string>()),
+        cell: ({ getValue }) => {
+          const val = getValue<string>();
+          return val ? formatDateTime(val) : "-";
+        },
       },
     ],
     [searchParams]
