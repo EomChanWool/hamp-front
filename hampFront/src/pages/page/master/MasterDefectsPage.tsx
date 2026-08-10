@@ -258,7 +258,7 @@ export function MasterDefectsPage() {
   const handleDeleteDefect = async (defCode: string) => {
     if (isDeletingDefCode) return;
 
-    const confirmed = window.confirm(`[${defCode}] 불량 항목을 삭제하시겠습니까?`);
+    const confirmed = window.confirm(`[${defCode}] 불량 항목을 삭제(비활성화)하시겠습니까?`);
     if (!confirmed) return;
 
     setIsDeletingDefCode(defCode);
@@ -266,7 +266,7 @@ export function MasterDefectsPage() {
       const encodedDefCode = encodeURIComponent(defCode);
       await apiClient.delete(`/defects/${encodedDefCode}`);
 
-      window.alert("불량 항목이 삭제되었습니다.");
+      window.alert("불량 항목이 삭제(비활성화)되었습니다.");
       await loadDefects();
     } catch (error) {
       console.error("불량 삭제 실패:", error);
