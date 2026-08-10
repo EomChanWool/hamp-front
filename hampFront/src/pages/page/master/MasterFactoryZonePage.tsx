@@ -361,7 +361,7 @@ export function MasterFactoryZonePage() {
                 </button>
                 <button
                   type="button"
-                  className="miniButton ghostButton"
+                  className="miniButton danger"
                   disabled={isUpdating}
                   onClick={handleCancelEdit}
                 >

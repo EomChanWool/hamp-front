@@ -367,7 +367,7 @@ export function MasterDepartmentPage() {
                 </button>
                 <button
                   type="button"
-                  className="miniButton ghostButton"
+                  className="miniButton danger"
                   disabled={isUpdating}
                   onClick={handleCancelEdit}
                 >
