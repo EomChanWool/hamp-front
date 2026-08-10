@@ -271,7 +271,7 @@ export function MasterEquipmentDetailPage() {
                     onClick={() => navigate({ pathname: "/master/equipment", search: location.search })}
                     disabled={isBusy}
                   >
-                    취소
+                    목록
                   </button>
                   <button
                     type="button"

@@ -379,7 +379,7 @@ export function SystemUserDetailPage() {
                     onClick={() => navigate({ pathname: "/system/users", search: location.search })}
                     disabled={isBusy}
                   >
-                    취소
+                    목록
                   </button>
                   <button
                     type="button"
