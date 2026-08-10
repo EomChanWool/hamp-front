@@ -17,30 +17,12 @@ import type {
   AuthGroupUpdateRequest,
 } from "@/types/auth/Auth";
 import type { MenuPermissionRequest, MenuResponse, ApiResponseListMenuResponse } from "@/types/Menu";
+import { usePermission, PERMISSIONS } from "@/hooks/usePermission";
+import type { CheckState, PermRecord } from "@/hooks/usePermission";
 import "./PermissonBoard.css";
 
-const PERMISSIONS = [
-  { label: "조회", key: "read" },
-  { label: "등록", key: "create" },
-  { label: "수정", key: "update" },
-  { label: "삭제", key: "delete" },
-  { label: "승인", key: "approve" },
-] as const;
-
-type PermKey = (typeof PERMISSIONS)[number]["key"];
-type PermRecord = Record<PermKey, boolean>;
-type CheckState = "checked" | "unchecked" | "mixed";
-
-const EMPTY_PERM: PermRecord = {
-  read: false,
-  create: false,
-  update: false,
-  delete: false,
-  approve: false,
-};
-
 /* ================================
-   접근성 체크박스 (3-state: checked / unchecked / mixed)
+    접근성 체크박스 (3-state: checked / unchecked / mixed)
 ================================ */
 function PermCheckbox({
   state,
@@ -76,7 +58,7 @@ interface PermissionBoardProps {
   searchParams?: Record<string, string>;
 }
 
-export function PermissionBoard({ searchParams = {}}: PermissionBoardProps) {
+export function PermissionBoard({ searchParams = {} }: PermissionBoardProps) {
   const [authGroups, setAuthGroups] = useState<AuthGroupResponse[]>([]);
   const [activeAuthId, setActiveAuthId] = useState<string | null>(null);
   const [groupDetail, setGroupDetail] = useState<AuthGroupDetailResponse | null>(null);
@@ -84,15 +66,25 @@ export function PermissionBoard({ searchParams = {}}: PermissionBoardProps) {
   const [menus, setMenus] = useState<MenuResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  // 우측 상세 패널에 표시 중인 대메뉴
+  // 우측 상세 패널에 표시 중인 대메뉴 및 서브메뉴 펼침 상태
   const [activeTopMenuId, setActiveTopMenuId] = useState<number | null>(null);
-  // 서브메뉴 내부의 손자 트리(자식이 또 있는 항목) 펼침 상태 - 기본 접힘
   const [collapsedSub, setCollapsedSub] = useState<Record<number, boolean>>({});
 
-  const [permState, setPermState] = useState<Record<number, PermRecord>>({});
-  const [originalPermState, setOriginalPermState] = useState<Record<number, PermRecord>>({});
+  // usePermission 훅 연동
+  const {
+    permState,
+    initializePerms,
+    getCheckState,
+    handleToggle,
+    handleGroupPermToggle,
+    dirtyMenuCount,
+    isDirty,
+    resetPerms,
+    commitPerms,
+  } = usePermission(menus);
 
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -104,27 +96,32 @@ export function PermissionBoard({ searchParams = {}}: PermissionBoardProps) {
     toastTimer.current = setTimeout(() => setToast(null), 2600);
   }, []);
 
+  // 1. 초기 데이터(권한 그룹 목록, 전체 메뉴) 로드
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-         const cleanedParams = Object.entries(searchParams).reduce(
+        const cleanedParams = Object.entries(searchParams).reduce(
           (acc, [key, value]) => {
-            if (value && value.trim() !== '') acc[key] = value.trim();
+            if (value && value.trim() !== "") acc[key] = value.trim();
             return acc;
           },
-          {} as Record<string, string>,
+          {} as Record<string, string>
         );
 
         const [authRes, menuRes] = await Promise.all([
-          apiClient.get<ApiResponseListAuthGroupResponse>("/auth-groups", {params: cleanedParams,}),
+          apiClient.get<ApiResponseListAuthGroupResponse>("/auth-groups", { params: cleanedParams }),
           apiClient.get<ApiResponseListMenuResponse>("/menus"),
         ]);
 
         const groups = authRes.data.data;
         if (groups && groups.length > 0) {
           setAuthGroups(groups);
-          setActiveAuthId(groups[0].authId);
+          setActiveAuthId((prev) => (prev && groups.some((g) => g.authId === prev) ? prev : groups[0].authId));
+        } else {
+          setAuthGroups([]);
+          setActiveAuthId(null);
+          setGroupDetail(null);
         }
 
         if (menuRes.data.data) {
@@ -145,6 +142,7 @@ export function PermissionBoard({ searchParams = {}}: PermissionBoardProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  // 2. 선택된 권한 그룹의 상세 정보 및 매트릭스 권한 상태 동기화
   useEffect(() => {
     if (!activeAuthId || menus.length === 0) return;
 
@@ -158,7 +156,6 @@ export function PermissionBoard({ searchParams = {}}: PermissionBoardProps) {
           setGroupDetail(detail);
 
           const initialPerms: Record<number, PermRecord> = {};
-
           const flattenMenus = (menuList: MenuResponse[]): MenuResponse[] =>
             menuList.reduce<MenuResponse[]>((acc, menu) => {
               acc.push(menu);
@@ -180,8 +177,9 @@ export function PermissionBoard({ searchParams = {}}: PermissionBoardProps) {
               approve: found?.approve ?? false,
             };
           });
-          setPermState(initialPerms);
-          setOriginalPermState(initialPerms);
+
+          // 훅의 초기화 함수 호출
+          initializePerms(initialPerms);
         }
       } catch (error) {
         console.error("권한 그룹 상세 조회 실패:", error);
@@ -194,98 +192,45 @@ export function PermissionBoard({ searchParams = {}}: PermissionBoardProps) {
     fetchGroupDetail();
   }, [activeAuthId, menus, showToast]);
 
-  /* ── 트리 유틸 ── */
-  const findMenuNode = (list: MenuResponse[], id: number): MenuResponse | null => {
-    for (const m of list) {
-      if (m.menuId === id) return m;
-      if (m.children && m.children.length > 0) {
-        const found = findMenuNode(m.children, id);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
-  const getAllDescendantIds = (menu: MenuResponse): number[] => {
-    let ids: number[] = [menu.menuId];
-    if (menu.children) {
-      for (const child of menu.children) {
-        ids.push(...getAllDescendantIds(child));
-      }
-    }
-    return ids;
-  };
-
-  const getCheckState = useCallback(
-    (menu: MenuResponse, permKey: PermKey): CheckState => {
-      const ids = getAllDescendantIds(menu);
-      if (ids.length === 0) return "unchecked";
-      const checkedCount = ids.filter((id) => permState[id]?.[permKey]).length;
-      if (checkedCount === 0) return "unchecked";
-      if (checkedCount === ids.length) return "checked";
-      return "mixed";
-    },
-    [permState]
-  );
-
-  const handleToggle = (menuId: number, permKey: PermKey) => {
-    if (!isEditing) return;
-
-    const targetMenu = findMenuNode(menus, menuId);
-    if (!targetMenu) return;
-
-    const descendantIds = getAllDescendantIds(targetMenu);
-    const currentValue = permState[menuId]?.[permKey] ?? false;
-    const newValue = !currentValue;
-
-    setPermState((prev) => {
-      const next = { ...prev };
-      descendantIds.forEach((id) => {
-        next[id] = { ...(next[id] || EMPTY_PERM), [permKey]: newValue };
-      });
-      return next;
-    });
-  };
-
-  const handleGroupPermToggle = (menu: MenuResponse, permKey: PermKey) => {
-    if (!isEditing) return;
-    const ids = getAllDescendantIds(menu);
-    const allChecked = ids.every((id) => permState[id]?.[permKey]);
-    const newValue = !allChecked;
-
-    setPermState((prev) => {
-      const next = { ...prev };
-      ids.forEach((id) => {
-        next[id] = { ...(next[id] || EMPTY_PERM), [permKey]: newValue };
-      });
-      return next;
-    });
-  };
-
-  /* ── 변경사항 추적 ── */
-  const dirtyMenuCount = useMemo(() => {
-    let count = 0;
-    const ids = new Set([...Object.keys(permState), ...Object.keys(originalPermState)]);
-    ids.forEach((idStr) => {
-      const id = Number(idStr);
-      const a = permState[id] || EMPTY_PERM;
-      const b = originalPermState[id] || EMPTY_PERM;
-      if (PERMISSIONS.some((p) => a[p.key] !== b[p.key])) count += 1;
-    });
-    return count;
-  }, [permState, originalPermState]);
-
-  const isDirty = dirtyMenuCount > 0;
-
   const handleStartEdit = () => {
-    setOriginalPermState(JSON.parse(JSON.stringify(permState)));
     setIsEditing(true);
   };
 
   const handleCancelEdit = () => {
     if (isDirty && !window.confirm("변경사항이 저장되지 않았습니다. 취소하시겠습니까?")) return;
-    setPermState(JSON.parse(JSON.stringify(originalPermState)));
+    resetPerms();
     setIsEditing(false);
+  };
+
+  // 권한 그룹 삭제 핸들러 추가
+  const handleDelete = async () => {
+    if (!activeAuthId || !groupDetail || isDeleting) return;
+
+    const confirmMsg = `"${groupDetail.authNm}" 권한 그룹을 삭제하시겠습니까?\n(이 권한 그룹을 사용 중인 회원이 없을 때만 삭제 가능합니다.)`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsDeleting(true);
+    try {
+      await apiClient.delete(`/auth-groups/${activeAuthId}`);
+      showToast("success", "권한 그룹이 삭제되었습니다.");
+
+      // 삭제된 그룹을 제외하고 목록 재설정 및 첫 번째 그룹 활성화
+      const updatedGroups = authGroups.filter((g) => g.authId !== activeAuthId);
+      setAuthGroups(updatedGroups);
+
+      if (updatedGroups.length > 0) {
+        setActiveAuthId(updatedGroups[0].authId);
+      } else {
+        setActiveAuthId(null);
+        setGroupDetail(null);
+      }
+    } catch (error) {
+      console.error("권한 그룹 삭제 실패:", error);
+      const msg = axios.isAxiosError(error) ? error.response?.data?.message : null;
+      showToast("error", msg || "삭제에 실패했습니다. (사용 중인 회원이 있는지 확인해주세요)");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const toggleSubCollapse = (menuId: number) => {
@@ -295,8 +240,6 @@ export function PermissionBoard({ searchParams = {}}: PermissionBoardProps) {
     });
   };
 
-  // 대메뉴 전환: 수정 중 변경사항이 있으면 이동을 막고 저장/취소부터 하도록 안내.
-  // 편집 모드였지만 실제 변경사항이 없었다면 조용히 초기화하고 이동.
   const handleTopMenuSelect = (menuId: number) => {
     if (menuId === activeTopMenuId) return;
 
@@ -305,7 +248,7 @@ export function PermissionBoard({ searchParams = {}}: PermissionBoardProps) {
         window.alert("변경사항이 저장되지 않았습니다. 먼저 저장하거나 취소해주세요.");
         return;
       }
-      setPermState(JSON.parse(JSON.stringify(originalPermState)));
+      resetPerms();
       setIsEditing(false);
     }
 
@@ -335,7 +278,7 @@ export function PermissionBoard({ searchParams = {}}: PermissionBoardProps) {
       await apiClient.put(`/auth-groups/${groupDetail.authId}`, updatePayload);
       showToast("success", "권한 설정이 저장되었습니다.");
 
-      setOriginalPermState(JSON.parse(JSON.stringify(permState)));
+      commitPerms();
       setIsEditing(false);
     } catch (error) {
       console.error("권한 수정 실패:", error);
@@ -346,7 +289,7 @@ export function PermissionBoard({ searchParams = {}}: PermissionBoardProps) {
     }
   };
 
-  /* ── 검색 필터: 이름이 일치하거나 하위에 일치 항목이 있으면 유지 ── */
+  /* ── 검색 필터 트리 가공 ── */
   const normalizedQuery = query.trim().toLowerCase();
   const isSearching = normalizedQuery.length > 0;
 
@@ -363,13 +306,11 @@ export function PermissionBoard({ searchParams = {}}: PermissionBoardProps) {
     [normalizedQuery]
   );
 
-  // 좌측 대메뉴 탭 목록 (검색 시 매칭되는 대메뉴만)
   const visibleTopMenus = useMemo(
     () => (isSearching ? filterTree(menus) : menus),
     [isSearching, filterTree, menus]
   );
 
-  // 검색 결과에 현재 선택된 대메뉴가 더 이상 없으면 첫 번째 매칭 항목으로 이동
   useEffect(() => {
     if (visibleTopMenus.length === 0) return;
     if (!visibleTopMenus.some((m) => m.menuId === activeTopMenuId)) {
@@ -380,7 +321,7 @@ export function PermissionBoard({ searchParams = {}}: PermissionBoardProps) {
   const activeTopMenu = visibleTopMenus.find((m) => m.menuId === activeTopMenuId) ?? null;
   const activeRole = authGroups.find((g) => g.authId === activeAuthId);
 
-  /* ── 하위 트리 렌더링 (depth 기반 인덴트 가이드 포함) ── */
+  /* ── 하위 트리 렌더링 ── */
   const renderSubTree = (menuList: MenuResponse[], depth = 1) => (
     <div className="permSubChildren" style={{ ["--depth" as string]: depth }}>
       {menuList.map((menu) => {
@@ -454,6 +395,10 @@ export function PermissionBoard({ searchParams = {}}: PermissionBoardProps) {
               disabled={isEditing && role.authId !== activeAuthId}
             >
               <span>{role.authNm}</span>
+              {/* userCount 표시 부분 */}
+              <span className="permTabUserCount" style={{ fontSize: "0.85em", opacity: 0.8 }}>
+                ({role.userCount ?? 0}명)
+              </span>
               {role.authId === activeAuthId && isDirty && <span className="permTabDirtyDot" aria-hidden />}
             </button>
           ))}
@@ -500,9 +445,19 @@ export function PermissionBoard({ searchParams = {}}: PermissionBoardProps) {
                 </button>
               </>
             ) : (
-              <button type="button" className="primaryButton" onClick={handleStartEdit} disabled={!groupDetail}>
-                수정
-              </button>
+              <>
+                <button type="button" className="primaryButton" onClick={handleStartEdit} disabled={!groupDetail}>
+                  수정
+                </button>
+                <button
+                  type="button"
+                  className="dangerButton"
+                  onClick={handleDelete}
+                  disabled={!groupDetail || isDeleting}
+                >
+                  {isDeleting ? "삭제 중..." : "삭제"}
+                </button>
+              </>
             )}
           </div>
         </div>
