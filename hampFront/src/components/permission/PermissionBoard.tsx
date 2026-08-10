@@ -240,18 +240,9 @@ export function PermissionBoard({ searchParams = {} }: PermissionBoardProps) {
     });
   };
 
+  // 대메뉴 변경 시 수정 상태(isEditing)와 변경된 권한 상태(permState)를 유지하도록 변경
   const handleTopMenuSelect = (menuId: number) => {
     if (menuId === activeTopMenuId) return;
-
-    if (isEditing) {
-      if (isDirty) {
-        window.alert("변경사항이 저장되지 않았습니다. 먼저 저장하거나 취소해주세요.");
-        return;
-      }
-      resetPerms();
-      setIsEditing(false);
-    }
-
     setActiveTopMenuId(menuId);
   };
 
