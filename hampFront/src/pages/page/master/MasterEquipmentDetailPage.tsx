@@ -41,61 +41,54 @@ export function MasterEquipmentDetailPage() {
     { label: "장비명", key: "eqNm" },
     { label: "장비유형", key: "eqType" },
     { label: "제조사", key: "manufacturer" },
-    { label: "작업설명", key: "taskDesc" },
+    { label: "작업설명", key: "taskDesc", editable: false },
     { label: "생성일시", key: "createdAt", editable: false },
     { label: "수정일시", key: "updatedAt", editable: false },
   ];
 
-  // 상세 데이터 조회
-  useEffect(() => {
-    let isMounted = true;
+  // 상세 데이터 조회 함수
+  const fetchEquipmentDetail = async () => {
+    if (!eqCode) return;
+    setIsLoading(true);
 
-    const fetchEquipmentDetail = async () => {
-      if (!eqCode) return;
-      setIsLoading(true);
+    try {
+      const encodedEqCode = encodeURIComponent(eqCode);
+      const response = await apiClient.get<ApiResponseEquipmentDetailResponse>(
+        `/equipment/${encodedEqCode}`
+      );
+      const eqData = response.data.data;
 
-      try {
-        const encodedEqCode = encodeURIComponent(eqCode);
-        const response = await apiClient.get<ApiResponseEquipmentDetailResponse>(
-          `/equipment/${encodedEqCode}`
-        );
-        const eqData = response.data.data;
-
-        if (eqData && isMounted) {
-          setEquipment(eqData);
-          setForm({
-            eqCode: eqData.eqCode,
-            operCode: eqData.operCode || "",
-            operNm: eqData.operNm || "",
-            operUseYn: eqData.operUseYn || "",
-            depCode: eqData.depCode || "",
-            eqNm: eqData.eqNm || "",
-            eqType: eqData.eqType || "",
-            manufacturer: eqData.manufacturer || "",
-            taskDesc: eqData.taskDesc || "",
-            createdAt: formatDateTime(eqData.createdAt),
-            updatedAt: formatDateTime(eqData.updatedAt),
-          });
-        }
-      } catch (error) {
-        console.error("장비 상세 조회 실패:", error);
-        if (isMounted) {
-          alert("상세 정보를 불러오는 중 오류가 발생했습니다.");
-          navigate({ pathname: "/master/equipment", search: location.search });
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+      if (eqData) {
+        setEquipment(eqData);
+        setForm({
+          eqCode: eqData.eqCode,
+          operCode: eqData.operCode || "",
+          operNm: eqData.operNm || "",
+          operUseYn: eqData.operUseYn || "",
+          depCode: eqData.depCode || "",
+          eqNm: eqData.eqNm || "",
+          eqType: eqData.eqType || "",
+          manufacturer: eqData.manufacturer || "",
+          taskDesc: eqData.taskDesc || "",
+          createdAt: formatDateTime(eqData.createdAt),
+          updatedAt: formatDateTime(eqData.updatedAt),
+        });
       }
-    };
+    } catch (error) {
+      console.error("장비 상세 조회 실패:", error);
+      alert("상세 정보를 불러오는 중 오류가 발생했습니다.");
+      navigate({ pathname: "/master/equipment", search: location.search });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    fetchEquipmentDetail();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [eqCode, navigate, location.search]);
+  // 상세 데이터 최초 조회
+  useEffect(() => {
+    if (eqCode) {
+      fetchEquipmentDetail();
+    }
+  }, [eqCode]);
 
   // 수정 모드 취소 시 롤백
   useEffect(() => {
@@ -137,19 +130,8 @@ export function MasterEquipmentDetailPage() {
 
       alert(response.data?.message || "수정되었습니다.");
 
-      // 수정 후 상세 정보를 다시 불러오거나 로컬 상태를 갱신합니다.
-      // (여기서는 수정된 입력값 반영)
-      setEquipment((prev) =>
-        prev
-          ? {
-              ...prev,
-              operCode: updatePayload.operCode ?? prev.operCode,
-              eqNm: updatePayload.eqNm ?? prev.eqNm,
-              eqType: updatePayload.eqType ?? prev.eqType,
-              manufacturer: updatePayload.manufacturer ?? prev.manufacturer,
-            }
-          : null
-      );
+      // 수정 직후 서버에서 최신 데이터를 다시 조회하여 화면에 즉시 동기화
+      await fetchEquipmentDetail();
 
       setIsEditing(false);
     } catch (err) {
@@ -185,7 +167,7 @@ export function MasterEquipmentDetailPage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !equipment) {
     return (
       <section className="screenStack">
         <Panel title="장비 상세 정보">
