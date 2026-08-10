@@ -28,6 +28,7 @@ import { SystemUsersPage } from '@pages/page/system/SystemUsersPage'
 import { SystemUsersCreatePage } from '@pages/page/system/SystemUsersCreatePage'
 import { SystemUserDetailPage } from '@pages/page/system/SystemUsersDetailPage'
 import { SystemUserPermissionsPage } from '@pages/page/system/SystemUserPermissionsPage'
+import { SystemUserPermissionsCreatePage } from '@/pages/page/system/SystemUserPermissionsCreatePage'
 import { SystemAccessLogsPage } from '@pages/page/system/SystemAccessLogsPage'
 
 // 시설관리
@@ -173,6 +174,7 @@ export const menuRoutes: MenuRouteGroup[] = [
       { path: 'users/create', name: '사용자 등록', element: <SystemUsersCreatePage />, hidden: true },
       { path: 'users/:userId', name: '사용자 상세', element: <SystemUserDetailPage />, hidden: true },
       { path: 'auths', name: '사용자 권한관리', element: <SystemUserPermissionsPage /> },
+      { path: 'auths/create', name: '사용자 권한 그룹 등록', element: <SystemUserPermissionsCreatePage />, hidden: true },
       { path: 'userlog', name: '사용자접속기록', element: <SystemAccessLogsPage /> },
     ],
   },

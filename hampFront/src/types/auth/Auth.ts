@@ -37,6 +37,7 @@ export interface AuthGroupResponse {
   authId: string;
   authNm: string;
   authDesc: string;
+  userCount: number;
 }
 
 /** 권한 그룹 옵션 응답 데이터 */
