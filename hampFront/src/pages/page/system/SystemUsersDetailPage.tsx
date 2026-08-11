@@ -12,6 +12,7 @@ import type {
 } from "@/types/User";
 import type { AuthGroupResponse, ApiResponseListAuthGroupResponse } from "@/types/auth/Auth";
 import Spinner from "@/components/common/Spinner";
+import './SystemUser.css'
 
 export function SystemUserDetailPage() {
   const { userId } = useParams<{ userId: string }>();

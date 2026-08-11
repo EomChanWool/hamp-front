@@ -16,6 +16,7 @@ import {
   type ItemRoutingRequest,
 } from "@/types/master/Item";
 import Spinner from "@/components/common/Spinner";
+import './MasterItem.css';
 
 type Field = {
   label: string;

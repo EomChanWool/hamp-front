@@ -1,0 +1,105 @@
+/* ================================
+   TABLE
+================================ */
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+  table-layout: fixed;
+}
+
+th,
+td {
+  border-bottom: 1px solid var(--border);
+  padding: 11px 10px;
+  text-align: center;
+  font-size: 12px;
+}
+
+th {
+  height: fit-content;
+  background: #eceff4;
+  color: #898e94;
+  font-weight: 500;
+  border-bottom: 0;
+  text-align: center;
+  user-select: none;
+}
+
+th svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* th 내부 정렬 및 화살표 스타일 */
+.th-content {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* 전체 중앙정렬 */
+  gap: 4px;
+}
+
+.sort-icon {
+  display: flex;
+  align-items: center;
+  color: #b0b0b0;
+  cursor: pointer;
+}
+
+.sort-icon.active {
+  color: #000;
+}
+
+th:nth-child(1) {
+  border-radius: 8px 0 0 8px;
+}
+
+th:last-child {
+  border-radius: 0 8px 8px 0;
+  text-align: center;
+}
+
+td {
+  color: var(--text-body);
+}
+
+td .rowActions {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+tbody tr {
+  transition: background 0.1s ease;
+}
+
+tbody tr:hover td {
+  background: #fdfefe;
+}
+
+/* ================================
+   TABLE - DARK MODE
+================================ */
+
+[data-theme="dark"] th {
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] td {
+  color: var(--text-body);
+}
+
+[data-theme="dark"] th,
+[data-theme="dark"] td {
+  border-color: var(--border);
+}
+
+[data-theme="dark"] tbody tr:hover td {
+  background: #1e2130;
+}

@@ -5,6 +5,7 @@ import { menuRoutes } from "@/router";
 import { apiClient } from "@/api/apiClient";
 import type { ApiResponseListMenuResponse, MenuResponse } from "@/types/Menu";
 import Spinner from "@/components/common/Spinner";
+import './Layout.css';
 
 type SideMenuProps = {
   collapsed: boolean;
