@@ -22,6 +22,19 @@ export const apiClient = axios.create({
   baseURL: '/api',
   timeout: 60000,
   withCredentials: true,
+ paramsSerializer: (params) => {
+    const searchParams = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach((v) => {
+          searchParams.append(key, String(v))
+        })
+      } else if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value))
+      }
+    })
+    return searchParams.toString().replace(/%2C/g, ',')
+  },
 })
 
 // Refresh 전용 인스턴스
