@@ -9,6 +9,7 @@ import { CusPagination } from "@components/table/CusPagination";
 import { formatDateTime } from "@/utils/common";
 import { apiClient } from "@/api/apiClient";
 import axios from "axios";
+import { useTableSorting } from "@/hooks/useTableSorting";
 import type {
   FactoryZoneResponse,
   ApiResponseFactoryZoneResponse,
@@ -44,6 +45,9 @@ export function MasterFactoryZonePage() {
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeletingFacCode, setIsDeletingFacCode] = useState<string | null>(null);
+
+  // 커스텀 훅으로 정렬 상태 및 핸들러 연동
+  const { sorting, sortParams, handleSortingChange } = useTableSorting();
 
   const currentPage = Number(searchParams.get("page") || "0");
   const queryFacCode = searchParams.get("facCode") || "";
@@ -93,7 +97,7 @@ export function MasterFactoryZonePage() {
   const loadFactoryZones = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params: Record<string, string | number> = {
+      const params: Record<string, any> = {
         page: currentPage,
         size: 10,
       };
@@ -101,7 +105,12 @@ export function MasterFactoryZonePage() {
       if (queryFacNm) params.facNm = queryFacNm;
       if (queryLocation) params.location = queryLocation;
       if (queryUseYn) params.useYn = queryUseYn;
-      
+
+      // 정렬 파라미터 반영
+      if (sortParams.length > 0) {
+        params.sort = sortParams;
+      }
+
       const response = await apiClient.get<ApiResponsePageFactoryZoneResponse>("/factory-zones", {
         params,
       });
@@ -122,6 +131,7 @@ export function MasterFactoryZonePage() {
     queryFacNm,
     queryLocation,
     queryUseYn,
+    sortParams,
   ]);
 
   useEffect(() => {
@@ -130,19 +140,25 @@ export function MasterFactoryZonePage() {
 
   // 검색 핸들러
   const handleSearch = () => {
-    const nextParams: Record<string, string> = {
-      page: "0",
-    };
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", "0");
 
     const facCode = facCodeRef.current?.value.trim();
     const facNm = facNmRef.current?.value.trim();
     const location = locationRef.current?.value.trim();
     const useYn = useYnRef.current?.value.trim();
 
-    if (facCode) nextParams.facCode = facCode;
-    if (facNm) nextParams.facNm = facNm;
-    if (location) nextParams.location = location;
-    if (useYn) nextParams.useYn = useYn;
+    if (facCode) nextParams.set("facCode", facCode);
+    else nextParams.delete("facCode");
+
+    if (facNm) nextParams.set("facNm", facNm);
+    else nextParams.delete("facNm");
+
+    if (location) nextParams.set("location", location);
+    else nextParams.delete("location");
+
+    if (useYn) nextParams.set("useYn", useYn);
+    else nextParams.delete("useYn");
 
     setEditingFacCode(null);
     setIsCreatingNewRow(false);
@@ -264,11 +280,11 @@ export function MasterFactoryZonePage() {
         prev.map((item) =>
           item.facCode === facCode
             ? {
-                ...item,
-                facNm: updatePayload.facNm ?? item.facNm,
-                location: updatePayload.location ?? item.location,
-                note: updatePayload.note ?? item.note,
-              }
+              ...item,
+              facNm: updatePayload.facNm ?? item.facNm,
+              location: updatePayload.location ?? item.location,
+              note: updatePayload.note ?? item.note,
+            }
             : item
         )
       );
@@ -526,6 +542,8 @@ export function MasterFactoryZonePage() {
           <CusTable
             data={displayFactoryZones}
             columns={columns}
+            sorting={sorting}
+            onSortingChange={handleSortingChange}
           />
           <CusPagination
             page={currentPage}

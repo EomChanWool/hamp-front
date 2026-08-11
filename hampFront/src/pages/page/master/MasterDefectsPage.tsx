@@ -15,6 +15,7 @@ import type {
   DefectUpdateRequest,
 } from "@/types/master/Defect";
 import { Badge } from "@/components/common/Badge";
+import { useTableSorting } from "@/hooks/useTableSorting";
 
 interface DefectCreateRequest extends DefectUpdateRequest {
   defCode: string;
@@ -45,6 +46,9 @@ export function MasterDefectsPage() {
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeletingDefCode, setIsDeletingDefCode] = useState<string | null>(null);
+
+  // 커스텀 훅으로 정렬 상태 및 핸들러 연동
+  const { sorting, sortParams, handleSortingChange } = useTableSorting();
 
   // URL 쿼리 파라미터 값 추출
   const currentPage = Number(searchParams.get("page") || "0");
@@ -100,7 +104,7 @@ export function MasterDefectsPage() {
   const loadDefects = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params: Record<string, string | number> = {
+      const params: Record<string, any> = {
         page: currentPage,
         size: 10,
       };
@@ -110,6 +114,11 @@ export function MasterDefectsPage() {
       if (queryDefType) params.defType = queryDefType;
       if (querySeverity) params.severity = querySeverity;
       if (queryUseYn) params.useYn = queryUseYn;
+
+      // 정렬 파라미터 반영
+      if (sortParams.length > 0) {
+        params.sort = sortParams;
+      }
 
       const response = await apiClient.get<ApiResponsePageDefectResponse>("/defects", {
         params,
@@ -125,14 +134,15 @@ export function MasterDefectsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, queryDefCode, queryOperCode, queryDefNm, queryDefType, querySeverity, queryUseYn]);
+  }, [currentPage, queryDefCode, queryOperCode, queryDefNm, queryDefType, querySeverity, queryUseYn, sortParams]);
 
   useEffect(() => {
     loadDefects();
   }, [loadDefects]);
 
   const handleSearch = () => {
-    const nextParams: Record<string, string> = { page: "0" };
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", "0");
 
     const defCode = defCodeRef.current?.value.trim();
     const operCode = operCodeRef.current?.value.trim();
@@ -141,12 +151,23 @@ export function MasterDefectsPage() {
     const severity = severityRef.current?.value.trim();
     const useYn = useYnRef.current?.value.trim();
 
-    if (defCode) nextParams.defCode = defCode;
-    if (operCode) nextParams.operCode = operCode;
-    if (defNm) nextParams.defNm = defNm;
-    if (defType) nextParams.defType = defType;
-    if (severity) nextParams.severity = severity;
-    if (useYn) nextParams.useYn = useYn;
+    if (defCode) nextParams.set("defCode", defCode);
+    else nextParams.delete("defCode");
+
+    if (operCode) nextParams.set("operCode", operCode);
+    else nextParams.delete("operCode");
+
+    if (defNm) nextParams.set("defNm", defNm);
+    else nextParams.delete("defNm");
+
+    if (defType) nextParams.set("defType", defType);
+    else nextParams.delete("defType");
+
+    if (severity) nextParams.set("severity", severity);
+    else nextParams.delete("severity");
+
+    if (useYn) nextParams.set("useYn", useYn);
+    else nextParams.delete("useYn");
 
     setEditingDefCode(null);
     setIsCreatingNewRow(false);
@@ -567,6 +588,8 @@ export function MasterDefectsPage() {
           <CusTable
             data={displayDefects}
             columns={columns}
+            sorting={sorting}
+            onSortingChange={handleSortingChange}
           />
           <CusPagination
             page={currentPage}

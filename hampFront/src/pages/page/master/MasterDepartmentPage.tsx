@@ -7,6 +7,7 @@ import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
 import { formatDateTime } from "@/utils/common";
 import { apiClient } from "@/api/apiClient";
+import { useTableSorting } from "@/hooks/useTableSorting";
 import axios from "axios";
 import type {
   DepartmentResponse,
@@ -29,6 +30,9 @@ export function MasterDepartmentPage() {
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+
+  // 커스텀 훅으로 정렬 상태 및 핸들러 연동
+  const { sorting, sortParams, handleSortingChange } = useTableSorting();
 
   // 인라인 수정 상태 관리 (현재 수정 중인 부서코드)
   const [editingDepCode, setEditingDepCode] = useState<string | null>(null);
@@ -113,7 +117,7 @@ export function MasterDepartmentPage() {
   const loadDepartments = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params: Record<string, string | number> = {
+      const params: Record<string, any> = {
         page: currentPage,
         size: 10,
       };
@@ -121,6 +125,11 @@ export function MasterDepartmentPage() {
       if (queryTaskDesc) params.taskDesc = queryTaskDesc;
       if (queryHead) params.head = queryHead;
       if (queryHeadPhone) params.headPhone = queryHeadPhone;
+
+      // 정렬 파라미터 반영
+      if (sortParams.length > 0) {
+        params.sort = sortParams;
+      }
 
       const response = await apiClient.get<ApiResponsePageDepartmentResponse>("/departments", {
         params,
@@ -142,6 +151,7 @@ export function MasterDepartmentPage() {
     queryTaskDesc,
     queryHead,
     queryHeadPhone,
+    sortParams,
   ]);
 
   useEffect(() => {
@@ -149,19 +159,25 @@ export function MasterDepartmentPage() {
   }, [loadDepartments]);
 
   const handleSearch = () => {
-    const nextParams: Record<string, string> = {
-      page: "0",
-    };
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", "0");
 
     const depCode = depCodeRef.current?.value.trim();
     const taskDesc = taskDescRef.current?.value.trim();
     const head = headRef.current?.value.trim();
     const headPhone = headPhoneRef.current?.value.trim();
 
-    if (depCode) nextParams.depCode = depCode;
-    if (taskDesc) nextParams.taskDesc = taskDesc;
-    if (head) nextParams.head = head;
-    if (headPhone) nextParams.headPhone = headPhone;
+    if (depCode) nextParams.set("depCode", depCode);
+    else nextParams.delete("depCode");
+
+    if (taskDesc) nextParams.set("taskDesc", taskDesc);
+    else nextParams.delete("taskDesc");
+
+    if (head) nextParams.set("head", head);
+    else nextParams.delete("head");
+
+    if (headPhone) nextParams.set("headPhone", headPhone);
+    else nextParams.delete("headPhone");
 
     setEditingDepCode(null);
     setIsCreatingNewRow(false);
@@ -528,6 +544,8 @@ export function MasterDepartmentPage() {
           <CusTable
             data={displayDepartments}
             columns={columns}
+            sorting={sorting}
+            onSortingChange={handleSortingChange}
           />
           <CusPagination
             page={currentPage}
