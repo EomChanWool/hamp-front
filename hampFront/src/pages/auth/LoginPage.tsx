@@ -2,6 +2,7 @@ import { LockClosedIcon, UserCircleIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect, type SyntheticEvent } from "react";
+import './LoginPage.css';
 
 export function LoginPage() {
   const [userId, setUserId] = useState('');

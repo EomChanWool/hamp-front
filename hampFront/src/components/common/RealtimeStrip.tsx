@@ -1,3 +1,5 @@
+import './RealtimeStrip.css'
+
 type Props = {
   updatedAt: Date
 }

@@ -5,6 +5,7 @@ import { apiClient } from "@/api/apiClient";
 import axios from "axios";
 import type { UserCreateRequest } from "@/types/User";
 import type { AuthGroupResponse, ApiResponseListAuthGroupResponse } from "@/types/auth/Auth";
+import './SystemUser.css'
 
 export function SystemUsersCreatePage() {
   const navigate = useNavigate();

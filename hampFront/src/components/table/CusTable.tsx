@@ -1,5 +1,6 @@
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef, type SortingState } from '@tanstack/react-table'
 import { ChevronUpIcon, ChevronDownIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid'
+import './Custable.css'
 
 export interface CusColumnMeta {
   /** 고정 너비 (예: '150px'). 미지정 시 마지막 컬럼만 150px, 나머지는 auto */
@@ -81,7 +82,7 @@ export function CusTable<T>({
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
                 const canSort = header.column.getCanSort()
-                const sortDir = header.column.getIsSorted() // false | 'asc' | 'desc'
+                const sortDir = header.column.getIsSorted() 
 
                 return (
                   <th 

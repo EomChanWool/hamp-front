@@ -8,6 +8,7 @@ import { mesScreens } from "@/data/mesScreens";
 import { KpiGrid } from "@components/kpi/KpiGrid";
 import { useRealtimePulse } from "@/hooks/useRealtimePulse";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/16/solid";
+import './FaciliyAccess.css';
 
 const DEF = mesScreens.facilityAccessRealtime;
 

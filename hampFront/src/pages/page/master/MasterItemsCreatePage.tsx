@@ -12,6 +12,7 @@ import {
   type ItemRoutingRequest,
   type ApiResponseItemResponse,
 } from "@/types/master/Item";
+import './MasterItem.css';
 
 interface OperationOption {
   operCode: string;

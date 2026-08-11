@@ -3,6 +3,7 @@ import { Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { AppShell } from '@pages/layout/AppShell'
 import { useAuth } from '@/context/AuthContext'
 import { setApiNavigator } from '@/api/apiClient'
+import './Layout.css';
 
 export function MainLayout() {
   const { isAuthenticated } = useAuth()

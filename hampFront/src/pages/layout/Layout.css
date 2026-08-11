@@ -1,0 +1,612 @@
+/* ================================
+   HEADER
+================================ */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.brandInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.brandMark {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #57d3a1, #78e1b8);
+  color: #fff;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 18px;
+}
+
+.brandText {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.brandText strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.brandText small {
+  display: block;
+  font-size: 11px;
+  color: var(--text-sub);
+}
+
+.topbar h1 {
+  line-height: 1;
+  font-size: 26px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary, #8a8f98);
+}
+
+.breadcrumbHomeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 2px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-tertiary, #6b7280);
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.breadcrumbHomeBtn:hover {
+  color: var(--text-primary, #e5e7eb);
+  background-color: var(--hover-bg, rgba(255, 255, 255, 0.06));
+}
+
+.breadcrumbHomeIcon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-tertiary, #6b7280);
+}
+
+.breadcrumbSep {
+  width: 14px;
+  height: 14px;
+  color: var(--text-tertiary, #4b5563);
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.breadcrumbGroup {
+  color: var(--text-secondary, #9ca3af);
+  line-height: 1;
+}
+
+.breadcrumbCurrent {
+  color: var(--primary);
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* Header right */
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.headActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+.sidebarToggle {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-muted);
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.sidebarToggle svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sidebarToggle:hover {
+  background: var(--bg-subtle);
+  color: var(--text-heading);
+}
+
+.headerIconBtn {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.headerIconBtn:hover {
+  background: var(--bg-subtle);
+  color: var(--text-heading);
+}
+
+.headerIconBtn svg {
+  width: 26px;
+}
+
+.headerBadgeDot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #ff5757;
+  border: 1.5px solid var(--bg-card);
+}
+
+.headerNotificationPopup {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 220px;
+  padding: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  z-index: 100;
+}
+
+.headerPopupTopBox {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.headerPopupCloseBtn {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.headerPopupCloseBtn:hover {
+  background: var(--bg-app);
+  color: var(--text-heading);
+}
+
+.headerPopupCloseBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.headerPopup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.headerPopupContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  position: relative;
+  transition:
+    background 0.15s ease
+}
+
+.headerPopupContent:hover {
+  background: var(--primary-light);
+}
+
+.headerPopupContent p {
+  font-size: 12px;
+}
+
+.headerPopupTime {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.headerListCloseBtn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.headerListCloseBtn:hover {
+  background: var(--bg-card);
+  color: var(--text-heading);
+}
+
+.headerListCloseBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.headerPopupEmpty {
+  font-size: 12px;
+}
+
+.headerDivider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  margin: 0 15px;
+}
+
+.headerUser {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  margin-right: 6px;
+}
+
+.headerAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+}
+
+.headerAvatar svg {
+  width: 18px;
+  height: 18px;
+}
+
+.headerUserInfo {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+  gap: 3px;
+}
+
+.headerUserInfo span {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.headerUserInfo strong {
+  font-size: 13px;
+  color: var(--text-heading);
+  font-weight: 600;
+}
+
+.headerLogout {
+  color: var(--text-muted);
+}
+
+.headerLogout:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* ================================
+   MAIN CONTENT
+================================ */
+
+.mainContent {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  transition: grid-template-columns 0.3s ease;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mainContent.collapsed {
+  grid-template-columns: 72px 1fr;
+}
+
+/* ================================
+   SIDEBAR (메인 틀: 스크롤 및 숨김 처리 제거)
+================================ */
+.sidebar {
+  color: var(--text-main);
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%; /* 전체 높이는 유지하되 */
+  /* overflow-y: auto; <-- 이 줄을 제거하여 서브메뉴가 바깥으로 튀어나갈 수 있게 함 */
+  overflow: visible; /* 팝업이 잘리지 않도록 허용 */
+  box-sizing: border-box;
+}
+
+/* ================================
+   SIDEBAR MENU WRAPPER (내부 스크롤 영역)
+================================ */
+.sidebarMenuWrapper {
+  flex: 1;              /* 남은 공간을 모두 차지 */
+  overflow-y: auto;     /* 메뉴가 많을 경우 여기만 스크롤 생성 */
+  overflow-x: visible;  /* 가로 넘침은 허용 */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ================================
+   NAV
+================================ */
+
+.navMenu {
+  display: grid;
+  gap: 2px;
+}
+
+.navGroup {
+  display: grid;
+}
+
+.navGroupHeader {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-main);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.navGroupHeader .groupLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.navGroupHeader .groupLabel svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.navGroupHeader .groupLabel span {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  line-height: 1;
+}
+
+.navGroupHeader .chevron {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: inherit;
+  opacity: 0.6;
+}
+
+.navGroupHeader svg {
+  width: 14px;
+}
+
+.navGroup.current .navGroupHeader,
+.navGroupHeader:hover {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 14px rgba(87, 211, 161, 0.3);
+}
+
+/* collapsed */
+.mainContent.collapsed .navGroupHeader {
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+
+.mainContent.collapsed .navGroupHeader .groupLabel {
+  justify-content: center;
+}
+
+.mainContent.collapsed .navGroupHeader .chevron {
+  display: none;
+}
+
+/* ================================
+   NAV ITEMS
+================================ */
+
+.navItems {
+  display: grid;
+  gap: 2px;
+  padding-left: 12px;
+  margin-top: 3px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+.navItems.open {
+  max-height: 500px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.navItems button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-sub);
+  text-align: left;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.navItems button:hover {
+  background: #eef7f1;
+  color: var(--text-main);
+}
+
+.navItems button.active {
+  background: var(--primary-light);
+  color: #17875f;
+}
+
+.navItems button svg {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  color: #7d8a91;
+}
+
+.navItems button.active svg {
+  color: #3ec58c;
+}
+
+.navItems button span {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Collapsed flyout */
+.mainContent.collapsed .navGroup {
+  position: relative;
+}
+
+.mainContent.collapsed .navGroup::after {
+  content: "";
+  position: absolute;
+  left: 100%;
+  top: 0;
+  width: 8px;
+  height: 100%;
+}
+
+.mainContent.collapsed .navItems,
+.mainContent.collapsed .navItems.open {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 0;
+  width: 180px;
+  padding: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--sidebar-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  max-height: none;
+  overflow: visible;
+  padding-left: 6px;
+  margin-top: 0;
+  opacity: 0;
+  transform: translateX(-6px);
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.mainContent.collapsed .navGroup.flyoutOpen .navItems {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.mainContent.collapsed .navItems button {
+  padding: 7px 10px;
+  border-radius: 7px;
+}
