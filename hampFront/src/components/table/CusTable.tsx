@@ -37,8 +37,30 @@ export function CusTable<T>({
     getCoreRowModel: getCoreRowModel(),
     manualSorting: true, // 서버사이드 정렬을 사용할 경우 수동 정렬 활성화
     enableMultiSort: true, // 다중 정렬 활성화
-    isMultiSortEvent: () => true, // Shift 키를 누르지 않고 그냥 클릭해도 다중 정렬이 누적되도록 설정
   })
+
+  // Shift 없이 일반 클릭 시 다중 정렬 누적 및 사이클 처리를 위한 커스텀 핸들러
+  const handleSort = (columnId: string) => {
+    const currentSorting = table.getState().sorting;
+    const existingSort = currentSorting.find((s) => s.id === columnId);
+    
+    let nextSorting: SortingState = [];
+
+    if (!existingSort) {
+      // 1. 새로운 컬럼 클릭 시: 기존 정렬에 누적 (오름차순부터 시작)
+      nextSorting = [...currentSorting, { id: columnId, desc: false }];
+    } else if (!existingSort.desc) {
+      // 2. 이미 오름차순(asc)인 경우: 내림차순(desc)으로 변경
+      nextSorting = currentSorting.map((s) => 
+        s.id === columnId ? { ...s, desc: true } : s
+      );
+    } else {
+      // 3. 이미 내림차순(desc)인 경우: 해당 컬럼 정렬 제거
+      nextSorting = currentSorting.filter((s) => s.id !== columnId);
+    }
+
+    onSortingChange?.(nextSorting);
+  };
 
   const headerGroups = table.getHeaderGroups()
   const colCount = headerGroups[0]?.headers.length ?? columns.length
@@ -63,7 +85,8 @@ export function CusTable<T>({
                 return (
                   <th 
                     key={header.id}
-                    onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                    onClick={canSort ? () => handleSort(header.column.id) : undefined}
+                    style={{ cursor: canSort ? 'pointer' : 'default' }}
                   >
                     <div className="th-content">
                       {flexRender(header.column.columnDef.header, header.getContext())}
