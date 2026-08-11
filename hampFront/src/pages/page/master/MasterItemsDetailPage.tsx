@@ -44,7 +44,7 @@ export function MasterItemsDetailPage() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
-  
+
   // 라우팅 목록 상태
   const [routings, setRoutings] = useState<ItemRoutingRequest[]>([]);
 
@@ -350,10 +350,10 @@ export function MasterItemsDetailPage() {
         routings:
           selectedCategory === 1 || selectedCategory === 2
             ? routings.map((r) => ({
-                operCode: r.operCode?.trim() || null,
-                operSeq: r.operSeq,
-                finalYn: r.finalYn || "N",
-              }))
+              operCode: r.operCode?.trim() || null,
+              operSeq: r.operSeq,
+              finalYn: r.finalYn || "N",
+            }))
             : null,
       };
 
@@ -368,22 +368,22 @@ export function MasterItemsDetailPage() {
       setItem((prev) =>
         prev
           ? {
-              ...prev,
-              productType: updatePayload.productType ?? prev.productType,
-              category: updatePayload.category ?? prev.category,
-              itemNm: updatePayload.itemNm ?? prev.itemNm,
-              unit: updatePayload.unit ?? prev.unit,
-              standard: updatePayload.standard ?? prev.standard,
-              routings: updatePayload.routings
-                ? updatePayload.routings.map((r, idx) => ({
-                    routingId: 0,
-                    itemCode: prev.itemCode,
-                    operCode: r.operCode ?? "",
-                    operSeq: r.operSeq ?? idx + 1,
-                    finalYn: r.finalYn ?? "N",
-                  }))
-                : [],
-            }
+            ...prev,
+            productType: updatePayload.productType ?? prev.productType,
+            category: updatePayload.category ?? prev.category,
+            itemNm: updatePayload.itemNm ?? prev.itemNm,
+            unit: updatePayload.unit ?? prev.unit,
+            standard: updatePayload.standard ?? prev.standard,
+            routings: updatePayload.routings
+              ? updatePayload.routings.map((r, idx) => ({
+                routingId: 0,
+                itemCode: prev.itemCode,
+                operCode: r.operCode ?? "",
+                operSeq: r.operSeq ?? idx + 1,
+                finalYn: r.finalYn ?? "N",
+              }))
+              : [],
+          }
           : null
       );
 
@@ -426,7 +426,7 @@ export function MasterItemsDetailPage() {
     return (
       <section className="screenStack">
         <Panel title="품목 상세 정보">
-           <div> <Spinner/> </div>
+          <div> <Spinner /> </div>
         </Panel>
       </section>
     );
@@ -566,8 +566,10 @@ export function MasterItemsDetailPage() {
                             <option value="Y">최종공정</option>
                           </select>
                         ) : (
-                          <div className="tableInput routingSelect flex items-center justify-center text-xs">
-                            {route.finalYn === "Y" ? "최종공정" : "일반공정"}
+                          <div className="flex items-center justify-center w-full h-full text-xs">
+                            <Badge tone={route.finalYn === "Y" ? "good" : "muted"}>
+                              {route.finalYn === "Y" ? "최종공정" : "일반공정"}
+                            </Badge>
                           </div>
                         )}
 
@@ -715,7 +717,7 @@ export function MasterItemsDetailPage() {
                         <input
                           type="checkbox"
                           checked={isChecked}
-                          onChange={() => {}}
+                          onChange={() => { }}
                           style={{ cursor: "pointer" }}
                         />
                         <div className="modalListItemContent">
