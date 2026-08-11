@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@components/common/Badge";
 import { Panel } from "@components/card/Panel";
@@ -16,8 +16,11 @@ import type {
   FactoryZoneUpdateRequest,
 } from "@/types/master/FactoryZone";
 
+interface FactoryZoneCreateRequest extends FactoryZoneUpdateRequest {
+  facCode: string;
+}
+
 export function MasterFactoryZonePage() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [factoryZones, setFactoryZones] = useState<FactoryZoneResponse[]>([]);
@@ -28,8 +31,12 @@ export function MasterFactoryZonePage() {
   // 인라인 수정 상태 관리 (현재 수정 중인 공장코드)
   const [editingFacCode, setEditingFacCode] = useState<string | null>(null);
 
-  // 타이핑 시 리렌더링 방지를 위한 폼 상태 Ref
-  const editFormRef = useRef<FactoryZoneUpdateRequest>({
+  // 인라인 등록 상태 관리 (true면 테이블 맨 위에 새 입력 행이 생성됨)
+  const [isCreatingNewRow, setIsCreatingNewRow] = useState(false);
+
+  // 타이핑 시 리렌더링 방지를 위한 폼 상태 Ref (수정 및 등록 공용)
+  const editFormRef = useRef<FactoryZoneUpdateRequest & { facCode?: string }>({
+    facCode: "",
     facNm: "",
     location: "",
     note: "",
@@ -65,7 +72,7 @@ export function MasterFactoryZonePage() {
     },
   ];
 
-  // 검색 필드 DOM 값과 URL 쿼리 파라미터 동기화 (타이밍 이슈 방지 setTimeout 적용)
+  // 검색 필드 DOM 값과 URL 쿼리 파라미터 동기화
   useEffect(() => {
     const timer = setTimeout(() => {
       if (facCodeRef.current) facCodeRef.current.value = queryFacCode;
@@ -82,7 +89,7 @@ export function MasterFactoryZonePage() {
     queryUseYn,
   ]);
 
-  // 1. 공장 목록 조회 (GET /factory-zones)
+  // 공장 목록 조회 (GET /factory-zones)
   const loadFactoryZones = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -138,6 +145,7 @@ export function MasterFactoryZonePage() {
     if (useYn) nextParams.useYn = useYn;
 
     setEditingFacCode(null);
+    setIsCreatingNewRow(false);
     setSearchParams(nextParams);
   };
 
@@ -150,6 +158,7 @@ export function MasterFactoryZonePage() {
       useYnRef.current.value = "";
     }
     setEditingFacCode(null);
+    setIsCreatingNewRow(false);
     setSearchParams({
       page: "0",
     });
@@ -157,23 +166,65 @@ export function MasterFactoryZonePage() {
 
   const handlePageChange = (newPage: number) => {
     setEditingFacCode(null);
+    setIsCreatingNewRow(false);
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("page", String(newPage));
     setSearchParams(nextParams);
   };
 
-  // 등록 페이지로 이동
-  const handleCreate = () => {
-    const queryString = searchParams.toString();
-    navigate(
-      queryString
-        ? `/master/factory-zones/create?${queryString}`
-        : "/master/factory-zones/create"
-    );
+  // 인라인 등록 행 활성화
+  const handleStartCreate = () => {
+    if (isCreatingNewRow) return;
+    setEditingFacCode(null);
+    editFormRef.current = {
+      facCode: "",
+      facNm: "",
+      location: "",
+      note: "",
+    };
+    setIsCreatingNewRow(true);
+  };
+
+  const handleCancelCreate = () => {
+    setIsCreatingNewRow(false);
+  };
+
+  // 인라인 신규 등록 API 저장 (POST /factory-zones)
+  const handleSaveCreate = async () => {
+    if (isUpdating) return;
+
+    const newFacCode = editFormRef.current.facCode?.trim();
+    if (!newFacCode) {
+      window.alert("공장코드를 입력해주세요.");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const payload: FactoryZoneCreateRequest = {
+        facCode: newFacCode,
+        facNm: editFormRef.current.facNm?.trim() || null,
+        location: editFormRef.current.location?.trim() || null,
+        note: editFormRef.current.note?.trim() || null,
+      };
+
+      const response = await apiClient.post<ApiResponseFactoryZoneResponse>("/factory-zones", payload);
+
+      window.alert(response.data?.message || "등록되었습니다.");
+      setIsCreatingNewRow(false);
+      await loadFactoryZones();
+    } catch (err) {
+      console.error("등록 실패:", err);
+      const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
+      window.alert(errorMessage || "등록에 실패했습니다.");
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   // 인라인 편집 시작
   const handleStartEdit = (row: FactoryZoneResponse) => {
+    setIsCreatingNewRow(false);
     editFormRef.current = {
       facNm: row.facNm ?? "",
       location: row.location ?? "",
@@ -209,7 +260,6 @@ export function MasterFactoryZonePage() {
       const successMessage = response.data?.message || "수정되었습니다.";
       window.alert(successMessage);
 
-      // 로컬 데이터 목록 즉시 갱신 (Optimistic Update)
       setFactoryZones((prev) =>
         prev.map((item) =>
           item.facCode === facCode
@@ -261,13 +311,33 @@ export function MasterFactoryZonePage() {
   // 테이블 컬럼 정의
   const columns: ColumnDef<FactoryZoneResponse>[] = useMemo(
     () => [
-      { accessorKey: "facCode", header: "공장코드" },
+      {
+        accessorKey: "facCode",
+        header: "공장코드",
+        cell: ({ row }) => {
+          if (row.original.facCode === "__NEW_ROW__") {
+            return (
+              <input
+                className="tableInput"
+                defaultValue={editFormRef.current.facCode ?? ""}
+                onChange={(e) => {
+                  editFormRef.current.facCode = e.target.value;
+                }}
+                placeholder="공장코드 입력"
+                autoFocus
+              />
+            );
+          }
+          return row.original.facCode;
+        },
+      },
       {
         accessorKey: "facNm",
         header: "공장명",
         cell: ({ row }) => {
+          const isNewRow = row.original.facCode === "__NEW_ROW__";
           const isEditing = row.original.facCode === editingFacCode;
-          if (isEditing) {
+          if (isNewRow || isEditing) {
             return (
               <input
                 className="tableInput"
@@ -286,8 +356,9 @@ export function MasterFactoryZonePage() {
         accessorKey: "location",
         header: "위치",
         cell: ({ row }) => {
+          const isNewRow = row.original.facCode === "__NEW_ROW__";
           const isEditing = row.original.facCode === editingFacCode;
-          if (isEditing) {
+          if (isNewRow || isEditing) {
             return (
               <input
                 className="tableInput"
@@ -305,7 +376,10 @@ export function MasterFactoryZonePage() {
       {
         accessorKey: "useYn",
         header: "사용여부",
-        cell: ({ getValue }) => {
+        cell: ({ row, getValue }) => {
+          if (row.original.facCode === "__NEW_ROW__") {
+            return <Badge tone="good">사용</Badge>;
+          }
           const isUse = getValue<string>() === "Y";
           return (
             <Badge tone={isUse ? "good" : "muted"}>
@@ -318,8 +392,9 @@ export function MasterFactoryZonePage() {
         accessorKey: "note",
         header: "비고",
         cell: ({ row }) => {
+          const isNewRow = row.original.facCode === "__NEW_ROW__";
           const isEditing = row.original.facCode === editingFacCode;
-          if (isEditing) {
+          if (isNewRow || isEditing) {
             return (
               <input
                 className="tableInput"
@@ -337,16 +412,43 @@ export function MasterFactoryZonePage() {
       {
         accessorKey: "createdAt",
         header: "등록일자",
-        cell: ({ getValue }) => formatDateTime(getValue<string>()),
+        cell: ({ row, getValue }) => {
+          if (row.original.facCode === "__NEW_ROW__") return "-";
+          return formatDateTime(getValue<string>());
+        },
       },
       {
         id: "actions",
         header: "관리",
         meta: { width: "130px" },
         cell: ({ row }) => {
+          const isNewRow = row.original.facCode === "__NEW_ROW__";
           const isEditing = row.original.facCode === editingFacCode;
           const isDeleting = isDeletingFacCode === row.original.facCode;
           const isUsed = row.original.useYn === "Y";
+
+          if (isNewRow) {
+            return (
+              <div className="rowActions" style={{ display: "flex", gap: "4px" }}>
+                <button
+                  type="button"
+                  className="miniButton primary"
+                  disabled={isUpdating}
+                  onClick={handleSaveCreate}
+                >
+                  {isUpdating ? "저장 중" : "저장"}
+                </button>
+                <button
+                  type="button"
+                  className="miniButton danger"
+                  disabled={isUpdating}
+                  onClick={handleCancelCreate}
+                >
+                  취소
+                </button>
+              </div>
+            );
+          }
 
           if (isEditing) {
             return (
@@ -376,7 +478,7 @@ export function MasterFactoryZonePage() {
               <button
                 type="button"
                 className="miniButton"
-                disabled={editingFacCode !== null || isDeleting}
+                disabled={editingFacCode !== null || isCreatingNewRow || isDeleting}
                 onClick={() => handleStartEdit(row.original)}
               >
                 수정
@@ -384,7 +486,7 @@ export function MasterFactoryZonePage() {
               <button
                 type="button"
                 className="miniButton danger"
-                disabled={editingFacCode !== null || isDeleting || !isUsed}
+                disabled={editingFacCode !== null || isCreatingNewRow || isDeleting || !isUsed}
                 onClick={() => handleDeleteFactoryZone(row.original)}
               >
                 {isDeleting ? "삭제 중" : "삭제"}
@@ -394,19 +496,35 @@ export function MasterFactoryZonePage() {
         },
       },
     ],
-    [editingFacCode, isUpdating, isDeletingFacCode]
+    [editingFacCode, isCreatingNewRow, isUpdating, isDeletingFacCode]
   );
+
+  const displayFactoryZones = useMemo(() => {
+    if (isCreatingNewRow) {
+      const dummyNewRow: FactoryZoneResponse = {
+        facCode: "__NEW_ROW__",
+        facNm: "",
+        location: "",
+        note: "",
+        useYn: "Y",
+        createdAt: "",
+        updatedAt: "",
+      };
+      return [dummyNewRow, ...factoryZones];
+    }
+    return factoryZones;
+  }, [isCreatingNewRow, factoryZones]);
 
   return (
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="공장관리 목록" action="등록" onAction={handleCreate}>
+      <Panel title="공장관리 목록" action="등록" onAction={handleStartCreate}>
         <div className="relative min-h-[300px]">
           {isLoading && <span>데이터를 불러오는 중입니다...</span>}
 
           <CusTable
-            data={factoryZones}
+            data={displayFactoryZones}
             columns={columns}
           />
           <CusPagination

@@ -42,19 +42,15 @@ import { FacilityDataManagePage } from '@pages/page/facility/FacilityDataManageP
 
 // 기준정보관리
 import { MasterFactoryZonePage } from '@pages/page/master/MasterFactoryZonePage'
-import { MasterFactoryZoneCreatePage } from '@pages/page/master/MasterFactoryZoneCreatePage'
 import { MasterEquipmentPage } from '@pages/page/master/MasterEquipmentPage'
 import { MasterEquipmentCreatePage } from '@pages/page/master/MasterEquipmentCreatePage'
 import { MasterEquipmentDetailPage } from '@pages/page/master/MasterEquipmentDetailPage'
 import { MasterOperationPage } from '@pages/page/master/MasterOperationPage'
-import { MasterOperationCreatePage } from '@pages/page/master/MasterOperationCreatePage'
 import { MasterItemsPage } from '@pages/page/master/MasterItemsPage'
 import { MasterItemsCreatePage } from '@pages/page/master/MasterItemsCreatePage'
 import { MasterItemsDetailPage } from '@pages/page/master/MasterItemsDetailPage'
 import { MasterDefectsPage } from '@pages/page/master/MasterDefectsPage'
-import { MasterDefectsCreatePage } from '@pages/page/master/MasterDefectsCreatePage'
 import { MasterDepartmentPage } from '@pages/page/master/MasterDepartmentPage'
-import { MasterDepartmentCreatePage } from '@pages/page/master/MasterDepartmentCreatePage'
 
 // 설비관리
 import { EquipmentListPage } from '@pages/page/equipment/EquipmentListPage'
@@ -206,9 +202,7 @@ export const menuRoutes: MenuRouteGroup[] = [
     path: '/master',
     items: [
       { path: 'factory-zones', name: '공장관리', element: <MasterFactoryZonePage /> },
-      { path: 'factory-zones/create', name: '신규 공장 등록', element: <MasterFactoryZoneCreatePage />, hidden: true },
       { path: 'department', name: '부서관리', element: <MasterDepartmentPage /> },
-      { path: 'department/create', name: '신규 부서 등록', element: <MasterDepartmentCreatePage />, hidden: true },
       { path: 'items', name: '품목관리', element: <MasterItemsPage /> },
       { path: 'items/create', name: '신규 품목 등록', element: <MasterItemsCreatePage />, hidden: true },
       { path: 'items/:itemCode', name: '품목 상세', element: <MasterItemsDetailPage />, hidden: true },
@@ -216,10 +210,7 @@ export const menuRoutes: MenuRouteGroup[] = [
       { path: 'equipment/create', name: '신규 장비 등록', element: <MasterEquipmentCreatePage />, hidden: true },
       { path: 'equipment/:eqCode', name: '장비 상세', element: <MasterEquipmentDetailPage />, hidden: true },
       { path: 'operation', name: '공정관리', element: <MasterOperationPage /> },
-      { path: 'operation/create', name: '신규 공정 등록', element: <MasterOperationCreatePage />, hidden: true },
       { path: 'defects', name: '불량관리', element: <MasterDefectsPage /> },
-      { path: 'defects/create', name: '신규 불량 등록', element: <MasterDefectsCreatePage />, hidden: true },
-
     ],
   },
   {

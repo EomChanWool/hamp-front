@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Panel } from "@components/card/Panel";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
@@ -16,8 +16,11 @@ import type {
 } from "@/types/master/Defect";
 import { Badge } from "@/components/common/Badge";
 
+interface DefectCreateRequest extends DefectUpdateRequest {
+  defCode: string;
+}
+
 export function MasterDefectsPage() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [defects, setDefects] = useState<DefectResponse[]>([]);
@@ -28,8 +31,12 @@ export function MasterDefectsPage() {
   // 인라인 수정 상태 관리 (현재 수정 중인 불량코드)
   const [editingDefCode, setEditingDefCode] = useState<string | null>(null);
 
-  // 타이핑 시 리렌더링을 방지하여 한 글자 입력 버그를 원천 차단하는 Ref
-  const editFormRef = useRef<DefectUpdateRequest>({
+  // 인라인 등록 상태 관리 (true면 테이블 맨 위에 새 입력 행이 생성됨)
+  const [isCreatingNewRow, setIsCreatingNewRow] = useState(false);
+
+  // 타이핑 시 리렌더링 방지 폼 Ref (수정 및 등록 공용)
+  const editFormRef = useRef<DefectUpdateRequest & { defCode?: string }>({
+    defCode: "",
     operCode: "",
     defNm: "",
     defType: "",
@@ -87,14 +94,7 @@ export function MasterDefectsPage() {
     }, 0);
 
     return () => clearTimeout(timer);
-  }, [
-    queryDefCode,
-    queryOperCode,
-    queryDefNm,
-    queryDefType,
-    querySeverity,
-    queryUseYn,
-  ]);
+  }, [queryDefCode, queryOperCode, queryDefNm, queryDefType, querySeverity, queryUseYn]);
 
   // 불량 목록 조회
   const loadDefects = useCallback(async () => {
@@ -125,24 +125,14 @@ export function MasterDefectsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [
-    currentPage,
-    queryDefCode,
-    queryOperCode,
-    queryDefNm,
-    queryDefType,
-    querySeverity,
-    queryUseYn,
-  ]);
+  }, [currentPage, queryDefCode, queryOperCode, queryDefNm, queryDefType, querySeverity, queryUseYn]);
 
   useEffect(() => {
     loadDefects();
   }, [loadDefects]);
 
   const handleSearch = () => {
-    const nextParams: Record<string, string> = {
-      page: "0",
-    };
+    const nextParams: Record<string, string> = { page: "0" };
 
     const defCode = defCodeRef.current?.value.trim();
     const operCode = operCodeRef.current?.value.trim();
@@ -159,6 +149,7 @@ export function MasterDefectsPage() {
     if (useYn) nextParams.useYn = useYn;
 
     setEditingDefCode(null);
+    setIsCreatingNewRow(false);
     setSearchParams(nextParams);
   };
 
@@ -169,29 +160,73 @@ export function MasterDefectsPage() {
     if (useYnRef.current) useYnRef.current.value = "";
 
     setEditingDefCode(null);
-    setSearchParams({
-      page: "0",
-    });
+    setIsCreatingNewRow(false);
+    setSearchParams({ page: "0" });
   };
 
   const handlePageChange = (newPage: number) => {
     setEditingDefCode(null);
+    setIsCreatingNewRow(false);
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("page", String(newPage));
     setSearchParams(nextParams);
   };
 
-  const handleCreate = () => {
-    const queryString = searchParams.toString();
-    navigate(
-      queryString
-        ? `/master/defects/create?${queryString}`
-        : "/master/defects/create"
-    );
+  // 인라인 등록 행 활성화
+  const handleStartCreate = () => {
+    if (isCreatingNewRow) return;
+    setEditingDefCode(null);
+    editFormRef.current = {
+      defCode: "",
+      operCode: "",
+      defNm: "",
+      defType: "",
+      severity: "",
+    };
+    setIsCreatingNewRow(true);
+  };
+
+  const handleCancelCreate = () => {
+    setIsCreatingNewRow(false);
+  };
+
+  // 인라인 신규 등록 API 저장
+  const handleSaveCreate = async () => {
+    if (isUpdating) return;
+
+    const newDefCode = editFormRef.current.defCode?.trim();
+    if (!newDefCode) {
+      window.alert("불량코드를 입력해주세요.");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const payload: DefectCreateRequest = {
+        defCode: newDefCode,
+        operCode: editFormRef.current.operCode?.trim() || null,
+        defNm: editFormRef.current.defNm?.trim() || null,
+        defType: editFormRef.current.defType?.trim() || null,
+        severity: editFormRef.current.severity?.trim() || null,
+      };
+
+      const response = await apiClient.post<ApiResponseDefectResponse>("/defects", payload);
+
+      window.alert(response.data?.message || "등록되었습니다.");
+      setIsCreatingNewRow(false);
+      await loadDefects();
+    } catch (err) {
+      console.error("등록 실패:", err);
+      const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
+      window.alert(errorMessage || "등록에 실패했습니다.");
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   // 인라인 편집 시작
   const handleStartEdit = (row: DefectResponse) => {
+    setIsCreatingNewRow(false);
     editFormRef.current = {
       operCode: row.operCode ?? "",
       defNm: row.defNm ?? "",
@@ -228,7 +263,6 @@ export function MasterDefectsPage() {
 
       window.alert(response.data?.message || "수정되었습니다.");
 
-      // 로컬 데이터 목록 즉시 갱신 (Optimistic Update)
       setDefects((prev) =>
         prev.map((item) =>
           item.defCode === defCode
@@ -283,17 +317,39 @@ export function MasterDefectsPage() {
       {
         accessorKey: "defCode",
         header: "불량코드",
+        cell: ({ row }) => {
+          if (row.original.defCode === "__NEW_ROW__") {
+            return (
+              <input
+                className="tableInput"
+                defaultValue={editFormRef.current.defCode ?? ""}
+                onChange={(e) => {
+                  editFormRef.current.defCode = e.target.value;
+                }}
+                placeholder="불량코드 입력"
+                autoFocus
+              />
+            );
+          }
+          return row.original.defCode;
+        },
       },
       {
         accessorKey: "operCode",
         header: "공정코드",
         cell: ({ row }) => {
+          const isNewRow = row.original.defCode === "__NEW_ROW__";
           const isEditing = row.original.defCode === editingDefCode;
-          if (isEditing) {
+
+          if (isNewRow || isEditing) {
             return (
               <input
                 className="tableInput"
-                defaultValue={editFormRef.current.operCode ?? ""}
+                defaultValue={
+                  isNewRow
+                    ? editFormRef.current.operCode ?? ""
+                    : editFormRef.current.operCode ?? ""
+                }
                 onChange={(e) => {
                   editFormRef.current.operCode = e.target.value;
                 }}
@@ -308,12 +364,18 @@ export function MasterDefectsPage() {
         accessorKey: "defNm",
         header: "불량명",
         cell: ({ row }) => {
+          const isNewRow = row.original.defCode === "__NEW_ROW__";
           const isEditing = row.original.defCode === editingDefCode;
-          if (isEditing) {
+
+          if (isNewRow || isEditing) {
             return (
               <input
                 className="tableInput"
-                defaultValue={editFormRef.current.defNm ?? ""}
+                defaultValue={
+                  isNewRow
+                    ? editFormRef.current.defNm ?? ""
+                    : editFormRef.current.defNm ?? ""
+                }
                 onChange={(e) => {
                   editFormRef.current.defNm = e.target.value;
                 }}
@@ -328,12 +390,18 @@ export function MasterDefectsPage() {
         accessorKey: "defType",
         header: "불량유형",
         cell: ({ row }) => {
+          const isNewRow = row.original.defCode === "__NEW_ROW__";
           const isEditing = row.original.defCode === editingDefCode;
-          if (isEditing) {
+
+          if (isNewRow || isEditing) {
             return (
               <input
                 className="tableInput"
-                defaultValue={editFormRef.current.defType ?? ""}
+                defaultValue={
+                  isNewRow
+                    ? editFormRef.current.defType ?? ""
+                    : editFormRef.current.defType ?? ""
+                }
                 onChange={(e) => {
                   editFormRef.current.defType = e.target.value;
                 }}
@@ -348,12 +416,18 @@ export function MasterDefectsPage() {
         accessorKey: "severity",
         header: "심각도",
         cell: ({ row }) => {
+          const isNewRow = row.original.defCode === "__NEW_ROW__";
           const isEditing = row.original.defCode === editingDefCode;
-          if (isEditing) {
+
+          if (isNewRow || isEditing) {
             return (
               <input
                 className="tableInput"
-                defaultValue={editFormRef.current.severity ?? ""}
+                defaultValue={
+                  isNewRow
+                    ? editFormRef.current.severity ?? ""
+                    : editFormRef.current.severity ?? ""
+                }
                 onChange={(e) => {
                   editFormRef.current.severity = e.target.value;
                 }}
@@ -367,7 +441,10 @@ export function MasterDefectsPage() {
       {
         accessorKey: "useYn",
         header: "사용여부",
-        cell: ({ getValue }) => {
+        cell: ({ row, getValue }) => {
+          if (row.original.defCode === "__NEW_ROW__") {
+            return <Badge tone="good">사용</Badge>;
+          }
           const isUse = getValue<string>() === "Y";
           return <Badge tone={isUse ? "good" : "muted"}>{isUse ? "사용" : "미사용"}</Badge>;
         },
@@ -375,16 +452,43 @@ export function MasterDefectsPage() {
       {
         accessorKey: "createdAt",
         header: "등록일자",
-        cell: ({ getValue }) => formatDateTime(getValue<string>()),
+        cell: ({ row, getValue }) => {
+          if (row.original.defCode === "__NEW_ROW__") return "-";
+          return formatDateTime(getValue<string>());
+        },
       },
       {
         id: "actions",
         header: "관리",
         meta: { width: "130px" },
         cell: ({ row }) => {
+          const isNewRow = row.original.defCode === "__NEW_ROW__";
           const isEditing = row.original.defCode === editingDefCode;
           const isDeleting = isDeletingDefCode === row.original.defCode;
           const isUsed = row.original.useYn === "Y";
+
+          if (isNewRow) {
+            return (
+              <div className="rowActions" style={{ display: "flex", gap: "4px" }}>
+                <button
+                  type="button"
+                  className="miniButton primary"
+                  disabled={isUpdating}
+                  onClick={handleSaveCreate}
+                >
+                  {isUpdating ? "저장 중" : "저장"}
+                </button>
+                <button
+                  type="button"
+                  className="miniButton danger"
+                  disabled={isUpdating}
+                  onClick={handleCancelCreate}
+                >
+                  취소
+                </button>
+              </div>
+            );
+          }
 
           if (isEditing) {
             return (
@@ -414,7 +518,7 @@ export function MasterDefectsPage() {
               <button
                 type="button"
                 className="miniButton"
-                disabled={editingDefCode !== null || isDeleting}
+                disabled={editingDefCode !== null || isCreatingNewRow || isDeleting}
                 onClick={() => handleStartEdit(row.original)}
               >
                 수정
@@ -422,7 +526,7 @@ export function MasterDefectsPage() {
               <button
                 type="button"
                 className="miniButton danger"
-                disabled={editingDefCode !== null || isDeleting || !isUsed}
+                disabled={editingDefCode !== null || isCreatingNewRow || isDeleting || !isUsed}
                 onClick={() => handleDeleteDefect(row.original.defCode)}
               >
                 {isDeleting ? "삭제 중" : "삭제"}
@@ -432,19 +536,36 @@ export function MasterDefectsPage() {
         },
       },
     ],
-    [editingDefCode, isUpdating, isDeletingDefCode]
+    [editingDefCode, isCreatingNewRow, isUpdating, isDeletingDefCode]
   );
+
+  const displayDefects = useMemo(() => {
+    if (isCreatingNewRow) {
+      const dummyNewRow: DefectResponse = {
+        defCode: "__NEW_ROW__",
+        operCode: "",
+        defNm: "",
+        defType: "",
+        severity: "",
+        useYn: "Y",
+        createdAt: "",
+        updatedAt: "",
+      };
+      return [dummyNewRow, ...defects];
+    }
+    return defects;
+  }, [isCreatingNewRow, defects]);
 
   return (
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="불량관리 목록" action="등록" onAction={handleCreate}>
+      <Panel title="불량관리 목록" action="등록" onAction={handleStartCreate}>
         <div className="relative min-h-[300px]">
           {isLoading && <span>데이터를 불러오는 중입니다...</span>}
 
           <CusTable
-            data={defects}
+            data={displayDefects}
             columns={columns}
           />
           <CusPagination
