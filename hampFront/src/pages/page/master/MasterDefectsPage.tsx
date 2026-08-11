@@ -374,7 +374,7 @@ export function MasterDefectsPage() {
       },
       {
         accessorKey: "createdAt",
-        header: "생성일시",
+        header: "등록일자",
         cell: ({ getValue }) => formatDateTime(getValue<string>()),
       },
       {

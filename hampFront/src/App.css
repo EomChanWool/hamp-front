@@ -1460,7 +1460,7 @@ th,
 td {
   border-bottom: 1px solid var(--border);
   padding: 11px 10px;
-  text-align: left;
+  text-align: center;
   font-size: 12px;
 }
 
@@ -1470,6 +1470,7 @@ th {
   color: #898e94;
   font-weight: 500;
   border-bottom: 0;
+  text-align: center;
 }
 
 th:nth-child(1) {
