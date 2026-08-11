@@ -595,6 +595,7 @@ export function MasterDefectsPage() {
                 columns={columns}
                 sorting={sorting}
                 onSortingChange={handleSortingChange}
+                noDataMessage="조회된 데이터가 없습니다."
               />
               <CusPagination
                 page={currentPage}

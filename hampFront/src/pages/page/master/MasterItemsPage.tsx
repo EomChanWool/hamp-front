@@ -293,6 +293,7 @@ export function MasterItemsPage() {
                 sorting={sorting}
                 onSortingChange={handleSortingChange}
                 onRowClick={(row) => handleOpenDetail(row.itemCode)}
+                noDataMessage="조회된 데이터가 없습니다."
               />
               <CusPagination
                 page={currentPage}

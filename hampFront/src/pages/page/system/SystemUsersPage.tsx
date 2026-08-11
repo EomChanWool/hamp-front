@@ -199,6 +199,7 @@ export function SystemUsersPage() {
                 sorting={sorting}
                 onSortingChange={handleSortingChange}
                 onRowClick={(row) => handleRowClick(row.userId)}
+                noDataMessage="조회된 데이터가 없습니다."
               />
               <CusPagination
                 page={currentPage}

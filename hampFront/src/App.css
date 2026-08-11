@@ -385,7 +385,7 @@
 }
 
 /* ================================
-   FORM ELEMENTS
+    FORM ELEMENTS
 ================================ */
 
 label {
@@ -396,22 +396,39 @@ label {
   font-weight: 700;
 }
 
+/* textarea 추가 */
 input,
-select {
+select,
+textarea {
   min-width: 0;
-  height: 40px;
   border: 1px solid #d8dee9;
   border-radius: 8px;
   background: #fff;
-  padding: 0 10px;
   color: #0b1f3a;
   font: inherit;
   font-weight: 400;
   outline: none;
 }
 
+/* input과 select 전용 (고정 높이) */
+input,
+select {
+  height: 40px;
+  padding: 0 10px;
+}
+
+/* textarea 전용 (여러 줄 입력에 맞게 조정) */
+textarea {
+  min-height: 80px;
+  padding: 10px;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+/* textarea focus 추가 */
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   border-color: #00a6a6;
   box-shadow: 0 0 0 3px rgba(0, 166, 166, 0.12);
 }
@@ -1396,11 +1413,28 @@ button {
   border-color: #fca5a5;
 }
 
+/* input과 textarea 공통 스타일 */
 .tableInput {
   width: 100%;
+  border: 1px solid #d1d5db; /* 프로젝트에 맞는 테두리 색상 사용 */
+  border-radius: 4px;
+  font-size: 12px; /* 기존 크기 유지 */
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+/* input 전용 */
+input.tableInput {
   height: 36px;
   padding: 0 8px;
-  font-size: 12px;
+}
+
+/* textarea 전용 (상단 input과 테두리/폰트 등 디자인 일치) */
+textarea.tableInput {
+  min-height: 72px; /* 적당히 잡힌 두세 줄 높이 */
+  padding: 8px;     /* 위아래 여백을 주어 자연스럽게 표시 */
+  resize: vertical; /* 사용자가 크기를 세로로 조절할 수 있게 허용 */
+  line-height: 1.4;
 }
 
 .permissionGrid {

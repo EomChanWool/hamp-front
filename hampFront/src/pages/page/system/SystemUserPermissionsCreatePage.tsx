@@ -175,8 +175,8 @@ export function SystemUserPermissionsCreatePage() {
                                                     hasChildren
                                                         ? getCheckState(menu, p.key)
                                                         : permState[menu.menuId]?.[p.key]
-                                                        ? "checked"
-                                                        : "unchecked"
+                                                            ? "checked"
+                                                            : "unchecked"
                                                 }
                                                 disabled={isSubmitting}
                                                 onToggle={() => handleToggle(menu.menuId, p.key)}
@@ -265,7 +265,7 @@ export function SystemUserPermissionsCreatePage() {
 
             <Panel title="신규 권한 그룹 등록">
                 <form className="pageForm" onSubmit={handleSubmit}>
-                    
+
                     {/* 1. 상단 기본 정보 입력 영역 */}
                     <div className="detailField">
                         <label className="requiredLabel">
@@ -293,10 +293,11 @@ export function SystemUserPermissionsCreatePage() {
                         />
                     </div>
 
-                    <div className="detailField">
+                    <div className="detailField" style={{ gridColumn: "1 / -1" }}>
                         <label>설명</label>
-                        <input
+                        <textarea
                             className="tableInput"
+                            rows={3}
                             value={form.authDesc}
                             disabled={isSubmitting}
                             onChange={(e) => handleFormChange("authDesc", e.target.value)}
