@@ -1,4 +1,5 @@
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef, type SortingState } from '@tanstack/react-table'
+import { ChevronUpIcon, ChevronDownIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid'
 
 export interface CusColumnMeta {
   /** 고정 너비 (예: '150px'). 미지정 시 마지막 컬럼만 150px, 나머지는 auto */
@@ -92,7 +93,13 @@ export function CusTable<T>({
                       {flexRender(header.column.columnDef.header, header.getContext())}
                       {canSort && (
                         <span className={`sort-icon ${sortDir ? 'active' : ''}`}>
-                          {sortDir === 'asc' ? ' ▲' : sortDir === 'desc' ? ' ▼' : ' ↕'}
+                          {sortDir === 'asc' ? (
+                            <ChevronUpIcon className="w-4 h-4" aria-hidden="true" />
+                          ) : sortDir === 'desc' ? (
+                            <ChevronDownIcon className="w-4 h-4" aria-hidden="true" />
+                          ) : (
+                            <ChevronUpDownIcon className="w-4 h-4" aria-hidden="true" />
+                          )}
                         </span>
                       )}
                     </div>
