@@ -17,6 +17,7 @@ import type {
   DepartmentOptionResponse,
   ApiResponseListDepartmentOptionResponse,
 } from "@/types/master/Department";
+import Spinner from "@/components/common/Spinner";
 
 interface DepartmentCreateRequest extends DepartmentUpdateRequest {
   depCode: string;
@@ -539,20 +540,26 @@ export function MasterDepartmentPage() {
 
       <Panel title="부서 관리 목록" action="등록" onAction={handleStartCreate}>
         <div className="relative min-h-[300px]">
-          {isLoading && <span>데이터를 불러오는 중입니다...</span>}
-
-          <CusTable
-            data={displayDepartments}
-            columns={columns}
-            sorting={sorting}
-            onSortingChange={handleSortingChange}
-          />
-          <CusPagination
-            page={currentPage}
-            totalPages={totalPages}
-            totalCount={totalElements}
-            onPageChange={handlePageChange}
-          />
+          {isLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              <CusTable
+                data={displayDepartments}
+                columns={columns}
+                sorting={sorting}
+                onSortingChange={handleSortingChange}
+              />
+              <CusPagination
+                page={currentPage}
+                totalPages={totalPages}
+                totalCount={totalElements}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
         </div>
       </Panel>
     </section>

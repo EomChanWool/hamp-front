@@ -13,6 +13,7 @@ import type {
   EquipmentResponse,
   ApiResponsePageEquipmentResponse,
 } from "@/types/master/Equipment";
+import Spinner from "@/components/common/Spinner";
 
 export function MasterEquipmentPage() {
   const navigate = useNavigate();
@@ -227,22 +228,28 @@ export function MasterEquipmentPage() {
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
       <Panel title="장비관리 목록" action="등록" onAction={handleCreate}>
-        <div className="relative min-h-[300px]">
-          {isLoading && <span>데이터를 불러오는 중입니다...</span>}
-
-          <CusTable
-            data={equipments}
-            columns={columns}
-            sorting={sorting}
-            onSortingChange={handleSortingChange}
-            onRowClick={(row) => handleOpenDetail(row.eqCode)}
-          />
-          <CusPagination
-            page={currentPage}
-            totalPages={totalPages}
-            totalCount={totalElements}
-            onPageChange={handlePageChange}
-          />
+         <div className="relative min-h-[300px]">
+          {isLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              <CusTable
+                data={equipments}
+                columns={columns}
+                sorting={sorting}
+                onSortingChange={handleSortingChange}
+                onRowClick={(row) => handleOpenDetail(row.eqCode)}
+              />
+              <CusPagination
+                page={currentPage}
+                totalPages={totalPages}
+                totalCount={totalElements}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
         </div>
       </Panel>
     </section>

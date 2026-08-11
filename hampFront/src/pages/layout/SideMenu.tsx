@@ -4,6 +4,7 @@ import { FolderIcon, FolderOpenIcon, ChevronDownIcon, ChevronUpIcon } from "@her
 import { menuRoutes } from "@/router";
 import { apiClient } from "@/api/apiClient";
 import type { ApiResponseListMenuResponse, MenuResponse } from "@/types/Menu";
+import Spinner from "@/components/common/Spinner";
 
 type SideMenuProps = {
   collapsed: boolean;
@@ -70,7 +71,7 @@ export function SideMenu({ collapsed }: SideMenuProps) {
   if (isLoading) {
     return (
       <aside className="sidebar">
-        <div className="p-4 text-sm text-gray-400">메뉴 로딩중...</div>
+        <div> <Spinner/> </div>
       </aside>
     );
   }

@@ -16,6 +16,7 @@ import type {
   ApiResponsePageFactoryZoneResponse,
   FactoryZoneUpdateRequest,
 } from "@/types/master/FactoryZone";
+import Spinner from "@/components/common/Spinner";
 
 interface FactoryZoneCreateRequest extends FactoryZoneUpdateRequest {
   facCode: string;
@@ -536,21 +537,27 @@ export function MasterFactoryZonePage() {
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
       <Panel title="공장관리 목록" action="등록" onAction={handleStartCreate}>
-        <div className="relative min-h-[300px]">
-          {isLoading && <span>데이터를 불러오는 중입니다...</span>}
-
-          <CusTable
-            data={displayFactoryZones}
-            columns={columns}
-            sorting={sorting}
-            onSortingChange={handleSortingChange}
-          />
-          <CusPagination
-            page={currentPage}
-            totalPages={totalPages}
-            totalCount={totalElements}
-            onPageChange={handlePageChange}
-          />
+         <div className="relative min-h-[300px]">
+          {isLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              <CusTable
+                data={displayFactoryZones}
+                columns={columns}
+                sorting={sorting}
+                onSortingChange={handleSortingChange}
+              />
+              <CusPagination
+                page={currentPage}
+                totalPages={totalPages}
+                totalCount={totalElements}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
         </div>
       </Panel>
     </section>

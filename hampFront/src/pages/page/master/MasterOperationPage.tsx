@@ -18,6 +18,7 @@ import type {
   ApiResponseListOperationOptionResponse,
 } from "@/types/master/Operation";
 import { useTableSorting } from "@/hooks/useTableSorting";
+import Spinner from "@/components/common/Spinner";
 
 interface OperationCreateRequest extends OperationUpdateRequest {
   operCode: string;
@@ -584,21 +585,27 @@ export function MasterOperationPage() {
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
       <Panel title="공정 관리 목록" action="등록" onAction={handleStartCreate}>
-        <div className="relative min-h-[300px]">
-          {isLoading && <span>데이터를 불러오는 중입니다...</span>}
-
-          <CusTable
-            data={displayOperations}
-            columns={columns}
-            sorting={sorting}
-            onSortingChange={handleSortingChange}
-          />
-          <CusPagination
-            page={currentPage}
-            totalPages={totalPages}
-            totalCount={totalElements}
-            onPageChange={handlePageChange}
-          />
+         <div className="relative min-h-[300px]">
+          {isLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              <CusTable
+                data={displayOperations}
+                columns={columns}
+                sorting={sorting}
+                onSortingChange={handleSortingChange}
+              />
+              <CusPagination
+                page={currentPage}
+                totalPages={totalPages}
+                totalCount={totalElements}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
         </div>
       </Panel>
     </section>

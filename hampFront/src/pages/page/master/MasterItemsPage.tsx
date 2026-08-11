@@ -18,6 +18,7 @@ import {
   type ItemCategory,
 } from "@/types/master/Item";
 import { Badge } from "@/components/common/Badge";
+import Spinner from "@/components/common/Spinner";
 
 export function MasterItemsPage() {
   const navigate = useNavigate();
@@ -280,21 +281,27 @@ export function MasterItemsPage() {
 
       <Panel title="품목관리 목록" action="등록" onAction={handleCreate}>
         <div className="relative min-h-[300px]">
-          {isLoading && <span>데이터를 불러오는 중입니다...</span>}
-
-          <CusTable
-            data={items}
-            columns={columns}
-            sorting={sorting}
-            onSortingChange={handleSortingChange}
-            onRowClick={(row) => handleOpenDetail(row.itemCode)}
-          />
-          <CusPagination
-            page={currentPage}
-            totalPages={totalPages}
-            totalCount={totalElements}
-            onPageChange={handlePageChange}
-          />
+          {isLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              <CusTable
+                data={items}
+                columns={columns}
+                sorting={sorting}
+                onSortingChange={handleSortingChange}
+                onRowClick={(row) => handleOpenDetail(row.itemCode)}
+              />
+              <CusPagination
+                page={currentPage}
+                totalPages={totalPages}
+                totalCount={totalElements}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
         </div>
       </Panel>
     </section>

@@ -15,6 +15,7 @@ import {
   type ItemCategory,
   type ItemRoutingRequest,
 } from "@/types/master/Item";
+import Spinner from "@/components/common/Spinner";
 
 type Field = {
   label: string;
@@ -425,7 +426,7 @@ export function MasterItemsDetailPage() {
     return (
       <section className="screenStack">
         <Panel title="품목 상세 정보">
-          <div className="p-8 text-center">데이터를 불러오는 중입니다...</div>
+           <div> <Spinner/> </div>
         </Panel>
       </section>
     );
