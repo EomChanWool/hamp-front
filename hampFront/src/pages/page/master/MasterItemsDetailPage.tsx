@@ -595,7 +595,7 @@ export function MasterItemsDetailPage() {
           {/* 하단 액션 버튼 영역 */}
           <div className="pageFormFooterSpaceBetween" style={{ gridColumn: "1 / -1", marginTop: "16px" }}>
             <div>
-              {isEditing && (
+              {isEditing && item.useYn === 'Y' && (
                 <button
                   type="button"
                   className="dangerButton text-sm text-red-500 hover:underline px-2 py-1"
