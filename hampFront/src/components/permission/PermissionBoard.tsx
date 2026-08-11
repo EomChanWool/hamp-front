@@ -54,11 +54,7 @@ function PermCheckbox({
   );
 }
 
-interface PermissionBoardProps {
-  searchParams?: Record<string, string>;
-}
-
-export function PermissionBoard({ searchParams = {} }: PermissionBoardProps) {
+export function PermissionBoard() {
   const [authGroups, setAuthGroups] = useState<AuthGroupResponse[]>([]);
   const [activeAuthId, setActiveAuthId] = useState<string | null>(null);
   const [groupDetail, setGroupDetail] = useState<AuthGroupDetailResponse | null>(null);
@@ -101,16 +97,8 @@ export function PermissionBoard({ searchParams = {} }: PermissionBoardProps) {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const cleanedParams = Object.entries(searchParams).reduce(
-          (acc, [key, value]) => {
-            if (value && value.trim() !== "") acc[key] = value.trim();
-            return acc;
-          },
-          {} as Record<string, string>
-        );
-
         const [authRes, menuRes] = await Promise.all([
-          apiClient.get<ApiResponseListAuthGroupResponse>("/auth-groups", { params: cleanedParams }),
+          apiClient.get<ApiResponseListAuthGroupResponse>("/auth-groups"),
           apiClient.get<ApiResponseListMenuResponse>("/menus"),
         ]);
 
@@ -139,8 +127,7 @@ export function PermissionBoard({ searchParams = {} }: PermissionBoardProps) {
     };
 
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [showToast]);
 
   // 2. 선택된 권한 그룹의 상세 정보 및 매트릭스 권한 상태 동기화
   useEffect(() => {
@@ -190,7 +177,7 @@ export function PermissionBoard({ searchParams = {} }: PermissionBoardProps) {
     };
 
     fetchGroupDetail();
-  }, [activeAuthId, menus, showToast]);
+  }, [activeAuthId, menus, showToast, initializePerms]);
 
   const handleStartEdit = () => {
     setIsEditing(true);
