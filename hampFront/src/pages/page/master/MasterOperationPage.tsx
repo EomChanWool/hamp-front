@@ -17,6 +17,8 @@ import type {
   OperationOptionResponse,
   ApiResponseListOperationOptionResponse,
 } from "@/types/master/Operation";
+import { useTableSorting } from "@/hooks/useTableSorting";
+import Spinner from "@/components/common/Spinner";
 
 interface OperationCreateRequest extends OperationUpdateRequest {
   operCode: string;
@@ -47,6 +49,9 @@ export function MasterOperationPage() {
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeletingOperCode, setIsDeletingOperCode] = useState<string | null>(null);
+
+  // 커스텀 훅으로 정렬 상태 및 핸들러 연동
+  const { sorting, sortParams, handleSortingChange } = useTableSorting();
 
   // URL 쿼리 파라미터 값 추출
   const currentPage = Number(searchParams.get("page") || "0");
@@ -132,7 +137,7 @@ export function MasterOperationPage() {
   const loadOperations = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params: Record<string, string | number> = {
+      const params: Record<string, any> = {
         page: currentPage,
         size: 10,
       };
@@ -141,6 +146,11 @@ export function MasterOperationPage() {
       if (queryOperNm) params.operNm = queryOperNm;
       if (queryUseYn) params.useYn = queryUseYn;
       if (queryStdTime) params.stdTime = queryStdTime;
+
+      // 정렬 파라미터 반영
+      if (sortParams.length > 0) {
+        params.sort = sortParams;
+      }
 
       const response = await apiClient.get<ApiResponsePageOperationResponse>("/operations", {
         params,
@@ -163,6 +173,7 @@ export function MasterOperationPage() {
     queryOperNm,
     queryUseYn,
     queryStdTime,
+    sortParams,
   ]);
 
   useEffect(() => {
@@ -171,9 +182,8 @@ export function MasterOperationPage() {
 
   // 검색 핸들러
   const handleSearch = () => {
-    const nextParams: Record<string, string> = {
-      page: "0",
-    };
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", "0");
 
     const operCode = operCodeRef.current?.value.trim();
     const depCode = depCodeRef.current?.value.trim();
@@ -181,11 +191,20 @@ export function MasterOperationPage() {
     const useYn = useYnRef.current?.value.trim();
     const stdTime = stdTimeRef.current?.value.trim();
 
-    if (operCode) nextParams.operCode = operCode;
-    if (depCode) nextParams.depCode = depCode;
-    if (operNm) nextParams.operNm = operNm;
-    if (useYn) nextParams.useYn = useYn;
-    if (stdTime) nextParams.stdTime = stdTime;
+    if (operCode) nextParams.set("operCode", operCode);
+    else nextParams.delete("operCode");
+
+    if (depCode) nextParams.set("depCode", depCode);
+    else nextParams.delete("depCode");
+
+    if (operNm) nextParams.set("operNm", operNm);
+    else nextParams.delete("operNm");
+
+    if (useYn) nextParams.set("useYn", useYn);
+    else nextParams.delete("useYn");
+
+    if (stdTime) nextParams.set("stdTime", stdTime);
+    else nextParams.delete("stdTime");
 
     setEditingOperCode(null);
     setIsCreatingNewRow(false);
@@ -308,11 +327,11 @@ export function MasterOperationPage() {
         prev.map((item) =>
           item.operCode === operCode
             ? {
-                ...item,
-                depCode: updatePayload.depCode ?? item.depCode,
-                operNm: updatePayload.operNm ?? item.operNm,
-                stdTime: updatePayload.stdTime ?? item.stdTime,
-              }
+              ...item,
+              depCode: updatePayload.depCode ?? item.depCode,
+              operNm: updatePayload.operNm ?? item.operNm,
+              stdTime: updatePayload.stdTime ?? item.stdTime,
+            }
             : item
         )
       );
@@ -566,19 +585,27 @@ export function MasterOperationPage() {
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
       <Panel title="공정 관리 목록" action="등록" onAction={handleStartCreate}>
-        <div className="relative min-h-[300px]">
-          {isLoading && <span>데이터를 불러오는 중입니다...</span>}
-
-          <CusTable
-            data={displayOperations}
-            columns={columns}
-          />
-          <CusPagination
-            page={currentPage}
-            totalPages={totalPages}
-            totalCount={totalElements}
-            onPageChange={handlePageChange}
-          />
+         <div className="relative min-h-[300px]">
+          {isLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              <CusTable
+                data={displayOperations}
+                columns={columns}
+                sorting={sorting}
+                onSortingChange={handleSortingChange}
+              />
+              <CusPagination
+                page={currentPage}
+                totalPages={totalPages}
+                totalCount={totalElements}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
         </div>
       </Panel>
     </section>

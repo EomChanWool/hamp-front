@@ -7,11 +7,13 @@ import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
 import { formatDateTime } from "@/utils/common";
 import { apiClient } from "@/api/apiClient";
+import { useTableSorting } from "@/hooks/useTableSorting";
 
 import type {
   EquipmentResponse,
   ApiResponsePageEquipmentResponse,
 } from "@/types/master/Equipment";
+import Spinner from "@/components/common/Spinner";
 
 export function MasterEquipmentPage() {
   const navigate = useNavigate();
@@ -21,6 +23,9 @@ export function MasterEquipmentPage() {
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+
+  // 커스텀 훅으로 정렬 상태 및 핸들러 연동
+  const { sorting, sortParams, handleSortingChange } = useTableSorting();
 
   // URL 쿼리스트링에서 상태 추출
   const currentPage = Number(searchParams.get("page") || "0");
@@ -64,7 +69,7 @@ export function MasterEquipmentPage() {
   const loadEquipments = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params: Record<string, string | number> = {
+      const params: Record<string, any> = {
         page: currentPage,
         size: 10,
       };
@@ -73,6 +78,11 @@ export function MasterEquipmentPage() {
       if (queryEqNm) params.eqNm = queryEqNm;
       if (queryEqType) params.eqType = queryEqType;
       if (queryManufacturer) params.manufacturer = queryManufacturer;
+
+      // 정렬 파라미터 반영
+      if (sortParams.length > 0) {
+        params.sort = sortParams;
+      }
 
       const response = await apiClient.get<ApiResponsePageEquipmentResponse>("/equipment", {
         params,
@@ -95,17 +105,17 @@ export function MasterEquipmentPage() {
     queryEqNm,
     queryEqType,
     queryManufacturer,
+    sortParams,
   ]);
 
   useEffect(() => {
     loadEquipments();
   }, [loadEquipments]);
 
-  // 검색 핸들러
+  // 검색 핸들러 (표준화된 set/delete 방식 적용)
   const handleSearch = () => {
-    const nextParams: Record<string, string> = {
-      page: "0",
-    };
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", "0");
 
     const eqCode = eqCodeRef.current?.value.trim();
     const operCode = operCodeRef.current?.value.trim();
@@ -113,11 +123,20 @@ export function MasterEquipmentPage() {
     const eqType = eqTypeRef.current?.value.trim();
     const manufacturer = manufacturerRef.current?.value.trim();
 
-    if (eqCode) nextParams.eqCode = eqCode;
-    if (operCode) nextParams.operCode = operCode;
-    if (eqNm) nextParams.eqNm = eqNm;
-    if (eqType) nextParams.eqType = eqType;
-    if (manufacturer) nextParams.manufacturer = manufacturer;
+    if (eqCode) nextParams.set("eqCode", eqCode);
+    else nextParams.delete("eqCode");
+
+    if (operCode) nextParams.set("operCode", operCode);
+    else nextParams.delete("operCode");
+
+    if (eqNm) nextParams.set("eqNm", eqNm);
+    else nextParams.delete("eqNm");
+
+    if (eqType) nextParams.set("eqType", eqType);
+    else nextParams.delete("eqType");
+
+    if (manufacturer) nextParams.set("manufacturer", manufacturer);
+    else nextParams.delete("manufacturer");
 
     setSearchParams(nextParams);
   };
@@ -163,45 +182,42 @@ export function MasterEquipmentPage() {
   const columns: ColumnDef<EquipmentResponse>[] = useMemo(
     () => [
       { accessorKey: "eqCode", header: "장비코드" },
-      { accessorKey: "operCode", header: "공정코드", cell: ({ getValue }) => {
+      { 
+        accessorKey: "operCode", 
+        header: "공정코드", 
+        cell: ({ getValue }) => {
           const val = getValue<string>();
           return val ? val : "-";
-        }, },
-      { accessorKey: "eqNm", header: "장비명", cell: ({ getValue }) => {
+        }, 
+      },
+      { 
+        accessorKey: "eqNm", 
+        header: "장비명", 
+        cell: ({ getValue }) => {
           const val = getValue<string>();
           return val ? val : "-";
-        }, },
-      { accessorKey: "eqType", header: "장비유형", cell: ({ getValue }) => {
+        }, 
+      },
+      { 
+        accessorKey: "eqType", 
+        header: "장비유형", 
+        cell: ({ getValue }) => {
           const val = getValue<string>();
           return val ? val : "-";
-        }, },
-      { accessorKey: "manufacturer", header: "제조사", cell: ({ getValue }) => {
+        }, 
+      },
+      { 
+        accessorKey: "manufacturer", 
+        header: "제조사", 
+        cell: ({ getValue }) => {
           const val = getValue<string>();
           return val ? val : "-";
-        }, },
+        }, 
+      },
       {
         accessorKey: "createdAt",
         header: "등록일자",
         cell: ({ getValue }) => formatDateTime(getValue<string>()),
-      },
-      {
-        id: "actions",
-        header: "관리",
-        meta: { width: "100px" },
-        cell: ({ row }) => (
-          <div className="rowActions">
-            <button
-              type="button"
-              className="miniButton"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenDetail(row.original.eqCode);
-              }}
-            >
-              상세
-            </button>
-          </div>
-        ),
       },
     ],
     [searchParams]
@@ -212,20 +228,28 @@ export function MasterEquipmentPage() {
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
       <Panel title="장비관리 목록" action="등록" onAction={handleCreate}>
-        <div className="relative min-h-[300px]">
-          {isLoading && <span>데이터를 불러오는 중입니다...</span>}
-
-          <CusTable
-            data={equipments}
-            columns={columns}
-            onRowClick={(row) => handleOpenDetail(row.eqCode)}
-          />
-          <CusPagination
-            page={currentPage}
-            totalPages={totalPages}
-            totalCount={totalElements}
-            onPageChange={handlePageChange}
-          />
+         <div className="relative min-h-[300px]">
+          {isLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              <CusTable
+                data={equipments}
+                columns={columns}
+                sorting={sorting}
+                onSortingChange={handleSortingChange}
+                onRowClick={(row) => handleOpenDetail(row.eqCode)}
+              />
+              <CusPagination
+                page={currentPage}
+                totalPages={totalPages}
+                totalCount={totalElements}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
         </div>
       </Panel>
     </section>

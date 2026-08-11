@@ -7,6 +7,7 @@ import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
 import { formatDateTime } from "@/utils/common";
 import { apiClient } from "@/api/apiClient";
+import { useTableSorting } from "@/hooks/useTableSorting";
 
 import {
   PRODUCT_TYPE_LABEL,
@@ -17,6 +18,7 @@ import {
   type ItemCategory,
 } from "@/types/master/Item";
 import { Badge } from "@/components/common/Badge";
+import Spinner from "@/components/common/Spinner";
 
 export function MasterItemsPage() {
   const navigate = useNavigate();
@@ -26,6 +28,9 @@ export function MasterItemsPage() {
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+
+  // 커스텀 훅으로 정렬 상태 및 핸들러 연동
+  const { sorting, sortParams, handleSortingChange } = useTableSorting();
 
   const currentPage = Number(searchParams.get("page") || "0");
   const queryItemCode = searchParams.get("itemCode") || "";
@@ -103,7 +108,7 @@ export function MasterItemsPage() {
   const loadItems = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params: Record<string, string | number> = {
+      const params: Record<string, any> = {
         page: currentPage,
         size: 10,
       };
@@ -115,6 +120,11 @@ export function MasterItemsPage() {
       if (queryUnit) params.unit = queryUnit;
       if (queryStandard) params.standard = queryStandard;
       if (queryUseYn) params.useYn = queryUseYn;
+
+      // 정렬 파라미터 반영
+      if (sortParams.length > 0) {
+        params.sort = sortParams;
+      }
 
       const response = await apiClient.get<ApiResponsePageItemResponse>("/items", {
         params,
@@ -139,6 +149,7 @@ export function MasterItemsPage() {
     queryUnit,
     queryStandard,
     queryUseYn,
+    sortParams,
   ]);
 
   useEffect(() => {
@@ -146,7 +157,8 @@ export function MasterItemsPage() {
   }, [loadItems]);
 
   const handleSearch = () => {
-    const nextParams: Record<string, string> = { page: "0" };
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", "0");
 
     const itemCode = itemCodeRef.current?.value.trim();
     const productType = productTypeRef.current?.value.trim();
@@ -156,13 +168,26 @@ export function MasterItemsPage() {
     const standard = standardRef.current?.value.trim();
     const useYn = useYnRef.current?.value.trim();
 
-    if (itemCode) nextParams.itemCode = itemCode;
-    if (productType) nextParams.productType = productType;
-    if (category) nextParams.category = category;
-    if (itemNm) nextParams.itemNm = itemNm;
-    if (unit) nextParams.unit = unit;
-    if (standard) nextParams.standard = standard;
-    if (useYn) nextParams.useYn = useYn;
+    if (itemCode) nextParams.set("itemCode", itemCode);
+    else nextParams.delete("itemCode");
+
+    if (productType) nextParams.set("productType", productType);
+    else nextParams.delete("productType");
+
+    if (category) nextParams.set("category", category);
+    else nextParams.delete("category");
+
+    if (itemNm) nextParams.set("itemNm", itemNm);
+    else nextParams.delete("itemNm");
+
+    if (unit) nextParams.set("unit", unit);
+    else nextParams.delete("unit");
+
+    if (standard) nextParams.set("standard", standard);
+    else nextParams.delete("standard");
+
+    if (useYn) nextParams.set("useYn", useYn);
+    else nextParams.delete("useYn");
 
     setSearchParams(nextParams);
   };
@@ -246,25 +271,6 @@ export function MasterItemsPage() {
         header: "등록일자",
         cell: ({ getValue }) => formatDateTime(getValue<string>()),
       },
-      {
-        id: "actions",
-        header: "관리",
-        meta: { width: "100px" },
-        cell: ({ row }) => (
-          <div className="rowActions">
-            <button
-              type="button"
-              className="miniButton"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenDetail(row.original.itemCode);
-              }}
-            >
-              상세
-            </button>
-          </div>
-        ),
-      },
     ],
     [searchParams]
   );
@@ -275,19 +281,27 @@ export function MasterItemsPage() {
 
       <Panel title="품목관리 목록" action="등록" onAction={handleCreate}>
         <div className="relative min-h-[300px]">
-          {isLoading && <span>데이터를 불러오는 중입니다...</span>}
-
-          <CusTable
-            data={items}
-            columns={columns}
-            onRowClick={(row) => handleOpenDetail(row.itemCode)}
-          />
-          <CusPagination
-            page={currentPage}
-            totalPages={totalPages}
-            totalCount={totalElements}
-            onPageChange={handlePageChange}
-          />
+          {isLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              <CusTable
+                data={items}
+                columns={columns}
+                sorting={sorting}
+                onSortingChange={handleSortingChange}
+                onRowClick={(row) => handleOpenDetail(row.itemCode)}
+              />
+              <CusPagination
+                page={currentPage}
+                totalPages={totalPages}
+                totalCount={totalElements}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
         </div>
       </Panel>
     </section>

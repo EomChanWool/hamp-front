@@ -10,6 +10,7 @@ import type {
   ApiResponseEquipmentResponse,
   EquipmentUpdateRequest,
 } from "@/types/master/Equipment";
+import Spinner from "@/components/common/Spinner";
 
 type Field = {
   label: string;
@@ -171,7 +172,7 @@ export function MasterEquipmentDetailPage() {
     return (
       <section className="screenStack">
         <Panel title="장비 상세 정보">
-          <div className="p-8 text-center">데이터를 불러오는 중입니다...</div>
+            <div> <Spinner/> </div>
         </Panel>
       </section>
     );

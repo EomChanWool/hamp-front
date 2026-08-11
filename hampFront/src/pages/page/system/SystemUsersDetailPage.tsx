@@ -11,6 +11,7 @@ import type {
   UserUpdateRequest 
 } from "@/types/User";
 import type { AuthGroupResponse, ApiResponseListAuthGroupResponse } from "@/types/auth/Auth";
+import Spinner from "@/components/common/Spinner";
 
 export function SystemUserDetailPage() {
   const { userId } = useParams<{ userId: string }>();
@@ -209,7 +210,7 @@ export function SystemUserDetailPage() {
     return (
       <section className="screenStack">
         <Panel title="사용자 상세 정보">
-          <div className="p-8 text-center text-gray-400">데이터를 불러오는 중입니다...</div>
+          <div> <Spinner/> </div>
         </Panel>
       </section>
     );

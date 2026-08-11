@@ -8,11 +8,12 @@ import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
 import { formatDateTime } from "@/utils/common";
 import { apiClient } from "@/api/apiClient";
-import { useTableSorting } from "@/hooks/useTableSorting"; 
+import { useTableSorting } from "@/hooks/useTableSorting";
 import type {
   UserResponse,
   ApiResponsePageUserResponse,
 } from "@/types/User";
+import Spinner from "@/components/common/Spinner";
 
 export function SystemUsersPage() {
   const navigate = useNavigate();
@@ -173,7 +174,7 @@ export function SystemUsersPage() {
     []
   );
 
-  return (
+ return (
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
@@ -186,21 +187,27 @@ export function SystemUsersPage() {
         }}
       >
         <div className="relative min-h-[300px]">
-          {isLoading && <span>데이터를 불러오는 중입니다...</span>}
-
-          <CusTable
-            data={users}
-            columns={columns}
-            sorting={sorting}
-            onSortingChange={handleSortingChange}
-            onRowClick={(row) => handleRowClick(row.userId)}
-          />
-          <CusPagination
-            page={currentPage}
-            totalPages={totalPages}
-            totalCount={totalElements}
-            onPageChange={handlePageChange}
-          />
+          {isLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              <CusTable
+                data={users}
+                columns={columns}
+                sorting={sorting}
+                onSortingChange={handleSortingChange}
+                onRowClick={(row) => handleRowClick(row.userId)}
+              />
+              <CusPagination
+                page={currentPage}
+                totalPages={totalPages}
+                totalCount={totalElements}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
         </div>
       </Panel>
     </section>
