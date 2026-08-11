@@ -142,7 +142,7 @@ export function SystemUsersPage() {
       },
       {
         accessorKey: "createdAt",
-        header: "생성일시",
+        header: "등록일자",
         cell: ({ getValue }) => {
           const val = getValue<string>();
           return val ? formatDateTime(val) : "-";

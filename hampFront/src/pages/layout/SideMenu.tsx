@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate, matchPath } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { FolderIcon, FolderOpenIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { menuRoutes } from "@/router";
 import { apiClient } from "@/api/apiClient";
@@ -41,7 +41,10 @@ export function SideMenu({ collapsed }: SideMenuProps) {
     for (const group of menuRoutes) {
       for (const item of group.items) {
         const fullPath = `${group.path}/${item.path}`.replace(/\/+/g, "/");
-        if (matchPath({ path: fullPath, end: true }, location.pathname)) {
+        if (
+          location.pathname === fullPath ||
+          location.pathname.startsWith(`${fullPath}/`)
+        ) {
           return group.title;
         }
       }
@@ -133,7 +136,9 @@ export function SideMenu({ collapsed }: SideMenuProps) {
                   const fullPath = `${group.path}/${item.path}`.replace(/\/+/g, "/");
 
                   // 현재 주소와 일치하는지 여부 판별
-                  const isItemActive = matchPath({ path: fullPath, end: true }, location.pathname);
+                  const isItemActive =
+                    location.pathname === fullPath ||
+                    location.pathname.startsWith(`${fullPath}/`);
                   const Icon = isItemActive ? FolderOpenIcon : FolderIcon;
 
                   return (

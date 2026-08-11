@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Panel } from "@components/card/Panel";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
@@ -17,8 +17,11 @@ import type {
   ApiResponseListDepartmentOptionResponse,
 } from "@/types/master/Department";
 
+interface DepartmentCreateRequest extends DepartmentUpdateRequest {
+  depCode: string;
+}
+
 export function MasterDepartmentPage() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [departments, setDepartments] = useState<DepartmentResponse[]>([]);
@@ -29,9 +32,13 @@ export function MasterDepartmentPage() {
 
   // 인라인 수정 상태 관리 (현재 수정 중인 부서코드)
   const [editingDepCode, setEditingDepCode] = useState<string | null>(null);
+
+  // 인라인 등록 상태 관리 (true면 테이블 맨 위에 새 입력 행이 생성됨)
+  const [isCreatingNewRow, setIsCreatingNewRow] = useState(false);
   
-  // 타이핑 시 리렌더링을 방지하여 한 글자 입력 버그를 원천 차단하는 Ref
-  const editFormRef = useRef<DepartmentUpdateRequest>({
+  // 타이핑 시 리렌더링을 방지하여 한 글자 입력 버그를 원천 차단하는 Ref (수정 및 등록 공용)
+  const editFormRef = useRef<DepartmentUpdateRequest & { depCode?: string }>({
+    depCode: "",
     head: "",
     headPhone: "",
     taskDesc: "",
@@ -157,6 +164,7 @@ export function MasterDepartmentPage() {
     if (headPhone) nextParams.headPhone = headPhone;
 
     setEditingDepCode(null);
+    setIsCreatingNewRow(false);
     setSearchParams(nextParams);
   };
 
@@ -167,6 +175,7 @@ export function MasterDepartmentPage() {
     if (depCodeRef.current) depCodeRef.current.value = "";
 
     setEditingDepCode(null);
+    setIsCreatingNewRow(false);
     setSearchParams({
       page: "0",
     });
@@ -174,22 +183,66 @@ export function MasterDepartmentPage() {
 
   const handlePageChange = (newPage: number) => {
     setEditingDepCode(null);
+    setIsCreatingNewRow(false);
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("page", String(newPage));
     setSearchParams(nextParams);
   };
 
-  const handleCreate = () => {
-    const queryString = searchParams.toString();
-    navigate(
-      queryString
-        ? `/master/department/create?${queryString}`
-        : "/master/department/create"
-    );
+  // 인라인 등록 행 활성화
+  const handleStartCreate = () => {
+    if (isCreatingNewRow) return;
+    setEditingDepCode(null);
+    editFormRef.current = {
+      depCode: "",
+      head: "",
+      headPhone: "",
+      taskDesc: "",
+    };
+    setIsCreatingNewRow(true);
+  };
+
+  const handleCancelCreate = () => {
+    setIsCreatingNewRow(false);
+  };
+
+  // 인라인 신규 등록 API 저장 (POST /departments)
+  const handleSaveCreate = async () => {
+    if (isUpdating) return;
+
+    const newDepCode = editFormRef.current.depCode?.trim();
+    if (!newDepCode) {
+      window.alert("부서코드를 입력해주세요.");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const payload: DepartmentCreateRequest = {
+        depCode: newDepCode,
+        head: editFormRef.current.head?.trim() || null,
+        headPhone: editFormRef.current.headPhone?.trim() || null,
+        taskDesc: editFormRef.current.taskDesc?.trim() || null,
+      };
+
+      const response = await apiClient.post<ApiResponseDepartmentResponse>("/departments", payload);
+
+      window.alert(response.data?.message || "등록되었습니다.");
+      setIsCreatingNewRow(false);
+      await loadDepartments();
+      await loadDepartmentOptions();
+    } catch (err) {
+      console.error("등록 실패:", err);
+      const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
+      window.alert(errorMessage || "등록에 실패했습니다.");
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   // 인라인 편집 시작
   const handleStartEdit = (row: DepartmentResponse) => {
+    setIsCreatingNewRow(false);
     editFormRef.current = {
       head: row.head ?? "",
       headPhone: row.headPhone ?? "",
@@ -280,13 +333,30 @@ export function MasterDepartmentPage() {
       {
         accessorKey: "depCode",
         header: "부서코드",
+        cell: ({ row }) => {
+          if (row.original.depCode === "__NEW_ROW__") {
+            return (
+              <input
+                className="tableInput"
+                defaultValue={editFormRef.current.depCode ?? ""}
+                onChange={(e) => {
+                  editFormRef.current.depCode = e.target.value;
+                }}
+                placeholder="부서코드 입력"
+                autoFocus
+              />
+            );
+          }
+          return row.original.depCode;
+        },
       },
       {
         accessorKey: "head",
         header: "부서장",
         cell: ({ row }) => {
+          const isNewRow = row.original.depCode === "__NEW_ROW__";
           const isEditing = row.original.depCode === editingDepCode;
-          if (isEditing) {
+          if (isNewRow || isEditing) {
             return (
               <input
                 className="tableInput"
@@ -305,8 +375,9 @@ export function MasterDepartmentPage() {
         accessorKey: "headPhone",
         header: "대표 연락처",
         cell: ({ row }) => {
+          const isNewRow = row.original.depCode === "__NEW_ROW__";
           const isEditing = row.original.depCode === editingDepCode;
-          if (isEditing) {
+          if (isNewRow || isEditing) {
             return (
               <input
                 className="tableInput"
@@ -325,8 +396,9 @@ export function MasterDepartmentPage() {
         accessorKey: "taskDesc",
         header: "담당업무",
         cell: ({ row }) => {
+          const isNewRow = row.original.depCode === "__NEW_ROW__";
           const isEditing = row.original.depCode === editingDepCode;
-          if (isEditing) {
+          if (isNewRow || isEditing) {
             return (
               <input
                 className="tableInput"
@@ -343,16 +415,43 @@ export function MasterDepartmentPage() {
       },
       {
         accessorKey: "createdAt",
-        header: "생성일시",
-        cell: ({ getValue }) => formatDateTime(getValue<string>()),
+        header: "등록일자",
+        cell: ({ row, getValue }) => {
+          if (row.original.depCode === "__NEW_ROW__") return "-";
+          return formatDateTime(getValue<string>());
+        },
       },
       {
         id: "actions",
         header: "관리",
         meta: { width: "130px" },
         cell: ({ row }) => {
+          const isNewRow = row.original.depCode === "__NEW_ROW__";
           const isEditing = row.original.depCode === editingDepCode;
           const isDeleting = isDeletingDepCode === row.original.depCode;
+
+          if (isNewRow) {
+            return (
+              <div className="rowActions" style={{ display: "flex", gap: "4px" }}>
+                <button
+                  type="button"
+                  className="miniButton primary"
+                  disabled={isUpdating}
+                  onClick={handleSaveCreate}
+                >
+                  {isUpdating ? "저장 중" : "저장"}
+                </button>
+                <button
+                  type="button"
+                  className="miniButton danger"
+                  disabled={isUpdating}
+                  onClick={handleCancelCreate}
+                >
+                  취소
+                </button>
+              </div>
+            );
+          }
 
           if (isEditing) {
             return (
@@ -382,7 +481,7 @@ export function MasterDepartmentPage() {
               <button
                 type="button"
                 className="miniButton"
-                disabled={editingDepCode !== null || isDeleting}
+                disabled={editingDepCode !== null || isCreatingNewRow || isDeleting}
                 onClick={() => handleStartEdit(row.original)}
               >
                 수정
@@ -390,7 +489,7 @@ export function MasterDepartmentPage() {
               <button
                 type="button"
                 className="miniButton danger"
-                disabled={editingDepCode !== null || isDeleting}
+                disabled={editingDepCode !== null || isCreatingNewRow || isDeleting}
                 onClick={() => handleDeleteDepartment(row.original.depCode)}
               >
                 {isDeleting ? "삭제 중" : "삭제"}
@@ -400,19 +499,34 @@ export function MasterDepartmentPage() {
         },
       },
     ],
-    [editingDepCode, isUpdating, isDeletingDepCode]
+    [editingDepCode, isCreatingNewRow, isUpdating, isDeletingDepCode]
   );
+
+  const displayDepartments = useMemo(() => {
+    if (isCreatingNewRow) {
+      const dummyNewRow: DepartmentResponse = {
+        depCode: "__NEW_ROW__",
+        head: "",
+        headPhone: "",
+        taskDesc: "",
+        createdAt: "",
+        updatedAt: "",
+      };
+      return [dummyNewRow, ...departments];
+    }
+    return departments;
+  }, [isCreatingNewRow, departments]);
 
   return (
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="부서 관리 목록" action="등록" onAction={handleCreate}>
+      <Panel title="부서 관리 목록" action="등록" onAction={handleStartCreate}>
         <div className="relative min-h-[300px]">
           {isLoading && <span>데이터를 불러오는 중입니다...</span>}
 
           <CusTable
-            data={departments}
+            data={displayDepartments}
             columns={columns}
           />
           <CusPagination

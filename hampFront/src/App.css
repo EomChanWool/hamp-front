@@ -1460,7 +1460,7 @@ th,
 td {
   border-bottom: 1px solid var(--border);
   padding: 11px 10px;
-  text-align: left;
+  text-align: center;
   font-size: 12px;
 }
 
@@ -1470,6 +1470,26 @@ th {
   color: #898e94;
   font-weight: 500;
   border-bottom: 0;
+  text-align: center;
+  user-select: none;
+}
+
+/* th 내부 정렬 및 화살표 스타일 */
+.th-content {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* 전체 중앙정렬 */
+  gap: 4px;
+}
+
+.sort-icon {
+  font-size: 11px;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.sort-icon.active {
+  color: #000;
 }
 
 th:nth-child(1) {
@@ -1486,11 +1506,12 @@ td {
 }
 
 td .rowActions {
+  display: flex;
   justify-content: center;
+  gap: 4px;
 }
 
 tbody tr {
-  cursor: pointer;
   transition: background 0.1s ease;
 }
 

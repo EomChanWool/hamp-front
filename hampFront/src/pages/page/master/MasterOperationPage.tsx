@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@components/common/Badge";
 import { Panel } from "@components/card/Panel";
@@ -18,8 +18,11 @@ import type {
   ApiResponseListOperationOptionResponse,
 } from "@/types/master/Operation";
 
+interface OperationCreateRequest extends OperationUpdateRequest {
+  operCode: string;
+}
+
 export function MasterOperationPage() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [operations, setOperations] = useState<OperationResponse[]>([]);
@@ -31,8 +34,12 @@ export function MasterOperationPage() {
   // 인라인 수정 상태 관리 (현재 수정 중인 공정코드)
   const [editingOperCode, setEditingOperCode] = useState<string | null>(null);
 
-  // 타이핑 시 리렌더링 방지를 위한 폼 상태 Ref
-  const editFormRef = useRef<OperationUpdateRequest>({
+  // 인라인 등록 상태 관리 (true면 테이블 맨 위에 새 입력 행이 생성됨)
+  const [isCreatingNewRow, setIsCreatingNewRow] = useState(false);
+
+  // 타이핑 시 리렌더링 방지를 위한 폼 상태 Ref (수정 및 등록 공용)
+  const editFormRef = useRef<OperationUpdateRequest & { operCode?: string }>({
+    operCode: "",
     depCode: "",
     operNm: "",
     stdTime: "",
@@ -181,6 +188,7 @@ export function MasterOperationPage() {
     if (stdTime) nextParams.stdTime = stdTime;
 
     setEditingOperCode(null);
+    setIsCreatingNewRow(false);
     setSearchParams(nextParams);
   };
 
@@ -193,6 +201,7 @@ export function MasterOperationPage() {
     if (useYnRef.current) useYnRef.current.value = "";
 
     setEditingOperCode(null);
+    setIsCreatingNewRow(false);
     setSearchParams({
       page: "0",
     });
@@ -200,23 +209,66 @@ export function MasterOperationPage() {
 
   const handlePageChange = (newPage: number) => {
     setEditingOperCode(null);
+    setIsCreatingNewRow(false);
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("page", String(newPage));
     setSearchParams(nextParams);
   };
 
-  // 등록 페이지로 이동
-  const handleCreate = () => {
-    const queryString = searchParams.toString();
-    navigate(
-      queryString
-        ? `/master/operation/create?${queryString}`
-        : "/master/operation/create"
-    );
+  // 인라인 등록 행 활성화
+  const handleStartCreate = () => {
+    if (isCreatingNewRow) return;
+    setEditingOperCode(null);
+    editFormRef.current = {
+      operCode: "",
+      depCode: "",
+      operNm: "",
+      stdTime: "",
+    };
+    setIsCreatingNewRow(true);
+  };
+
+  const handleCancelCreate = () => {
+    setIsCreatingNewRow(false);
+  };
+
+  // 인라인 신규 등록 API 저장 (POST /operations)
+  const handleSaveCreate = async () => {
+    if (isUpdating) return;
+
+    const newOperCode = editFormRef.current.operCode?.trim();
+    if (!newOperCode) {
+      window.alert("공정코드를 입력해주세요.");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const payload: OperationCreateRequest = {
+        operCode: newOperCode,
+        depCode: editFormRef.current.depCode?.trim() || null,
+        operNm: editFormRef.current.operNm?.trim() || null,
+        stdTime: editFormRef.current.stdTime?.toString().trim() || null,
+      };
+
+      const response = await apiClient.post<ApiResponseOperationResponse>("/operations", payload);
+
+      window.alert(response.data?.message || "등록되었습니다.");
+      setIsCreatingNewRow(false);
+      await loadOperations();
+      await fetchOperationOptions();
+    } catch (err) {
+      console.error("등록 실패:", err);
+      const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
+      window.alert(errorMessage || "등록에 실패했습니다.");
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   // 인라인 편집 시작
   const handleStartEdit = (row: OperationResponse) => {
+    setIsCreatingNewRow(false);
     editFormRef.current = {
       depCode: row.depCode ?? "",
       operNm: row.operNm ?? "",
@@ -304,13 +356,33 @@ export function MasterOperationPage() {
   // 테이블 컬럼 정의
   const columns: ColumnDef<OperationResponse>[] = useMemo(
     () => [
-      { accessorKey: "operCode", header: "공정코드" },
+      {
+        accessorKey: "operCode",
+        header: "공정코드",
+        cell: ({ row }) => {
+          if (row.original.operCode === "__NEW_ROW__") {
+            return (
+              <input
+                className="tableInput"
+                defaultValue={editFormRef.current.operCode ?? ""}
+                onChange={(e) => {
+                  editFormRef.current.operCode = e.target.value;
+                }}
+                placeholder="공정코드 입력"
+                autoFocus
+              />
+            );
+          }
+          return row.original.operCode;
+        },
+      },
       {
         accessorKey: "depCode",
         header: "부서코드",
         cell: ({ row }) => {
+          const isNewRow = row.original.operCode === "__NEW_ROW__";
           const isEditing = row.original.operCode === editingOperCode;
-          if (isEditing) {
+          if (isNewRow || isEditing) {
             return (
               <input
                 className="tableInput"
@@ -329,8 +401,9 @@ export function MasterOperationPage() {
         accessorKey: "operNm",
         header: "공정명",
         cell: ({ row }) => {
+          const isNewRow = row.original.operCode === "__NEW_ROW__";
           const isEditing = row.original.operCode === editingOperCode;
-          if (isEditing) {
+          if (isNewRow || isEditing) {
             return (
               <input
                 className="tableInput"
@@ -349,8 +422,9 @@ export function MasterOperationPage() {
         accessorKey: "stdTime",
         header: "표준시간",
         cell: ({ row }) => {
+          const isNewRow = row.original.operCode === "__NEW_ROW__";
           const isEditing = row.original.operCode === editingOperCode;
-          if (isEditing) {
+          if (isNewRow || isEditing) {
             return (
               <input
                 className="tableInput"
@@ -369,7 +443,10 @@ export function MasterOperationPage() {
       {
         accessorKey: "useYn",
         header: "사용여부",
-        cell: ({ getValue }) => {
+        cell: ({ row, getValue }) => {
+          if (row.original.operCode === "__NEW_ROW__") {
+            return <Badge tone="good">사용</Badge>;
+          }
           const isUse = getValue<string>() === "Y";
           return (
             <Badge tone={isUse ? "good" : "muted"}>
@@ -380,17 +457,44 @@ export function MasterOperationPage() {
       },
       {
         accessorKey: "createdAt",
-        header: "생성일시",
-        cell: ({ getValue }) => formatDateTime(getValue<string>()),
+        header: "등록일자",
+        cell: ({ row, getValue }) => {
+          if (row.original.operCode === "__NEW_ROW__") return "-";
+          return formatDateTime(getValue<string>());
+        },
       },
       {
         id: "actions",
         header: "관리",
         meta: { width: "130px" },
         cell: ({ row }) => {
+          const isNewRow = row.original.operCode === "__NEW_ROW__";
           const isEditing = row.original.operCode === editingOperCode;
           const isDeleting = isDeletingOperCode === row.original.operCode;
           const isUsed = row.original.useYn === "Y";
+
+          if (isNewRow) {
+            return (
+              <div className="rowActions" style={{ display: "flex", gap: "4px" }}>
+                <button
+                  type="button"
+                  className="miniButton primary"
+                  disabled={isUpdating}
+                  onClick={handleSaveCreate}
+                >
+                  {isUpdating ? "저장 중" : "저장"}
+                </button>
+                <button
+                  type="button"
+                  className="miniButton danger"
+                  disabled={isUpdating}
+                  onClick={handleCancelCreate}
+                >
+                  취소
+                </button>
+              </div>
+            );
+          }
 
           if (isEditing) {
             return (
@@ -420,7 +524,7 @@ export function MasterOperationPage() {
               <button
                 type="button"
                 className="miniButton"
-                disabled={editingOperCode !== null || isDeleting}
+                disabled={editingOperCode !== null || isCreatingNewRow || isDeleting}
                 onClick={() => handleStartEdit(row.original)}
               >
                 수정
@@ -428,7 +532,7 @@ export function MasterOperationPage() {
               <button
                 type="button"
                 className="miniButton danger"
-                disabled={editingOperCode !== null || isDeleting || !isUsed}
+                disabled={editingOperCode !== null || isCreatingNewRow || isDeleting || !isUsed}
                 onClick={() => handleDeleteOperation(row.original)}
               >
                 {isDeleting ? "삭제 중" : "삭제"}
@@ -438,19 +542,35 @@ export function MasterOperationPage() {
         },
       },
     ],
-    [editingOperCode, isUpdating, isDeletingOperCode]
+    [editingOperCode, isCreatingNewRow, isUpdating, isDeletingOperCode]
   );
+
+  const displayOperations = useMemo(() => {
+    if (isCreatingNewRow) {
+      const dummyNewRow: OperationResponse = {
+        operCode: "__NEW_ROW__",
+        depCode: "",
+        operNm: "",
+        stdTime: "",
+        useYn: "Y",
+        createdAt: "",
+        updatedAt: "",
+      };
+      return [dummyNewRow, ...operations];
+    }
+    return operations;
+  }, [isCreatingNewRow, operations]);
 
   return (
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="공정 관리 목록" action="등록" onAction={handleCreate}>
+      <Panel title="공정 관리 목록" action="등록" onAction={handleStartCreate}>
         <div className="relative min-h-[300px]">
           {isLoading && <span>데이터를 불러오는 중입니다...</span>}
 
           <CusTable
-            data={operations}
+            data={displayOperations}
             columns={columns}
           />
           <CusPagination
