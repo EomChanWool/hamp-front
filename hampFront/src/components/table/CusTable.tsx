@@ -28,14 +28,16 @@ export function CusTable<T>({
     columns, 
     state: { sorting },
     onSortingChange: (updater) => {
-      if (typeof updater === 'function') {
-        onSortingChange?.(updater(sorting))
-      } else {
-        onSortingChange?.(updater)
-      }
+      const nextSorting = typeof updater === 'function' 
+        ? updater(table.getState().sorting) 
+        : updater;
+      
+      onSortingChange?.(nextSorting);
     },
     getCoreRowModel: getCoreRowModel(),
     manualSorting: true, // 서버사이드 정렬을 사용할 경우 수동 정렬 활성화
+    enableMultiSort: true, // 다중 정렬 활성화
+    isMultiSortEvent: () => true, // Shift 키를 누르지 않고 그냥 클릭해도 다중 정렬이 누적되도록 설정
   })
 
   const headerGroups = table.getHeaderGroups()

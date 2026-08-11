@@ -8,6 +8,7 @@ import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
 import { formatDateTime } from "@/utils/common";
 import { apiClient } from "@/api/apiClient";
+import { useTableSorting } from "@/hooks/useTableSorting"; 
 import type {
   UserResponse,
   ApiResponsePageUserResponse,
@@ -27,6 +28,9 @@ export function SystemUsersPage() {
   const queryUserId = searchParams.get("userId") || "";
   const queryUserNm = searchParams.get("userNm") || "";
   const queryUserDep = searchParams.get("userDep") || "";
+
+  // 커스텀 훅으로 정렬 상태 및 핸들러 분리 완료
+  const { sorting, sortParams, handleSortingChange } = useTableSorting();
 
   // input ref 초기값 설정
   const userIdRef = useRef<HTMLInputElement>(null);
@@ -51,7 +55,7 @@ export function SystemUsersPage() {
   const loadUsers = useCallback(async () => {
     setIsLoading(true);
     try {
-      const params: Record<string, string | number> = {
+      const params: Record<string, any> = {
         page: currentPage,
         size: 10,
       };
@@ -59,6 +63,11 @@ export function SystemUsersPage() {
       if (queryUserId) params.userId = queryUserId;
       if (queryUserNm) params.userNm = queryUserNm;
       if (queryUserDep) params.position = queryUserDep;
+
+      // 정렬 파라미터가 존재할 경우 배열 형태로 추가 (apiClient 전역 설정이 자동으로 스프링 규격 변환)
+      if (sortParams.length > 0) {
+        params.sort = sortParams;
+      }
 
       const response = await apiClient.get<ApiResponsePageUserResponse>("/users", {
         params,
@@ -74,7 +83,7 @@ export function SystemUsersPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, queryUserId, queryUserNm, queryUserDep]);
+  }, [currentPage, queryUserId, queryUserNm, queryUserDep, sortParams]);
 
   useEffect(() => {
     loadUsers();
@@ -82,15 +91,21 @@ export function SystemUsersPage() {
 
   // 검색 버튼 클릭 시
   const handleSearch = () => {
-    const nextParams: Record<string, string> = { page: "0" };
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", "0");
 
     const userId = userIdRef.current?.value.trim();
     const userNm = userNmRef.current?.value.trim();
     const userDep = userDepRef.current?.value.trim();
 
-    if (userId) nextParams.userId = userId;
-    if (userNm) nextParams.userNm = userNm;
-    if (userDep) nextParams.position = userDep;
+    if (userId) nextParams.set("userId", userId);
+    else nextParams.delete("userId");
+
+    if (userNm) nextParams.set("userNm", userNm);
+    else nextParams.delete("userNm");
+
+    if (userDep) nextParams.set("position", userDep);
+    else nextParams.delete("position");
 
     setSearchParams(nextParams);
   };
@@ -110,7 +125,7 @@ export function SystemUsersPage() {
     setSearchParams(nextParams);
   };
 
-  // 상세 페이지로 이동 (현재 검색 상태 쿼리 스트링 유지)
+  // 상세 페이지로 이동
   const handleRowClick = (userId: string) => {
     const queryString = searchParams.toString();
     navigate(`/system/users/${userId}${queryString ? `?${queryString}` : ""}`);
@@ -122,15 +137,21 @@ export function SystemUsersPage() {
       { accessorKey: "userId", header: "사용자ID" },
       { accessorKey: "userNm", header: "이름" },
       {
-        accessorKey: "phone", header: "전화번호", cell: ({ getValue }) => {
+        accessorKey: "phone",
+        header: "전화번호",
+        cell: ({ getValue }) => {
           const val = getValue<string>();
           return val ? val : "-";
         },
       },
-      { accessorKey: "position", header: "부서", cell: ({ getValue }) => {
+      {
+        accessorKey: "position",
+        header: "부서",
+        cell: ({ getValue }) => {
           const val = getValue<string>();
           return val ? val : "-";
-        }, },
+        },
+      },
       {
         accessorKey: "use",
         header: "사용여부",
@@ -149,7 +170,7 @@ export function SystemUsersPage() {
         },
       },
     ],
-    [searchParams]
+    []
   );
 
   return (
@@ -170,6 +191,8 @@ export function SystemUsersPage() {
           <CusTable
             data={users}
             columns={columns}
+            sorting={sorting}
+            onSortingChange={handleSortingChange}
             onRowClick={(row) => handleRowClick(row.userId)}
           />
           <CusPagination
