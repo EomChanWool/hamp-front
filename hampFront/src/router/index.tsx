@@ -26,6 +26,7 @@ import { MainDashboardPage } from '@pages/page/dashboard/MainDashboardPage'
 // 시스템관리
 import { SystemUsersPage } from '@pages/page/system/SystemUsersPage'
 import { SystemUsersCreatePage } from '@pages/page/system/SystemUsersCreatePage'
+import { SystemUsersInfoPage } from '@pages/page/system/SystemUsersInfoPage' // [추가] 내 정보 페이지
 import { SystemUserDetailPage } from '@pages/page/system/SystemUsersDetailPage'
 import { SystemUserPermissionsPage } from '@pages/page/system/SystemUserPermissionsPage'
 import { SystemUserPermissionsCreatePage } from '@/pages/page/system/SystemUserPermissionsCreatePage'
@@ -134,23 +135,13 @@ export interface MenuRouteGroup extends Omit<RouteObject, 'children'> {
   items: CustomRouteObject[]
 }
 
-/**
- * CustomRouteObject 배열에서 React Router가 인식하지 못하는 커스텀 필드를 제거하고
- * 표준 RouteObject 배열로 변환한다.
- * children이 존재하면 재귀적으로 동일한 처리를 수행한다.
- *
- * @param routes - 커스텀 필드가 포함된 라우트 설정 배열
- * @returns React Router 표준 RouteObject 배열
- */
 const stripCustomFields = (routes: CustomRouteObject[]): RouteObject[] => {
   return routes.map(
     ({ icon, name, description, showHeader, hasTabs, key, hidden, menuId, protected: isProtected, children, ...rest }) => {
-      // 커스텀 필드를 제외한 표준 RouteObject 속성만 유지
       const route: RouteObject = {
         ...rest,
       }
 
-      // children이 있으면 재귀적으로 커스텀 필드 제거
       if (children) {
         route.children = stripCustomFields(children)
       }
@@ -168,6 +159,7 @@ export const menuRoutes: MenuRouteGroup[] = [
     items: [
       { path: 'users', name: '사용자관리', element: <SystemUsersPage /> },
       { path: 'users/create', name: '사용자 등록', element: <SystemUsersCreatePage />, hidden: true },
+      { path: 'users/info', name: '내 정보', element: <SystemUsersInfoPage />, hidden: true }, // [추가] 내 정보 페이지 (사이드바 숨김)
       { path: 'users/:userId', name: '사용자 상세', element: <SystemUserDetailPage />, hidden: true },
       { path: 'auths', name: '사용자 권한관리', element: <SystemUserPermissionsPage /> },
       { path: 'auths/create', name: '사용자 권한 그룹 등록', element: <SystemUserPermissionsCreatePage />, hidden: true },
@@ -316,21 +308,16 @@ export const routeObj: RouteObject[] = [
     path: '/',
     element: <MainLayout />,
     children: [
-      // 메인페이지
       { index: true, element: <MainDashboardPage /> },
 
-      // 대메뉴 안의 소메뉴들을 라우트로 펼침 (hidden 항목 포함)
       ...menuRoutes.flatMap((group) =>
         group.items.map((item) => {
           const fullPath = `${group.path}/${item.path}`.replace(/\/+/g, '/')
-
-          // stripCustomFields를 활용해 React Router 표준 형식으로 변환
           const [strippedRoute] = stripCustomFields([{ ...item, path: fullPath }])
           return strippedRoute
         }),
       ),
 
-      // 매칭되지 않는 하위 경로는 대시보드로
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
