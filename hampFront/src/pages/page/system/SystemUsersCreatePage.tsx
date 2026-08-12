@@ -5,7 +5,7 @@ import { apiClient } from "@/api/apiClient";
 import axios from "axios";
 import type { UserCreateRequest } from "@/types/User";
 import type { AuthGroupResponse, ApiResponseListAuthGroupResponse } from "@/types/auth/Auth";
-import './SystemUser.css'
+import './SystemUser.css';
 
 export function SystemUsersCreatePage() {
   const navigate = useNavigate();
@@ -65,7 +65,15 @@ export function SystemUsersCreatePage() {
     });
   };
 
-  // [1차 검증] 프론트엔드 유효성 체크
+  // 이전 검색 조건을 유지하면서 목록으로 이동 (취소 버튼용)
+  const handleCancel = () => {
+    navigate({
+      pathname: "/system/users",
+      search: location.search,
+    });
+  };
+
+  // 프론트엔드 유효성 체크
   const validateForm = (): boolean => {
     if (!form.userId.trim()) {
       alert("사용자 ID를 입력해주세요.");
@@ -101,10 +109,10 @@ export function SystemUsersCreatePage() {
       await apiClient.post("/users", payload);
       alert("성공적으로 등록되었습니다.");
       
-      // 등록 완료 후 기존 검색조건(쿼리파라미터)을 유지하며 사용자 목록으로 이동
+      // [등록 완료 시] 검색 조건을 초기화하고 목록으로 이동
       navigate({
         pathname: "/system/users",
-        search: location.search,
+        search: "",
       });
     } catch (error) {
       console.error("회원 등록 실패:", error);
@@ -120,7 +128,7 @@ export function SystemUsersCreatePage() {
   return (
     <section className="screenStack">
       <Panel title="신규 사용자 등록">
-        <form className="pageForm" onSubmit={handleSubmit} >
+        <form className="pageForm" onSubmit={handleSubmit}>
           {/* 사용자 ID */}
           <div className="detailField">
             <label className="requiredLabel">
@@ -207,13 +215,11 @@ export function SystemUsersCreatePage() {
           </div>
 
           {/* 하단 버튼 영역 */}
-          <div
-            className="pageFormFooter"
-          >
+          <div className="pageFormFooter">
             <button
               type="button"
               className="ghostButton"
-              onClick={() => navigate(-1)}
+              onClick={handleCancel}
               disabled={isSubmitting}
             >
               취소

@@ -24,8 +24,37 @@ export function MasterEquipmentPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  // 새로고침 초기화가 끝난 뒤에 목록 조회를 시작하기 위한 상태
+  const [isReady, setIsReady] = useState(false);
+
   // 커스텀 훅으로 정렬 상태 및 핸들러 연동
   const { sorting, sortParams, handleSortingChange } = useTableSorting();
+
+  // ----------------------------------------
+  // 브라우저 새로고침(F5) 감지 및 처리
+  // ----------------------------------------
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      sessionStorage.setItem("is_browser_reload", "true");
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
+  useEffect(() => {
+    const isReload = sessionStorage.getItem("is_browser_reload") === "true";
+
+    if (isReload) {
+      sessionStorage.removeItem("is_browser_reload");
+      if (searchParams.toString()) {
+        setSearchParams({}, { replace: true });
+        return;
+      }
+    }
+    setIsReady(true);
+  }, []);
 
   // URL 쿼리스트링에서 상태 추출
   const currentPage = Number(searchParams.get("page") || "0");
@@ -43,11 +72,11 @@ export function MasterEquipmentPage() {
   const manufacturerRef = useRef<HTMLInputElement>(null);
 
   const searchFields: SearchField[] = [
-    { type: "input", label: "장비코드", ref: eqCodeRef },
-    { type: "input", label: "공정코드", ref: operCodeRef },
-    { type: "input", label: "장비명", ref: eqNmRef },
-    { type: "input", label: "장비유형", ref: eqTypeRef },
-    { type: "input", label: "제조사", ref: manufacturerRef },
+    { type: "input", label: "장비코드", ref: eqCodeRef, name: "eqCode" },
+    { type: "input", label: "공정코드", ref: operCodeRef, name: "operCode" },
+    { type: "input", label: "장비명", ref: eqNmRef, name: "eqNm" },
+    { type: "input", label: "장비유형", ref: eqTypeRef, name: "eqType" },
+    { type: "input", label: "제조사", ref: manufacturerRef, name: "manufacturer" },
   ];
 
   // URL 쿼리스트링 값과 검색창 input 값 동기화
@@ -65,8 +94,12 @@ export function MasterEquipmentPage() {
     queryManufacturer,
   ]);
 
-  // 1. 장비 목록 조회 (GET /equipment)
+  // 장비 목록 조회 (GET /equipment)
   const loadEquipments = useCallback(async () => {
+    if (!isReady) {
+      return;
+    }
+
     setIsLoading(true);
     try {
       const params: Record<string, any> = {
@@ -99,6 +132,7 @@ export function MasterEquipmentPage() {
       setIsLoading(false);
     }
   }, [
+    isReady,
     currentPage,
     queryEqCode,
     queryOperCode,
@@ -112,7 +146,7 @@ export function MasterEquipmentPage() {
     loadEquipments();
   }, [loadEquipments]);
 
-  // 검색 핸들러 (표준화된 set/delete 방식 적용)
+  // 검색 핸들러
   const handleSearch = () => {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("page", "0");
@@ -146,9 +180,10 @@ export function MasterEquipmentPage() {
     [eqCodeRef, operCodeRef, eqNmRef, eqTypeRef, manufacturerRef].forEach((ref) => {
       if (ref.current) ref.current.value = "";
     });
-    setSearchParams({
-      page: "0",
-    });
+    setSearchParams(
+      { page: "0" },
+      { replace: true }
+    );
   };
 
   // 페이지네이션 핸들러

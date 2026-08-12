@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { Panel } from "@components/card/Panel";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
@@ -15,7 +14,6 @@ import type {
   DefectUpdateRequest,
 } from "@/types/master/Defect";
 import { Badge } from "@/components/common/Badge";
-import { useTableSorting } from "@/hooks/useTableSorting";
 import Spinner from "@/components/common/Spinner";
 
 interface DefectCreateRequest extends DefectUpdateRequest {
@@ -23,20 +21,46 @@ interface DefectCreateRequest extends DefectUpdateRequest {
 }
 
 export function MasterDefectsPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-
   const [defects, setDefects] = useState<DefectResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 인라인 수정 상태 관리 (현재 수정 중인 불량코드)
+  // 데이터 재조회를 위한 트리거 키 (수동 loadDefects 호출 대체용)
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // 페이지 및 검색 조건을 React State로 관리
+  const [page, setPage] = useState(0);
+  const [searchFilters, setSearchFilters] = useState({
+    defCode: "",
+    operCode: "",
+    defNm: "",
+    defType: "",
+    severity: "",
+    useYn: "",
+  });
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  // 서버로 보낼 sort 파라미터 변환
+  const sortParams = useMemo(() => {
+    return sorting.map((sort) => `${sort.id},${sort.desc ? "desc" : "asc"}`);
+  }, [sorting]);
+
+  const handleSortingChange = (newSorting: SortingState) => {
+    setSorting(newSorting);
+    setPage(0);
+    setEditingDefCode(null);
+    setIsCreatingNewRow(false);
+  };
+
+  // 인라인 수정 상태 관리
   const [editingDefCode, setEditingDefCode] = useState<string | null>(null);
 
-  // 인라인 등록 상태 관리 (true면 테이블 맨 위에 새 입력 행이 생성됨)
+  // 인라인 등록 상태 관리
   const [isCreatingNewRow, setIsCreatingNewRow] = useState(false);
 
-  // 타이핑 시 리렌더링 방지 폼 Ref (수정 및 등록 공용)
+  // 타이핑 시 리렌더링 방지 폼 Ref
   const editFormRef = useRef<DefectUpdateRequest & { defCode?: string }>({
     defCode: "",
     operCode: "",
@@ -48,18 +72,6 @@ export function MasterDefectsPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeletingDefCode, setIsDeletingDefCode] = useState<string | null>(null);
 
-  // 커스텀 훅으로 정렬 상태 및 핸들러 연동
-  const { sorting, sortParams, handleSortingChange } = useTableSorting();
-
-  // URL 쿼리 파라미터 값 추출
-  const currentPage = Number(searchParams.get("page") || "0");
-  const queryDefCode = searchParams.get("defCode") || "";
-  const queryOperCode = searchParams.get("operCode") || "";
-  const queryDefNm = searchParams.get("defNm") || "";
-  const queryDefType = searchParams.get("defType") || "";
-  const querySeverity = searchParams.get("severity") || "";
-  const queryUseYn = searchParams.get("useYn") || "";
-
   // 검색 필드 Refs
   const defCodeRef = useRef<HTMLInputElement>(null);
   const operCodeRef = useRef<HTMLInputElement>(null);
@@ -70,11 +82,11 @@ export function MasterDefectsPage() {
 
   // 검색 필드 정의
   const searchFields: SearchField[] = [
-    { type: "input", label: "불량코드", ref: defCodeRef },
-    { type: "input", label: "공정코드", ref: operCodeRef },
-    { type: "input", label: "불량명", ref: defNmRef },
-    { type: "input", label: "불량유형", ref: defTypeRef },
-    { type: "input", label: "심각도", ref: severityRef },
+    { type: "input", label: "불량코드", ref: defCodeRef, name: "defCode" },
+    { type: "input", label: "공정코드", ref: operCodeRef, name: "operCode" },
+    { type: "input", label: "불량명", ref: defNmRef, name: "defNm" },
+    { type: "input", label: "불량유형", ref: defTypeRef, name: "defType" },
+    { type: "input", label: "심각도", ref: severityRef, name: "severity" },
     {
       type: "select",
       label: "사용여부",
@@ -87,36 +99,21 @@ export function MasterDefectsPage() {
     },
   ];
 
-  // 검색 필드 DOM 값과 URL 쿼리 파라미터 동기화
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (defCodeRef.current) defCodeRef.current.value = queryDefCode;
-      if (operCodeRef.current) operCodeRef.current.value = queryOperCode;
-      if (defNmRef.current) defNmRef.current.value = queryDefNm;
-      if (defTypeRef.current) defTypeRef.current.value = queryDefType;
-      if (severityRef.current) severityRef.current.value = querySeverity;
-      if (useYnRef.current) useYnRef.current.value = queryUseYn;
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, [queryDefCode, queryOperCode, queryDefNm, queryDefType, querySeverity, queryUseYn]);
-
-  // 불량 목록 조회
+  // 불량 목록 조회 (refreshKey 추가로 상태 변경 감지 확실히 보장)
   const loadDefects = useCallback(async () => {
     setIsLoading(true);
     try {
       const params: Record<string, any> = {
-        page: currentPage,
+        page,
         size: 10,
       };
-      if (queryDefCode) params.defCode = queryDefCode;
-      if (queryOperCode) params.operCode = queryOperCode;
-      if (queryDefNm) params.defNm = queryDefNm;
-      if (queryDefType) params.defType = queryDefType;
-      if (querySeverity) params.severity = querySeverity;
-      if (queryUseYn) params.useYn = queryUseYn;
+      if (searchFilters.defCode) params.defCode = searchFilters.defCode;
+      if (searchFilters.operCode) params.operCode = searchFilters.operCode;
+      if (searchFilters.defNm) params.defNm = searchFilters.defNm;
+      if (searchFilters.defType) params.defType = searchFilters.defType;
+      if (searchFilters.severity) params.severity = searchFilters.severity;
+      if (searchFilters.useYn) params.useYn = searchFilters.useYn;
 
-      // 정렬 파라미터 반영
       if (sortParams.length > 0) {
         params.sort = sortParams;
       }
@@ -135,66 +132,54 @@ export function MasterDefectsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, queryDefCode, queryOperCode, queryDefNm, queryDefType, querySeverity, queryUseYn, sortParams]);
+  }, [page, searchFilters, sortParams, refreshKey]);
 
   useEffect(() => {
     loadDefects();
   }, [loadDefects]);
 
   const handleSearch = () => {
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.set("page", "0");
-
-    const defCode = defCodeRef.current?.value.trim();
-    const operCode = operCodeRef.current?.value.trim();
-    const defNm = defNmRef.current?.value.trim();
-    const defType = defTypeRef.current?.value.trim();
-    const severity = severityRef.current?.value.trim();
-    const useYn = useYnRef.current?.value.trim();
-
-    if (defCode) nextParams.set("defCode", defCode);
-    else nextParams.delete("defCode");
-
-    if (operCode) nextParams.set("operCode", operCode);
-    else nextParams.delete("operCode");
-
-    if (defNm) nextParams.set("defNm", defNm);
-    else nextParams.delete("defNm");
-
-    if (defType) nextParams.set("defType", defType);
-    else nextParams.delete("defType");
-
-    if (severity) nextParams.set("severity", severity);
-    else nextParams.delete("severity");
-
-    if (useYn) nextParams.set("useYn", useYn);
-    else nextParams.delete("useYn");
-
+    setPage(0);
+    setSearchFilters({
+      defCode: defCodeRef.current?.value.trim() || "",
+      operCode: operCodeRef.current?.value.trim() || "",
+      defNm: defNmRef.current?.value.trim() || "",
+      defType: defTypeRef.current?.value.trim() || "",
+      severity: severityRef.current?.value.trim() || "",
+      useYn: useYnRef.current?.value.trim() || "",
+    });
     setEditingDefCode(null);
     setIsCreatingNewRow(false);
-    setSearchParams(nextParams);
   };
 
   const handleReset = () => {
-    [defCodeRef, operCodeRef, defNmRef, defTypeRef, severityRef].forEach((ref) => {
-      if (ref.current) ref.current.value = "";
-    });
+    if (defCodeRef.current) defCodeRef.current.value = "";
+    if (operCodeRef.current) operCodeRef.current.value = "";
+    if (defNmRef.current) defNmRef.current.value = "";
+    if (defTypeRef.current) defTypeRef.current.value = "";
+    if (severityRef.current) severityRef.current.value = "";
     if (useYnRef.current) useYnRef.current.value = "";
 
+    setPage(0);
+    setSearchFilters({
+      defCode: "",
+      operCode: "",
+      defNm: "",
+      defType: "",
+      severity: "",
+      useYn: "",
+    });
+    setSorting([]);
     setEditingDefCode(null);
     setIsCreatingNewRow(false);
-    setSearchParams({ page: "0" });
   };
 
   const handlePageChange = (newPage: number) => {
     setEditingDefCode(null);
     setIsCreatingNewRow(false);
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.set("page", String(newPage));
-    setSearchParams(nextParams);
+    setPage(newPage);
   };
 
-  // 인라인 등록 행 활성화
   const handleStartCreate = () => {
     if (isCreatingNewRow) return;
     setEditingDefCode(null);
@@ -236,7 +221,26 @@ export function MasterDefectsPage() {
 
       window.alert(response.data?.message || "등록되었습니다.");
       setIsCreatingNewRow(false);
-      await loadDefects();
+
+      if (defCodeRef.current) defCodeRef.current.value = "";
+      if (operCodeRef.current) operCodeRef.current.value = "";
+      if (defNmRef.current) defNmRef.current.value = "";
+      if (defTypeRef.current) defTypeRef.current.value = "";
+      if (severityRef.current) severityRef.current.value = "";
+      if (useYnRef.current) useYnRef.current.value = "";
+
+      // 등록 시에는 전체 목록으로 이동
+      setPage(0);
+      setSearchFilters({
+        defCode: "",
+        operCode: "",
+        defNm: "",
+        defType: "",
+        severity: "",
+        useYn: "",
+      });
+      setSorting([]);
+      setRefreshKey((prev) => prev + 1);
     } catch (err) {
       console.error("등록 실패:", err);
       const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
@@ -246,7 +250,6 @@ export function MasterDefectsPage() {
     }
   };
 
-  // 인라인 편집 시작
   const handleStartEdit = (row: DefectResponse) => {
     setIsCreatingNewRow(false);
     editFormRef.current = {
@@ -258,13 +261,12 @@ export function MasterDefectsPage() {
     setEditingDefCode(row.defCode);
   };
 
-  // 인라인 편집 취소
   const handleCancelEdit = () => {
     setEditingDefCode(null);
     editFormRef.current = { operCode: "", defNm: "", defType: "", severity: "" };
   };
 
-  // 인라인 수정 저장
+  // 인라인 수정 저장 (현재 검색 필터 상태 유지하며 새로고침)
   const handleSaveEdit = async (defCode: string) => {
     if (isUpdating) return;
 
@@ -284,23 +286,8 @@ export function MasterDefectsPage() {
       );
 
       window.alert(response.data?.message || "수정되었습니다.");
-
-      setDefects((prev) =>
-        prev.map((item) =>
-          item.defCode === defCode
-            ? {
-                ...item,
-                operCode: updatePayload.operCode ?? item.operCode,
-                defNm: updatePayload.defNm ?? item.defNm,
-                defType: updatePayload.defType ?? item.defType,
-                severity: updatePayload.severity ?? item.severity,
-              }
-            : item
-        )
-      );
-
       setEditingDefCode(null);
-      await loadDefects();
+      setRefreshKey((prev) => prev + 1); // 현재 검색 조건 유지한 채 리프레시
     } catch (err) {
       console.error("수정 실패:", err);
       const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
@@ -310,7 +297,7 @@ export function MasterDefectsPage() {
     }
   };
 
-  // 행 삭제
+  // 행 삭제 (현재 검색 필터 상태 유지하며 새로고침)
   const handleDeleteDefect = async (defCode: string) => {
     if (isDeletingDefCode) return;
 
@@ -323,7 +310,7 @@ export function MasterDefectsPage() {
       await apiClient.delete(`/defects/${encodedDefCode}`);
 
       window.alert("불량 항목이 삭제(비활성화)되었습니다.");
-      await loadDefects();
+      setRefreshKey((prev) => prev + 1); // 현재 검색 조건 유지한 채 리프레시
     } catch (error) {
       console.error("불량 삭제 실패:", error);
       const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
@@ -333,7 +320,6 @@ export function MasterDefectsPage() {
     }
   };
 
-  // 테이블 컬럼 정의
   const columns: ColumnDef<DefectResponse>[] = useMemo(
     () => [
       {
@@ -367,11 +353,7 @@ export function MasterDefectsPage() {
             return (
               <input
                 className="tableInput"
-                defaultValue={
-                  isNewRow
-                    ? editFormRef.current.operCode ?? ""
-                    : editFormRef.current.operCode ?? ""
-                }
+                defaultValue={editFormRef.current.operCode ?? ""}
                 onChange={(e) => {
                   editFormRef.current.operCode = e.target.value;
                 }}
@@ -393,11 +375,7 @@ export function MasterDefectsPage() {
             return (
               <input
                 className="tableInput"
-                defaultValue={
-                  isNewRow
-                    ? editFormRef.current.defNm ?? ""
-                    : editFormRef.current.defNm ?? ""
-                }
+                defaultValue={editFormRef.current.defNm ?? ""}
                 onChange={(e) => {
                   editFormRef.current.defNm = e.target.value;
                 }}
@@ -419,11 +397,7 @@ export function MasterDefectsPage() {
             return (
               <input
                 className="tableInput"
-                defaultValue={
-                  isNewRow
-                    ? editFormRef.current.defType ?? ""
-                    : editFormRef.current.defType ?? ""
-                }
+                defaultValue={editFormRef.current.defType ?? ""}
                 onChange={(e) => {
                   editFormRef.current.defType = e.target.value;
                 }}
@@ -445,11 +419,7 @@ export function MasterDefectsPage() {
             return (
               <input
                 className="tableInput"
-                defaultValue={
-                  isNewRow
-                    ? editFormRef.current.severity ?? ""
-                    : editFormRef.current.severity ?? ""
-                }
+                defaultValue={editFormRef.current.severity ?? ""}
                 onChange={(e) => {
                   editFormRef.current.severity = e.target.value;
                 }}
@@ -598,7 +568,7 @@ export function MasterDefectsPage() {
                 noDataMessage="조회된 데이터가 없습니다."
               />
               <CusPagination
-                page={currentPage}
+                page={page}
                 totalPages={totalPages}
                 totalCount={totalElements}
                 onPageChange={handlePageChange}
