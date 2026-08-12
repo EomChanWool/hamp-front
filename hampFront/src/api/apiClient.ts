@@ -22,7 +22,7 @@ export const apiClient = axios.create({
   baseURL: '/api',
   timeout: 60000,
   withCredentials: true,
- paramsSerializer: (params) => {
+  paramsSerializer: (params) => {
     const searchParams = new URLSearchParams()
     Object.entries(params).forEach(([key, value]) => {
       if (Array.isArray(value)) {
@@ -98,8 +98,19 @@ const getCurrentPath = () =>
   window.location.search +
   window.location.hash
 
+let isAlerting = false // 중복 얼럿 방지용
+
 const goServerDown = () => {
-  if (!navigateFn || isServerDownRedirecting) return
+  // 만약 네비게이터가 없거나 아직 페이지가 준비되지 않았다면 임시 얼럿 및 새로고침 실행
+  if (!navigateFn) {
+    if (isAlerting) return
+    isAlerting = true
+    alert('서버 연결에 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.')
+    window.location.reload()
+    return
+  }
+
+  if (isServerDownRedirecting) return
 
   const nowPath = getCurrentPath()
 
@@ -124,9 +135,13 @@ const isServerDownError = (error: unknown) => {
 
   const status = error.response?.status
   const code = error.code
+  const url = error.config?.url ?? ''
 
   if (status && [502, 503, 504].includes(status)) return true
   if (code && ['ECONNABORTED', 'ERR_NETWORK'].includes(code)) return true
+  
+  // 404 에러 추가
+  if (status === 404 && url.startsWith('/')) return true
 
   return false
 }
@@ -145,7 +160,7 @@ const extractRequestToken = (config: any): string | undefined => {
   return authHeader?.replace(/^Bearer\s+/i, '')
 }
 
-// ── Response interceptor ────────────────────────────────────────────────────
+// ── Response interceptor ────────────────────────────────────────────────    
 
 apiClient.interceptors.response.use(
   (response) => response,
