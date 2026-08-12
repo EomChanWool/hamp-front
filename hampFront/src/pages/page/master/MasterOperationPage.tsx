@@ -105,7 +105,7 @@ export function MasterOperationPage() {
       options: [
         { label: "전체", value: "" },
         ...operationOptions.map((opt) => ({
-          label: `${opt.operCode} (${opt.operNm})`,
+          label: `${opt.operCode} (${opt.operNm ?? '-'})`,
           value: opt.operCode,
         })),
       ],

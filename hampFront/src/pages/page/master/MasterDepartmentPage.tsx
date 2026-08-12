@@ -102,7 +102,7 @@ export function MasterDepartmentPage() {
       options: [
         { label: "전체", value: "" },
         ...departmentOptions.map((opt) => ({
-          label: `${opt.depCode} (${opt.taskDesc})`,
+          label: `${opt.depCode} (${opt.taskDesc ?? '-'})`,
           value: opt.depCode,
         })),
       ],
