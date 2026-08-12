@@ -15,7 +15,7 @@ export interface FactoryZoneUpdateRequest {
   note?: string | null;
 }
 
-/** 공장 정보 응답 Data */
+/** 공장 정보 응답 */
 export interface FactoryZoneResponse {
   facCode: string;
   facNm: string;

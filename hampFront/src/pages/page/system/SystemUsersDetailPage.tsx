@@ -63,7 +63,7 @@ export function SystemUserDetailPage() {
     return () => { isMounted = false; };
   }, []);
 
-  // 2. 사용자 상세 데이터 조회 (ApiResponseUserDetailResponse 사용)
+  // 2. 사용자 상세 데이터 조회
   useEffect(() => {
     let isMounted = true;
 

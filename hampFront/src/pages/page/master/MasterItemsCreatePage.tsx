@@ -133,7 +133,6 @@ export function MasterItemsCreatePage() {
     draggedItemIndex.current = null;
     setDraggingIndex(null);
   };
-  // ------------------------------------
 
   // 팝업 모달 열기
   const handleOpenModal = () => {

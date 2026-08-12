@@ -17,7 +17,7 @@ import { MainLayout } from '@pages/layout/MainLayout'
 import { LoginPage } from '@pages/auth/LoginPage'
 import { NotFound } from '@pages/error/NotFound'
 
-// 비밀번호 변경 페이지
+// 초기 비밀번호 변경 페이지
 import { ChangePasswordPage } from '@pages/auth/ChangePasswordPage'
 
 // 메인페이지
@@ -26,7 +26,7 @@ import { MainDashboardPage } from '@pages/page/dashboard/MainDashboardPage'
 // 시스템관리
 import { SystemUsersPage } from '@pages/page/system/SystemUsersPage'
 import { SystemUsersCreatePage } from '@pages/page/system/SystemUsersCreatePage'
-import { SystemUsersInfoPage } from '@pages/page/system/SystemUsersInfoPage' // [추가] 내 정보 페이지
+import { SystemUsersInfoPage } from '@pages/page/system/SystemUsersInfoPage'
 import { SystemUserDetailPage } from '@pages/page/system/SystemUsersDetailPage'
 import { SystemUserPermissionsPage } from '@pages/page/system/SystemUserPermissionsPage'
 import { SystemUserPermissionsCreatePage } from '@/pages/page/system/SystemUserPermissionsCreatePage'
@@ -159,7 +159,7 @@ export const menuRoutes: MenuRouteGroup[] = [
     items: [
       { path: 'users', name: '사용자관리', element: <SystemUsersPage /> },
       { path: 'users/create', name: '사용자 등록', element: <SystemUsersCreatePage />, hidden: true },
-      { path: 'users/info', name: '내 정보', element: <SystemUsersInfoPage />, hidden: true }, // [추가] 내 정보 페이지 (사이드바 숨김)
+      { path: 'users/info', name: '내 정보', element: <SystemUsersInfoPage />, hidden: true },
       { path: 'users/:userId', name: '사용자 상세', element: <SystemUserDetailPage />, hidden: true },
       { path: 'auths', name: '사용자 권한관리', element: <SystemUserPermissionsPage /> },
       { path: 'auths/create', name: '사용자 권한 그룹 등록', element: <SystemUserPermissionsCreatePage />, hidden: true },

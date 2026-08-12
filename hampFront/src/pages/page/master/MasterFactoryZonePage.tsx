@@ -26,7 +26,7 @@ export function MasterFactoryZonePage() {
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 데이터 재조회를 위한 트리거 키 (수동 loadFactoryZones 호출 대체용)
+  // 데이터 재조회를 위한 트리거 키
   const [refreshKey, setRefreshKey] = useState(0);
 
   // 페이지 및 검색 조건을 React State로 관리

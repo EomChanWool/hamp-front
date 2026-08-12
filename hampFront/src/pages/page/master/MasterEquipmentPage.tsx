@@ -30,9 +30,7 @@ export function MasterEquipmentPage() {
   // 커스텀 훅으로 정렬 상태 및 핸들러 연동
   const { sorting, sortParams, handleSortingChange } = useTableSorting();
 
-  // ----------------------------------------
   // 브라우저 새로고침(F5) 감지 및 처리
-  // ----------------------------------------
   useEffect(() => {
     const handleBeforeUnload = () => {
       sessionStorage.setItem("is_browser_reload", "true");

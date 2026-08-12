@@ -74,7 +74,6 @@ export function MasterEquipmentCreatePage() {
       await apiClient.post<ApiResponseEquipmentResponse>("/equipment", payload);
       alert("성공적으로 등록되었습니다.");
       
-      // 품목 등록(MasterItemsCreatePage)과 동일하게 검색 조건 없이 깔끔하게 목록으로 이동
       navigate("/master/equipment", { replace: true });
     } catch (error) {
       console.error("장비 등록 실패:", error);

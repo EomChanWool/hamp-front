@@ -17,7 +17,7 @@ export interface EquipmentUpdateRequest {
   manufacturer?: string | null;
 }
 
-/** 장비 정보 응답 Data */
+/** 장비 정보 응답 */
 export interface EquipmentResponse {
   eqCode: string;
   operCode: string;
@@ -28,7 +28,7 @@ export interface EquipmentResponse {
   updatedAt: string;
 }
 
-/** 장비 상세 정보 응답 Data */
+/** 장비 상세 정보 응답 */
 export interface EquipmentDetailResponse {
   eqCode: string;
   operCode: string;

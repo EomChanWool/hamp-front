@@ -26,7 +26,7 @@ export function MasterDefectsPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 데이터 재조회를 위한 트리거 키 (수동 loadDefects 호출 대체용)
+  // 데이터 재조회를 위한 트리거 키
   const [refreshKey, setRefreshKey] = useState(0);
 
   // 페이지 및 검색 조건을 React State로 관리
@@ -99,7 +99,7 @@ export function MasterDefectsPage() {
     },
   ];
 
-  // 불량 목록 조회 (refreshKey 추가로 상태 변경 감지 확실히 보장)
+  // 불량 목록 조회
   const loadDefects = useCallback(async () => {
     setIsLoading(true);
     try {

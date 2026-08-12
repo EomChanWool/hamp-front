@@ -15,7 +15,7 @@ export interface DepartmentUpdateRequest {
   headPhone?: string | null;
 }
 
-/** 부서 정보 응답 Data */
+/** 부서 정보 응답 */
 export interface DepartmentResponse {
   depCode: string;
   taskDesc: string;
@@ -25,7 +25,7 @@ export interface DepartmentResponse {
   updatedAt: string;
 }
 
-/** 부서 옵션 조회 응답 Data */
+/** 부서 옵션 조회 응답 */
 export interface DepartmentOptionResponse {
   depCode: string;
   taskDesc: string;

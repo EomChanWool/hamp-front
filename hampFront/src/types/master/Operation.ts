@@ -15,7 +15,7 @@ export interface OperationUpdateRequest {
   stdTime?: string | null;
 }
 
-/** 공정 정보 응답 Data */
+/** 공정 정보 응답 */
 export interface OperationResponse {
   operCode: string;
   depCode: string;
@@ -26,7 +26,7 @@ export interface OperationResponse {
   updatedAt: string;
 }
 
-/** 공정 옵션 조회 응답 Data */
+/** 공정 옵션 조회 응답 */
 export interface OperationOptionResponse {
   operCode: string;
   operNm: string;

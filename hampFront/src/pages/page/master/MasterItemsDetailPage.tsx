@@ -38,7 +38,7 @@ export function MasterItemsDetailPage() {
   const location = useLocation();
 
   const [item, setItem] = useState<ItemDetailResponse | null>(null);
-  const [operations, setOperations] = useState<OperationOption[]>([]); // 공정 셀렉트 옵션 목록
+  const [operations, setOperations] = useState<OperationOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
