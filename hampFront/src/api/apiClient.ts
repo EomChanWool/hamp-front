@@ -136,12 +136,23 @@ const isServerDownError = (error: unknown) => {
   const status = error.response?.status
   const code = error.code
   const url = error.config?.url ?? ''
+  const responseData = error.response?.data
 
-  if (status && [502, 503, 504].includes(status)) return true
+  // 1. 서버가 죽었거나 네트워크 오류인 경우 (500번대, 네트워크 에러)
+  if (status && [500, 502, 503, 504].includes(status)) return true
   if (code && ['ECONNABORTED', 'ERR_NETWORK'].includes(code)) return true
   
-  // 404 에러 추가
-  if (status === 404 && url.startsWith('/')) return true
+  // 2. 404 에러 처리 (라우팅 실패 등)
+  if (status === 404 && url.startsWith('/')) {
+    // 백엔드가 비즈니스 에러를 보낼 때 보통 에러 코드(code)나 메시지를 담습니다.
+    // 만약 데이터 자체가 없거나, 우리 백엔드의 비즈니스 에러 규격이 아니라면
+    // 이건 서버/프록시가 띄운 404이므로 서버 다운으로 간주합니다.
+    const isBusinessError = !!(responseData?.code || responseData?.errorCode)
+    
+    if (!isBusinessError) {
+      return true
+    }
+  }
 
   return false
 }
