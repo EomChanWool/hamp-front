@@ -46,10 +46,10 @@ export function EquipmentListPage() {
   const locationRef = useRef<HTMLInputElement>(null)
 
   const searchFields: SearchField[] = [
-    { type: 'input', label: '설비명', ref: equipmentNameRef },
-    { type: 'input', label: '설비유형', ref: equipmentTypeRef },
-    { type: 'input', label: '현재상태', ref: statusRef },
-    { type: 'input', label: '설치위치', ref: locationRef },
+    { type: 'input', label: '설비명', ref: equipmentNameRef, name: "equipmentName" },
+    { type: 'input', label: '설비유형', ref: equipmentTypeRef, name: "equipmentName" },
+    { type: 'input', label: '현재상태', ref: statusRef, name: "equipmentName" },
+    { type: 'input', label: '설치위치', ref: locationRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

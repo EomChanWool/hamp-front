@@ -56,8 +56,8 @@ export function FoodDefectManagePage() {
 
   const searchFields: SearchField[] = [
     { type: 'date', label: '발생', startRef: occurredStartRef, endRef: occurredEndRef },
-    { type: 'input', label: '품목명', ref: itemNameRef },
-    { type: 'input', label: '처리상태', ref: statusRef },
+    { type: 'input', label: '품목명', ref: itemNameRef, name: "equipmentName" },
+    { type: 'input', label: '처리상태', ref: statusRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

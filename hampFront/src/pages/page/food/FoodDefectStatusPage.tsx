@@ -76,8 +76,8 @@ export function FoodDefectStatusPage() {
 
   const searchFields: SearchField[] = [
     { type: 'date', label: '기간', startRef: periodStartRef, endRef: periodEndRef },
-    { type: 'input', label: '공정', ref: processRef },
-    { type: 'input', label: '불량유형', ref: defectTypeRef },
+    { type: 'input', label: '공정', ref: processRef, name: "equipmentName" },
+    { type: 'input', label: '불량유형', ref: defectTypeRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

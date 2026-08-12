@@ -45,10 +45,10 @@ export function SeedReportReturnManagePage() {
   const managerRef = useRef<HTMLInputElement>(null)
 
   const searchFields: SearchField[] = [
-    { type: 'input', label: '신고번호', ref: reportNoRef },
-    { type: 'input', label: '품목명', ref: itemNameRef },
-    { type: 'input', label: '처리상태', ref: processStatusRef },
-    { type: 'input', label: '담당자', ref: managerRef },
+    { type: 'input', label: '신고번호', ref: reportNoRef, name: "equipmentName" },
+    { type: 'input', label: '품목명', ref: itemNameRef, name: "equipmentName" },
+    { type: 'input', label: '처리상태', ref: processStatusRef, name: "equipmentName" },
+    { type: 'input', label: '담당자', ref: managerRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

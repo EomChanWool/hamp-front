@@ -43,14 +43,14 @@ export function OrderStatusPage() {
   const managerRef = useRef<HTMLInputElement>(null)
 
   const searchFields: SearchField[] = [
-    { type: 'input', label: '거래처', ref: clientRef },
-    { type: 'input', label: '수주번호', ref: orderNoRef },
-    { type: 'input', label: '거래처담당자', ref: clientManagerRef },
-    { type: 'input', label: '생산품목', ref: productItemRef },
-    { type: 'input', label: '생산량', ref: quantityRef },
-    { type: 'input', label: '수주금액', ref: orderAmountRef },
-    { type: 'input', label: '납기일', ref: dueDateRef },
-    { type: 'input', label: '담당자', ref: managerRef },
+    { type: 'input', label: '거래처', ref: clientRef, name: "equipmentName" },
+    { type: 'input', label: '수주번호', ref: orderNoRef, name: "equipmentName" },
+    { type: 'input', label: '거래처담당자', ref: clientManagerRef, name: "equipmentName" },
+    { type: 'input', label: '생산품목', ref: productItemRef, name: "equipmentName" },
+    { type: 'input', label: '생산량', ref: quantityRef, name: "equipmentName" },
+    { type: 'input', label: '수주금액', ref: orderAmountRef, name: "equipmentName" },
+    { type: 'input', label: '납기일', ref: dueDateRef, name: "equipmentName" },
+    { type: 'input', label: '담당자', ref: managerRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

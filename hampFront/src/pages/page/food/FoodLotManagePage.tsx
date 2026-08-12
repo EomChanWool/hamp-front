@@ -59,8 +59,8 @@ export function FoodLotManagePage() {
 
   const searchFields: SearchField[] = [
     { type: 'date', label: '생산', startRef: producedStartRef, endRef: producedEndRef },
-    { type: 'input', label: 'LOT번호', ref: lotNumberRef },
-    { type: 'input', label: '출고여부', ref: shippedRef },
+    { type: 'input', label: 'LOT번호', ref: lotNumberRef, name: "equipmentName" },
+    { type: 'input', label: '출고여부', ref: shippedRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

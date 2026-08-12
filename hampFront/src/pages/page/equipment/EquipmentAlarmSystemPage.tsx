@@ -58,8 +58,8 @@ export function EquipmentAlarmSystemPage() {
 
   const searchFields: SearchField[] = [
     { type: 'date', label: '알림', startRef: alarmStartRef, endRef: alarmEndRef },
-    { type: 'input', label: '설비명', ref: equipmentNameRef },
-    { type: 'input', label: '처리상태', ref: statusRef },
+    { type: 'input', label: '설비명', ref: equipmentNameRef, name: "equipmentName" },
+    { type: 'input', label: '처리상태', ref: statusRef, name: "equipmentName"  },
   ]
 
   const handleSearch = () => {

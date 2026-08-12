@@ -45,15 +45,15 @@ export function DeliveryManagePage() {
   const noteRef = useRef<HTMLInputElement>(null)
 
   const searchFields: SearchField[] = [
-    { type: 'input', label: '수주번호', ref: orderNoRef },
-    { type: 'input', label: '거래처', ref: clientRef },
-    { type: 'input', label: '거래처담당자', ref: clientManagerRef },
-    { type: 'input', label: '납품품목', ref: deliveryItemRef },
-    { type: 'input', label: '납품량', ref: quantityRef },
-    { type: 'input', label: '납품장소', ref: deliveryLocationRef },
-    { type: 'input', label: '담당자', ref: managerRef },
-    { type: 'input', label: '상태', ref: statusRef },
-    { type: 'input', label: '비고', ref: noteRef },
+    { type: 'input', label: '수주번호', ref: orderNoRef, name: "equipmentName" },
+    { type: 'input', label: '거래처', ref: clientRef, name: "equipmentName" },
+    { type: 'input', label: '거래처담당자', ref: clientManagerRef, name: "equipmentName" },
+    { type: 'input', label: '납품품목', ref: deliveryItemRef, name: "equipmentName" },
+    { type: 'input', label: '납품량', ref: quantityRef, name: "equipmentName" },
+    { type: 'input', label: '납품장소', ref: deliveryLocationRef, name: "equipmentName" },
+    { type: 'input', label: '담당자', ref: managerRef, name: "equipmentName" },
+    { type: 'input', label: '상태', ref: statusRef, name: "equipmentName" },
+    { type: 'input', label: '비고', ref: noteRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

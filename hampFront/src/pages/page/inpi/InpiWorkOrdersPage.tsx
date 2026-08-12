@@ -40,8 +40,8 @@ export function InpiWorkOrdersPage() {
 
   const searchFields: SearchField[] = [
     { type: 'date', label: '작업일자', startRef: workDateStartRef, endRef: workDateEndRef },
-    { type: 'input', label: '품목명', ref: itemNameRef },
-    { type: 'input', label: '상태', ref: statusRef },
+    { type: 'input', label: '품목명', ref: itemNameRef, name: "equipmentName" },
+    { type: 'input', label: '상태', ref: statusRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

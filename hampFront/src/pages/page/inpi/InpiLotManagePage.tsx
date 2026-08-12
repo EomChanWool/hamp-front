@@ -51,8 +51,8 @@ export function InpiLotManagePage() {
 
   const searchFields: SearchField[] = [
     { type: 'date', label: '생산', startRef: producedStartRef, endRef: producedEndRef },
-    { type: 'input', label: 'LOT번호', ref: lotNoRef },
-    { type: 'input', label: '출고여부', ref: shippedStatusRef },
+    { type: 'input', label: 'LOT번호', ref: lotNoRef, name: "equipmentName" },
+    { type: 'input', label: '출고여부', ref: shippedStatusRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

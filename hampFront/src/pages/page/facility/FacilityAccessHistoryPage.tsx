@@ -42,8 +42,8 @@ export function FacilityAccessHistoryPage() {
 
   const searchFields: SearchField[] = [
     { type: 'date', label: '기간', startRef: periodStartRef, endRef: periodEndRef },
-    { type: 'input', label: '출입자명', ref: visitorNameRef },
-    { type: 'input', label: '출입상태', ref: accessStatusRef },
+    { type: 'input', label: '출입자명', ref: visitorNameRef, name: "equipmentName" },
+    { type: 'input', label: '출입상태', ref: accessStatusRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

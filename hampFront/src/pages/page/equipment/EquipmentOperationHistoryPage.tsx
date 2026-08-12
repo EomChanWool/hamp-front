@@ -46,8 +46,8 @@ export function EquipmentOperationHistoryPage() {
 
   const searchFields: SearchField[] = [
     { type: 'date', label: '기간', startRef: startDateRef, endRef: endDateRef },
-    { type: 'input', label: '설비명', ref: equipmentNameRef },
-    { type: 'input', label: '상태', ref: statusRef },
+    { type: 'input', label: '설비명', ref: equipmentNameRef, name: "equipmentName" },
+    { type: 'input', label: '상태', ref: statusRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

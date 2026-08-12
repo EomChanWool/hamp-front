@@ -40,10 +40,10 @@ export function SeedOutboundManagePage() {
   const managerRef = useRef<HTMLInputElement>(null)
 
   const searchFields: SearchField[] = [
-    { type: 'input', label: '출고번호', ref: outboundNoRef },
-    { type: 'input', label: '품명', ref: itemNameRef },
-    { type: 'input', label: 'Lot번호', ref: lotNoRef },
-    { type: 'input', label: '담당자', ref: managerRef },
+    { type: 'input', label: '출고번호', ref: outboundNoRef, name: "equipmentName" },
+    { type: 'input', label: '품명', ref: itemNameRef, name: "equipmentName" },
+    { type: 'input', label: 'Lot번호', ref: lotNoRef, name: "equipmentName" },
+    { type: 'input', label: '담당자', ref: managerRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

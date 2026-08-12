@@ -29,8 +29,8 @@ export function SeedInventoryManagePage() {
 
   const searchFields: SearchField[] = [
     { type: 'date', label: '처리', startRef: processStartRef, endRef: processEndRef },
-    { type: 'input', label: '처리구분', ref: processTypeRef },
-    { type: 'input', label: '품목명', ref: itemNameRef },
+    { type: 'input', label: '처리구분', ref: processTypeRef, name: "equipmentName" },
+    { type: 'input', label: '품목명', ref: itemNameRef, name: "equipmentName" },
   ]
 
   const loadSeedInventory = async (params: SeedInventorySearchParams) => {
