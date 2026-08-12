@@ -1,34 +1,65 @@
-import { useMemo, useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { SortingState } from "@tanstack/react-table";
 
 export function useTableSorting() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // URL에서 sort 파라미터 추출
-  const sortParams = useMemo(() => searchParams.getAll("sort"), [searchParams]);
+  // URL의 sort 파라미터
+  const sortParams = useMemo(() => {
+    return searchParams.getAll("sort");
+  }, [searchParams]);
 
-  // TanStack Table용 SortingState로 변환
+  // URL의 sort 파라미터를 TanStack Table SortingState로 변환
   const sorting: SortingState = useMemo(() => {
-    return sortParams.map((item) => {
-      const [id, desc] = item.split(",");
-      return { id, desc: desc === "desc" };
-    });
+    return sortParams
+      .map((item) => {
+        const [id, direction] = item.split(",");
+
+        if (!id) {
+          return null;
+        }
+
+        return {
+          id,
+          desc: direction === "desc",
+        };
+      })
+      .filter(
+        (
+          item
+        ): item is { id: string; desc: boolean } =>
+          item !== null
+      );
   }, [sortParams]);
 
-  // 테이블 정렬 변경 핸들러
   const handleSortingChange = useCallback(
-    (updater: any) => {
-      const nextSorting = typeof updater === "function" ? updater(sorting) : updater;
+    (
+      updater:
+        | SortingState
+        | ((old: SortingState) => SortingState)
+    ) => {
+      const nextSorting =
+        typeof updater === "function"
+          ? updater(sorting)
+          : updater;
+
       const nextParams = new URLSearchParams(searchParams);
 
-      // 기존 sort 파라미터 모두 제거 후 새로 추가
+      // 기존 정렬 제거
       nextParams.delete("sort");
-      nextSorting.forEach((s: { id: string; desc: boolean }) => {
-        nextParams.append("sort", `${s.id},${s.desc ? "desc" : "asc"}`);
+
+      // 새로운 정렬 추가
+      nextSorting.forEach((sort) => {
+        nextParams.append(
+          "sort",
+          `${sort.id},${sort.desc ? "desc" : "asc"}`
+        );
       });
 
-      // 문자열 치환 방식 대신 URLSearchParams 객체를 그대로 전달
+      // 정렬 변경 시 첫 페이지
+      nextParams.set("page", "0");
+
       setSearchParams(nextParams);
     },
     [searchParams, sorting, setSearchParams]
