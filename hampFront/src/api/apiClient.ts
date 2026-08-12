@@ -147,7 +147,7 @@ const isServerDownError = (error: unknown) => {
     // 백엔드가 비즈니스 에러를 보낼 때 보통 에러 코드(code)나 메시지를 담습니다.
     // 만약 데이터 자체가 없거나, 우리 백엔드의 비즈니스 에러 규격이 아니라면
     // 이건 서버/프록시가 띄운 404이므로 서버 다운으로 간주합니다.
-    const isBusinessError = !!(responseData?.code || responseData?.errorCode)
+    const isBusinessError = !!(responseData?.code || responseData?.message)
     
     if (!isBusinessError) {
       return true
