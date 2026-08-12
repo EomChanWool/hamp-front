@@ -21,6 +21,7 @@ type HeaderProps = {
   collapsed: boolean;
   onToggleCollapsed: () => void;
   onLogoClick: () => void;
+  onUserClick?: () => void; // 유저 페이지로 이동하는 핸들러 추가
 };
 
 type NotificationItem = {
@@ -44,6 +45,7 @@ export function Header({
   collapsed,
   onToggleCollapsed,
   onLogoClick,
+  onUserClick,
 }: HeaderProps) {
   const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -161,12 +163,20 @@ export function Header({
           </button>
 
           <div className="headerDivider" />
-          <div className="headerUser">
+          
+          {/* 유저 정보 영역 (클릭 가능하도록 수정) */}
+          <div 
+            className="headerUser" 
+            onClick={onUserClick}
+            role="button"
+            tabIndex={0}
+            aria-label="유저 페이지로 이동"
+            style={{ cursor: "pointer" }}
+          >
             <div className="headerAvatar">
               <UserIcon className="h-5 w-5" />
             </div>
             <div className="headerUserInfo">
-              {/* LoginResponse의 타입 속성명에 맞게 조정 (예: userNm, userId 등) */}
               <span>{user?.userNm || "사용자"}</span>
               <strong>{user?.userId || "User"}</strong>
             </div>

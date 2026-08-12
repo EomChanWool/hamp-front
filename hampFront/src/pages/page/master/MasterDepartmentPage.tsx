@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { Panel } from "@components/card/Panel";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
 import { formatDateTime } from "@/utils/common";
 import { apiClient } from "@/api/apiClient";
-import { useTableSorting } from "@/hooks/useTableSorting";
 import axios from "axios";
 import type {
   DepartmentResponse,
@@ -24,24 +22,45 @@ interface DepartmentCreateRequest extends DepartmentUpdateRequest {
 }
 
 export function MasterDepartmentPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-
   const [departments, setDepartments] = useState<DepartmentResponse[]>([]);
   const [departmentOptions, setDepartmentOptions] = useState<DepartmentOptionResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 커스텀 훅으로 정렬 상태 및 핸들러 연동
-  const { sorting, sortParams, handleSortingChange } = useTableSorting();
+  // 데이터 재조회를 위한 트리거 키
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // 인라인 수정 상태 관리 (현재 수정 중인 부서코드)
+  // 페이지 및 검색 조건을 React State로 관리
+  const [page, setPage] = useState(0);
+  const [searchFilters, setSearchFilters] = useState({
+    depCode: "",
+    taskDesc: "",
+    head: "",
+    headPhone: "",
+  });
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  // 서버로 보낼 sort 파라미터 변환
+  const sortParams = useMemo(() => {
+    return sorting.map((sort) => `${sort.id},${sort.desc ? "desc" : "asc"}`);
+  }, [sorting]);
+
+  const handleSortingChange = (newSorting: SortingState) => {
+    setSorting(newSorting);
+    setPage(0);
+    setEditingDepCode(null);
+    setIsCreatingNewRow(false);
+  };
+
+  // 인라인 수정 상태 관리
   const [editingDepCode, setEditingDepCode] = useState<string | null>(null);
 
-  // 인라인 등록 상태 관리 (true면 테이블 맨 위에 새 입력 행이 생성됨)
+  // 인라인 등록 상태 관리
   const [isCreatingNewRow, setIsCreatingNewRow] = useState(false);
-  
-  // 타이핑 시 리렌더링을 방지하여 한 글자 입력 버그를 원천 차단하는 Ref (수정 및 등록 공용)
+
+  // 타이핑 시 리렌더링 방지 폼 Ref
   const editFormRef = useRef<DepartmentUpdateRequest & { depCode?: string }>({
     depCode: "",
     head: "",
@@ -51,13 +70,6 @@ export function MasterDepartmentPage() {
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeletingDepCode, setIsDeletingDepCode] = useState<string | null>(null);
-
-  // URL 쿼리 파라미터 값 추출
-  const currentPage = Number(searchParams.get("page") || "0");
-  const queryDepCode = searchParams.get("depCode") || "";
-  const queryTaskDesc = searchParams.get("taskDesc") || "";
-  const queryHead = searchParams.get("head") || "";
-  const queryHeadPhone = searchParams.get("headPhone") || "";
 
   // 검색 필드 Refs
   const depCodeRef = useRef<HTMLSelectElement>(null);
@@ -81,20 +93,6 @@ export function MasterDepartmentPage() {
     loadDepartmentOptions();
   }, [loadDepartmentOptions]);
 
-  // 검색 필드 DOM 값과 URL 쿼리 파라미터 동기화
-  useEffect(() => {
-    if (depCodeRef.current) depCodeRef.current.value = queryDepCode;
-    if (taskDescRef.current) taskDescRef.current.value = queryTaskDesc;
-    if (headRef.current) headRef.current.value = queryHead;
-    if (headPhoneRef.current) headPhoneRef.current.value = queryHeadPhone;
-  }, [
-    queryDepCode,
-    queryTaskDesc,
-    queryHead,
-    queryHeadPhone,
-    departmentOptions,
-  ]);
-
   // 검색 필드 정의
   const searchFields: SearchField[] = [
     {
@@ -109,9 +107,9 @@ export function MasterDepartmentPage() {
         })),
       ],
     },
-    { type: "input", label: "담당업무", ref: taskDescRef },
-    { type: "input", label: "부서장", ref: headRef },
-    { type: "input", label: "대표 연락처", ref: headPhoneRef },
+    { type: "input", label: "담당업무", ref: taskDescRef, name: "taskDesc" },
+    { type: "input", label: "부서장", ref: headRef, name: "headRef" },
+    { type: "input", label: "대표 연락처", ref: headPhoneRef, name: "headPhone" },
   ];
 
   // 부서 목록 조회
@@ -119,15 +117,14 @@ export function MasterDepartmentPage() {
     setIsLoading(true);
     try {
       const params: Record<string, any> = {
-        page: currentPage,
+        page,
         size: 10,
       };
-      if (queryDepCode) params.depCode = queryDepCode;
-      if (queryTaskDesc) params.taskDesc = queryTaskDesc;
-      if (queryHead) params.head = queryHead;
-      if (queryHeadPhone) params.headPhone = queryHeadPhone;
+      if (searchFilters.depCode) params.depCode = searchFilters.depCode;
+      if (searchFilters.taskDesc) params.taskDesc = searchFilters.taskDesc;
+      if (searchFilters.head) params.head = searchFilters.head;
+      if (searchFilters.headPhone) params.headPhone = searchFilters.headPhone;
 
-      // 정렬 파라미터 반영
       if (sortParams.length > 0) {
         params.sort = sortParams;
       }
@@ -146,67 +143,48 @@ export function MasterDepartmentPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [
-    currentPage,
-    queryDepCode,
-    queryTaskDesc,
-    queryHead,
-    queryHeadPhone,
-    sortParams,
-  ]);
+  }, [page, searchFilters, sortParams, refreshKey]);
 
   useEffect(() => {
     loadDepartments();
   }, [loadDepartments]);
 
   const handleSearch = () => {
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.set("page", "0");
-
-    const depCode = depCodeRef.current?.value.trim();
-    const taskDesc = taskDescRef.current?.value.trim();
-    const head = headRef.current?.value.trim();
-    const headPhone = headPhoneRef.current?.value.trim();
-
-    if (depCode) nextParams.set("depCode", depCode);
-    else nextParams.delete("depCode");
-
-    if (taskDesc) nextParams.set("taskDesc", taskDesc);
-    else nextParams.delete("taskDesc");
-
-    if (head) nextParams.set("head", head);
-    else nextParams.delete("head");
-
-    if (headPhone) nextParams.set("headPhone", headPhone);
-    else nextParams.delete("headPhone");
-
+    setPage(0);
+    setSearchFilters({
+      depCode: depCodeRef.current?.value.trim() || "",
+      taskDesc: taskDescRef.current?.value.trim() || "",
+      head: headRef.current?.value.trim() || "",
+      headPhone: headPhoneRef.current?.value.trim() || "",
+    });
     setEditingDepCode(null);
     setIsCreatingNewRow(false);
-    setSearchParams(nextParams);
   };
 
   const handleReset = () => {
-    [taskDescRef, headRef, headPhoneRef].forEach((ref) => {
-      if (ref.current) ref.current.value = "";
-    });
     if (depCodeRef.current) depCodeRef.current.value = "";
+    if (taskDescRef.current) taskDescRef.current.value = "";
+    if (headRef.current) headRef.current.value = "";
+    if (headPhoneRef.current) headPhoneRef.current.value = "";
 
+    setPage(0);
+    setSearchFilters({
+      depCode: "",
+      taskDesc: "",
+      head: "",
+      headPhone: "",
+    });
+    setSorting([]);
     setEditingDepCode(null);
     setIsCreatingNewRow(false);
-    setSearchParams({
-      page: "0",
-    });
   };
 
   const handlePageChange = (newPage: number) => {
     setEditingDepCode(null);
     setIsCreatingNewRow(false);
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.set("page", String(newPage));
-    setSearchParams(nextParams);
+    setPage(newPage);
   };
 
-  // 인라인 등록 행 활성화
   const handleStartCreate = () => {
     if (isCreatingNewRow) return;
     setEditingDepCode(null);
@@ -223,7 +201,7 @@ export function MasterDepartmentPage() {
     setIsCreatingNewRow(false);
   };
 
-  // 인라인 신규 등록 API 저장 (POST /departments)
+  // 인라인 신규 등록 API 저장
   const handleSaveCreate = async () => {
     if (isUpdating) return;
 
@@ -246,8 +224,22 @@ export function MasterDepartmentPage() {
 
       window.alert(response.data?.message || "등록되었습니다.");
       setIsCreatingNewRow(false);
-      await loadDepartments();
+
+      if (depCodeRef.current) depCodeRef.current.value = "";
+      if (taskDescRef.current) taskDescRef.current.value = "";
+      if (headRef.current) headRef.current.value = "";
+      if (headPhoneRef.current) headPhoneRef.current.value = "";
+
+      setPage(0);
+      setSearchFilters({
+        depCode: "",
+        taskDesc: "",
+        head: "",
+        headPhone: "",
+      });
+      setSorting([]);
       await loadDepartmentOptions();
+      setRefreshKey((prev) => prev + 1);
     } catch (err) {
       console.error("등록 실패:", err);
       const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
@@ -257,7 +249,6 @@ export function MasterDepartmentPage() {
     }
   };
 
-  // 인라인 편집 시작
   const handleStartEdit = (row: DepartmentResponse) => {
     setIsCreatingNewRow(false);
     editFormRef.current = {
@@ -268,7 +259,6 @@ export function MasterDepartmentPage() {
     setEditingDepCode(row.depCode);
   };
 
-  // 인라인 편집 취소
   const handleCancelEdit = () => {
     setEditingDepCode(null);
     editFormRef.current = { head: "", headPhone: "", taskDesc: "" };
@@ -293,24 +283,9 @@ export function MasterDepartmentPage() {
       );
 
       window.alert(response.data?.message || "수정되었습니다.");
-
-      // 로컬 데이터 목록 즉시 갱신 (Optimistic Update)
-      setDepartments((prev) =>
-        prev.map((item) =>
-          item.depCode === depCode
-            ? {
-                ...item,
-                head: updatePayload.head ?? item.head,
-                headPhone: updatePayload.headPhone ?? item.headPhone,
-                taskDesc: updatePayload.taskDesc ?? item.taskDesc,
-              }
-            : item
-        )
-      );
-
       setEditingDepCode(null);
-      await loadDepartments();
       await loadDepartmentOptions();
+      setRefreshKey((prev) => prev + 1);
     } catch (err) {
       console.error("수정 실패:", err);
       const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
@@ -333,8 +308,8 @@ export function MasterDepartmentPage() {
       await apiClient.delete(`/departments/${encodedDepCode}`);
 
       window.alert("부서가 삭제되었습니다.");
-      await loadDepartments();
       await loadDepartmentOptions();
+      setRefreshKey((prev) => prev + 1);
     } catch (error) {
       console.error("부서 삭제 실패:", error);
       const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
@@ -344,7 +319,6 @@ export function MasterDepartmentPage() {
     }
   };
 
-  // 테이블 컬럼 정의
   const columns: ColumnDef<DepartmentResponse>[] = useMemo(
     () => [
       {
@@ -373,6 +347,7 @@ export function MasterDepartmentPage() {
         cell: ({ row }) => {
           const isNewRow = row.original.depCode === "__NEW_ROW__";
           const isEditing = row.original.depCode === editingDepCode;
+
           if (isNewRow || isEditing) {
             return (
               <input
@@ -394,6 +369,7 @@ export function MasterDepartmentPage() {
         cell: ({ row }) => {
           const isNewRow = row.original.depCode === "__NEW_ROW__";
           const isEditing = row.original.depCode === editingDepCode;
+
           if (isNewRow || isEditing) {
             return (
               <input
@@ -415,6 +391,7 @@ export function MasterDepartmentPage() {
         cell: ({ row }) => {
           const isNewRow = row.original.depCode === "__NEW_ROW__";
           const isEditing = row.original.depCode === editingDepCode;
+
           if (isNewRow || isEditing) {
             return (
               <input
@@ -554,7 +531,7 @@ export function MasterDepartmentPage() {
                 noDataMessage="조회된 데이터가 없습니다."
               />
               <CusPagination
-                page={currentPage}
+                page={page}
                 totalPages={totalPages}
                 totalCount={totalElements}
                 onPageChange={handlePageChange}

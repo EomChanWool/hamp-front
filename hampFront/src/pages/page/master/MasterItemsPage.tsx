@@ -29,8 +29,38 @@ export function MasterItemsPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  // 새로고침 초기화가 끝난 뒤에 목록 조회를 시작하기 위한 상태
+  const [isReady, setIsReady] = useState(false);
+
   // 커스텀 훅으로 정렬 상태 및 핸들러 연동
   const { sorting, sortParams, handleSortingChange } = useTableSorting();
+
+  // ----------------------------------------
+  // 브라우저 새로고침(F5) 감지 및 처리 (sessionStorage 방식)
+  // ----------------------------------------
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      sessionStorage.setItem("is_browser_reload", "true");
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
+  useEffect(() => {
+    const isReload = sessionStorage.getItem("is_browser_reload") === "true";
+
+    if (isReload) {
+      sessionStorage.removeItem("is_browser_reload");
+      if (searchParams.toString()) {
+        setSearchParams({}, { replace: true });
+        return;
+      }
+    }
+    setIsReady(true);
+  }, []);
+  // ----------------------------------------
 
   const currentPage = Number(searchParams.get("page") || "0");
   const queryItemCode = searchParams.get("itemCode") || "";
@@ -50,7 +80,7 @@ export function MasterItemsPage() {
   const useYnRef = useRef<HTMLSelectElement>(null);
 
   const searchFields: SearchField[] = [
-    { type: "input", label: "품목코드", ref: itemCodeRef },
+    { type: "input", label: "품목코드", ref: itemCodeRef, name: "itemCode" },
     {
       type: "select",
       label: "종류",
@@ -72,9 +102,9 @@ export function MasterItemsPage() {
         { label: CATEGORY_LABEL[2], value: "2" },
       ],
     },
-    { type: "input", label: "품목명", ref: itemNmRef },
-    { type: "input", label: "단위", ref: unitRef },
-    { type: "input", label: "규격", ref: standardRef },
+    { type: "input", label: "품목명", ref: itemNmRef, name: "itemNm" },
+    { type: "input", label: "단위", ref: unitRef, name: "unit" },
+    { type: "input", label: "규격", ref: standardRef, name: "standard" },
     {
       type: "select",
       label: "사용여부",
@@ -106,6 +136,10 @@ export function MasterItemsPage() {
   ]);
 
   const loadItems = useCallback(async () => {
+    if (!isReady) {
+      return;
+    }
+
     setIsLoading(true);
     try {
       const params: Record<string, any> = {
@@ -141,6 +175,7 @@ export function MasterItemsPage() {
       setIsLoading(false);
     }
   }, [
+    isReady,
     currentPage,
     queryItemCode,
     queryProductType,
@@ -199,7 +234,7 @@ export function MasterItemsPage() {
     [productTypeRef, categoryRef, useYnRef].forEach((ref) => {
       if (ref.current) ref.current.value = "";
     });
-    setSearchParams({ page: "0" });
+    setSearchParams({ page: "0" }, { replace: true });
   };
 
   const handlePageChange = (newPage: number) => {
@@ -237,19 +272,25 @@ export function MasterItemsPage() {
         cell: ({ getValue }) => CATEGORY_LABEL[getValue<ItemCategory>()] ?? getValue(),
       },
       {
-        accessorKey: "itemNm", header: "품목명", cell: ({ getValue }) => {
+        accessorKey: "itemNm",
+        header: "품목명",
+        cell: ({ getValue }) => {
           const val = getValue<string>();
           return val ? val : "-";
         },
       },
       {
-        accessorKey: "unit", header: "단위", cell: ({ getValue }) => {
+        accessorKey: "unit",
+        header: "단위",
+        cell: ({ getValue }) => {
           const val = getValue<string>();
           return val ? val : "-";
         },
       },
       {
-        accessorKey: "standard", header: "규격", cell: ({ getValue }) => {
+        accessorKey: "standard",
+        header: "규격",
+        cell: ({ getValue }) => {
           const val = getValue<string>();
           return val ? val : "-";
         },

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { Badge } from "@components/common/Badge";
 import { Panel } from "@components/card/Panel";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
@@ -17,7 +16,6 @@ import type {
   OperationOptionResponse,
   ApiResponseListOperationOptionResponse,
 } from "@/types/master/Operation";
-import { useTableSorting } from "@/hooks/useTableSorting";
 import Spinner from "@/components/common/Spinner";
 
 interface OperationCreateRequest extends OperationUpdateRequest {
@@ -25,21 +23,46 @@ interface OperationCreateRequest extends OperationUpdateRequest {
 }
 
 export function MasterOperationPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-
   const [operations, setOperations] = useState<OperationResponse[]>([]);
   const [operationOptions, setOperationOptions] = useState<OperationOptionResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 인라인 수정 상태 관리 (현재 수정 중인 공정코드)
+  // 데이터 재조회를 위한 트리거 키
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // 페이지 및 검색 조건을 React State로 관리
+  const [page, setPage] = useState(0);
+  const [searchFilters, setSearchFilters] = useState({
+    operCode: "",
+    depCode: "",
+    operNm: "",
+    useYn: "",
+    stdTime: "",
+  });
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  // 서버로 보낼 sort 파라미터 변환
+  const sortParams = useMemo(() => {
+    return sorting.map((sort) => `${sort.id},${sort.desc ? "desc" : "asc"}`);
+  }, [sorting]);
+
+  const handleSortingChange = (newSorting: SortingState) => {
+    setSorting(newSorting);
+    setPage(0);
+    setEditingOperCode(null);
+    setIsCreatingNewRow(false);
+  };
+
+  // 인라인 수정 상태 관리
   const [editingOperCode, setEditingOperCode] = useState<string | null>(null);
 
-  // 인라인 등록 상태 관리 (true면 테이블 맨 위에 새 입력 행이 생성됨)
+  // 인라인 등록 상태 관리
   const [isCreatingNewRow, setIsCreatingNewRow] = useState(false);
 
-  // 타이핑 시 리렌더링 방지를 위한 폼 상태 Ref (수정 및 등록 공용)
+  // 타이핑 시 리렌더링 방지 폼 Ref
   const editFormRef = useRef<OperationUpdateRequest & { operCode?: string }>({
     operCode: "",
     depCode: "",
@@ -49,17 +72,6 @@ export function MasterOperationPage() {
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeletingOperCode, setIsDeletingOperCode] = useState<string | null>(null);
-
-  // 커스텀 훅으로 정렬 상태 및 핸들러 연동
-  const { sorting, sortParams, handleSortingChange } = useTableSorting();
-
-  // URL 쿼리 파라미터 값 추출
-  const currentPage = Number(searchParams.get("page") || "0");
-  const queryOperCode = searchParams.get("operCode") || "";
-  const queryDepCode = searchParams.get("depCode") || "";
-  const queryOperNm = searchParams.get("operNm") || "";
-  const queryUseYn = searchParams.get("useYn") || "";
-  const queryStdTime = searchParams.get("stdTime") || "";
 
   // 검색 필드 Refs
   const operCodeRef = useRef<HTMLSelectElement>(null);
@@ -84,26 +96,6 @@ export function MasterOperationPage() {
     fetchOperationOptions();
   }, [fetchOperationOptions]);
 
-  // 검색 필드 DOM 값과 URL 쿼리 파라미터 동기화 (타이밍 이슈 방지 setTimeout 적용)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (operCodeRef.current) operCodeRef.current.value = queryOperCode;
-      if (depCodeRef.current) depCodeRef.current.value = queryDepCode;
-      if (operNmRef.current) operNmRef.current.value = queryOperNm;
-      if (useYnRef.current) useYnRef.current.value = queryUseYn;
-      if (stdTimeRef.current) stdTimeRef.current.value = queryStdTime;
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, [
-    queryOperCode,
-    queryDepCode,
-    queryOperNm,
-    queryUseYn,
-    queryStdTime,
-    operationOptions,
-  ]);
-
   // 검색 밴드 구성
   const searchFields: SearchField[] = [
     {
@@ -118,8 +110,8 @@ export function MasterOperationPage() {
         })),
       ],
     },
-    { type: "input", label: "부서코드", ref: depCodeRef },
-    { type: "input", label: "공정명", ref: operNmRef },
+    { type: "input", label: "부서코드", ref: depCodeRef, name: "depCode" },
+    { type: "input", label: "공정명", ref: operNmRef, name: "operNm" },
     {
       type: "select",
       label: "사용여부",
@@ -138,16 +130,15 @@ export function MasterOperationPage() {
     setIsLoading(true);
     try {
       const params: Record<string, any> = {
-        page: currentPage,
+        page,
         size: 10,
       };
-      if (queryOperCode) params.operCode = queryOperCode;
-      if (queryDepCode) params.depCode = queryDepCode;
-      if (queryOperNm) params.operNm = queryOperNm;
-      if (queryUseYn) params.useYn = queryUseYn;
-      if (queryStdTime) params.stdTime = queryStdTime;
+      if (searchFilters.operCode) params.operCode = searchFilters.operCode;
+      if (searchFilters.depCode) params.depCode = searchFilters.depCode;
+      if (searchFilters.operNm) params.operNm = searchFilters.operNm;
+      if (searchFilters.useYn) params.useYn = searchFilters.useYn;
+      if (searchFilters.stdTime) params.stdTime = searchFilters.stdTime;
 
-      // 정렬 파라미터 반영
       if (sortParams.length > 0) {
         params.sort = sortParams;
       }
@@ -166,75 +157,51 @@ export function MasterOperationPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [
-    currentPage,
-    queryOperCode,
-    queryDepCode,
-    queryOperNm,
-    queryUseYn,
-    queryStdTime,
-    sortParams,
-  ]);
+  }, [page, searchFilters, sortParams, refreshKey]);
 
   useEffect(() => {
     loadOperations();
   }, [loadOperations]);
 
-  // 검색 핸들러
   const handleSearch = () => {
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.set("page", "0");
-
-    const operCode = operCodeRef.current?.value.trim();
-    const depCode = depCodeRef.current?.value.trim();
-    const operNm = operNmRef.current?.value.trim();
-    const useYn = useYnRef.current?.value.trim();
-    const stdTime = stdTimeRef.current?.value.trim();
-
-    if (operCode) nextParams.set("operCode", operCode);
-    else nextParams.delete("operCode");
-
-    if (depCode) nextParams.set("depCode", depCode);
-    else nextParams.delete("depCode");
-
-    if (operNm) nextParams.set("operNm", operNm);
-    else nextParams.delete("operNm");
-
-    if (useYn) nextParams.set("useYn", useYn);
-    else nextParams.delete("useYn");
-
-    if (stdTime) nextParams.set("stdTime", stdTime);
-    else nextParams.delete("stdTime");
-
+    setPage(0);
+    setSearchFilters({
+      operCode: operCodeRef.current?.value.trim() || "",
+      depCode: depCodeRef.current?.value.trim() || "",
+      operNm: operNmRef.current?.value.trim() || "",
+      useYn: useYnRef.current?.value.trim() || "",
+      stdTime: stdTimeRef.current?.value.trim() || "",
+    });
     setEditingOperCode(null);
     setIsCreatingNewRow(false);
-    setSearchParams(nextParams);
   };
 
-  // 검색 초기화
   const handleReset = () => {
-    [depCodeRef, operNmRef, stdTimeRef].forEach((ref) => {
-      if (ref.current) ref.current.value = "";
-    });
     if (operCodeRef.current) operCodeRef.current.value = "";
+    if (depCodeRef.current) depCodeRef.current.value = "";
+    if (operNmRef.current) operNmRef.current.value = "";
     if (useYnRef.current) useYnRef.current.value = "";
+    if (stdTimeRef.current) stdTimeRef.current.value = "";
 
+    setPage(0);
+    setSearchFilters({
+      operCode: "",
+      depCode: "",
+      operNm: "",
+      useYn: "",
+      stdTime: "",
+    });
+    setSorting([]);
     setEditingOperCode(null);
     setIsCreatingNewRow(false);
-    setSearchParams({
-      page: "0",
-    });
   };
 
   const handlePageChange = (newPage: number) => {
     setEditingOperCode(null);
     setIsCreatingNewRow(false);
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.set("page", String(newPage));
-    setSearchParams(nextParams);
+    setPage(newPage);
   };
 
-  // 인라인 등록 행 활성화
   const handleStartCreate = () => {
     if (isCreatingNewRow) return;
     setEditingOperCode(null);
@@ -251,7 +218,7 @@ export function MasterOperationPage() {
     setIsCreatingNewRow(false);
   };
 
-  // 인라인 신규 등록 API 저장 (POST /operations)
+  // 인라인 신규 등록 API 저장
   const handleSaveCreate = async () => {
     if (isUpdating) return;
 
@@ -274,7 +241,23 @@ export function MasterOperationPage() {
 
       window.alert(response.data?.message || "등록되었습니다.");
       setIsCreatingNewRow(false);
-      await loadOperations();
+
+      if (operCodeRef.current) operCodeRef.current.value = "";
+      if (depCodeRef.current) depCodeRef.current.value = "";
+      if (operNmRef.current) operNmRef.current.value = "";
+      if (useYnRef.current) useYnRef.current.value = "";
+      if (stdTimeRef.current) stdTimeRef.current.value = "";
+
+      setPage(0);
+      setSearchFilters({
+        operCode: "",
+        depCode: "",
+        operNm: "",
+        useYn: "",
+        stdTime: "",
+      });
+      setSorting([]);
+      setRefreshKey((prev) => prev + 1);
       await fetchOperationOptions();
     } catch (err) {
       console.error("등록 실패:", err);
@@ -285,7 +268,6 @@ export function MasterOperationPage() {
     }
   };
 
-  // 인라인 편집 시작
   const handleStartEdit = (row: OperationResponse) => {
     setIsCreatingNewRow(false);
     editFormRef.current = {
@@ -296,7 +278,6 @@ export function MasterOperationPage() {
     setEditingOperCode(row.operCode);
   };
 
-  // 인라인 편집 취소
   const handleCancelEdit = () => {
     setEditingOperCode(null);
     editFormRef.current = { depCode: "", operNm: "", stdTime: "" };
@@ -321,23 +302,8 @@ export function MasterOperationPage() {
       );
 
       window.alert(response.data?.message || "수정되었습니다.");
-
-      // 로컬 데이터 목록 즉시 갱신 (Optimistic Update)
-      setOperations((prev) =>
-        prev.map((item) =>
-          item.operCode === operCode
-            ? {
-              ...item,
-              depCode: updatePayload.depCode ?? item.depCode,
-              operNm: updatePayload.operNm ?? item.operNm,
-              stdTime: updatePayload.stdTime ?? item.stdTime,
-            }
-            : item
-        )
-      );
-
       setEditingOperCode(null);
-      await loadOperations();
+      setRefreshKey((prev) => prev + 1);
       await fetchOperationOptions();
     } catch (err) {
       console.error("수정 실패:", err);
@@ -348,7 +314,7 @@ export function MasterOperationPage() {
     }
   };
 
-  // 공정 삭제(비활성화) 처리
+  // 행 삭제
   const handleDeleteOperation = async (row: OperationResponse) => {
     if (isDeletingOperCode || row.useYn !== "Y") return;
 
@@ -361,7 +327,7 @@ export function MasterOperationPage() {
       await apiClient.delete(`/operations/${encodedOperCode}`);
 
       window.alert("공정이 삭제(비활성화)되었습니다.");
-      await loadOperations();
+      setRefreshKey((prev) => prev + 1);
       await fetchOperationOptions();
     } catch (error) {
       console.error("공정 삭제 실패:", error);
@@ -372,7 +338,6 @@ export function MasterOperationPage() {
     }
   };
 
-  // 테이블 컬럼 정의
   const columns: ColumnDef<OperationResponse>[] = useMemo(
     () => [
       {
@@ -401,6 +366,7 @@ export function MasterOperationPage() {
         cell: ({ row }) => {
           const isNewRow = row.original.operCode === "__NEW_ROW__";
           const isEditing = row.original.operCode === editingOperCode;
+
           if (isNewRow || isEditing) {
             return (
               <input
@@ -422,6 +388,7 @@ export function MasterOperationPage() {
         cell: ({ row }) => {
           const isNewRow = row.original.operCode === "__NEW_ROW__";
           const isEditing = row.original.operCode === editingOperCode;
+
           if (isNewRow || isEditing) {
             return (
               <input
@@ -443,6 +410,7 @@ export function MasterOperationPage() {
         cell: ({ row }) => {
           const isNewRow = row.original.operCode === "__NEW_ROW__";
           const isEditing = row.original.operCode === editingOperCode;
+
           if (isNewRow || isEditing) {
             return (
               <input
@@ -585,7 +553,7 @@ export function MasterOperationPage() {
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
       <Panel title="공정 관리 목록" action="등록" onAction={handleStartCreate}>
-         <div className="relative min-h-[300px]">
+        <div className="relative min-h-[300px]">
           {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <Spinner />
@@ -600,7 +568,7 @@ export function MasterOperationPage() {
                 noDataMessage="조회된 데이터가 없습니다."
               />
               <CusPagination
-                page={currentPage}
+                page={page}
                 totalPages={totalPages}
                 totalCount={totalElements}
                 onPageChange={handlePageChange}

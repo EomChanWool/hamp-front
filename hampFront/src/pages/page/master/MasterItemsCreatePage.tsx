@@ -260,7 +260,7 @@ export function MasterItemsCreatePage() {
     try {
       await apiClient.post<ApiResponseItemResponse>("/items", payload);
       alert("성공적으로 등록되었습니다.");
-      handleCancel();
+      navigate("/master/items", { replace: true });
     } catch (error) {
       console.error("품목 등록 실패:", error);
       const message = axios.isAxiosError(error)
@@ -395,7 +395,7 @@ export function MasterItemsCreatePage() {
 
                     return (
                       <div
-                        key={route.operCode}
+                        key={`${route.operCode}-${index}`}
                         className={`routingItem ${isDragging ? "dragging" : ""}`}
                         draggable={!isSubmitting}
                         onDragStart={() => handleDragStart(index)}

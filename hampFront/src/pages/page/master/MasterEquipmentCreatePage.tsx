@@ -1,5 +1,5 @@
 import { useState, type SyntheticEvent } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Panel } from "@components/card/Panel";
 import { apiClient } from "@/api/apiClient";
 import axios from "axios";
@@ -10,7 +10,7 @@ import type {
 
 export function MasterEquipmentCreatePage() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,12 +33,10 @@ export function MasterEquipmentCreatePage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  // 이전 검색조건을 유지하면서 목록으로 이동
-  const handleGoBack = () => {
-    navigate({
-      pathname: "/master/equipment",
-      search: location.search,
-    });
+  // 취소 버튼 클릭 시에만 기존 검색 조건을 유지하며 목록으로 이동
+  const handleCancel = () => {
+    const queryString = searchParams.toString();
+    navigate(queryString ? `/master/equipment?${queryString}` : "/master/equipment");
   };
 
   // [1차 검증] 유효성 체크 (eqCode 필수)
@@ -75,7 +73,9 @@ export function MasterEquipmentCreatePage() {
       // 제네릭으로 백엔드 응답 타입 명시
       await apiClient.post<ApiResponseEquipmentResponse>("/equipment", payload);
       alert("성공적으로 등록되었습니다.");
-      handleGoBack();
+      
+      // 품목 등록(MasterItemsCreatePage)과 동일하게 검색 조건 없이 깔끔하게 목록으로 이동
+      navigate("/master/equipment", { replace: true });
     } catch (error) {
       console.error("장비 등록 실패:", error);
       const message = axios.isAxiosError(error)
@@ -163,7 +163,7 @@ export function MasterEquipmentCreatePage() {
             <button
               type="button"
               className="ghostButton"
-              onClick={handleGoBack}
+              onClick={handleCancel}
               disabled={isSubmitting}
             >
               취소
