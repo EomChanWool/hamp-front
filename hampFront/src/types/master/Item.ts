@@ -1,8 +1,6 @@
 import type { ApiResponse, ApiResponsePage, PageResponse } from '@/types/Common';
 
-// ==========================================
-// 1. 도메인 상수 및 타입 (Literal Types)
-// ==========================================
+// 도메인 상수 및 타입 (Literal Types)
 
 /** 종류 (0: 식품, 1: 작물) */
 export type ProductType = 0 | 1;
@@ -23,18 +21,16 @@ export const CATEGORY_LABEL: Record<ItemCategory, string> = {
   2: '완제품',
 } as const;
 
-// ==========================================
-// 2. Sub Models (공정 라우팅)
-// ==========================================
+// Sub Models (공정 라우팅)
 
-/** 공정 라우팅 요청 (ItemRoutingRequest) */
+/** 공정 라우팅 요청 */
 export interface ItemRoutingRequest {
-  operCode?: string | null; // 공정 코드
-  operSeq?: number | null;  // 공정 순서
-  finalYn?: string | null;  // 최종 공정 여부
+  operCode?: string | null;
+  operSeq?: number | null;  
+  finalYn?: string | null;  
 }
 
-/** 공정 라우팅 응답 (ItemRoutingResponse) */
+/** 공정 라우팅 응답 */
 export interface ItemRoutingResponse {
   routingId: number;
   itemCode: string;
@@ -43,36 +39,28 @@ export interface ItemRoutingResponse {
   finalYn: string;
 }
 
-// ==========================================
-// 3. Request DTOs
-// ==========================================
-
-/** 품목 등록 요청 (ItemCreateRequest) */
+/** 품목 등록 요청 */
 export interface ItemCreateRequest {
-  itemCode: string;                 // 품목 코드 (필수, 최대 30자)
+  itemCode: string;                 
   productType?: ProductType | null; // 종류 (0: 식품, 1: 작물)
   category?: ItemCategory | null;   // 품목 구분 (0: 원료, 1: 반제품, 2: 완제품)
-  itemNm?: string | null;           // 품목명
-  unit?: string | null;             // 단위
-  standard?: string | null;         // 규격
-  routings?: ItemRoutingRequest[] | null; // 반제품·완제품 공정 라우팅
+  itemNm?: string | null;           
+  unit?: string | null;             
+  standard?: string | null;         
+  routings?: ItemRoutingRequest[] | null; 
 }
 
-/** 품목 수정 요청 (ItemUpdateRequest) */
+/** 품목 수정 요청 */
 export interface ItemUpdateRequest {
   productType?: ProductType | null; // 종류 (0: 식품, 1: 작물)
   category?: ItemCategory | null;   // 품목 구분 (0: 원료, 1: 반제품, 2: 완제품)
-  itemNm?: string | null;           // 품목명 (최대 100자)
-  unit?: string | null;             // 단위 (최대 30자)
-  standard?: string | null;         // 규격 (최대 100자)
-  routings?: ItemRoutingRequest[] | null; // 반제품·완제품 공정 라우팅
+  itemNm?: string | null;          
+  unit?: string | null;            
+  standard?: string | null;        
+  routings?: ItemRoutingRequest[] | null;
 }
 
-// ==========================================
-// 4. Response DTOs
-// ==========================================
-
-/** 품목 목록 조회 아이템 응답 (ItemResponse) */
+/** 품목 목록 조회 아이템 응답 */
 export interface ItemResponse {
   itemCode: string;
   productType: ProductType;
@@ -81,11 +69,11 @@ export interface ItemResponse {
   unit: string;
   standard: string;
   useYn: string;
-  createdAt: string; // ISO date-time string
-  updatedAt: string; // ISO date-time string
+  createdAt: string; 
+  updatedAt: string;
 }
 
-/** 품목 상세 조회 응답 (ItemDetailResponse) */
+/** 품목 상세 조회 응답 */
 export interface ItemDetailResponse {
   itemCode: string;
   productType: ProductType;
@@ -94,14 +82,12 @@ export interface ItemDetailResponse {
   unit: string;
   standard: string;
   useYn: string;
-  createdAt: string; // ISO date-time string
-  updatedAt: string; // ISO date-time string
+  createdAt: string;
+  updatedAt: string;
   routings: ItemRoutingResponse[]; // 상세 조회 시 라우팅 정보 목록 포함
 }
 
-// ==========================================
-// 5. Final API Response Types
-// ==========================================
+// ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 품목 단건/기본 응답 API 최종 응답 타입 */
 export type ApiResponseItemResponse = ApiResponse<ItemResponse>;

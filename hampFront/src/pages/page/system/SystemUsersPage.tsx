@@ -36,10 +36,8 @@ export function SystemUsersPage() {
     handleSortingChange,
   } = useTableSorting();
 
-  // ----------------------------------------
   // [정확한 새로고침 감지]
   // 브라우저가 닫히거나 새로고침(F5)될 때만 플래그 설정
-  // ----------------------------------------
   useEffect(() => {
     const handleBeforeUnload = () => {
       sessionStorage.setItem("is_browser_reload", "true");
@@ -74,28 +72,15 @@ export function SystemUsersPage() {
   }, [searchParams, isReady]);
 
   // URL에서 현재 검색조건 추출
-  const currentPage = Number(
-    searchParams.get("page") || "0"
-  );
-
-  const queryUserId =
-    searchParams.get("userId") || "";
-
-  const queryUserNm =
-    searchParams.get("userNm") || "";
-
-  const queryUserDep =
-    searchParams.get("position") || "";
+  const currentPage = Number( searchParams.get("page") || "0" );
+  const queryUserId = searchParams.get("userId") || "";
+  const queryUserNm = searchParams.get("userNm") || "";
+  const queryUserDep = searchParams.get("position") || "";
 
   // 검색 input refs
-  const userIdRef =
-    useRef<HTMLInputElement>(null);
-
-  const userNmRef =
-    useRef<HTMLInputElement>(null);
-
-  const userDepRef =
-    useRef<HTMLInputElement>(null);
+  const userIdRef = useRef<HTMLInputElement>(null);
+  const userNmRef = useRef<HTMLInputElement>(null);
+  const userDepRef = useRef<HTMLInputElement>(null);
 
   // 검색 필드
   const searchFields: SearchField[] = [

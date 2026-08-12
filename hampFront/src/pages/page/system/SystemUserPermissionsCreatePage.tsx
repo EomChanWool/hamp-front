@@ -232,7 +232,6 @@ export function SystemUserPermissionsCreatePage() {
         try {
             await apiClient.post("/auth-groups", payload);
             alert("권한 그룹이 성공적으로 생성되었습니다.");
-            // 권한 그룹 목록 페이지 경로(/system/auths)로 수정
             navigate({
                 pathname: "/system/auths",
                 search: location.search,

@@ -1,31 +1,23 @@
 import type { ApiResponse, ApiResponsePage, PageResponse } from '@/types/Common';
 
-// ==========================================
-// 1. Request DTOs
-// ==========================================
-
-/** 불량 등록 요청 (DefectCreateRequest) */
+/** 불량 등록 요청 */
 export interface DefectCreateRequest {
-  defCode: string;           // 불량 코드 (필수, 최대 30자)
-  operCode?: string | null;  // 공정 코드 (선택, 최대 30자)
-  defNm?: string | null;     // 불량명 (선택, 최대 100자)
-  defType?: string | null;   // 불량 유형 (선택, 최대 30자)
-  severity?: string | null;  // 심각도 (선택, 최대 30자)
+  defCode: string;          
+  operCode?: string | null;  
+  defNm?: string | null;     
+  defType?: string | null;   
+  severity?: string | null; 
 }
 
-/** 불량 정보 수정 요청 (DefectUpdateRequest) */
+/** 불량 정보 수정 요청 */
 export interface DefectUpdateRequest {
-  operCode?: string | null;  // 공정 코드 (최대 30자)
-  defNm?: string | null;     // 불량명 (최대 100자)
-  defType?: string | null;   // 불량 유형 (최대 30자)
-  severity?: string | null;  // 심각도 (최대 30자)
+  operCode?: string | null;  
+  defNm?: string | null;     
+  defType?: string | null;   
+  severity?: string | null;  
 }
 
-// ==========================================
-// 2. Response DTOs
-// ==========================================
-
-/** 불량 목록 조회 아이템 응답 (DefectResponse) */
+/** 불량 목록 조회 아이템 응답 */
 export interface DefectResponse {
   defCode: string;
   operCode: string;
@@ -33,11 +25,11 @@ export interface DefectResponse {
   defType: string;
   severity: string;
   useYn: string;
-  createdAt: string; // ISO date-time string
-  updatedAt: string; // ISO date-time string
+  createdAt: string;
+  updatedAt: string; 
 }
 
-/** 불량 상세 조회 응답 (DefectDetailResponse) */
+/** 불량 상세 조회 응답 */
 export interface DefectDetailResponse {
   defCode: string;
   operCode: string;
@@ -49,13 +41,11 @@ export interface DefectDetailResponse {
   defType: string;
   severity: string;
   useYn: string;
-  createdAt: string; // ISO date-time string
-  updatedAt: string; // ISO date-time string
+  createdAt: string; 
+  updatedAt: string;
 }
 
-// ==========================================
-// 3. Final API Response Types
-// ==========================================
+// ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 불량 단건/기본 응답 API 최종 응답 타입 */
 export type ApiResponseDefectResponse = ApiResponse<DefectResponse>;
