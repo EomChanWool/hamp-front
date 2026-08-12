@@ -22,6 +22,10 @@ export function AppShell({
   const location = useLocation();
   const navigate = useNavigate();
 
+  // 유저 정보 페이지로 이동하는 핸들러 추가
+  const handleUserClick = () => {
+    navigate("/system/users/info");
+  };
 
   const { activeGroup, activeTitle } = useMemo(() => {
     let groupName = "대시보드";
@@ -56,6 +60,7 @@ export function AppShell({
         collapsed={collapsed}
         onToggleCollapsed={() => setCollapsed((prev) => !prev)}
         onLogoClick={() => navigate("/")}
+        onUserClick={handleUserClick} // [추가] 유저 클릭 핸들러 연결
       />
 
       <div className={`mainContent ${collapsed ? "collapsed" : ""}`}>
