@@ -63,8 +63,8 @@ export function SeedInventoryStatusPage() {
 
   const searchFields: SearchField[] = [
     { type: 'date', label: '기간', startRef: periodStartRef, endRef: periodEndRef },
-    { type: 'input', label: '품목명', ref: itemNameRef },
-    { type: 'input', label: '창고위치', ref: warehouseLocationRef },
+    { type: 'input', label: '품목명', ref: itemNameRef, name: "equipmentName" },
+    { type: 'input', label: '창고위치', ref: warehouseLocationRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

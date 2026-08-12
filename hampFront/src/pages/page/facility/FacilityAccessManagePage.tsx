@@ -87,10 +87,10 @@ export function FacilityAccessManagePage() {
   const approvalStatusRef = useRef<HTMLInputElement>(null)
 
   const searchFields: SearchField[] = [
-    { type: 'input', label: '출입자명', ref: visitorNameRef },
-    { type: 'input', label: '구분', ref: categoryRef },
-    { type: 'input', label: '출입구역', ref: zoneRef },
-    { type: 'input', label: '승인상태', ref: approvalStatusRef },
+    { type: 'input', label: '출입자명', ref: visitorNameRef, name: "equipmentName" },
+    { type: 'input', label: '구분', ref: categoryRef, name: "equipmentName" },
+    { type: 'input', label: '출입구역', ref: zoneRef, name: "equipmentName" },
+    { type: 'input', label: '승인상태', ref: approvalStatusRef, name: "equipmentName" },
   ]
 
   // 내부 더미 API 연동 로직

@@ -39,10 +39,10 @@ export function InpiInspectionStandardsPage() {
   const appliedDateRef = useRef<HTMLInputElement>(null)
 
   const searchFields: SearchField[] = [
-    { type: 'input', label: '품목명', ref: itemNameRef },
-    { type: 'input', label: '검사유형', ref: inspectionTypeRef },
-    { type: 'input', label: '사용여부', ref: isUsedRef },
-    { type: 'input', label: '적용 시작일', ref: appliedDateRef },
+    { type: 'input', label: '품목명', ref: itemNameRef, name: "equipmentName" },
+    { type: 'input', label: '검사유형', ref: inspectionTypeRef, name: "equipmentName" },
+    { type: 'input', label: '사용여부', ref: isUsedRef, name: "equipmentName" },
+    { type: 'input', label: '적용 시작일', ref: appliedDateRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

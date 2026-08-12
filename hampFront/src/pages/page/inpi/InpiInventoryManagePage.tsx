@@ -82,8 +82,8 @@ export function InpiInventoryManagePage() {
 
   const searchFields: SearchField[] = [
     { type: 'date', label: '처리', startRef: processedStartRef, endRef: processedEndRef },
-    { type: 'input', label: '처리구분', ref: transactionTypeRef },
-    { type: 'input', label: '품목명', ref: itemNameRef },
+    { type: 'input', label: '처리구분', ref: transactionTypeRef, name: "equipmentName" },
+    { type: 'input', label: '품목명', ref: itemNameRef, name: "equipmentName" },
   ]
 
   // 내부 더미 API 연동 로직

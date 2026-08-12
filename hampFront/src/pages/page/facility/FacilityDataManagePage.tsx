@@ -39,10 +39,10 @@ export function FacilityDataManagePage() {
   const collectionIntervalRef = useRef<HTMLInputElement>(null)
 
   const searchFields: SearchField[] = [
-    { type: 'input', label: '데이터유형', ref: dataTypeRef },
-    { type: 'input', label: '수집장비', ref: equipmentNameRef },
-    { type: 'input', label: '사용여부', ref: useYnRef },
-    { type: 'input', label: '수집주기', ref: collectionIntervalRef },
+    { type: 'input', label: '데이터유형', ref: dataTypeRef, name: "equipmentName" },
+    { type: 'input', label: '수집장비', ref: equipmentNameRef, name: "equipmentName" },
+    { type: 'input', label: '사용여부', ref: useYnRef, name: "equipmentName" },
+    { type: 'input', label: '수집주기', ref: collectionIntervalRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

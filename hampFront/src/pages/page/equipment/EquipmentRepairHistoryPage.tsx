@@ -51,8 +51,8 @@ export function EquipmentRepairHistoryPage() {
 
   const searchFields: SearchField[] = [
     { type: 'date', label: '수리', startRef: repairStartRef, endRef: repairEndRef },
-    { type: 'input', label: '설비명', ref: equipmentNameRef },
-    { type: 'input', label: '완료상태', ref: completeStatusRef },
+    { type: 'input', label: '설비명', ref: equipmentNameRef, name: "equipmentName" },
+    { type: 'input', label: '완료상태', ref: completeStatusRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

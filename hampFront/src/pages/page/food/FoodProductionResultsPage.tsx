@@ -60,8 +60,8 @@ export function FoodProductionResultsPage() {
 
   const searchFields: SearchField[] = [
     { type: 'date', label: '등록', startRef: registeredStartRef, endRef: registeredEndRef },
-    { type: 'input', label: '작업지시번호', ref: workOrderNoRef },
-    { type: 'input', label: '품목명', ref: itemNameRef },
+    { type: 'input', label: '작업지시번호', ref: workOrderNoRef, name: "equipmentName" },
+    { type: 'input', label: '품목명', ref: itemNameRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

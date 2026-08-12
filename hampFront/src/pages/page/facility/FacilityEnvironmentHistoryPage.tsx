@@ -62,8 +62,8 @@ export function FacilityEnvironmentHistoryPage() {
 
   const searchFields: SearchField[] = [
     { type: 'date', label: '기간', startRef: periodStartRef, endRef: periodEndRef },
-    { type: 'input', label: '구역', ref: zoneRef },
-    { type: 'input', label: '센서유형', ref: sensorTypeRef },
+    { type: 'input', label: '구역', ref: zoneRef, name: "equipmentName" },
+    { type: 'input', label: '센서유형', ref: sensorTypeRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {

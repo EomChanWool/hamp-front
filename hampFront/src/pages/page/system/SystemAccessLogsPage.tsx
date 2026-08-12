@@ -44,8 +44,8 @@ export function SystemAccessLogsPage() {
 
   const searchFields: SearchField[] = [
     { type: 'date', label: '기간', startRef: loginStartRef, endRef: loginEndRef },
-    { type: 'input', label: '사용자ID', ref: userIdRef },
-    { type: 'input', label: '접속상태', ref: statusRef },
+    { type: 'input', label: '사용자ID', ref: userIdRef, name: "equipmentName" },
+    { type: 'input', label: '접속상태', ref: statusRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {
