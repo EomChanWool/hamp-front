@@ -212,6 +212,7 @@ export function EquipmentFacilityPage() {
   const columns: ColumnDef<FacilityResponse>[] = useMemo(
     () => [
       { accessorKey: "fcltCode", header: "설비코드" },
+      { accessorKey: "eqCode", header: "장비코드" },
       {
         accessorKey: "fcltNm",
         header: "설비명",
@@ -229,23 +230,23 @@ export function EquipmentFacilityPage() {
           );
         },
       },
-       {
-          accessorKey: "useYn",
-          header: "사용여부",
-          cell: ({ getValue }) => (
-            <Badge
-              tone={
-                getValue<boolean>()
-                  ? "good"
-                  : "muted"
-              }
-            >
-              {getValue<boolean>()
-                ? "사용"
-                : "미사용"}
-            </Badge>
-          ),
-        },
+      {
+        accessorKey: "useYn",
+        header: "사용여부",
+        cell: ({ getValue }) => (
+          <Badge
+            tone={
+              getValue<boolean>()
+                ? "good"
+                : "muted"
+            }
+          >
+            {getValue<boolean>()
+              ? "사용"
+              : "미사용"}
+          </Badge>
+        ),
+      },
       {
         accessorKey: "createdAt",
         header: "등록일자",
