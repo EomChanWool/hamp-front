@@ -79,7 +79,7 @@ tbody tr {
 }
 
 tbody tr:hover td {
-  background: #fdfefe;
+  background: #f4f6f8;
 }
 
 /* ================================
@@ -101,5 +101,5 @@ tbody tr:hover td {
 }
 
 [data-theme="dark"] tbody tr:hover td {
-  background: #1e2130;
+  background: #232632;
 }
