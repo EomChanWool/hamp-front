@@ -1,18 +1,36 @@
-import { useState, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Panel } from "@components/card/Panel";
 import { apiClient } from "@/api/apiClient";
 import axios from "axios";
-import type { 
-  EquipmentCreateRequest, 
-  ApiResponseEquipmentResponse 
+import type {
+  EquipmentCreateRequest,
+  ApiResponseEquipmentResponse
 } from "@/types/master/Equipment";
+import type { ApiResponseListOperationOptionResponse, OperationOptionResponse } from "@/types/master/Operation";
 
 export function MasterEquipmentCreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [operationOptions, setOperationOptions] = useState<OperationOptionResponse[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 공정 옵션 API 호출
+  const loadOperationOptions = useCallback(async () => {
+    try {
+      const response = await apiClient.get<ApiResponseListOperationOptionResponse>(
+        "/operations/options"
+      );
+      setOperationOptions(response.data.data ?? []);
+    } catch (error) {
+      console.error("공정 옵션 목록 조회 실패:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadOperationOptions();
+  }, [loadOperationOptions]);
 
   // 폼 상태 관리
   const [form, setForm] = useState<{
@@ -73,7 +91,7 @@ export function MasterEquipmentCreatePage() {
       // 제네릭으로 백엔드 응답 타입 명시
       await apiClient.post<ApiResponseEquipmentResponse>("/equipment", payload);
       alert("성공적으로 등록되었습니다.");
-      
+
       navigate("/master/equipment", { replace: true });
     } catch (error) {
       console.error("장비 등록 실패:", error);
@@ -105,17 +123,14 @@ export function MasterEquipmentCreatePage() {
             />
           </div>
 
-          {/* 공정 코드 */}
           <div className="detailField">
             <label>공정코드</label>
-            <input
-              className="tableInput"
-              value={form.operCode}
-              disabled={isSubmitting}
-              onChange={(e) => handleChange("operCode", e.target.value)}
-              placeholder="예: OPER001"
-              maxLength={30}
-            />
+            <select className="tableInput" value={form.operCode} disabled={isSubmitting} onChange={(e) => handleChange("operCode", e.target.value)}>
+              <option value="">공정을 선택해주세요</option>
+              {operationOptions.map((option) => (
+                <option key={option.operCode} value={option.operCode}>{option.operCode} ({option.operNm})</option>
+              ))}
+            </select>
           </div>
 
           {/* 장비명 */}
