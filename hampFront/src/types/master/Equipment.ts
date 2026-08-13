@@ -43,6 +43,12 @@ export interface EquipmentDetailResponse {
   updatedAt: string;
 }
 
+/** 장비 옵션 조회 응답 */
+export interface EquipmentOptionResponse {
+  eqCode: string;
+  eqNm: string;
+}
+
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 장비 단건 조회/등록/수정 API 최종 응답 타입 */
@@ -56,3 +62,6 @@ export type PageEquipmentResponse = PageResponse<EquipmentResponse>;
 
 /** 장비 목록 페이징 API 최종 응답 타입 */
 export type ApiResponsePageEquipmentResponse = ApiResponsePage<EquipmentResponse>;
+
+/** 장비 옵션 목록 API 최종 응답 타입 */
+export type ApiResponseListEquipmentOptionResponse = ApiResponse<EquipmentOptionResponse[]>;

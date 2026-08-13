@@ -26,6 +26,12 @@ export interface FactoryZoneResponse {
   updatedAt: string;
 }
 
+/** 공장 옵션 조회 응답 */
+export interface FactoryZoneOptionResponse {
+  facCode: string;
+  facNm: string;
+}
+
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 공장 단건 조회/등록/수정 API 최종 응답 타입 */
@@ -36,3 +42,6 @@ export type PageFactoryZoneResponse = PageResponse<FactoryZoneResponse>;
 
 /** 공장 목록 페이징 API 최종 응답 타입 */
 export type ApiResponsePageFactoryZoneResponse = ApiResponsePage<FactoryZoneResponse>;
+
+/** 공장 옵션 목록 API 최종 응답 타입 */
+export type ApiResponseListFactoryZoneOptionResponse = ApiResponse<FactoryZoneOptionResponse[]>;
