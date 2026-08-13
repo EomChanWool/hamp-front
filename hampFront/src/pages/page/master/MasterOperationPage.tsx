@@ -17,6 +17,7 @@ import type {
   ApiResponseListOperationOptionResponse,
 } from "@/types/master/Operation";
 import Spinner from "@/components/common/Spinner";
+import type { ApiResponseListDepartmentOptionResponse, DepartmentOptionResponse } from "@/types/master/Department";
 
 interface OperationCreateRequest extends OperationUpdateRequest {
   operCode: string;
@@ -25,6 +26,7 @@ interface OperationCreateRequest extends OperationUpdateRequest {
 export function MasterOperationPage() {
   const [operations, setOperations] = useState<OperationResponse[]>([]);
   const [operationOptions, setOperationOptions] = useState<OperationOptionResponse[]>([]);
+  const [departmentOptions, setDepartmentOptions] = useState<DepartmentOptionResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -96,6 +98,22 @@ export function MasterOperationPage() {
     fetchOperationOptions();
   }, [fetchOperationOptions]);
 
+  // 부서 옵션 API 호출
+  const loadDepartmentOptions = useCallback(async () => {
+    try {
+      const response = await apiClient.get<ApiResponseListDepartmentOptionResponse>(
+        "/departments/options"
+      );
+      setDepartmentOptions(response.data.data ?? []);
+    } catch (error) {
+      console.error("부서 옵션 목록 조회 실패:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDepartmentOptions();
+  }, [loadDepartmentOptions]);
+
   // 검색 밴드 구성
   const searchFields: SearchField[] = [
     {
@@ -110,7 +128,18 @@ export function MasterOperationPage() {
         })),
       ],
     },
-    { type: "input", label: "부서코드", ref: depCodeRef, name: "depCode" },
+    {
+      type: "select",
+      label: "부서코드",
+      ref: depCodeRef as any,
+      options: [
+        { label: "전체", value: "" },
+        ...departmentOptions.map((opt) => ({
+          label: `${opt.depCode} (${opt.taskDesc ?? '-'})`,
+          value: opt.depCode,
+        })),
+      ],
+    },
     { type: "input", label: "공정명", ref: operNmRef, name: "operNm" },
     {
       type: "select",

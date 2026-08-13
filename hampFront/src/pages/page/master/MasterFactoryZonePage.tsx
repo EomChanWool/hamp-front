@@ -13,6 +13,8 @@ import type {
   ApiResponseFactoryZoneResponse,
   ApiResponsePageFactoryZoneResponse,
   FactoryZoneUpdateRequest,
+  FactoryZoneOptionResponse,
+  ApiResponseListFactoryZoneOptionResponse,
 } from "@/types/master/FactoryZone";
 import Spinner from "@/components/common/Spinner";
 
@@ -22,6 +24,7 @@ interface FactoryZoneCreateRequest extends FactoryZoneUpdateRequest {
 
 export function MasterFactoryZonePage() {
   const [factoryZones, setFactoryZones] = useState<FactoryZoneResponse[]>([]);
+  const [factoryZonesOptions, setFactoryZonesOptions] = useState<FactoryZoneOptionResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -75,9 +78,36 @@ export function MasterFactoryZonePage() {
   const locationRef = useRef<HTMLInputElement>(null);
   const useYnRef = useRef<HTMLSelectElement>(null);
 
+   // 부서 옵션 API 호출
+  const loadFactoryZoneOptions = useCallback(async () => {
+    try {
+      const response = await apiClient.get<ApiResponseListFactoryZoneOptionResponse>(
+        "/factory-zones/options"
+      );
+      setFactoryZonesOptions(response.data.data ?? []);
+    } catch (error) {
+      console.error("공장 옵션 목록 조회 실패:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadFactoryZoneOptions();
+  }, [loadFactoryZoneOptions]);
+
   // 검색 필드 정의
   const searchFields: SearchField[] = [
-    { type: "input", label: "공장코드", ref: facCodeRef, name: "facCode" },
+     {
+      type: "select",
+      label: "공장코드",
+      ref: facCodeRef as any,
+      options: [
+        { label: "전체", value: "" },
+        ...factoryZonesOptions.map((opt) => ({
+          label: `${opt.facCode} (${opt.facNm ?? '-'})`,
+          value: opt.facCode,
+        })),
+      ],
+    },
     { type: "input", label: "공장명", ref: facNmRef, name: "facNm" },
     { type: "input", label: "위치", ref: locationRef, name: "location" },
     {
