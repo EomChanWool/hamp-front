@@ -54,7 +54,9 @@ import { MasterDefectsPage } from '@pages/page/master/MasterDefectsPage'
 import { MasterDepartmentPage } from '@pages/page/master/MasterDepartmentPage'
 
 // 설비관리
-import { EquipmentListPage } from '@pages/page/equipment/EquipmentListPage'
+import { EquipmentFacilityPage } from '@pages/page/equipment/EquipmentFacilityPage'
+import { EquipmentFacilityCreatePage } from '@pages/page/equipment/EquipmentFacilityCreatePage'
+import { EquipmentFacilityDetailPage } from '@pages/page/equipment/EquipmentFacilityDetailPage'
 import { EquipmentOperationStatusPage } from '@pages/page/equipment/EquipmentOperationStatusPage'
 import { EquipmentOperationHistoryPage } from '@pages/page/equipment/EquipmentOperationHistoryPage'
 import { EquipmentAlarmSystemPage } from '@pages/page/equipment/EquipmentAlarmSystemPage'
@@ -210,7 +212,9 @@ export const menuRoutes: MenuRouteGroup[] = [
     icon: CpuChipIcon,
     path: '/equipment',
     items: [
-      { path: 'list', name: '설비목록', element: <EquipmentListPage /> },
+      { path: 'facility', name: '설비목록', element: <EquipmentFacilityPage /> },
+      { path: 'facility/create', name: '설비 등록', element: <EquipmentFacilityCreatePage />, hidden: true },
+      { path: 'facility/:fcltCode', name: '설비 상세', element: <EquipmentFacilityDetailPage />, hidden: true },
       { path: 'ops-status', name: '설비가동현황', element: <EquipmentOperationStatusPage /> },
       { path: 'ops-history', name: '설비가동이력', element: <EquipmentOperationHistoryPage /> },
       { path: 'alarm-system', name: '설비알림시스템', element: <EquipmentAlarmSystemPage /> },
