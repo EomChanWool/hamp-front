@@ -119,7 +119,9 @@ export function CusTable<T>({
             table.getRowModel().rows.map((row) => (
               <tr
                 key={row.id}
-                onClick={() => onRowClick?.(row.original)}
+                onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                style={{ cursor: onRowClick ? 'pointer' : 'default' }}
+                className={onRowClick ? "hover:bg-gray-50 transition-colors" : ""}
               >
                 {row.getVisibleCells().map((cell) => (
                   <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>

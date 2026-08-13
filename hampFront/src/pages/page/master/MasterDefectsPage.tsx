@@ -15,6 +15,7 @@ import type {
 } from "@/types/master/Defect";
 import { Badge } from "@/components/common/Badge";
 import Spinner from "@/components/common/Spinner";
+import type { ApiResponseListOperationOptionResponse, OperationOptionResponse } from "@/types/master/Operation";
 
 interface DefectCreateRequest extends DefectUpdateRequest {
   defCode: string;
@@ -22,6 +23,7 @@ interface DefectCreateRequest extends DefectUpdateRequest {
 
 export function MasterDefectsPage() {
   const [defects, setDefects] = useState<DefectResponse[]>([]);
+  const [operationOptions, setOperationOptions] = useState<OperationOptionResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -80,10 +82,38 @@ export function MasterDefectsPage() {
   const severityRef = useRef<HTMLInputElement>(null);
   const useYnRef = useRef<HTMLSelectElement>(null);
 
+   // 공정 옵션 목록 API 호출
+  const fetchOperationOptions = useCallback(async () => {
+    try {
+      const response = await apiClient.get<ApiResponseListOperationOptionResponse>(
+        "/operations/options"
+      );
+      setOperationOptions(response.data.data ?? []);
+    } catch (error) {
+      console.error("공정 옵션 목록 조회 실패:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOperationOptions();
+  }, [fetchOperationOptions]);
+
+
   // 검색 필드 정의
   const searchFields: SearchField[] = [
     { type: "input", label: "불량코드", ref: defCodeRef, name: "defCode" },
-    { type: "input", label: "공정코드", ref: operCodeRef, name: "operCode" },
+     {
+      type: "select",
+      label: "공정코드",
+      ref: operCodeRef as any,
+      options: [
+        { label: "전체", value: "" },
+        ...operationOptions.map((opt) => ({
+          label: `${opt.operCode} (${opt.operNm ?? '-'})`,
+          value: opt.operCode,
+        })),
+      ],
+    },
     { type: "input", label: "불량명", ref: defNmRef, name: "defNm" },
     { type: "input", label: "불량유형", ref: defTypeRef, name: "defType" },
     { type: "input", label: "심각도", ref: severityRef, name: "severity" },

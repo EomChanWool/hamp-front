@@ -12,6 +12,7 @@ import type {
 import type { AuthGroupResponse, ApiResponseListAuthGroupResponse } from "@/types/auth/Auth";
 import Spinner from "@/components/common/Spinner";
 import './SystemUser.css';
+import { useNavigate } from "react-router-dom";
 
 export function SystemUsersInfoPage() {
   const { user: authUser } = useAuth();
@@ -21,6 +22,7 @@ export function SystemUsersInfoPage() {
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const navigate = useNavigate();
 
   const [form, setForm] = useState({
     userNm: "",
@@ -215,7 +217,17 @@ export function SystemUsersInfoPage() {
                   <button type="button" className="primaryButton" onClick={handleSave} disabled={isBusy}>{isUpdating ? "저장 중..." : "저장"}</button>
                 </>
               ) : (
+                <>
+                <button
+                    type="button"
+                    className="ghostButton"
+                    onClick={() => navigate(-1)}
+                    disabled={isBusy}
+                  >
+                    이전
+                  </button>
                 <button type="button" className="primaryButton" onClick={() => setIsEditing(true)}>수정</button>
+                </>
               )}
             </div>
           </div>

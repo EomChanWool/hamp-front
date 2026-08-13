@@ -172,7 +172,7 @@ export function MasterEquipmentDetailPage() {
     return (
       <section className="screenStack">
         <Panel title="장비 상세 정보">
-            <div> <Spinner/> </div>
+          <div> <Spinner /> </div>
         </Panel>
       </section>
     );
@@ -186,6 +186,34 @@ export function MasterEquipmentDetailPage() {
         <form className="pageForm" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
           {fields.map(({ label, key, editable }) => {
             const isFieldEditable = isEditing && editable !== false;
+
+            if (key === "operUseYn") {
+              return (
+                <div key={key} className="detailField">
+                  <label>{label}</label>
+                  {isFieldEditable ? (
+                    <select
+                      className="tableInput"
+                      value={form[key] ?? ""}
+                      disabled={isBusy}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          [key]: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="Y">사용</option>
+                      <option value="N">미사용</option>
+                    </select>
+                  ) : (
+                    <div className="detailValue">
+                      {form[key] === "Y" ? "사용" : form[key] === "N" ? "미사용" : "-"}
+                    </div>
+                  )}
+                </div>
+              );
+            }
 
             return (
               <div key={key} className="detailField">

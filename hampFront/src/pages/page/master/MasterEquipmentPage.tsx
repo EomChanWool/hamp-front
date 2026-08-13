@@ -14,12 +14,14 @@ import type {
   ApiResponsePageEquipmentResponse,
 } from "@/types/master/Equipment";
 import Spinner from "@/components/common/Spinner";
+import type { ApiResponseListOperationOptionResponse, OperationOptionResponse } from "@/types/master/Operation";
 
 export function MasterEquipmentPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [equipments, setEquipments] = useState<EquipmentResponse[]>([]);
+  const [operationOptions, setOperationOptions] = useState<OperationOptionResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,9 +71,36 @@ export function MasterEquipmentPage() {
   const eqTypeRef = useRef<HTMLInputElement>(null);
   const manufacturerRef = useRef<HTMLInputElement>(null);
 
+   // 공정 옵션 목록 API 호출
+  const fetchOperationOptions = useCallback(async () => {
+    try {
+      const response = await apiClient.get<ApiResponseListOperationOptionResponse>(
+        "/operations/options"
+      );
+      setOperationOptions(response.data.data ?? []);
+    } catch (error) {
+      console.error("공정 옵션 목록 조회 실패:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOperationOptions();
+  }, [fetchOperationOptions]);
+
   const searchFields: SearchField[] = [
     { type: "input", label: "장비코드", ref: eqCodeRef, name: "eqCode" },
-    { type: "input", label: "공정코드", ref: operCodeRef, name: "operCode" },
+    {
+      type: "select",
+      label: "공정코드",
+      ref: operCodeRef as any,
+      options: [
+        { label: "전체", value: "" },
+        ...operationOptions.map((opt) => ({
+          label: `${opt.operCode} (${opt.operNm ?? '-'})`,
+          value: opt.operCode,
+        })),
+      ],
+    },
     { type: "input", label: "장비명", ref: eqNmRef, name: "eqNm" },
     { type: "input", label: "장비유형", ref: eqTypeRef, name: "eqType" },
     { type: "input", label: "제조사", ref: manufacturerRef, name: "manufacturer" },
