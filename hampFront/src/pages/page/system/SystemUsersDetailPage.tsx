@@ -290,9 +290,9 @@ export function SystemUserDetailPage() {
             </div>
           </div>
 
-          {/* 생성일시 */}
+          {/* 등록일자 */}
           <div className="detailField">
-            <label>생성일시</label>
+            <label>등록일자</label>
             <div className="detailValue">{formatDateTime(user.createdAt)}</div>
           </div>
 

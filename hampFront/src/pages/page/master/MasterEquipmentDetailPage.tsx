@@ -62,8 +62,7 @@ export function MasterEquipmentDetailPage() {
     { label: "장비유형", key: "eqType" },
     { label: "제조사", key: "manufacturer" },
     { label: "작업설명", key: "taskDesc", editable: false },
-    { label: "생성일시", key: "createdAt", editable: false },
-    { label: "수정일시", key: "updatedAt", editable: false },
+    { label: "등록일자", key: "createdAt", editable: false },
   ];
 
   // 상세 데이터 조회 함수
@@ -91,7 +90,6 @@ export function MasterEquipmentDetailPage() {
           manufacturer: eqData.manufacturer || "",
           taskDesc: eqData.taskDesc || "",
           createdAt: formatDateTime(eqData.createdAt),
-          updatedAt: formatDateTime(eqData.updatedAt),
         });
       }
     } catch (error) {
@@ -124,7 +122,6 @@ export function MasterEquipmentDetailPage() {
         manufacturer: equipment.manufacturer || "",
         taskDesc: equipment.taskDesc || "",
         createdAt: formatDateTime(equipment.createdAt),
-        updatedAt: formatDateTime(equipment.updatedAt),
       });
     }
   }, [isEditing, equipment]);

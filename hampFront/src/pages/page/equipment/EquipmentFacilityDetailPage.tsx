@@ -51,8 +51,7 @@ export function EquipmentFacilityDetailPage() {
         { label: "설비명", key: "fcltNm", editable: true },
         { label: "현재상태", key: "currentStatus", editable: true },
         { label: "사용여부", key: "useYn", editable: true },
-        { label: "생성일시", key: "createdAt", editable: false },
-        { label: "수정일시", key: "updatedAt", editable: false },
+        { label: "등록일자", key: "createdAt", editable: false },
     ];
 
     // 옵션 목록 조회 함수
@@ -95,7 +94,6 @@ export function EquipmentFacilityDetailPage() {
                     currentStatus: fcltData.currentStatus ?? 1,
                     useYn: fcltData.useYn ?? true,
                     createdAt: formatDateTime(fcltData.createdAt),
-                    updatedAt: formatDateTime(fcltData.updatedAt),
                 });
             }
         } catch (error) {
@@ -130,7 +128,6 @@ export function EquipmentFacilityDetailPage() {
                 currentStatus: facility.currentStatus ?? 1,
                 useYn: facility.useYn ?? true,
                 createdAt: formatDateTime(facility.createdAt),
-                updatedAt: formatDateTime(facility.updatedAt),
             });
         }
     }, [isEditing, facility]);
