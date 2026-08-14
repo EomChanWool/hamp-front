@@ -236,7 +236,7 @@ export function PermissionBoard() {
   const handleSave = async () => {
     if (!groupDetail || isSaving || !isDirty) return;
 
-    // '사용자 권한관리' 메뉴의 수정(update) 권한이 해제되는지 확인 (조회는 백엔드에서 처리하므로 제외)
+    // 1. 필요한 메뉴 필터링
     const flattenMenus = (menuList: MenuResponse[]): MenuResponse[] =>
       menuList.reduce<MenuResponse[]>((acc, menu) => {
         acc.push(menu);
@@ -252,8 +252,16 @@ export function PermissionBoard() {
     );
 
     const isRevokingAuthMgmtUpdate = permManagementMenus.some((menu) => {
-      const targetPerm = permState[menu.menuId];
-      return targetPerm && targetPerm.update === false;
+      // 현재 변경하려고 하는 상태 (usePermission 훅의 permState)
+      const currentPerm = permState[menu.menuId];
+      
+      // 서버에서 가져온 초기 상태 (groupDetail.menuPermissions)
+      const initialPerm = groupDetail.menuPermissions?.find(
+        (p) => p.menuId === menu.menuId
+      );
+
+      // "기존엔 true였는데 지금 false로 바꾸는 경우"만 검출
+      return initialPerm?.update === true && currentPerm?.update === false;
     });
 
     if (isRevokingAuthMgmtUpdate) {
@@ -358,8 +366,8 @@ export function PermissionBoard() {
                         hasChildren
                           ? getCheckState(menu, p.key)
                           : permState[menu.menuId]?.[p.key]
-                          ? "checked"
-                          : "unchecked"
+                            ? "checked"
+                            : "unchecked"
                       }
                       disabled={!isEditing}
                       onToggle={() => handleToggle(menu.menuId, p.key)}

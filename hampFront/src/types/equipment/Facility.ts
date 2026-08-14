@@ -38,8 +38,8 @@ export interface FacilityUpdateRequest {
 /** 설비 정보 응답 */
 export interface FacilityResponse {
     fcltCode: string;
-    eqCode: string;
-    facCode: string;
+    eqNm: string;
+    facNm: string;
     fcltNm: string;
     currentStatus: StatusType;
     useYn: boolean;

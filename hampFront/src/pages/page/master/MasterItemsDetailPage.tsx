@@ -85,8 +85,7 @@ export function MasterItemsDetailPage() {
     { label: "단위", key: "unit" },
     { label: "규격", key: "standard" },
     { label: "사용여부", key: "useYn", editable: false },
-    { label: "생성일시", key: "createdAt", editable: false },
-    { label: "수정일시", key: "updatedAt", editable: false },
+    { label: "등록일자", key: "createdAt", editable: false },
   ];
 
   // 공정 셀렉트 옵션 목록 페칭
@@ -129,7 +128,6 @@ export function MasterItemsDetailPage() {
             standard: itemData.standard || "",
             useYn: itemData.useYn || "",
             createdAt: formatDateTime(itemData.createdAt),
-            updatedAt: formatDateTime(itemData.updatedAt),
           });
 
           if (itemData.routings && Array.isArray(itemData.routings)) {
@@ -176,7 +174,6 @@ export function MasterItemsDetailPage() {
         standard: item.standard || "",
         useYn: item.useYn || "",
         createdAt: formatDateTime(item.createdAt),
-        updatedAt: formatDateTime(item.updatedAt),
       });
 
       if (item.routings && Array.isArray(item.routings)) {

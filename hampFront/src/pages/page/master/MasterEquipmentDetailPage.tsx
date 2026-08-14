@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Panel } from "@components/card/Panel";
 import { formatDateTime } from "@/utils/common";
@@ -11,6 +11,7 @@ import type {
   EquipmentUpdateRequest,
 } from "@/types/master/Equipment";
 import Spinner from "@/components/common/Spinner";
+import type { ApiResponseListOperationOptionResponse, OperationOptionResponse } from "@/types/master/Operation";
 
 type Field = {
   label: string;
@@ -24,6 +25,8 @@ export function MasterEquipmentDetailPage() {
   const location = useLocation();
 
   const [equipment, setEquipment] = useState<EquipmentDetailResponse | null>(null);
+  const [operationOptions, setOperationOptions] = useState<OperationOptionResponse[]>([]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -32,6 +35,22 @@ export function MasterEquipmentDetailPage() {
   const [form, setForm] = useState<Record<string, string>>({});
 
   const isBusy = isUpdating || isDeleting;
+
+  // 공정 옵션 API 호출
+  const loadOperationOptions = useCallback(async () => {
+    try {
+      const response = await apiClient.get<ApiResponseListOperationOptionResponse>(
+        "/operations/options"
+      );
+      setOperationOptions(response.data.data ?? []);
+    } catch (error) {
+      console.error("공정 옵션 목록 조회 실패:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadOperationOptions();
+  }, [loadOperationOptions]);
 
   const fields: Field[] = [
     { label: "장비코드", key: "eqCode", editable: false },
@@ -43,8 +62,7 @@ export function MasterEquipmentDetailPage() {
     { label: "장비유형", key: "eqType" },
     { label: "제조사", key: "manufacturer" },
     { label: "작업설명", key: "taskDesc", editable: false },
-    { label: "생성일시", key: "createdAt", editable: false },
-    { label: "수정일시", key: "updatedAt", editable: false },
+    { label: "등록일자", key: "createdAt", editable: false },
   ];
 
   // 상세 데이터 조회 함수
@@ -72,7 +90,6 @@ export function MasterEquipmentDetailPage() {
           manufacturer: eqData.manufacturer || "",
           taskDesc: eqData.taskDesc || "",
           createdAt: formatDateTime(eqData.createdAt),
-          updatedAt: formatDateTime(eqData.updatedAt),
         });
       }
     } catch (error) {
@@ -105,7 +122,6 @@ export function MasterEquipmentDetailPage() {
         manufacturer: equipment.manufacturer || "",
         taskDesc: equipment.taskDesc || "",
         createdAt: formatDateTime(equipment.createdAt),
-        updatedAt: formatDateTime(equipment.updatedAt),
       });
     }
   }, [isEditing, equipment]);
@@ -186,6 +202,36 @@ export function MasterEquipmentDetailPage() {
         <form className="pageForm" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
           {fields.map(({ label, key, editable }) => {
             const isFieldEditable = isEditing && editable !== false;
+
+            // 공정코드 셀렉트박스 처리 (수정 모드일 때)
+            if (key === "operCode") {
+              return (
+                <div key={key} className="detailField">
+                  <label>{label}</label>
+                  {isFieldEditable ? (
+                    <select
+                      className="tableInput"
+                      value={form[key] ?? ""}
+                      disabled={isBusy}
+                      onChange={(e) =>
+                        setForm((prev) => ({ ...prev, [key]: e.target.value }))
+                      }
+                    >
+                      <option value="">공정을 선택해주세요</option>
+                      {operationOptions.map((opt) => (
+                        <option key={opt.operCode} value={opt.operCode}>
+                          {opt.operCode} ({opt.operNm})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="detailValue">
+                      {form[key] || "-"}
+                    </div>
+                  )}
+                </div>
+              );
+            }
 
             if (key === "operUseYn") {
               return (
