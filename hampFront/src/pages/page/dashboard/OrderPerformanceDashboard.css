@@ -1,0 +1,45 @@
+/* OrderPerformanceDashboard.css */
+
+.orderPerfDashboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.orderPerfDashboard__card {
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.orderPerfDashboard__title {
+  margin: 0 0 10px 0;
+}
+
+/* ================================
+   DARK MODE
+================================ */
+
+[data-theme="dark"] .orderPerfDashboard__card {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .orderPerfDashboard__title {
+  color: var(--text-heading);
+}
+
+[data-theme="dark"] .orderPerfDashboard .recharts-cartesian-grid line {
+  stroke: var(--border);
+}
+
+[data-theme="dark"] .orderPerfDashboard .recharts-text {
+  fill: var(--text-muted);
+}
+
+[data-theme="dark"] .orderPerfDashboard .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  color: var(--text-body) !important;
+}
