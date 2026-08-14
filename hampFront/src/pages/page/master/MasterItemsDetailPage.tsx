@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Panel } from "@components/card/Panel";
 import { Badge } from "@components/common/Badge";
@@ -16,6 +16,8 @@ import {
   type ItemRoutingRequest,
 } from "@/types/master/Item";
 import Spinner from "@/components/common/Spinner";
+import { OperationSelectModal } from "@/components/common/OperationSelectModal"; 
+import { useItemRoutings } from "@/hooks/useItemRoutings";
 import './MasterItem.css';
 
 type Field = {
@@ -26,7 +28,6 @@ type Field = {
   options?: { label: string; value: string }[];
 };
 
-// 공정 옵션 타입 정의
 interface OperationOption {
   operCode: string;
   operNm: string;
@@ -46,14 +47,24 @@ export function MasterItemsDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
 
-  // 라우팅 목록 상태
-  const [routings, setRoutings] = useState<ItemRoutingRequest[]>([]);
+  // 공정 라우팅 DOM 포커스 관리를 위한 ref 배열
+  const routingItemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // 드래그 앤 드롭을 위한 상태 관리 훅
-  const draggedItemIndex = useRef<number | null>(null);
-  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  // 커스텀 훅 연동
+  const {
+    routings,
+    draggingIndex,
+    targetIndex,
+    keyboardActiveIndex,
+    syncRoutings,
+    removeRouting: handleRemoveRouting,
+    updateRouting: handleRoutingChange,
+    handleMouseDown,
+    handleMouseEnter,
+    handleMouseUp,
+    handleKeyDown,
+  } = useItemRoutings();
 
-  // 다중 선택 팝업 모달 관련 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalSearchKeyword, setModalSearchKeyword] = useState("");
   const [tempSelectedCodes, setTempSelectedCodes] = useState<string[]>([]);
@@ -88,7 +99,6 @@ export function MasterItemsDetailPage() {
     { label: "등록일자", key: "createdAt", editable: false },
   ];
 
-  // 공정 셀렉트 옵션 목록 페칭
   useEffect(() => {
     const fetchOperations = async () => {
       try {
@@ -102,7 +112,6 @@ export function MasterItemsDetailPage() {
     fetchOperations();
   }, []);
 
-  // 상세 데이터 조회
   useEffect(() => {
     let isMounted = true;
 
@@ -131,15 +140,19 @@ export function MasterItemsDetailPage() {
           });
 
           if (itemData.routings && Array.isArray(itemData.routings)) {
-            setRoutings(
-              itemData.routings.map((r, idx) => ({
-                operCode: r.operCode || "",
-                operSeq: r.operSeq ?? idx + 1,
-                finalYn: r.finalYn || "N",
-              }))
-            );
+            const formattedRoutings: ItemRoutingRequest[] = itemData.routings.map((r, idx) => ({
+              operCode: r.operCode || "",
+              operSeq: r.operSeq ?? idx + 1,
+              finalYn: r.finalYn || "N",
+            }));
+            syncRoutings(formattedRoutings.map(r => r.operCode).filter(Boolean) as string[]);
+            formattedRoutings.forEach((r, idx) => {
+              if (r.finalYn === "Y") {
+                handleRoutingChange(idx, "finalYn", "Y");
+              }
+            });
           } else {
-            setRoutings([]);
+            syncRoutings([]);
           }
         }
       } catch (error) {
@@ -162,7 +175,6 @@ export function MasterItemsDetailPage() {
     };
   }, [itemCode, navigate, location.search]);
 
-  // 수정 모드 취소 시 롤백
   useEffect(() => {
     if (item && !isEditing) {
       setForm({
@@ -177,77 +189,25 @@ export function MasterItemsDetailPage() {
       });
 
       if (item.routings && Array.isArray(item.routings)) {
-        setRoutings(
-          item.routings.map((r, idx) => ({
-            operCode: r.operCode || "",
-            operSeq: r.operSeq ?? idx + 1,
-            finalYn: r.finalYn || "N",
-          }))
-        );
+        syncRoutings(item.routings.map((r) => r.operCode).filter(Boolean) as string[]);
+        item.routings.forEach((r, idx) => {
+          if (r.finalYn === "Y") {
+            handleRoutingChange(idx, "finalYn", "Y");
+          }
+        });
       } else {
-        setRoutings([]);
+        syncRoutings([]);
       }
     }
   }, [isEditing, item]);
 
-  // 품목구분 변경 시 원료('0')면 라우팅 초기화
   const handleFieldChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     if (key === "category" && value === "0") {
-      setRoutings([]);
+      syncRoutings([]);
     }
   };
 
-  const handleRemoveRouting = (index: number) => {
-    setRoutings((prev) =>
-      prev
-        .filter((_, i) => i !== index)
-        .map((item, i) => ({ ...item, operSeq: i + 1 }))
-    );
-  };
-
-  const handleRoutingChange = (
-    index: number,
-    field: keyof ItemRoutingRequest,
-    value: unknown
-  ) => {
-    setRoutings((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
-    );
-  };
-
-  // --- 드래그 앤 드롭 핸들러들  ---
-  const handleDragStart = (index: number) => {
-    draggedItemIndex.current = index;
-    setDraggingIndex(index);
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (targetIndex: number) => {
-    const sourceIndex = draggedItemIndex.current;
-    if (sourceIndex === null || sourceIndex === targetIndex) return;
-
-    setRoutings((prev) => {
-      const newRoutings = [...prev];
-      const [movedItem] = newRoutings.splice(sourceIndex, 1);
-      newRoutings.splice(targetIndex, 0, movedItem);
-
-      return newRoutings.map((item, i) => ({ ...item, operSeq: i + 1 }));
-    });
-
-    draggedItemIndex.current = null;
-    setDraggingIndex(null);
-  };
-
-  const handleDragEnd = () => {
-    draggedItemIndex.current = null;
-    setDraggingIndex(null);
-  };
-
-  // --- 팝업 모달 관련 핸들러 ---
   const handleOpenModal = () => {
     setModalSearchKeyword("");
     const currentCodes = routings.map((r) => r.operCode).filter(Boolean) as string[];
@@ -255,64 +215,10 @@ export function MasterItemsDetailPage() {
     setIsModalOpen(true);
   };
 
-  const handleToggleCheckbox = (operCode: string) => {
-    setTempSelectedCodes((prev) =>
-      prev.includes(operCode)
-        ? prev.filter((code) => code !== operCode)
-        : [...prev, operCode]
-    );
-  };
-
-  const filteredOperations = useMemo(() => {
-    if (!modalSearchKeyword.trim()) return operations;
-    const keyword = modalSearchKeyword.toLowerCase();
-    return operations.filter(
-      (op) =>
-        op.operCode.toLowerCase().includes(keyword) ||
-        op.operNm.toLowerCase().includes(keyword)
-    );
-  }, [operations, modalSearchKeyword]);
-
-  const handleToggleSelectAll = () => {
-    const filteredCodes = filteredOperations.map((op) => op.operCode);
-    const isAllCurrentlySelected = filteredCodes.every((code) =>
-      tempSelectedCodes.includes(code)
-    );
-
-    if (isAllCurrentlySelected) {
-      setTempSelectedCodes((prev) =>
-        prev.filter((code) => !filteredCodes.includes(code))
-      );
-    } else {
-      setTempSelectedCodes((prev) => {
-        const merged = new Set([...prev, ...filteredCodes]);
-        return Array.from(merged);
-      });
-    }
-  };
-
   const handleConfirmModal = () => {
-    setRoutings((prev) => {
-      const existingMap = new Map(prev.map((r) => [r.operCode, r]));
-
-      const newRoutings: ItemRoutingRequest[] = tempSelectedCodes.map((code) => {
-        const existing = existingMap.get(code);
-        return {
-          operCode: code,
-          operSeq: 0,
-          finalYn: existing ? existing.finalYn : "N",
-        };
-      });
-
-      return newRoutings.map((item, idx) => ({ ...item, operSeq: idx + 1 }));
-    });
-
+    syncRoutings(tempSelectedCodes);
     setIsModalOpen(false);
   };
-
-  const isAllFilteredSelected =
-    filteredOperations.length > 0 &&
-    filteredOperations.every((op) => tempSelectedCodes.includes(op.operCode));
 
   const validateForm = (): boolean => {
     const selectedCategory =
@@ -348,10 +254,10 @@ export function MasterItemsDetailPage() {
         routings:
           selectedCategory === 1 || selectedCategory === 2
             ? routings.map((r) => ({
-              operCode: r.operCode?.trim() || null,
-              operSeq: r.operSeq,
-              finalYn: r.finalYn || "N",
-            }))
+                operCode: r.operCode?.trim() || null,
+                operSeq: r.operSeq ?? 1,
+                finalYn: r.finalYn || "N",
+              }))
             : null,
       };
 
@@ -366,22 +272,22 @@ export function MasterItemsDetailPage() {
       setItem((prev) =>
         prev
           ? {
-            ...prev,
-            productType: updatePayload.productType ?? prev.productType,
-            category: updatePayload.category ?? prev.category,
-            itemNm: updatePayload.itemNm ?? prev.itemNm,
-            unit: updatePayload.unit ?? prev.unit,
-            standard: updatePayload.standard ?? prev.standard,
-            routings: updatePayload.routings
-              ? updatePayload.routings.map((r, idx) => ({
-                routingId: 0,
-                itemCode: prev.itemCode,
-                operCode: r.operCode ?? "",
-                operSeq: r.operSeq ?? idx + 1,
-                finalYn: r.finalYn ?? "N",
-              }))
-              : [],
-          }
+              ...prev,
+              productType: updatePayload.productType ?? prev.productType,
+              category: updatePayload.category ?? prev.category,
+              itemNm: updatePayload.itemNm ?? prev.itemNm,
+              unit: updatePayload.unit ?? prev.unit,
+              standard: updatePayload.standard ?? prev.standard,
+              routings: updatePayload.routings
+                ? updatePayload.routings.map((r, idx) => ({
+                    routingId: 0,
+                    itemCode: prev.itemCode,
+                    operCode: r.operCode ?? "",
+                    operSeq: r.operSeq ?? idx + 1,
+                    finalYn: r.finalYn ?? "N",
+                  }))
+                : [],
+            }
           : null
       );
 
@@ -445,7 +351,6 @@ export function MasterItemsDetailPage() {
             handleSave();
           }}
         >
-          {/* 상단 기본 필드들 */}
           {fields.map(({ label, key, editable, type, options }) => {
             const isFieldEditable = isEditing && editable !== false;
 
@@ -495,7 +400,6 @@ export function MasterItemsDetailPage() {
             );
           })}
 
-          {/* 공정 라우팅 정보 */}
           {(isRoutingRequired || (routings && routings.length > 0)) && (
             <div className="routingSection">
               <div className="routingHeader">
@@ -515,36 +419,62 @@ export function MasterItemsDetailPage() {
                 )}
               </div>
 
+              {isEditing && routings.length > 0 && (
+                <div className="routingHint">
+                  💡 순서 변경: 아이템에 포커스 후 <kbd>Space</kbd>/<kbd>Enter</kbd>로 잡고 <kbd>방향키</kbd>로 이동하세요. (<kbd>ESC</kbd> 취소)
+                </div>
+              )}
+
               {routings.length === 0 ? (
                 <div className="routingEmptyBox">
                   등록된 공정 라우팅이 없습니다.
                 </div>
               ) : (
-                <div className="routingGrid">
+                <div 
+                  className="routingGrid" 
+                  onMouseUp={handleMouseUp} 
+                  onMouseLeave={handleMouseUp}
+                >
                   {routings.map((route, index) => {
                     const matchedOp = operations.find(
                       (op) => op.operCode === route.operCode
                     );
                     const isDragging = draggingIndex === index;
+                    const isTarget = targetIndex === index && draggingIndex !== index;
+                    const isKeyboardActive = keyboardActiveIndex === index;
 
                     return (
                       <div
                         key={route.operCode || index}
-                        className={`routingItem ${isDragging ? "dragging" : ""}`}
-                        draggable={isEditing && !isBusy}
-                        onDragStart={() => handleDragStart(index)}
-                        onDragOver={handleDragOver}
-                        onDrop={() => handleDrop(index)}
-                        onDragEnd={handleDragEnd}
+                        ref={(el) => {
+                          routingItemRefs.current[index] = el;
+                        }}
+                        tabIndex={isEditing && !isBusy ? 0 : -1}
+                        className={`routingItem 
+                          ${isDragging ? "dragging" : ""} 
+                          ${isTarget ? "dragTarget" : ""}
+                          ${isKeyboardActive ? "keyboardActive" : ""}
+                        `}
+                        onMouseDown={() => isEditing && !isBusy && handleMouseDown(index)}
+                        onMouseEnter={() => isEditing && !isBusy && handleMouseEnter(index)}
+                        onKeyDown={(e) => {
+                          if (!isEditing || isBusy) return;
+                          const nextIndex = handleKeyDown(e, index, 2);
+                          if (nextIndex !== index) {
+                            setTimeout(() => {
+                              routingItemRefs.current[nextIndex]?.focus();
+                            }, 0);
+                          }
+                        }}
                       >
                         {isEditing && (
-                          <span className="dragHandle" title="드래그하여 순서 변경">
+                          <span className="dragHandle" title="마우스로 잡고 이동하여 순서 변경">
                             ☰
                           </span>
                         )}
 
                         <span className="routingSeq">
-                          순서 {route.operSeq}
+                          순서 {route.operSeq ?? index + 1}
                         </span>
 
                         <div className="routingInfo">
@@ -589,7 +519,6 @@ export function MasterItemsDetailPage() {
             </div>
           )}
 
-          {/* 하단 액션 버튼 영역 */}
           <div className="pageFormFooterSpaceBetween" style={{ gridColumn: "1 / -1", marginTop: "16px" }}>
             <div>
               {isEditing && item.useYn === 'Y' && (
@@ -654,106 +583,16 @@ export function MasterItemsDetailPage() {
         </form>
       </Panel>
 
-      {/* 공정 다중 선택 팝업 모달 */}
-      {isModalOpen && (
-        <div className="modalOverlay">
-          <div className="detailModal">
-            <div className="detailModalHeader">
-              <div>
-                <h3>공정 선택</h3>
-                <span>품목에 추가할 공정 라우팅을 선택하세요.</span>
-              </div>
-              <button
-                type="button"
-                className="detailModalClose"
-                onClick={() => setIsModalOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="detailModalBody modalBodyFlex">
-              <div>
-                <input
-                  type="text"
-                  className="tableInput modalSearchInput"
-                  placeholder="공정 코드 또는 공정명 검색..."
-                  value={modalSearchKeyword}
-                  onChange={(e) => setModalSearchKeyword(e.target.value)}
-                  autoFocus
-                />
-              </div>
-
-              <div className="modalSelectAllRow">
-                <div className="modalCountText">
-                  선택된 공정 수: <strong>{tempSelectedCodes.length}</strong>개
-                </div>
-                <button
-                  type="button"
-                  className="miniButton ghostButton"
-                  onClick={handleToggleSelectAll}
-                  style={{ fontSize: "11px", padding: "2px 8px" }}
-                >
-                  {isAllFilteredSelected ? "전체 해제" : "전체 선택"}
-                </button>
-              </div>
-
-              <div className="modalListContainer">
-                {filteredOperations.length === 0 ? (
-                  <div className="modalEmptyText">
-                    검색된 공정이 없습니다.
-                  </div>
-                ) : (
-                  filteredOperations.map((op) => {
-                    const isChecked = tempSelectedCodes.includes(op.operCode);
-                    return (
-                      <div
-                        key={op.operCode}
-                        onClick={() => handleToggleCheckbox(op.operCode)}
-                        className={`modalListItem ${isChecked ? "modalListItemChecked" : ""}`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => { }}
-                          style={{ cursor: "pointer" }}
-                        />
-                        <div className="modalListItemContent">
-                          <span className="modalListItemTitle">
-                            {op.operNm}
-                          </span>
-                          <span className="modalListItemCode">
-                            {op.operCode}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            <div className="detailModalFooter">
-              <button
-                type="button"
-                className="ghostButton"
-                onClick={() => setIsModalOpen(false)}
-              >
-                취소
-              </button>
-              <div className="detailModalFooterRight">
-                <button
-                  type="button"
-                  className="primaryButton"
-                  onClick={handleConfirmModal}
-                >
-                  선택 완료 ({tempSelectedCodes.length}개 적용)
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <OperationSelectModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        operations={operations}
+        modalSearchKeyword={modalSearchKeyword}
+        setModalSearchKeyword={setModalSearchKeyword}
+        tempSelectedCodes={tempSelectedCodes}
+        setTempSelectedCodes={setTempSelectedCodes}
+        onConfirm={handleConfirmModal}
+      />
     </section>
   );
 }
