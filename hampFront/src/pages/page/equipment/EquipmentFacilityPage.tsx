@@ -17,12 +17,16 @@ import type {
 } from "@/types/equipment/Facility";
 import { STATUS_TONE, STATUS_TYPE_LABEL } from "@/types/equipment/Facility";
 import { Badge } from "@/components/common/Badge";
+import type { ApiResponseListEquipmentOptionResponse, EquipmentOptionResponse } from "@/types/master/Equipment";
+import type { ApiResponseListFactoryZoneOptionResponse, FactoryZoneOptionResponse } from "@/types/master/FactoryZone";
 
 export function EquipmentFacilityPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [facilities, setFacilities] = useState<FacilityResponse[]>([]);
+  const [equipmentOptions, setEquipmentOptions] = useState<EquipmentOptionResponse[]>([]);
+  const [factoryZoneOptions, setFactoryZoneOptions] = useState<FactoryZoneOptionResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -55,24 +59,64 @@ export function EquipmentFacilityPage() {
       }
     }
     setIsReady(true);
-  }, [searchParams, setSearchParams]);
+  }, []);
 
   // URL 쿼리스트링에서 상태 추출
   const currentPage = Number(searchParams.get("page") || "0");
   const queryFcltNm = searchParams.get("fcltNm") || "";
-  const queryEqType = searchParams.get("eqType") || "";
+  const queryEqCode = searchParams.get("eqCode") || "";
   const queryCurrentStatus = searchParams.get("currentStatus") || "";
-  const queryLocation = searchParams.get("location") || "";
+  const queryFacCode = searchParams.get("facCode") || "";
 
-  // 검색 필드 Refs
+  // 검색 필드 Refs 
   const fcltNmRef = useRef<HTMLInputElement>(null);
-  const eqTypeRef = useRef<HTMLInputElement>(null);
+  const eqCodeRef = useRef<HTMLInputElement>(null);
   const currentStatusRef = useRef<HTMLSelectElement>(null);
-  const locationRef = useRef<HTMLInputElement>(null);
+  const facCodeRef = useRef<HTMLInputElement>(null);
+
+  const fetchOptions = useCallback(async () => {
+    try {
+      const [eqRes, facRes] = await Promise.all([
+        apiClient.get<ApiResponseListEquipmentOptionResponse>("/equipment/options"),
+        apiClient.get<ApiResponseListFactoryZoneOptionResponse>("/factory-zones/options")
+      ]);
+      setEquipmentOptions(eqRes.data.data ?? []);
+      setFactoryZoneOptions(facRes.data.data ?? []);
+    } catch (error) {
+      console.error("옵션 목록 조회 실패:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOptions();
+  }, [fetchOptions]);
 
   const searchFields: SearchField[] = [
     { type: "input", label: "설비명", ref: fcltNmRef, name: "fcltNm" },
-    { type: "input", label: "장비유형", ref: eqTypeRef, name: "eqType" },
+    {
+      type: "select",
+      label: "장비코드",
+      ref: eqCodeRef as any,
+      options: [
+        { label: "전체", value: "" },
+        ...equipmentOptions.map((opt) => ({
+          label: `${opt.eqCode} (${opt.eqNm ?? '-'})`,
+          value: opt.eqCode,
+        })),
+      ],
+    },
+    {
+      type: "select",
+      label: "공장코드",
+      ref: facCodeRef as any,
+      options: [
+        { label: "전체", value: "" },
+        ...factoryZoneOptions.map((opt) => ({
+          label: `${opt.facCode} (${opt.facNm ?? '-'})`,
+          value: opt.facCode,
+        })),
+      ],
+    },
     {
       type: "select",
       label: "현재상태",
@@ -84,18 +128,18 @@ export function EquipmentFacilityPage() {
         { label: "고장", value: "2" },
       ],
     },
-    { type: "input", label: "설치위치", ref: locationRef, name: "location" },
+    { type: "input", label: "공장코드", ref: facCodeRef, name: "facCode" },
   ];
 
   // URL 쿼리스트링 값과 검색창 input 값 동기화
   useEffect(() => {
     if (fcltNmRef.current) fcltNmRef.current.value = queryFcltNm;
-    if (eqTypeRef.current) eqTypeRef.current.value = queryEqType;
+    if (eqCodeRef.current) eqCodeRef.current.value = queryEqCode;
     if (currentStatusRef.current) currentStatusRef.current.value = queryCurrentStatus;
-    if (locationRef.current) locationRef.current.value = queryLocation;
-  }, [queryFcltNm, queryEqType, queryCurrentStatus, queryLocation]);
+    if (facCodeRef.current) facCodeRef.current.value = queryFacCode;
+  }, [queryFcltNm, queryEqCode, queryCurrentStatus, queryFacCode]);
 
-  // 설비 목록 조회 (GET /api/facilities)
+  // 설비 목록 조회 (GET /facilities)
   const loadFacilities = useCallback(async () => {
     if (!isReady) {
       return;
@@ -108,11 +152,11 @@ export function EquipmentFacilityPage() {
         size: 10,
       };
       if (queryFcltNm) params.fcltNm = queryFcltNm;
-      if (queryEqType) params.eqType = queryEqType;
-      if (queryCurrentStatus) params.currentStatus = queryCurrentStatus;
-      if (queryLocation) params.location = queryLocation;
+      if (queryEqCode) params.eqCode = queryEqCode;
+      if (queryCurrentStatus) params.currentStatus = Number(queryCurrentStatus);
+      if (queryFacCode) params.facCode = queryFacCode;
 
-      // 정렬 파라미터 반영
+      // 정렬 파라미터 반영 (Spring Pageable 형식)
       if (sortParams.length > 0) {
         params.sort = sortParams;
       }
@@ -135,9 +179,9 @@ export function EquipmentFacilityPage() {
     isReady,
     currentPage,
     queryFcltNm,
-    queryEqType,
+    queryEqCode,
     queryCurrentStatus,
-    queryLocation,
+    queryFacCode,
     sortParams,
   ]);
 
@@ -151,34 +195,31 @@ export function EquipmentFacilityPage() {
     nextParams.set("page", "0");
 
     const fcltNm = fcltNmRef.current?.value.trim();
-    const eqType = eqTypeRef.current?.value.trim();
+    const eqCode = eqCodeRef.current?.value.trim();
     const currentStatus = currentStatusRef.current?.value.trim();
-    const location = locationRef.current?.value.trim();
+    const facCode = facCodeRef.current?.value.trim();
 
     if (fcltNm) nextParams.set("fcltNm", fcltNm);
     else nextParams.delete("fcltNm");
 
-    if (eqType) nextParams.set("eqType", eqType);
-    else nextParams.delete("eqType");
+    if (eqCode) nextParams.set("eqCode", eqCode);
+    else nextParams.delete("eqCode");
 
     if (currentStatus) nextParams.set("currentStatus", currentStatus);
     else nextParams.delete("currentStatus");
 
-    if (location) nextParams.set("location", location);
-    else nextParams.delete("location");
+    if (facCode) nextParams.set("facCode", facCode);
+    else nextParams.delete("facCode");
 
     setSearchParams(nextParams);
   };
 
   // 검색 초기화
   const handleReset = () => {
-    [fcltNmRef, eqTypeRef, currentStatusRef, locationRef].forEach((ref) => {
+    [fcltNmRef, eqCodeRef, currentStatusRef, facCodeRef].forEach((ref) => {
       if (ref.current) ref.current.value = "";
     });
-    setSearchParams(
-      { page: "0" },
-      { replace: true }
-    );
+    setSearchParams({ page: "0" }, { replace: true });
   };
 
   // 페이지네이션 핸들러
@@ -212,15 +253,16 @@ export function EquipmentFacilityPage() {
   const columns: ColumnDef<FacilityResponse>[] = useMemo(
     () => [
       { accessorKey: "fcltCode", header: "설비코드" },
-      { accessorKey: "eqCode", header: "장비코드" },
       {
         accessorKey: "fcltNm",
         header: "설비명",
         cell: ({ getValue }) => getValue<string>() || "-",
       },
+      { accessorKey: "eqNm", header: "설비종류" },
+      { accessorKey: "facNm", header: "설비위치" },
       {
-        accessorKey: 'currentStatus',
-        header: '현재상태',
+        accessorKey: "currentStatus",
+        header: "현재상태",
         cell: ({ getValue }) => {
           const value = getValue() as StatusType;
           return (
@@ -253,7 +295,7 @@ export function EquipmentFacilityPage() {
         cell: ({ getValue }) => formatDateTime(getValue<string>()),
       },
     ],
-    []
+    [searchParams]
   );
 
   return (
