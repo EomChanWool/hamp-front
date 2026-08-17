@@ -35,7 +35,7 @@ export function MasterItemsPage() {
   // 커스텀 훅으로 정렬 상태 및 핸들러 연동
   const { sorting, sortParams, handleSortingChange } = useTableSorting();
 
-  // 브라우저 새로고침(F5) 감지 및 처리 (sessionStorage 방식)
+  // [정확한 새로고침 감지] 브라우저가 닫히거나 새로고침(F5)될 때만 플래그 설정
   useEffect(() => {
     const handleBeforeUnload = () => {
       sessionStorage.setItem("is_browser_reload", "true");
@@ -46,6 +46,7 @@ export function MasterItemsPage() {
     };
   }, []);
 
+  // 진입 시 실제 브라우저 새로고침 여부 확인 후 검색 조건 초기화
   useEffect(() => {
     const isReload = sessionStorage.getItem("is_browser_reload") === "true";
 
@@ -56,8 +57,17 @@ export function MasterItemsPage() {
         return;
       }
     }
+
     setIsReady(true);
   }, []);
+
+  // 새로고침 때문에 setSearchParams가 실행된 경우 조회 가능 상태로 변경
+  useEffect(() => {
+    const isReload = sessionStorage.getItem("is_browser_reload") === "true";
+    if (!isReload && !isReady) {
+      setIsReady(true);
+    }
+  }, [searchParams, isReady]);
   // ----------------------------------------
 
   const currentPage = Number(searchParams.get("page") || "0");
@@ -193,13 +203,13 @@ export function MasterItemsPage() {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("page", "0");
 
-    const itemCode = itemCodeRef.current?.value.trim();
-    const productType = productTypeRef.current?.value.trim();
-    const category = categoryRef.current?.value.trim();
-    const itemNm = itemNmRef.current?.value.trim();
-    const unit = unitRef.current?.value.trim();
-    const standard = standardRef.current?.value.trim();
-    const useYn = useYnRef.current?.value.trim();
+    const itemCode = itemCodeRef.current?.value.trim() || "";
+    const productType = productTypeRef.current?.value.trim() || "";
+    const category = categoryRef.current?.value.trim() || "";
+    const itemNm = itemNmRef.current?.value.trim() || "";
+    const unit = unitRef.current?.value.trim() || "";
+    const standard = standardRef.current?.value.trim() || "";
+    const useYn = useYnRef.current?.value.trim() || "";
 
     if (itemCode) nextParams.set("itemCode", itemCode);
     else nextParams.delete("itemCode");
@@ -311,7 +321,7 @@ export function MasterItemsPage() {
         cell: ({ getValue }) => formatDateTime(getValue<string>()),
       },
     ],
-    [searchParams]
+    []
   );
 
   return (

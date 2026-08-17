@@ -6,7 +6,7 @@ export function useItemRoutings() {
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [targetIndex, setTargetIndex] = useState<number | null>(null);
   
-  // 🌟 키보드로 아이템을 잡고 있는 상태를 추적하는 인덱스
+  // 키보드로 아이템을 잡고 있는 상태를 추적하는 인덱스
   const [keyboardActiveIndex, setKeyboardActiveIndex] = useState<number | null>(null);
 
   const reorderSequences = (items: ItemRoutingRequest[]) => {
@@ -103,7 +103,7 @@ export function useItemRoutings() {
       if (newIndex >= 0 && newIndex < routings.length) {
         e.preventDefault();
         moveRouting(index, newIndex);
-        setKeyboardActiveIndex(newIndex); // 이동한 위치를 계속 잡고 있도록 갱신
+        setKeyboardActiveIndex(newIndex);
         return newIndex;
       }
     }

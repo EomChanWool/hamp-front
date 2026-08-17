@@ -53,7 +53,7 @@ export function MasterItemsCreatePage() {
     routings,
     draggingIndex,
     targetIndex,
-    keyboardActiveIndex, // 🌟 키보드로 잡고 있는 상태 인덱스 추가
+    keyboardActiveIndex,
     syncRoutings,
     removeRouting: handleRemoveRouting,
     updateRouting: handleRoutingChange,
@@ -206,9 +206,9 @@ export function MasterItemsCreatePage() {
                 <button type="button" className="miniButton primary" disabled={isSubmitting} onClick={handleOpenModal}>공정 선택 / 추가</button>
               </div>
 
-              {/* 🌟 키보드 조작 가이드 안내 텍스트 추가 */}
+              {/* 키보드 조작 가이드 안내 */}
               <div className="routingHint">
-                💡 <span>Space</span> 또는 <span>Enter</span>로 공정을 선택(잡기)하고, <span>방향키</span>로 순서를 변경하세요. (<span>Esc</span> 취소)
+                💡 <kbd>방향키</kbd>로 공정 카드를 탐색하고, <kbd>Space</kbd>/<kbd>Enter</kbd>로 선택(잡기) 후 이동하세요. (<kbd>Esc</kbd> 취소)
               </div>
 
               {routings.length === 0 ? (
@@ -225,18 +225,40 @@ export function MasterItemsCreatePage() {
                       <div
                         key={`${route.operCode}-${index}`}
                         ref={(el) => { itemRefs.current[index] = el; }}
-                        tabIndex={0}
+                        tabIndex={!isSubmitting ? 0 : -1}
                         role="button"
                         aria-pressed={isKeyboardActive}
                         className={`routingItem ${isDragging ? "dragging" : ""} ${isTarget ? "dragTarget" : ""} ${isKeyboardActive ? "keyboardActive" : ""}`}
                         onMouseDown={() => {
                           if (!isSubmitting) {
                             handleMouseDown(index);
-                            itemRefs.current[index]?.focus(); // 클릭 시 포커스 강제 부여
+                            itemRefs.current[index]?.focus();
                           }
                         }}
                         onMouseEnter={() => !isSubmitting && handleMouseEnter(index)}
                         onKeyDown={(e) => {
+                          if (isSubmitting) return;
+
+                          // 방향키 단독 입력 시 카드 간 포커스 이동 (잡기 상태가 아닐 때)
+                          if (keyboardActiveIndex === null && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+                            let nextIndex = index;
+                            const columns = 2; // 2열 그리드 구조
+
+                            switch (e.key) {
+                              case "ArrowUp": nextIndex = index - columns; break;
+                              case "ArrowDown": nextIndex = index + columns; break;
+                              case "ArrowLeft": nextIndex = index - 1; break;
+                              case "ArrowRight": nextIndex = index + 1; break;
+                            }
+
+                            if (nextIndex >= 0 && nextIndex < routings.length) {
+                              e.preventDefault();
+                              itemRefs.current[nextIndex]?.focus();
+                            }
+                            return;
+                          }
+
+                          // 훅의 handleKeyDown 호출 (Space/Enter 잡기·놓기, 잡은 상태에서의 방향키 이동 처리)
                           const nextIndex = handleKeyDown(e, index, 2);
                           if (nextIndex !== undefined) {
                              setTimeout(() => itemRefs.current[nextIndex]?.focus(), 0);
@@ -246,11 +268,27 @@ export function MasterItemsCreatePage() {
                         <span className="dragHandle" title="Space/Enter로 잡고 방향키로 이동">☰</span>
                         <span className="routingSeq">순서 {route.operSeq}</span>
                         <div className="routingInfo">{route.operCode} {matchedOp ? `(${matchedOp.operNm})` : ""}</div>
-                        <select className="tableInput routingSelect" value={route.finalYn ?? "N"} disabled={isSubmitting} onChange={(e) => handleRoutingChange(index, "finalYn", e.target.value)}>
+                        
+                        {/* Tab 키가 내부 select나 button으로 새지 않도록 tabIndex={-1} 처리 */}
+                        <select 
+                          className="tableInput routingSelect" 
+                          value={route.finalYn ?? "N"} 
+                          disabled={isSubmitting} 
+                          tabIndex={-1}
+                          onChange={(e) => handleRoutingChange(index, "finalYn", e.target.value)}
+                        >
                           <option value="N">일반공정</option>
                           <option value="Y">최종공정</option>
                         </select>
-                        <button type="button" className="miniButton danger" disabled={isSubmitting} onClick={() => handleRemoveRouting(index)}>제외</button>
+                        <button 
+                          type="button" 
+                          className="miniButton danger" 
+                          disabled={isSubmitting} 
+                          tabIndex={-1}
+                          onClick={() => handleRemoveRouting(index)}
+                        >
+                          제외
+                        </button>
                       </div>
                     );
                   })}
