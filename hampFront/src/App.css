@@ -1544,11 +1544,11 @@ textarea.tableInput {
 
 .timelineList {
   display: flex;
-  flex-direction: column;
   gap: 10px;
 }
 
 .timelineItem {
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1571,12 +1571,14 @@ textarea.tableInput {
   justify-content: center;
   font-size: 11px;
   font-weight: 700;
+  line-height: 1;
 }
 
 .timelineItem strong {
   flex: 1;
   color: var(--text-body);
   font-weight: 500;
+  line-height: 1;
 }
 
 [data-theme="dark"] .timelineItem {

@@ -1,52 +1,90 @@
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
+import "./OrderPerformanceDashboard.css";
 
 export function OrderPerformanceDashboard({ data }: { data: any }) {
   const charts = [
-    { key: 'monthlyAmount', title: '월별 수주금액', fill: '#8884d8', type: 'month' },
-    { key: 'monthlyProd', title: '월별 생산예정량', fill: '#82ca9d', type: 'month' },
-    { key: 'monthlyCount', title: '월별 수주건수', fill: '#ffc658', type: 'month' },
-    { key: 'dailyCount', title: '일별 수주건수', fill: '#ff8042', type: 'day' }, 
+    { key: "monthlyAmount", title: "월별 수주금액", color: "#6366f1", type: "month", chart: "area" },
+    { key: "monthlyProd", title: "월별 생산예정량", color: "#10b981", type: "month", chart: "area" },
+    { key: "monthlyCount", title: "월별 수주건수", color: "#f59e0b", type: "month", chart: "area" },
+    { key: "dailyCount", title: "일별 수주건수", color: "#f97316", type: "day", chart: "bar" },
   ];
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', marginBottom: '30px' }}>
+    <div className="orderPerfDashboard">
       {charts.map((c) => (
-        <div key={c.key} style={{ border: '1px solid #ddd', padding: '40px', borderRadius: '10px', background: '#fff' }}>
-          <h4 style={{ margin: '0 0 10px 0' }}>{c.title}</h4>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart 
-              data={data[c.key]}
-              margin={{ top: 10, right: 30, left: c.key === 'monthlyAmount' ? 30 : 0, bottom: 0 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              
-              <XAxis 
-                dataKey="name" 
-                tick={{ fontSize: 9 }}
-                interval={c.type === 'month' ? 0 : 2} 
-              />
-              
-              <YAxis 
-                width={c.key === 'monthlyAmount' ? 70 : 50}
-                tick={{ fontSize: 10 }}
-                tickFormatter={(value) => 
-                  c.key === 'monthlyAmount' 
-                    ? `${(value / 10000).toLocaleString()}만원` 
-                    : value.toLocaleString()
-                }
-              />
-              <Tooltip 
-                formatter={(value: any) => {
-                  const num = Number(value);
-                  const formattedValue = c.key === 'monthlyAmount' 
-                    ? `${(num / 10000).toLocaleString()}만원` 
-                    : num.toLocaleString();
-                  const label = c.key === 'monthlyAmount' ? '금액' : '수량/건수';
-                  return [formattedValue, label];
-                }} 
-              />
-              <Bar dataKey="value" fill={c.fill} />
-            </BarChart>
+        <div key={c.key} className="orderPerfDashboard__card">
+          <h4 className="orderPerfDashboard__title">{c.title}</h4>
+          <ResponsiveContainer width="100%" height={260}>
+            {c.chart === "area" ? (
+              <AreaChart
+                data={data[c.key]}
+                margin={{ top: 10, right: 30, left: c.key === "monthlyAmount" ? -10 : 0, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id={`gradient-${c.key}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={c.color} stopOpacity={0.35} />
+                    <stop offset="95%" stopColor={c.color} stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+
+                <XAxis dataKey="name" tick={{ fontSize: 9 }} interval={0} axisLine={false} tickLine={false} />
+
+                <YAxis
+                  width={c.key === "monthlyAmount" ? 70 : 50}
+                  tick={{ fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) =>
+                    c.key === "monthlyAmount" ? `${(value / 10000).toLocaleString()}만원` : value.toLocaleString()
+                  }
+                />
+
+                <Tooltip
+                  formatter={(value: any) => {
+                    const num = Number(value);
+                    const formattedValue =
+                      c.key === "monthlyAmount" ? `${(num / 10000).toLocaleString()}만원` : num.toLocaleString();
+                    const label = c.key === "monthlyAmount" ? "금액" : "수량/건수";
+                    return [formattedValue, label];
+                  }}
+                  contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                />
+
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke={c.color}
+                  strokeWidth={2}
+                  fill={`url(#gradient-${c.key})`}
+                  dot={{ r: 3, stroke: c.color, strokeWidth: 2, fill: "#fff" }}
+                  activeDot={{ r: 5 }}
+                />
+              </AreaChart>
+            ) : (
+              <BarChart data={data[c.key]} margin={{ top: 10, right: 30, left: 0, bottom: 0 }} barCategoryGap="30%">
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+
+                <XAxis dataKey="name" tick={{ fontSize: 9 }} interval={2} axisLine={false} tickLine={false} />
+
+                <YAxis
+                  width={50}
+                  tick={{ fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => value.toLocaleString()}
+                />
+
+                <Tooltip
+                  formatter={(value: any) => [Number(value).toLocaleString(), "수량/건수"]}
+                  contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                  cursor={{ fill: "rgba(0,0,0,0.04)" }}
+                />
+
+                <Bar dataKey="value" fill={c.color} radius={[6, 6, 0, 0]} maxBarSize={28} />
+              </BarChart>
+            )}
           </ResponsiveContainer>
         </div>
       ))}
