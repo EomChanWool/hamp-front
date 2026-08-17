@@ -10,7 +10,7 @@ import {
   type ProductType,
   type ItemCategory,
   type ApiResponseItemResponse,
-} from "@/types/master/Item";
+} from "@/api/master/Item";
 import { OperationSelectModal } from "@components/common/OperationSelectModal";
 import { useItemRoutings } from "@/hooks/useItemRoutings";
 import './MasterItem.css';

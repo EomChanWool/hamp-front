@@ -12,10 +12,10 @@ import type {
   ApiResponseDefectResponse,
   ApiResponsePageDefectResponse,
   DefectUpdateRequest,
-} from "@/types/master/Defect";
+} from "@/api/master/Defect";
 import { Badge } from "@/components/common/Badge";
 import Spinner from "@/components/common/Spinner";
-import type { ApiResponseListOperationOptionResponse, OperationOptionResponse } from "@/types/master/Operation";
+import type { ApiResponseListOperationOptionResponse, OperationOptionResponse } from "@/api/master/Operation";
 
 interface DefectCreateRequest extends DefectUpdateRequest {
   defCode: string;

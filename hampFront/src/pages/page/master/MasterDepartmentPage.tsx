@@ -14,7 +14,7 @@ import type {
   DepartmentUpdateRequest,
   DepartmentOptionResponse,
   ApiResponseListDepartmentOptionResponse,
-} from "@/types/master/Department";
+} from "@/api/master/Department";
 import Spinner from "@/components/common/Spinner";
 
 interface DepartmentCreateRequest extends DepartmentUpdateRequest {

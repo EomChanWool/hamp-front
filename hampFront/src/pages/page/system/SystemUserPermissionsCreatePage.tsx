@@ -4,7 +4,7 @@ import { Panel } from "@components/card/Panel";
 import { apiClient } from "@/api/apiClient";
 import axios from "axios";
 import { CheckIcon, MinusIcon, ChevronRightIcon, ExclamationTriangleIcon } from "@heroicons/react/16/solid";
-import type { MenuResponse, ApiResponseListMenuResponse } from "@/types/Menu";
+import type { MenuResponse, ApiResponseListMenuResponse } from "@/api/Menu";
 import { usePermission, PERMISSIONS } from "@/hooks/usePermission";
 import type { CheckState, PermRecord } from "@/hooks/usePermission";
 import "@components/permission/PermissonBoard.css";

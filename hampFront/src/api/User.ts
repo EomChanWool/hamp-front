@@ -1,4 +1,5 @@
-import type { ApiResponse, ApiResponsePage, PageResponse } from '@/types/Common';
+import { apiClient } from '@/api/apiClient';
+import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
 /** 회원 등록(가입) 요청 */
 export interface UserCreateRequest {
@@ -11,10 +12,10 @@ export interface UserCreateRequest {
 
 /** 회원 정보 수정 요청 */
 export interface UserUpdateRequest {
-  userNm: string;
+  userNm?: string | null;
   phone?: string | null;
   position?: string | null;
-  authIds: string[];
+  authIds?: string[] | null;
 }
 
 /** 회원 정보 응답 Data */
@@ -43,7 +44,7 @@ export interface UserDetailResponse {
   use: boolean;
   passwordChanged: boolean;
   createdAt: string;
-  authGroups: AuthGroupOptionResponse[]; 
+  authGroups: AuthGroupOptionResponse[];
 }
 
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
@@ -59,3 +60,36 @@ export type ApiResponsePageUserResponse = ApiResponsePage<UserResponse>;
 
 /** 회원 상세 조회 API 최종 응답 타입 */
 export type ApiResponseUserDetailResponse = ApiResponse<UserDetailResponse>;
+
+// ── 회원 관리 API 함수 ────────────────────────────────────────────────────────
+
+export const UserApi = {
+  /** 회원 목록 조회 */
+  getList: async (params?: {
+    userId?: string;
+    userNm?: string;
+    userDep?: string;
+    [key: string]: any;
+  }): Promise<ApiResponsePageUserResponse> => {
+    const res = await apiClient.get('/users', { params });
+    return res.data;
+  },
+
+  /** 회원 단건 상세 조회 */
+  getDetail: async (userId: string): Promise<ApiResponse<UserDetailResponse>> => {
+    const res = await apiClient.get(`/users/${userId}`);
+    return res.data;
+  },
+
+  /** 회원 생성 */
+  create: (data: UserCreateRequest): Promise<ApiResponseUserResponse> =>
+    apiClient.post('/users', data),
+
+  /** 회원 정보 수정 */
+  update: (userId: string, data: UserUpdateRequest): Promise<ApiResponseUserResponse> =>
+    apiClient.put(`/users/${userId}`, data),
+
+  /** 회원 비활성화 (소프트 삭제) */
+  delete: (userId: string): Promise<ApiResponse<string>> =>
+    apiClient.delete(`/users/${userId}`),
+};

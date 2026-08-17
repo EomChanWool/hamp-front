@@ -8,22 +8,21 @@ import {
   useRef,
   type ReactNode,
 } from 'react'
-import { apiClient, setLogoutCallback } from '@/api/apiClient'
-import type { ApiResponseVoid } from '@/types/Common'
+import { setLogoutCallback } from '@/api/apiClient'
+import { AuthApi } from '@/api/auth/Auth'
 import type {
   LoginRequest,
-  ApiResponseLoginResponse,
   LoginResponse,
   ChangePasswordRequest,
   ApiResponseTokenResponse,
-} from '@/types/auth/Auth'
+} from '@/api/auth/Auth'
 
 interface AuthContextValue {
   isAuthenticated: boolean
   user: LoginResponse | null
   login: (credentials: LoginRequest) => Promise<LoginResponse>
   logout: () => Promise<void>
-  changePassword: (data: ChangePasswordRequest) => Promise<ApiResponseTokenResponse>;
+  changePassword: (data: ChangePasswordRequest) => Promise<ApiResponseTokenResponse>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -37,7 +36,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // 로그인 처리 중 잔여 401 에러 및 스토리지 이벤트로 인한 상태 리셋 방지
   const isLoggingIn = useRef(false)
-
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
     () => !!localStorage.getItem('token'),
@@ -71,16 +69,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isForcedLogout.current = false
 
     try {
-      const response = await apiClient.post<ApiResponseLoginResponse>(
-        '/auth/login',
-        credentials,
-      )
+      const response = await AuthApi.login(credentials)
 
-      const loginData = response.data.data
+      const loginData = response.data
       const token = loginData.accessToken
 
       if (!token) {
-        throw new Error(response.data.message || '응답에 토큰이 없습니다.')
+        throw new Error(response.message || '응답에 토큰이 없습니다.')
       }
 
       localStorage.setItem('user', JSON.stringify(loginData))
@@ -99,19 +94,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('로그인 실패:', error)
       throw new Error(
         error.response?.data?.message ||
+        error.message ||
         '로그인 중 오류가 발생했습니다.'
       )
     }
   }, [])
 
+  // 비밀번호 변경
   const changePassword = useCallback(async (data: ChangePasswordRequest) => {
     try {
-      const response = await apiClient.post<ApiResponseTokenResponse>(
-        '/auth/change-password',
-        data,
-      )
+      const response = await AuthApi.changePassword(data)
 
-      const newToken = response.data.data.accessToken
+      const newToken = response.data.accessToken
 
       if (!newToken) {
         throw new Error('새 토큰이 전달되지 않았습니다.')
@@ -126,7 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('user', JSON.stringify(updatedUser))
         setUser(updatedUser)
       }
-      return response.data
+      return response
 
     } catch (error: any) {
       console.error('비밀번호 변경 실패:', error)
@@ -142,7 +136,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoggingOut.current = true
 
     try {
-      await apiClient.post<ApiResponseVoid>('/auth/logout')
+      await AuthApi.logout()
     } catch (error) {
       console.warn('로그아웃 API 호출 실패 (토큰 만료 등):', error)
     } finally {
@@ -231,7 +225,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }, 50)
     }
-
 
     window.addEventListener('storage', handleStorageChange)
 

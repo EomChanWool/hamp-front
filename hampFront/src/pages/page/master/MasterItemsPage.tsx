@@ -16,7 +16,7 @@ import {
   type ApiResponsePageItemResponse,
   type ProductType,
   type ItemCategory,
-} from "@/types/master/Item";
+} from "@/api/master/Item";
 import { Badge } from "@/components/common/Badge";
 import Spinner from "@/components/common/Spinner";
 

@@ -8,8 +8,8 @@ import type {
   UserDetailResponse, 
   ApiResponseUserDetailResponse, 
   UserUpdateRequest 
-} from "@/types/User";
-import type { AuthGroupResponse, ApiResponseListAuthGroupResponse } from "@/types/auth/Auth";
+} from "@/api/User";
+import type { AuthGroupResponse, ApiResponseListAuthGroupResponse } from "@/api/auth/Auth";
 import Spinner from "@/components/common/Spinner";
 import './SystemUser.css';
 import { useNavigate } from "react-router-dom";

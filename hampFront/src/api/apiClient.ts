@@ -1,6 +1,6 @@
 import axios from 'axios'
 import type { NavigateFunction } from 'react-router-dom'
-import type { ApiResponseTokenResponse } from '@/types/auth/Auth'
+import type { ApiResponseTokenResponse } from '@/api/auth/Auth'
 
 declare module 'axios' {
   export interface InternalAxiosRequestConfig {

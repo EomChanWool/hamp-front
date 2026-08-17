@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { FolderIcon, FolderOpenIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { menuRoutes } from "@/router";
 import { apiClient } from "@/api/apiClient";
-import type { ApiResponseListMenuResponse, MenuResponse } from "@/types/Menu";
+import type { ApiResponseListMenuResponse, MenuResponse } from "@/api/Menu";
 import Spinner from "@/components/common/Spinner";
 import './Layout.css';
 

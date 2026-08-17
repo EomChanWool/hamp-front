@@ -15,9 +15,9 @@ import type {
     OperationUpdateRequest,
     OperationOptionResponse,
     ApiResponseListOperationOptionResponse,
-} from "@/types/master/Operation";
+} from "@/api/master/Operation";
 import Spinner from "@/components/common/Spinner";
-import type { ApiResponseListDepartmentOptionResponse, DepartmentOptionResponse } from "@/types/master/Department";
+import type { ApiResponseListDepartmentOptionResponse, DepartmentOptionResponse } from "@/api/master/Department";
 
 interface OperationCreateRequest extends OperationUpdateRequest {
     operCode: string;

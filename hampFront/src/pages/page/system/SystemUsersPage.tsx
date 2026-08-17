@@ -10,13 +10,12 @@ import {
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
 import { formatDateTime } from "@/utils/common";
-import { apiClient } from "@/api/apiClient";
 import { useTableSorting } from "@/hooks/useTableSorting";
 import type {
   UserResponse,
-  ApiResponsePageUserResponse,
-} from "@/types/User";
+} from "@/api/User";
 import Spinner from "@/components/common/Spinner";
+import { UserApi } from "@/api/User";
 
 export function SystemUsersPage() {
   const navigate = useNavigate();
@@ -72,7 +71,7 @@ export function SystemUsersPage() {
   }, [searchParams, isReady]);
 
   // URL에서 현재 검색조건 추출
-  const currentPage = Number( searchParams.get("page") || "0" );
+  const currentPage = Number(searchParams.get("page") || "0");
   const queryUserId = searchParams.get("userId") || "";
   const queryUserNm = searchParams.get("userNm") || "";
   const queryUserDep = searchParams.get("position") || "";
@@ -153,15 +152,8 @@ export function SystemUsersPage() {
         params.sort = sortParams;
       }
 
-      const response =
-        await apiClient.get<ApiResponsePageUserResponse>(
-          "/users",
-          {
-            params,
-          }
-        );
-
-      const pageData = response.data.data;
+      const response = await UserApi.getList(params);
+      const pageData = response.data;
 
       setUsers(pageData.content ?? []);
       setTotalElements(
@@ -232,7 +224,6 @@ export function SystemUsersPage() {
     setSearchParams(nextParams);
   };
 
-
   // 검색 초기화
   const handleReset = () => {
     if (userIdRef.current) {
@@ -267,7 +258,6 @@ export function SystemUsersPage() {
 
     setSearchParams(nextParams);
   };
-
 
   // 상세 페이지 이동
   const handleRowClick = (
