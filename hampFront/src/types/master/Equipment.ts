@@ -1,3 +1,4 @@
+import { apiClient } from '@/api/apiClient';
 import type { ApiResponse, ApiResponsePage, PageResponse } from '@/types/Common';
 
 /** 장비 등록 요청 */
@@ -65,3 +66,40 @@ export type ApiResponsePageEquipmentResponse = ApiResponsePage<EquipmentResponse
 
 /** 장비 옵션 목록 API 최종 응답 타입 */
 export type ApiResponseListEquipmentOptionResponse = ApiResponse<EquipmentOptionResponse[]>;
+
+// ── 장비 관리 API 함수 ────────────────────────────────────────────────────────
+
+export const EquipmentApi = {
+  /** 장비 목록 조회 */
+  getList: async (params?: {
+    eqCode?: string;
+    operCode?: string;
+    eqNm?: string;
+    eqType?: string;
+    manufacturer?: string;
+    [key: string]: any;
+  }): Promise<ApiResponsePageEquipmentResponse> => {
+    const res = await apiClient.get('/equipment', { params });
+    return res.data;
+  },
+
+  /** 장비 단건 상세 조회 */
+  getDetail: (eqCode: string): Promise<ApiResponseEquipmentDetailResponse> => 
+    apiClient.get(`/equipment/${eqCode}`),
+
+  /** 장비 등록 */
+  create: (data: EquipmentCreateRequest): Promise<ApiResponseEquipmentResponse> => 
+    apiClient.post('/equipment', data),
+
+  /** 장비 수정 */
+  update: (eqCode: string, data: EquipmentUpdateRequest): Promise<ApiResponseEquipmentResponse> => 
+    apiClient.put(`/equipment/${eqCode}`, data),
+
+  /** 장비 삭제 */
+  delete: (eqCode: string): Promise<ApiResponse<string>> => 
+    apiClient.delete(`/equipment/${eqCode}`),
+
+  /** 장비 셀렉트 옵션 조회 */
+  getOptions: (): Promise<ApiResponseListEquipmentOptionResponse> => 
+    apiClient.get('/equipment/options'),
+};

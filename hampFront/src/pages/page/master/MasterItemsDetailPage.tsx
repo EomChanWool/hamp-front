@@ -421,7 +421,7 @@ export function MasterItemsDetailPage() {
 
               {isEditing && routings.length > 0 && (
                 <div className="routingHint">
-                  💡 순서 변경: 아이템에 포커스 후 <kbd>Space</kbd>/<kbd>Enter</kbd>로 잡고 <kbd>방향키</kbd>로 이동하세요. (<kbd>ESC</kbd> 취소)
+                  💡 <kbd>방향키</kbd>로 공정 카드를 탐색하고, <kbd>Space</kbd>/<kbd>Enter</kbd>로 선택(잡기) 후 이동하세요. (<kbd>Esc</kbd> 취소)
                 </div>
               )}
 
@@ -449,7 +449,10 @@ export function MasterItemsDetailPage() {
                         ref={(el) => {
                           routingItemRefs.current[index] = el;
                         }}
-                        tabIndex={isEditing && !isBusy ? 0 : -1}
+                        // 수정 모드일 때만 0, 읽기 전용일 때는 tabIndex 자체를 없애서(undefined) 포커스 원천 차단
+                        tabIndex={isEditing && !isBusy ? 0 : undefined}
+                        role={isEditing ? "button" : undefined}
+                        aria-pressed={isEditing ? isKeyboardActive : undefined}
                         className={`routingItem 
                           ${isDragging ? "dragging" : ""} 
                           ${isTarget ? "dragTarget" : ""}
@@ -459,16 +462,35 @@ export function MasterItemsDetailPage() {
                         onMouseEnter={() => isEditing && !isBusy && handleMouseEnter(index)}
                         onKeyDown={(e) => {
                           if (!isEditing || isBusy) return;
-                          const nextIndex = handleKeyDown(e, index, 2);
-                          if (nextIndex !== index) {
-                            setTimeout(() => {
+
+                          // 1. 방향키 단독 입력 시 2D 그리드 포커스 이동 (상, 하, 좌, 우)
+                          if (keyboardActiveIndex === null && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+                            let nextIndex = index;
+                            const columns = 2; // 2열 그리드 구조
+
+                            switch (e.key) {
+                              case "ArrowUp": nextIndex = index - columns; break;
+                              case "ArrowDown": nextIndex = index + columns; break;
+                              case "ArrowLeft": nextIndex = index - 1; break;
+                              case "ArrowRight": nextIndex = index + 1; break;
+                            }
+
+                            if (nextIndex >= 0 && nextIndex < routings.length) {
+                              e.preventDefault();
                               routingItemRefs.current[nextIndex]?.focus();
-                            }, 0);
+                            }
+                            return;
+                          }
+
+                          // 2. Space/Enter 잡기·놓기 및 잡은 상태에서의 방향키 순서 변경 처리
+                          const nextIndex = handleKeyDown(e, index, 2);
+                          if (nextIndex !== undefined) {
+                             setTimeout(() => routingItemRefs.current[nextIndex]?.focus(), 0);
                           }
                         }}
                       >
                         {isEditing && (
-                          <span className="dragHandle" title="마우스로 잡고 이동하여 순서 변경">
+                          <span className="dragHandle" title="Space/Enter로 잡고 방향키로 이동">
                             ☰
                           </span>
                         )}
@@ -486,6 +508,7 @@ export function MasterItemsDetailPage() {
                             className="tableInput routingSelect"
                             value={route.finalYn ?? "N"}
                             disabled={isBusy}
+                            tabIndex={-1}
                             onChange={(e) =>
                               handleRoutingChange(index, "finalYn", e.target.value)
                             }
@@ -506,6 +529,7 @@ export function MasterItemsDetailPage() {
                             type="button"
                             className="miniButton danger"
                             disabled={isBusy}
+                            tabIndex={-1}
                             onClick={() => handleRemoveRouting(index)}
                           >
                             제외

@@ -1,3 +1,4 @@
+import { apiClient } from '@/api/apiClient';
 import type { ApiResponse, ApiResponsePage, PageResponse } from '@/types/Common';
 
 /** 종류 (0: 정지, 1: 작동, 2: 고장) */
@@ -10,11 +11,11 @@ export const STATUS_TYPE_LABEL: Record<StatusType, string> = {
     2: '고장'
 } as const;
 
-export const STATUS_TONE: Record<FacilityResponse['currentStatus'], 'good' | 'warn' | 'danger'> = {
+export const STATUS_TONE: Record<StatusType, 'good' | 'warn' | 'danger'> = {
   0: 'danger',
   1: 'good',
   2: 'warn',
-}
+} as const;
 
 /** 설비 등록 요청 */
 export interface FacilityCreateRequest {
@@ -76,3 +77,35 @@ export type PageFacilityResponse = PageResponse<FacilityResponse>;
 
 /** 설비 목록 페이징 API 최종 응답 타입 */
 export type ApiResponsePageFacilityResponse = ApiResponsePage<FacilityResponse>;
+
+// ── 설비 관리 API 함수 ────────────────────────────────────────────────────────
+
+export const FacilityApi = {
+  /** 설비 목록 조회 */
+  getList: async (params?: {
+    fcltNm?: string;
+    eqCode?: string;
+    currentStatus?: StatusType;
+    facCode?: string;
+    [key: string]: any;
+  }): Promise<ApiResponsePageFacilityResponse> => {
+    const res = await apiClient.get('/facilities', { params });
+    return res.data;
+  },
+
+  /** 설비 단건 상세 조회 */
+  getDetail: (fcltCode: string): Promise<ApiResponseFacilityDetailResponse> =>
+    apiClient.get(`/facilities/${fcltCode}`),
+
+  /** 설비 등록 */
+  create: (data: FacilityCreateRequest): Promise<ApiResponseFacilityResponse> =>
+    apiClient.post('/facilities', data),
+
+  /** 설비 수정 */
+  update: (fcltCode: string, data: FacilityUpdateRequest): Promise<ApiResponseFacilityResponse> =>
+    apiClient.put(`/facilities/${fcltCode}`, data),
+
+  /** 설비 삭제 */
+  delete: (fcltCode: string): Promise<ApiResponse<string>> =>
+    apiClient.delete(`/facilities/${fcltCode}`),
+};
