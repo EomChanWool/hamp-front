@@ -880,6 +880,18 @@ textarea.tableInput {
   width: 16px;
 }
 
+[data-theme="dark"] .resetButton {
+  background: #334155;
+  border-color: #475569;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .resetButton:hover {
+  background: #3f4c60;
+  border-color: #64748b;
+  color: #f8fafc;
+}
+
 .searchBand .searchBandTop h2 {
   display: flex;
   align-items: center;
