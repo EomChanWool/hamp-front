@@ -6,21 +6,15 @@ import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
 import { formatDateTime } from "@/utils/common";
-import { apiClient } from "@/api/apiClient";
 import axios from "axios";
-import type {
-  FactoryZoneResponse,
-  ApiResponseFactoryZoneResponse,
-  ApiResponsePageFactoryZoneResponse,
-  FactoryZoneUpdateRequest,
-  FactoryZoneOptionResponse,
-  ApiResponseListFactoryZoneOptionResponse,
+import {
+  FactoryZoneApi,
+  type FactoryZoneResponse,
+  type FactoryZoneUpdateRequest,
+  type FactoryZoneOptionResponse,
+  type FactoryZoneCreateRequest,
 } from "@/api/master/FactoryZone";
 import Spinner from "@/components/common/Spinner";
-
-interface FactoryZoneCreateRequest extends FactoryZoneUpdateRequest {
-  facCode: string;
-}
 
 export function MasterFactoryZonePage() {
   const [factoryZones, setFactoryZones] = useState<FactoryZoneResponse[]>([]);
@@ -78,13 +72,11 @@ export function MasterFactoryZonePage() {
   const locationRef = useRef<HTMLInputElement>(null);
   const useYnRef = useRef<HTMLSelectElement>(null);
 
-   // 부서 옵션 API 호출
+  // 공장 옵션 API 호출
   const loadFactoryZoneOptions = useCallback(async () => {
     try {
-      const response = await apiClient.get<ApiResponseListFactoryZoneOptionResponse>(
-        "/factory-zones/options"
-      );
-      setFactoryZonesOptions(response.data.data ?? []);
+      const response = await FactoryZoneApi.getOptions();
+      setFactoryZonesOptions(response.data ?? []);
     } catch (error) {
       console.error("공장 옵션 목록 조회 실패:", error);
     }
@@ -96,7 +88,7 @@ export function MasterFactoryZonePage() {
 
   // 검색 필드 정의
   const searchFields: SearchField[] = [
-     {
+    {
       type: "select",
       label: "공장코드",
       ref: facCodeRef as any,
@@ -139,14 +131,12 @@ export function MasterFactoryZonePage() {
         params.sort = sortParams;
       }
 
-      const response = await apiClient.get<ApiResponsePageFactoryZoneResponse>("/factory-zones", {
-        params,
-      });
+      const response = await FactoryZoneApi.getList(params);
 
-      const pageData = response.data.data;
-      setFactoryZones(pageData.content ?? []);
-      setTotalElements(pageData.totalElements ?? 0);
-      setTotalPages(pageData.totalPages ?? 0);
+      const pageData = response.data;
+      setFactoryZones(pageData?.content ?? []);
+      setTotalElements(pageData?.totalElements ?? 0);
+      setTotalPages(pageData?.totalPages ?? 0);
     } catch (error) {
       console.error("공장 목록 조회 실패:", error);
       window.alert("데이터를 불러오는 중 오류가 발생했습니다.");
@@ -230,9 +220,9 @@ export function MasterFactoryZonePage() {
         note: editFormRef.current.note?.trim() || null,
       };
 
-      const response = await apiClient.post<ApiResponseFactoryZoneResponse>("/factory-zones", payload);
+      const response = await FactoryZoneApi.create(payload);
 
-      window.alert(response.data?.message || "등록되었습니다.");
+      window.alert(response?.message || "등록되었습니다.");
       setIsCreatingNewRow(false);
 
       if (facCodeRef.current) facCodeRef.current.value = "";
@@ -285,13 +275,9 @@ export function MasterFactoryZonePage() {
         note: editFormRef.current.note?.trim() ? editFormRef.current.note.trim() : null,
       };
 
-      const encodedFacCode = encodeURIComponent(facCode);
-      const response = await apiClient.put<ApiResponseFactoryZoneResponse>(
-        `/factory-zones/${encodedFacCode}`,
-        updatePayload
-      );
+      const response = await FactoryZoneApi.update(facCode, updatePayload);
 
-      window.alert(response.data?.message || "수정되었습니다.");
+      window.alert(response?.message || "수정되었습니다.");
       setEditingFacCode(null);
       setRefreshKey((prev) => prev + 1);
     } catch (err) {
@@ -314,8 +300,7 @@ export function MasterFactoryZonePage() {
 
     setIsDeletingFacCode(row.facCode);
     try {
-      const encodedFacCode = encodeURIComponent(row.facCode);
-      await apiClient.delete(`/factory-zones/${encodedFacCode}`);
+      await FactoryZoneApi.delete(row.facCode);
 
       window.alert("공장이 삭제(비활성화)되었습니다.");
       setRefreshKey((prev) => prev + 1);
