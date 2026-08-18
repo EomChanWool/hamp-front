@@ -1,10 +1,11 @@
 import { useEffect, useState, type SyntheticEvent } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Panel } from "@components/card/Panel";
-import { apiClient } from "@/api/apiClient";
 import axios from "axios";
-import type { UserCreateRequest } from "@/types/User";
-import type { AuthGroupResponse, ApiResponseListAuthGroupResponse } from "@/types/auth/Auth";
+import type { UserCreateRequest } from "@/api/User";
+import type { AuthGroupResponse } from "@/api/auth/Auth";
+import { AuthGroupApi } from "@/api/auth/Auth"; 
+import { UserApi } from "@/api/User"; 
 import './SystemUser.css';
 
 export function SystemUsersCreatePage() {
@@ -29,9 +30,9 @@ export function SystemUsersCreatePage() {
     const loadAuthGroups = async () => {
       setIsLoadingGroups(true);
       try {
-        const response = await apiClient.get<ApiResponseListAuthGroupResponse>("/auth-groups");
+        const response = await AuthGroupApi.getList();
         if (isMounted) {
-          setAuthGroups(response.data.data ?? []);
+          setAuthGroups(response.data ?? []);
         }
       } catch (error) {
         console.error("권한 그룹 목록 조회 실패:", error);
@@ -106,7 +107,7 @@ export function SystemUsersCreatePage() {
 
     setIsSubmitting(true);
     try {
-      await apiClient.post("/users", payload);
+      await UserApi.create(payload);
       alert("성공적으로 등록되었습니다.");
       
       // [등록 완료 시] 검색 조건을 초기화하고 목록으로 이동

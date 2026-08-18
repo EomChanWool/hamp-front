@@ -1,5 +1,5 @@
 import { apiClient } from '@/api/apiClient';
-import type { ApiResponse, ApiResponsePage, PageResponse } from '@/types/Common';
+import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
 // 도메인 상수 및 타입 (Literal Types)
 

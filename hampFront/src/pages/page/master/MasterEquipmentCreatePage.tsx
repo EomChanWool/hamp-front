@@ -6,8 +6,8 @@ import axios from "axios";
 import type {
   EquipmentCreateRequest,
   ApiResponseEquipmentResponse
-} from "@/types/master/Equipment";
-import type { ApiResponseListOperationOptionResponse, OperationOptionResponse } from "@/types/master/Operation";
+} from "@/api/master/Equipment";
+import type { ApiResponseListOperationOptionResponse, OperationOptionResponse } from "@/api/master/Operation";
 
 export function MasterEquipmentCreatePage() {
   const navigate = useNavigate();

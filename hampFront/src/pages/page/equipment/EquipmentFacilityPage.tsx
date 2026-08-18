@@ -14,11 +14,11 @@ import type {
   FacilityResponse,
   ApiResponsePageFacilityResponse,
   StatusType,
-} from "@/types/equipment/Facility";
-import { STATUS_TONE, STATUS_TYPE_LABEL } from "@/types/equipment/Facility";
+} from "@/api/equipment/Facility";
+import { STATUS_TONE, STATUS_TYPE_LABEL } from "@/api/equipment/Facility";
 import { Badge } from "@/components/common/Badge";
-import type { ApiResponseListEquipmentOptionResponse } from "@/types/master/Equipment";
-import type { ApiResponseListFactoryZoneOptionResponse, FactoryZoneOptionResponse } from "@/types/master/FactoryZone";
+import type { ApiResponseListEquipmentOptionResponse } from "@/api/master/Equipment";
+import type { ApiResponseListFactoryZoneOptionResponse, FactoryZoneOptionResponse } from "@/api/master/FactoryZone";
 
 export function EquipmentFacilityPage() {
   const navigate = useNavigate();
@@ -77,13 +77,11 @@ export function EquipmentFacilityPage() {
   const queryEqCode = searchParams.get("eqCode") || "";
   const queryFacCode = searchParams.get("facCode") || "";
   const queryCurrentStatus = searchParams.get("currentStatus") || "";
-  const queryFcltCode = searchParams.get("fcltCode") || "";
 
   const fcltNmRef = useRef<HTMLInputElement>(null);
   const eqCodeRef = useRef<HTMLSelectElement>(null);
   const facCodeRef = useRef<HTMLSelectElement>(null);
   const currentStatusRef = useRef<HTMLSelectElement>(null);
-  const fcltCodeRef = useRef<HTMLInputElement>(null);
 
   const fetchOptions = useCallback(async () => {
     try {
@@ -139,7 +137,6 @@ export function EquipmentFacilityPage() {
         { label: "고장", value: "2" },
       ],
     },
-    { type: "input", label: "설비코드", ref: fcltCodeRef, name: "fcltCode" },
   ];
 
   useEffect(() => {
@@ -147,13 +144,11 @@ export function EquipmentFacilityPage() {
     if (eqCodeRef.current) eqCodeRef.current.value = queryEqCode;
     if (facCodeRef.current) facCodeRef.current.value = queryFacCode;
     if (currentStatusRef.current) currentStatusRef.current.value = queryCurrentStatus;
-    if (fcltCodeRef.current) fcltCodeRef.current.value = queryFcltCode;
   }, [
     queryFcltNm,
     queryEqCode,
     queryFacCode,
     queryCurrentStatus,
-    queryFcltCode,
     equipmentOptions,
     factoryZoneOptions,
   ]);
@@ -174,7 +169,6 @@ export function EquipmentFacilityPage() {
       if (queryEqCode) params.eqCode = queryEqCode;
       if (queryFacCode) params.facCode = queryFacCode;
       if (queryCurrentStatus) params.currentStatus = Number(queryCurrentStatus);
-      if (queryFcltCode) params.fcltCode = queryFcltCode;
 
       // 정렬 파라미터 반영
       if (sortParams.length > 0) {
@@ -202,7 +196,6 @@ export function EquipmentFacilityPage() {
     queryEqCode,
     queryFacCode,
     queryCurrentStatus,
-    queryFcltCode,
     sortParams,
   ]);
 
@@ -218,7 +211,6 @@ export function EquipmentFacilityPage() {
     const eqCode = eqCodeRef.current?.value.trim() || "";
     const facCode = facCodeRef.current?.value.trim() || "";
     const currentStatus = currentStatusRef.current?.value.trim() || "";
-    const fcltCode = fcltCodeRef.current?.value.trim() || "";
 
     if (fcltNm) nextParams.set("fcltNm", fcltNm);
     else nextParams.delete("fcltNm");
@@ -232,14 +224,12 @@ export function EquipmentFacilityPage() {
     if (currentStatus) nextParams.set("currentStatus", currentStatus);
     else nextParams.delete("currentStatus");
 
-    if (fcltCode) nextParams.set("fcltCode", fcltCode);
-    else nextParams.delete("fcltCode");
 
     setSearchParams(nextParams);
   };
 
   const handleReset = () => {
-    [fcltNmRef, fcltCodeRef].forEach((ref) => {
+    [fcltNmRef].forEach((ref) => {
       if (ref.current) ref.current.value = "";
     });
     [eqCodeRef, facCodeRef, currentStatusRef].forEach((ref) => {

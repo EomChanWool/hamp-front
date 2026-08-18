@@ -9,9 +9,9 @@ import type {
   ApiResponseEquipmentDetailResponse,
   ApiResponseEquipmentResponse,
   EquipmentUpdateRequest,
-} from "@/types/master/Equipment";
+} from "@/api/master/Equipment";
 import Spinner from "@/components/common/Spinner";
-import type { ApiResponseListOperationOptionResponse, OperationOptionResponse } from "@/types/master/Operation";
+import type { ApiResponseListOperationOptionResponse, OperationOptionResponse } from "@/api/master/Operation";
 
 type Field = {
   label: string;

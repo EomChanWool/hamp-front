@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ItemRoutingRequest } from "@/types/master/Item";
+import type { ItemRoutingRequest } from "@/api/master/Item";
 
 export function useItemRoutings() {
   const [routings, setRoutings] = useState<ItemRoutingRequest[]>([]);

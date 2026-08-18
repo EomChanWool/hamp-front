@@ -11,10 +11,10 @@ import { CusPagination } from "@components/table/CusPagination";
 import { formatDateTime } from "@/utils/common";
 import { useTableSorting } from "@/hooks/useTableSorting";
 
-import type { EquipmentResponse } from "@/types/master/Equipment";
-import { EquipmentApi } from "@/types/master/Equipment";
-import type { OperationOptionResponse } from "@/types/master/Operation";
-import { OperationApi } from "@/types/master/Operation";
+import type { EquipmentResponse } from "@/api/master/Equipment";
+import { EquipmentApi } from "@/api/master/Equipment";
+import type { OperationOptionResponse } from "@/api/master/Operation";
+import { OperationApi } from "@/api/master/Operation";
 import Spinner from "@/components/common/Spinner";
 
 export function MasterEquipmentPage() {

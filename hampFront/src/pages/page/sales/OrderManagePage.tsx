@@ -7,7 +7,77 @@ import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
 import { paginate } from '@/utils/common'
-import { type OrderManageRow, type OrderManageSearchParams, mockOrderManage } from '@/types/sales/Sales'
+
+// 컴포넌트 내부에서 사용할 타입 직접 정의
+export interface OrderManageRow {
+  id: string
+  client: string
+  orderNo: string
+  clientManager: string
+  productItem: string
+  quantity: string
+  orderAmount: string
+  dueDate: string
+  status: string
+  manager: string
+  note?: string
+}
+
+export interface OrderManageSearchParams {
+  client?: string
+  orderNo?: string
+  clientManager?: string
+  productItem?: string
+  quantity?: string
+  orderAmount?: string
+  dueDate?: string
+  status?: string
+  manager?: string
+  note?: string
+}
+
+// 자체 내장 더미 데이터
+const INITIAL_MOCK_ORDERS: OrderManageRow[] = [
+  {
+    id: '1',
+    client: '그린팜 농협',
+    orderNo: 'ORD-2026-0001',
+    clientManager: '박과장',
+    productItem: '방울토마토 씨드 A',
+    quantity: '1,000',
+    orderAmount: '5,000,000원',
+    dueDate: '2026-06-30',
+    status: '진행중',
+    manager: '김철수',
+    note: '우선 납품 요청',
+  },
+  {
+    id: '2',
+    client: '푸른들 영농조합',
+    orderNo: 'ORD-2026-0002',
+    clientManager: '최팀장',
+    productItem: '청상추 씨드 B',
+    quantity: '500',
+    orderAmount: '2,500,000원',
+    dueDate: '2026-07-05',
+    status: '완료',
+    manager: '이영희',
+    note: '정상 납품 완료',
+  },
+  {
+    id: '3',
+    client: '한라 생태농원',
+    orderNo: 'ORD-2026-0003',
+    clientManager: '오대리',
+    productItem: '파프리카 씨드 C',
+    quantity: '800',
+    orderAmount: '6,400,000원',
+    dueDate: '2026-07-15',
+    status: '진행중',
+    manager: '관리자',
+    note: '특수 포장 요구',
+  },
+]
 
 export function OrderManagePage() {
   const [orders, setOrders] = useState<OrderManageRow[]>([])
@@ -28,25 +98,24 @@ export function OrderManagePage() {
   const noteRef = useRef<HTMLInputElement>(null)
 
   const searchFields: SearchField[] = [
-    { type: 'input', label: '거래처', ref: clientRef, name: "equipmentName" },
-    { type: 'input', label: '수주번호', ref: orderNoRef, name: "equipmentName" },
-    { type: 'input', label: '거래처담당자', ref: clientManagerRef, name: "equipmentName" },
-    { type: 'input', label: '생산품목', ref: productItemRef, name: "equipmentName" },
-    { type: 'input', label: '생산량', ref: quantityRef, name: "equipmentName" },
-    { type: 'input', label: '수주금액', ref: orderAmountRef, name: "equipmentName" },
-    { type: 'input', label: '납기일', ref: dueDateRef, name: "equipmentName" },
-    { type: 'input', label: '상태', ref: statusRef, name: "equipmentName" },
-    { type: 'input', label: '담당자', ref: managerRef, name: "equipmentName" },
-    { type: 'input', label: '비고', ref: noteRef, name: "equipmentName" },
+    { type: 'input', label: '거래처', ref: clientRef, name: "client" },
+    { type: 'input', label: '수주번호', ref: orderNoRef, name: "orderNo" },
+    { type: 'input', label: '거래처담당자', ref: clientManagerRef, name: "clientManager" },
+    { type: 'input', label: '생산품목', ref: productItemRef, name: "productItem" },
+    { type: 'input', label: '생산량', ref: quantityRef, name: "quantity" },
+    { type: 'input', label: '수주금액', ref: orderAmountRef, name: "orderAmount" },
+    { type: 'input', label: '납기일', ref: dueDateRef, name: "dueDate" },
+    { type: 'input', label: '상태', ref: statusRef, name: "status" },
+    { type: 'input', label: '담당자', ref: managerRef, name: "manager" },
+    { type: 'input', label: '비고', ref: noteRef, name: "note" },
   ]
 
   const loadOrder = async (params: OrderManageSearchParams) => {
     setIsLoading(true)
     try {
-      // -------------------------------------------------------------
-      // [개발용 Mock Mode] 백엔드 연결 후 아래 블록은 삭제/주석 처리하세요.
       await new Promise((resolve) => setTimeout(resolve, 300))
-      let filtered = [...mockOrderManage]
+      let filtered = [...INITIAL_MOCK_ORDERS]
+      
       if (params) {
         filtered = filtered.filter(
           (item) =>
@@ -59,18 +128,10 @@ export function OrderManagePage() {
             (!params.dueDate || item.dueDate.includes(params.dueDate)) &&
             (!params.status || item.status.includes(params.status)) &&
             (!params.manager || item.manager.includes(params.manager)) &&
-            (!params.note || item.note.includes(params.note)),
+            (!params.note || (item.note ?? '').includes(params.note)),
         )
       }
       setOrders(filtered)
-      // -------------------------------------------------------------
-
-      /*
-      // [실제 API 호출 Mode] 백엔드 완공 시 주석 해제하여 사용
-      const response = await apiClient.get<OrderManageRow[]>('/sales/order-manage', { params })
-      setOrders(response.data)
-      */
-
       setCurrentPage(0)
     } catch (error) {
       console.error(error)
@@ -121,15 +182,7 @@ export function OrderManagePage() {
   const handleDelete = async (item: OrderManageRow) => {
     if (window.confirm(`${item.orderNo} 수주를 삭제할까요?`)) {
       try {
-        // [개발용 Mock Mode]
         setOrders((prev) => prev.filter((i) => i.id !== item.id))
-
-        /*
-        // [실제 API 호출 Mode]
-        await apiClient.delete(`/sales/order-manage/${item.id}`)
-        loadOrder(searchParams) // 삭제 후 re-fetch
-        */
-
         window.alert('삭제되었습니다.')
       } catch (err) {
         console.error(err)
@@ -141,17 +194,9 @@ export function OrderManagePage() {
   const handleSave = async (updated: Record<string, string>) => {
     if (!modalOrder) return
     try {
-      // [개발용 Mock Mode]
       setOrders((prev) =>
         prev.map((i) => (i.id === modalOrder.id ? { ...i, ...updated } : i)),
       )
-
-      /*
-      // [실제 API 호출 Mode]
-      await apiClient.put(`/sales/order-manage/${modalOrder.id}`, updated)
-      loadOrder(searchParams) // 수정 후 re-fetch
-      */
-
       window.alert('저장되었습니다.')
       setModalOrder(null)
     } catch (err) {
@@ -231,7 +276,7 @@ export function OrderManagePage() {
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="수주관리 목록" action="등록" onAction={() => window.alert('등록 기능은 API 연동 후 사용 가능합니다.')}>
+      <Panel title="수주관리 목록" action="등록" onAction={() => window.alert('등록 기능은 준비 중입니다.')}>
         {isLoading ? (
           <div className="py-10 text-center text-gray-500">데이터를 불러오는 중입니다...</div>
         ) : (

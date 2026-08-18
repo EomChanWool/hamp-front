@@ -15,7 +15,7 @@ import type {
   FactoryZoneUpdateRequest,
   FactoryZoneOptionResponse,
   ApiResponseListFactoryZoneOptionResponse,
-} from "@/types/master/FactoryZone";
+} from "@/api/master/FactoryZone";
 import Spinner from "@/components/common/Spinner";
 
 interface FactoryZoneCreateRequest extends FactoryZoneUpdateRequest {

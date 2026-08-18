@@ -7,9 +7,9 @@ import type {
     FacilityCreateRequest,
     ApiResponseFacilityResponse,
     StatusType
-} from "@/types/equipment/Facility";
-import type { ApiResponseListEquipmentOptionResponse, EquipmentOptionResponse } from "@/types/master/Equipment";
-import type { ApiResponseListFactoryZoneOptionResponse, FactoryZoneOptionResponse } from "@/types/master/FactoryZone";
+} from "@/api/equipment/Facility";
+import type { ApiResponseListEquipmentOptionResponse, EquipmentOptionResponse } from "@/api/master/Equipment";
+import type { ApiResponseListFactoryZoneOptionResponse, FactoryZoneOptionResponse } from "@/api/master/FactoryZone";
 
 export function EquipmentFacilityCreatePage() {
     const navigate = useNavigate();

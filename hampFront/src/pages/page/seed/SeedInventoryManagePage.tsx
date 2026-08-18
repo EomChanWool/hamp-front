@@ -6,7 +6,69 @@ import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
 import { paginate } from '@/utils/common'
-import { type SeedInventoryRow, type SeedInventorySearchParams, mockSeedInventory } from '@/types/seed/Seed'
+
+// 컴포넌트 내부에서 사용할 타입 직접 정의
+export interface SeedInventoryRow {
+  id: string
+  processDate: string
+  processType: string
+  itemName: string
+  quantity: number
+  unit: string
+  manager: string
+  note?: string
+}
+
+export interface SeedInventorySearchParams {
+  startDate?: string
+  endDate?: string
+  processType?: string
+  itemName?: string
+}
+
+// 자체 내장 더미 데이터
+const INITIAL_MOCK_DATA: SeedInventoryRow[] = [
+  {
+    id: '1',
+    processDate: '2026-06-01',
+    processType: '입고',
+    itemName: '방울토마토 씨드 A',
+    quantity: 500,
+    unit: '봉지',
+    manager: '김철수',
+    note: '초기 물량 입고',
+  },
+  {
+    id: '2',
+    processDate: '2026-06-03',
+    processType: '출고',
+    itemName: '방울토마토 씨드 A',
+    quantity: 120,
+    unit: '봉지',
+    manager: '이영희',
+    note: '1하우스 파종용 출고',
+  },
+  {
+    id: '3',
+    processDate: '2026-06-05',
+    processType: '조정',
+    itemName: '청상추 씨드 B',
+    quantity: -15,
+    unit: '팩',
+    manager: '관리자',
+    note: '재고 조사 중 파손 폐기',
+  },
+  {
+    id: '4',
+    processDate: '2026-06-10',
+    processType: '입고',
+    itemName: '청상추 씨드 B',
+    quantity: 300,
+    unit: '팩',
+    manager: '김철수',
+    note: '정기 구매 입고',
+  },
+]
 
 const PROCESS_TYPE_COLORS: Record<string, string> = {
   입고: '#34d399',
@@ -21,7 +83,6 @@ export function SeedInventoryManagePage() {
   const [modalSeedInventory, setModalSeedInventory] = useState<SeedInventoryRow | null>(null)
   const [currentPage, setCurrentPage] = useState(0)
 
-
   const processStartRef = useRef<HTMLInputElement>(null)
   const processEndRef = useRef<HTMLInputElement>(null)
   const processTypeRef = useRef<HTMLInputElement>(null)
@@ -29,17 +90,16 @@ export function SeedInventoryManagePage() {
 
   const searchFields: SearchField[] = [
     { type: 'date', label: '처리', startRef: processStartRef, endRef: processEndRef },
-    { type: 'input', label: '처리구분', ref: processTypeRef, name: "equipmentName" },
-    { type: 'input', label: '품목명', ref: itemNameRef, name: "equipmentName" },
+    { type: 'input', label: '처리구분', ref: processTypeRef, name: "processType" },
+    { type: 'input', label: '품목명', ref: itemNameRef, name: "itemName" },
   ]
 
   const loadSeedInventory = async (params: SeedInventorySearchParams) => {
     setIsLoading(true)
     try {
-      // -------------------------------------------------------------
-      // [개발용 Mock Mode] 백엔드 연결 후 아래 블록은 삭제/주석 처리하세요.
       await new Promise((resolve) => setTimeout(resolve, 300))
-      let filtered = [...mockSeedInventory]
+      let filtered = [...INITIAL_MOCK_DATA]
+      
       if (params) {
         filtered = filtered.filter(
           (item) =>
@@ -50,14 +110,6 @@ export function SeedInventoryManagePage() {
         )
       }
       setSeedInventory(filtered)
-      // -------------------------------------------------------------
-
-      /*
-      // [실제 API 호출 Mode] 백엔드 완공 시 주석 해제하여 사용
-      const response = await apiClient.get<SeedInventoryRow[]>('/seed/inv-manage', { params })
-      setSeedInventory(response.data)
-      */
-
       setCurrentPage(0)
     } catch (error) {
       console.error(error)
@@ -84,24 +136,16 @@ export function SeedInventoryManagePage() {
   const handleReset = () => {
     if (processStartRef.current) processStartRef.current.value = ''
     if (processEndRef.current) processEndRef.current.value = ''
-      ;[processTypeRef, itemNameRef].forEach((ref) => {
-        if (ref.current) ref.current.value = ''
-      })
+    ;[processTypeRef, itemNameRef].forEach((ref) => {
+      if (ref.current) ref.current.value = ''
+    })
     setSearchParams({})
   }
 
   const handleDelete = async (item: SeedInventoryRow) => {
     if (window.confirm(`${item.processDate} ${item.itemName} 내역을 삭제할까요?`)) {
       try {
-        // [개발용 Mock Mode]
         setSeedInventory((prev) => prev.filter((i) => i.id !== item.id))
-
-        /*
-        // [실제 API 호출 Mode]
-        await apiClient.delete(`/seed/inv-manage/${item.id}`)
-        loadSeedInventory(searchParams) // 삭제 후 re-fetch
-        */
-
         window.alert('삭제되었습니다.')
       } catch (err) {
         console.error(err)
@@ -113,16 +157,17 @@ export function SeedInventoryManagePage() {
   const handleSave = async (updated: Record<string, string>) => {
     if (!modalSeedInventory) return
     try {
-      // [개발용 Mock Mode]
       setSeedInventory((prev) =>
-        prev.map((i) => (i.id === modalSeedInventory.id ? { ...i, ...updated } : i)),
+        prev.map((i) => 
+          i.id === modalSeedInventory.id 
+            ? { 
+                ...i, 
+                ...updated, 
+                quantity: updated.quantity ? Number(updated.quantity) : i.quantity 
+              } 
+            : i
+        ),
       )
-
-      /*
-      // [실제 API 호출 Mode]
-      await apiClient.put(`/seed/inv-manage/${modalSeedInventory.id}`, updated)
-      loadSeedInventory(searchParams) // 수정 후 re-fetch
-      */
 
       window.alert('저장되었습니다.')
       setModalSeedInventory(null)
@@ -132,8 +177,7 @@ export function SeedInventoryManagePage() {
     }
   }
 
-  const { totalPages, pagedData } = paginate(seedInventory, currentPage);
-  
+  const { totalPages, pagedData } = paginate(seedInventory, currentPage)
 
   const columns: ColumnDef<SeedInventoryRow>[] = useMemo(
     () => [
@@ -199,7 +243,7 @@ export function SeedInventoryManagePage() {
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="씨드 재고관리 목록" action="등록" onAction={() => window.alert('등록 기능은 API 연동 후 사용 가능합니다.')}>
+      <Panel title="씨드 재고관리 목록" action="등록" onAction={() => window.alert('등록 기능은 준비 중입니다.')}>
         {isLoading ? (
           <div className="py-10 text-center text-gray-500">데이터를 불러오는 중입니다...</div>
         ) : (

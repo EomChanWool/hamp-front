@@ -14,7 +14,7 @@ import {
   type ProductType,
   type ItemCategory,
   type ItemRoutingRequest,
-} from "@/types/master/Item";
+} from "@/api/master/Item";
 import Spinner from "@/components/common/Spinner";
 import { OperationSelectModal } from "@/components/common/OperationSelectModal"; 
 import { useItemRoutings } from "@/hooks/useItemRoutings";

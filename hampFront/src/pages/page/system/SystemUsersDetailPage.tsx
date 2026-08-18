@@ -3,16 +3,16 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Panel } from "@components/card/Panel";
 import { Badge } from "@components/common/Badge";
 import { formatDateTime } from "@/utils/common";
-import { apiClient } from "@/api/apiClient";
 import axios from "axios";
 import type { 
   UserDetailResponse, 
-  ApiResponseUserDetailResponse, 
   UserUpdateRequest 
-} from "@/types/User";
-import type { AuthGroupResponse, ApiResponseListAuthGroupResponse } from "@/types/auth/Auth";
+} from "@/api/User";
+import type { AuthGroupResponse } from "@/api/auth/Auth";
 import Spinner from "@/components/common/Spinner";
-import './SystemUser.css'
+import { UserApi } from "@/api/User"; 
+import { AuthGroupApi } from "@/api/auth/Auth";
+import './SystemUser.css';
 
 export function SystemUserDetailPage() {
   const { userId } = useParams<{ userId: string }>();
@@ -49,9 +49,9 @@ export function SystemUserDetailPage() {
     const loadAuthGroups = async () => {
       setIsLoadingGroups(true);
       try {
-        const response = await apiClient.get<ApiResponseListAuthGroupResponse>("/auth-groups");
+        const response = await AuthGroupApi.getList();
         if (isMounted) {
-          setAuthGroups(response.data.data ?? []);
+          setAuthGroups(response.data ?? []);
         }
       } catch (error) {
         console.error("권한 그룹 목록 조회 실패:", error);
@@ -73,8 +73,8 @@ export function SystemUserDetailPage() {
 
       try {
         const encodedUserId = encodeURIComponent(userId);
-        const response = await apiClient.get<ApiResponseUserDetailResponse>(`/users/${encodedUserId}`);
-        const userData = response.data.data;
+        const response = await UserApi.getDetail(encodedUserId);
+        const userData = response.data;
 
         if (userData && isMounted) {
           setUser(userData);
@@ -155,7 +155,7 @@ export function SystemUserDetailPage() {
       };
 
       const encodedUserId = encodeURIComponent(user.userId);
-      await apiClient.put(`/users/${encodedUserId}`, updatePayload);
+      await UserApi.update(encodedUserId, updatePayload);
 
       alert("수정되었습니다.");
       
@@ -167,7 +167,7 @@ export function SystemUserDetailPage() {
 
       setUser((prev) => prev ? { 
         ...prev, 
-        userNm: updatePayload.userNm,
+        userNm: updatePayload.userNm ?? "",
         phone: updatePayload.phone ?? "",
         position: updatePayload.position ?? "",
         authGroups: updatedAuthGroups,
@@ -195,7 +195,7 @@ export function SystemUserDetailPage() {
     setIsDeactivating(true);
     try {
       const encodedUserId = encodeURIComponent(user.userId);
-      await apiClient.delete(`/users/${encodedUserId}`);
+      await UserApi.delete(encodedUserId);
       alert("회원이 비활성화되었습니다.");
       navigate({ pathname: "/system/users", search: location.search });
     } catch (error) {

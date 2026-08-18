@@ -1,5 +1,5 @@
 import { apiClient } from '@/api/apiClient';
-import type { ApiResponse, ApiResponsePage, PageResponse } from '@/types/Common';
+import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
 /** 장비 등록 요청 */
 export interface EquipmentCreateRequest {

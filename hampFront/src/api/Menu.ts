@@ -1,4 +1,5 @@
-import type { ApiResponse } from '@/types/Common';
+import { apiClient } from '@/api/apiClient';
+import type { ApiResponse } from '@/api/Common';
 
 /** 메뉴 권한 요청 타입 */
 export interface MenuPermissionRequest {
@@ -36,3 +37,19 @@ export interface MenuResponse {
 
 /** 메뉴 목록 조회 API 최종 응답 타입 */
 export type ApiResponseListMenuResponse = ApiResponse<MenuResponse[]>;
+
+// ── 메뉴 관리 API 함수 ────────────────────────────────────────────────────────
+
+export const MenuApi = {
+  /** 전체 메뉴 목록 조회 */
+  getList: async (): Promise<ApiResponseListMenuResponse> => {
+    const res = await apiClient.get('/menus');
+    return res.data;
+  },
+
+  /** 내 메뉴 목록 조회 */
+  getMyList: async (): Promise<ApiResponseListMenuResponse> => {
+    const res = await apiClient.get('/menus/my');
+    return res.data;
+  },
+};

@@ -1,6 +1,6 @@
 // hooks/usePermission.ts
 import { useState, useCallback, useMemo } from "react";
-import type { MenuResponse } from "@/types/Menu";
+import type { MenuResponse } from "@/api/Menu";
 
 export const PERMISSIONS = [
   { label: "조회", key: "read" },

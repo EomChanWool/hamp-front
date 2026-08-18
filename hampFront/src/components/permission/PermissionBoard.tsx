@@ -15,8 +15,8 @@ import type {
   ApiResponseListAuthGroupResponse,
   ApiResponseAuthGroupDetailResponse,
   AuthGroupUpdateRequest,
-} from "@/types/auth/Auth";
-import type { MenuPermissionRequest, MenuResponse, ApiResponseListMenuResponse } from "@/types/Menu";
+} from "@/api/auth/Auth";
+import type { MenuPermissionRequest, MenuResponse, ApiResponseListMenuResponse } from "@/api/Menu";
 import { usePermission, PERMISSIONS } from "@/hooks/usePermission";
 import type { CheckState, PermRecord } from "@/hooks/usePermission";
 import "./PermissonBoard.css";
