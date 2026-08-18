@@ -210,7 +210,7 @@ export function SystemUserPermissionsCreatePage() {
         return true;
     };
 
-    // 2. 권한 그룹 생성 처리 (AuthGroupApi 활용)
+    // 2. 권한 그룹 생성 처리
     const handleSubmit = async (e: SyntheticEvent) => {
         e.preventDefault();
         if (!validateForm()) return;

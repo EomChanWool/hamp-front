@@ -207,7 +207,7 @@ export function PermissionBoard() {
         setIsEditing(false);
     };
 
-    // 권한 그룹 삭제 핸들러 (AuthGroupApi 활용)
+    // 권한 그룹 삭제 핸들러
     const handleDelete = async () => {
         if (!activeAuthId || !groupDetail || isDeleting) return;
 
@@ -250,7 +250,7 @@ export function PermissionBoard() {
         setActiveTopMenuId(menuId);
     };
 
-    // 권한 설정 저장 핸들러 (AuthGroupApi 활용)
+    // 권한 설정 저장 핸들러
     const handleSave = async () => {
         if (!groupDetail || isSaving || !isDirty) return;
 
