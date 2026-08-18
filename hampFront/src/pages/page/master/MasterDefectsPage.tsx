@@ -5,21 +5,16 @@ import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
 import { formatDateTime } from "@/utils/common";
-import { apiClient } from "@/api/apiClient";
 import axios from "axios";
 import type {
   DefectResponse,
-  ApiResponseDefectResponse,
-  ApiResponsePageDefectResponse,
   DefectUpdateRequest,
+  DefectCreateRequest,
 } from "@/api/master/Defect";
+import { DefectApi } from "@/api/master/Defect";
+import { OperationApi, type OperationOptionResponse } from "@/api/master/Operation";
 import { Badge } from "@/components/common/Badge";
 import Spinner from "@/components/common/Spinner";
-import type { ApiResponseListOperationOptionResponse, OperationOptionResponse } from "@/api/master/Operation";
-
-interface DefectCreateRequest extends DefectUpdateRequest {
-  defCode: string;
-}
 
 export function MasterDefectsPage() {
   const [defects, setDefects] = useState<DefectResponse[]>([]);
@@ -76,19 +71,16 @@ export function MasterDefectsPage() {
 
   // 검색 필드 Refs
   const defCodeRef = useRef<HTMLInputElement>(null);
-  const operCodeRef = useRef<HTMLInputElement>(null);
+  const operCodeRef = useRef<HTMLSelectElement>(null);
   const defNmRef = useRef<HTMLInputElement>(null);
   const defTypeRef = useRef<HTMLInputElement>(null);
   const severityRef = useRef<HTMLInputElement>(null);
   const useYnRef = useRef<HTMLSelectElement>(null);
 
-   // 공정 옵션 목록 API 호출
   const fetchOperationOptions = useCallback(async () => {
     try {
-      const response = await apiClient.get<ApiResponseListOperationOptionResponse>(
-        "/operations/options"
-      );
-      setOperationOptions(response.data.data ?? []);
+      const response = await OperationApi.getOptions();
+      setOperationOptions(response.data ?? []);
     } catch (error) {
       console.error("공정 옵션 목록 조회 실패:", error);
     }
@@ -98,18 +90,27 @@ export function MasterDefectsPage() {
     fetchOperationOptions();
   }, [fetchOperationOptions]);
 
+  // 테이블 인라인 수정/등록용 공정 select 옵션 메모이제이션
+  const operationSelectOptions = useMemo(() => [
+    { label: "공정 선택", value: "" },
+    ...operationOptions.map((opt) => ({
+      label: `${opt.operCode} (${opt.operNm ?? "-"})`,
+      value: opt.operCode,
+    })),
+  ], [operationOptions]);
 
   // 검색 필드 정의
-  const searchFields: SearchField[] = [
+  const searchFields: SearchField[] = useMemo(() => [
     { type: "input", label: "불량코드", ref: defCodeRef, name: "defCode" },
-     {
+    {
       type: "select",
       label: "공정코드",
-      ref: operCodeRef as any,
+      ref: operCodeRef,
+      name: "operCode",
       options: [
         { label: "전체", value: "" },
         ...operationOptions.map((opt) => ({
-          label: `${opt.operCode} (${opt.operNm ?? '-'})`,
+          label: `${opt.operCode} (${opt.operNm ?? "-"})`,
           value: opt.operCode,
         })),
       ],
@@ -121,13 +122,14 @@ export function MasterDefectsPage() {
       type: "select",
       label: "사용여부",
       ref: useYnRef,
+      name: "useYn",
       options: [
         { label: "전체", value: "" },
         { label: "사용", value: "Y" },
         { label: "미사용", value: "N" },
       ],
     },
-  ];
+  ], [operationOptions]);
 
   // 불량 목록 조회
   const loadDefects = useCallback(async () => {
@@ -148,14 +150,12 @@ export function MasterDefectsPage() {
         params.sort = sortParams;
       }
 
-      const response = await apiClient.get<ApiResponsePageDefectResponse>("/defects", {
-        params,
-      });
+      const response = await DefectApi.getList(params);
+      const pageData = response.data;
 
-      const pageData = response.data.data;
-      setDefects(pageData.content ?? []);
-      setTotalElements(pageData.totalElements ?? 0);
-      setTotalPages(pageData.totalPages ?? 0);
+      setDefects(pageData?.content ?? []);
+      setTotalElements(pageData?.totalElements ?? 0);
+      setTotalPages(pageData?.totalPages ?? 0);
     } catch (error) {
       console.error("불량 목록 조회 실패:", error);
       window.alert("데이터를 불러오는 중 오류가 발생했습니다.");
@@ -247,29 +247,12 @@ export function MasterDefectsPage() {
         severity: editFormRef.current.severity?.trim() || null,
       };
 
-      const response = await apiClient.post<ApiResponseDefectResponse>("/defects", payload);
+      const response = await DefectApi.create(payload);
 
-      window.alert(response.data?.message || "등록되었습니다.");
+      window.alert(response?.message || "등록되었습니다.");
       setIsCreatingNewRow(false);
 
-      if (defCodeRef.current) defCodeRef.current.value = "";
-      if (operCodeRef.current) operCodeRef.current.value = "";
-      if (defNmRef.current) defNmRef.current.value = "";
-      if (defTypeRef.current) defTypeRef.current.value = "";
-      if (severityRef.current) severityRef.current.value = "";
-      if (useYnRef.current) useYnRef.current.value = "";
-
-      // 등록 시에는 전체 목록으로 이동
-      setPage(0);
-      setSearchFilters({
-        defCode: "",
-        operCode: "",
-        defNm: "",
-        defType: "",
-        severity: "",
-        useYn: "",
-      });
-      setSorting([]);
+      handleReset();
       setRefreshKey((prev) => prev + 1);
     } catch (err) {
       console.error("등록 실패:", err);
@@ -296,7 +279,7 @@ export function MasterDefectsPage() {
     editFormRef.current = { operCode: "", defNm: "", defType: "", severity: "" };
   };
 
-  // 인라인 수정 저장 (현재 검색 필터 상태 유지하며 새로고침)
+  // 인라인 수정 저장
   const handleSaveEdit = async (defCode: string) => {
     if (isUpdating) return;
 
@@ -309,15 +292,11 @@ export function MasterDefectsPage() {
         severity: editFormRef.current.severity?.trim() ? editFormRef.current.severity.trim() : null,
       };
 
-      const encodedDefCode = encodeURIComponent(defCode);
-      const response = await apiClient.put<ApiResponseDefectResponse>(
-        `/defects/${encodedDefCode}`,
-        updatePayload
-      );
+      const response = await DefectApi.update(defCode, updatePayload);
 
-      window.alert(response.data?.message || "수정되었습니다.");
+      window.alert(response?.message || "수정되었습니다.");
       setEditingDefCode(null);
-      setRefreshKey((prev) => prev + 1); // 현재 검색 조건 유지한 채 리프레시
+      setRefreshKey((prev) => prev + 1);
     } catch (err) {
       console.error("수정 실패:", err);
       const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
@@ -327,7 +306,7 @@ export function MasterDefectsPage() {
     }
   };
 
-  // 행 삭제 (현재 검색 필터 상태 유지하며 새로고침)
+  // 행 삭제
   const handleDeleteDefect = async (defCode: string) => {
     if (isDeletingDefCode) return;
 
@@ -336,11 +315,10 @@ export function MasterDefectsPage() {
 
     setIsDeletingDefCode(defCode);
     try {
-      const encodedDefCode = encodeURIComponent(defCode);
-      await apiClient.delete(`/defects/${encodedDefCode}`);
+      await DefectApi.delete(defCode);
 
       window.alert("불량 항목이 삭제(비활성화)되었습니다.");
-      setRefreshKey((prev) => prev + 1); // 현재 검색 조건 유지한 채 리프레시
+      setRefreshKey((prev) => prev + 1);
     } catch (error) {
       console.error("불량 삭제 실패:", error);
       const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
@@ -381,14 +359,19 @@ export function MasterDefectsPage() {
 
           if (isNewRow || isEditing) {
             return (
-              <input
+              <select
                 className="tableInput"
                 defaultValue={editFormRef.current.operCode ?? ""}
                 onChange={(e) => {
                   editFormRef.current.operCode = e.target.value;
                 }}
-                placeholder="공정코드 입력"
-              />
+              >
+                {operationSelectOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             );
           }
           return row.original.operCode || "-";
@@ -558,7 +541,7 @@ export function MasterDefectsPage() {
         },
       },
     ],
-    [editingDefCode, isCreatingNewRow, isUpdating, isDeletingDefCode]
+    [editingDefCode, isCreatingNewRow, isUpdating, isDeletingDefCode, operationSelectOptions]
   );
 
   const displayDefects = useMemo(() => {

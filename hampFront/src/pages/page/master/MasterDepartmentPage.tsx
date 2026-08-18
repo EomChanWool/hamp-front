@@ -5,21 +5,15 @@ import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
 import { formatDateTime } from "@/utils/common";
-import { apiClient } from "@/api/apiClient";
 import axios from "axios";
 import type {
   DepartmentResponse,
-  ApiResponseDepartmentResponse,
-  ApiResponsePageDepartmentResponse,
   DepartmentUpdateRequest,
+  DepartmentCreateRequest,
   DepartmentOptionResponse,
-  ApiResponseListDepartmentOptionResponse,
 } from "@/api/master/Department";
+import { DepartmentApi } from "@/api/master/Department";
 import Spinner from "@/components/common/Spinner";
-
-interface DepartmentCreateRequest extends DepartmentUpdateRequest {
-  depCode: string;
-}
 
 export function MasterDepartmentPage() {
   const [departments, setDepartments] = useState<DepartmentResponse[]>([]);
@@ -77,13 +71,10 @@ export function MasterDepartmentPage() {
   const headRef = useRef<HTMLInputElement>(null);
   const headPhoneRef = useRef<HTMLInputElement>(null);
 
-  // 부서 옵션 API 호출
   const loadDepartmentOptions = useCallback(async () => {
     try {
-      const response = await apiClient.get<ApiResponseListDepartmentOptionResponse>(
-        "/departments/options"
-      );
-      setDepartmentOptions(response.data.data ?? []);
+      const response = await DepartmentApi.getOptions();
+      setDepartmentOptions(response.data ?? []);
     } catch (error) {
       console.error("부서 옵션 목록 조회 실패:", error);
     }
@@ -94,7 +85,7 @@ export function MasterDepartmentPage() {
   }, [loadDepartmentOptions]);
 
   // 검색 필드 정의
-  const searchFields: SearchField[] = [
+  const searchFields: SearchField[] = useMemo(() => [
     {
       type: "select",
       label: "부서코드",
@@ -110,7 +101,7 @@ export function MasterDepartmentPage() {
     { type: "input", label: "담당업무", ref: taskDescRef, name: "taskDesc" },
     { type: "input", label: "부서장", ref: headRef, name: "headRef" },
     { type: "input", label: "대표 연락처", ref: headPhoneRef, name: "headPhone" },
-  ];
+  ], [departmentOptions]);
 
   // 부서 목록 조회
   const loadDepartments = useCallback(async () => {
@@ -129,14 +120,12 @@ export function MasterDepartmentPage() {
         params.sort = sortParams;
       }
 
-      const response = await apiClient.get<ApiResponsePageDepartmentResponse>("/departments", {
-        params,
-      });
+      const response = await DepartmentApi.getList(params);
+      const pageData = response.data;
 
-      const pageData = response.data.data;
-      setDepartments(pageData.content ?? []);
-      setTotalElements(pageData.totalElements ?? 0);
-      setTotalPages(pageData.totalPages ?? 0);
+      setDepartments(pageData?.content ?? []);
+      setTotalElements(pageData?.totalElements ?? 0);
+      setTotalPages(pageData?.totalPages ?? 0);
     } catch (error) {
       console.error("부서 목록 조회 실패:", error);
       window.alert("데이터를 불러오는 중 오류가 발생했습니다.");
@@ -220,9 +209,9 @@ export function MasterDepartmentPage() {
         taskDesc: editFormRef.current.taskDesc?.trim() || null,
       };
 
-      const response = await apiClient.post<ApiResponseDepartmentResponse>("/departments", payload);
+      const response = await DepartmentApi.create(payload);
 
-      window.alert(response.data?.message || "등록되었습니다.");
+      window.alert(response?.message || "등록되었습니다.");
       setIsCreatingNewRow(false);
 
       if (depCodeRef.current) depCodeRef.current.value = "";
@@ -276,13 +265,9 @@ export function MasterDepartmentPage() {
         taskDesc: editFormRef.current.taskDesc?.trim() ? editFormRef.current.taskDesc.trim() : null,
       };
 
-      const encodedDepCode = encodeURIComponent(depCode);
-      const response = await apiClient.put<ApiResponseDepartmentResponse>(
-        `/departments/${encodedDepCode}`,
-        updatePayload
-      );
+      const response = await DepartmentApi.update(depCode, updatePayload);
 
-      window.alert(response.data?.message || "수정되었습니다.");
+      window.alert(response?.message || "수정되었습니다.");
       setEditingDepCode(null);
       await loadDepartmentOptions();
       setRefreshKey((prev) => prev + 1);
@@ -304,8 +289,7 @@ export function MasterDepartmentPage() {
 
     setIsDeletingDepCode(depCode);
     try {
-      const encodedDepCode = encodeURIComponent(depCode);
-      await apiClient.delete(`/departments/${encodedDepCode}`);
+      await DepartmentApi.delete(depCode);
 
       window.alert("부서가 삭제되었습니다.");
       await loadDepartmentOptions();

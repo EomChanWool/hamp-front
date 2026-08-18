@@ -57,27 +57,37 @@ export const DepartmentApi = {
     headPhone?: string;
     [key: string]: any;
   }): Promise<ApiResponsePageDepartmentResponse> => {
-    const res = await apiClient.get('/departments', { params });
+    const res = await apiClient.get<ApiResponsePageDepartmentResponse>('/departments', { params });
     return res.data;
   },
 
   /** 부서 단건 상세 조회 */
-  getDetail: (depCode: string): Promise<ApiResponseDepartmentResponse> =>
-    apiClient.get(`/departments/${depCode}`),
+  getDetail: async (depCode: string): Promise<ApiResponseDepartmentResponse> => {
+    const res = await apiClient.get<ApiResponseDepartmentResponse>(`/departments/${depCode}`);
+    return res.data;
+  },
 
   /** 부서 등록 */
-  create: (data: DepartmentCreateRequest): Promise<ApiResponseDepartmentResponse> =>
-    apiClient.post('/departments', data),
+  create: async (data: DepartmentCreateRequest): Promise<ApiResponseDepartmentResponse> => {
+    const res = await apiClient.post<ApiResponseDepartmentResponse>('/departments', data);
+    return res.data;
+  },
 
   /** 부서 수정 */
-  update: (depCode: string, data: DepartmentUpdateRequest): Promise<ApiResponseDepartmentResponse> =>
-    apiClient.put(`/departments/${depCode}`, data),
+  update: async (depCode: string, data: DepartmentUpdateRequest): Promise<ApiResponseDepartmentResponse> => {
+    const res = await apiClient.put<ApiResponseDepartmentResponse>(`/departments/${depCode}`, data);
+    return res.data;
+  },
 
   /** 부서 삭제 */
-  delete: (depCode: string): Promise<ApiResponse<string>> =>
-    apiClient.delete(`/departments/${depCode}`),
+  delete: async (depCode: string): Promise<ApiResponse<string>> => {
+    const res = await apiClient.delete<ApiResponse<string>>(`/departments/${depCode}`);
+    return res.data;
+  },
 
   /** 부서 셀렉트 옵션 조회 */
-  getOptions: (): Promise<ApiResponseListDepartmentOptionResponse> =>
-    apiClient.get('/departments/options'),
+  getOptions: async (): Promise<ApiResponseListDepartmentOptionResponse> => {
+    const res = await apiClient.get<ApiResponseListDepartmentOptionResponse>('/departments/options');
+    return res.data;
+  },
 };

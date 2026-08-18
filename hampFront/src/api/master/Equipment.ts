@@ -79,27 +79,37 @@ export const EquipmentApi = {
     manufacturer?: string;
     [key: string]: any;
   }): Promise<ApiResponsePageEquipmentResponse> => {
-    const res = await apiClient.get('/equipment', { params });
+    const res = await apiClient.get<ApiResponsePageEquipmentResponse>('/equipment', { params });
     return res.data;
   },
 
   /** 장비 단건 상세 조회 */
-  getDetail: (eqCode: string): Promise<ApiResponseEquipmentDetailResponse> => 
-    apiClient.get(`/equipment/${eqCode}`),
+  getDetail: async (eqCode: string): Promise<ApiResponseEquipmentDetailResponse> => {
+    const res = await apiClient.get<ApiResponseEquipmentDetailResponse>(`/equipment/${eqCode}`);
+    return res.data;
+  },
 
   /** 장비 등록 */
-  create: (data: EquipmentCreateRequest): Promise<ApiResponseEquipmentResponse> => 
-    apiClient.post('/equipment', data),
+  create: async (data: EquipmentCreateRequest): Promise<ApiResponseEquipmentResponse> => {
+    const res = await apiClient.post<ApiResponseEquipmentResponse>('/equipment', data);
+    return res.data;
+  },
 
   /** 장비 수정 */
-  update: (eqCode: string, data: EquipmentUpdateRequest): Promise<ApiResponseEquipmentResponse> => 
-    apiClient.put(`/equipment/${eqCode}`, data),
+  update: async (eqCode: string, data: EquipmentUpdateRequest): Promise<ApiResponseEquipmentResponse> => {
+    const res = await apiClient.put<ApiResponseEquipmentResponse>(`/equipment/${eqCode}`, data);
+    return res.data;
+  },
 
   /** 장비 삭제 */
-  delete: (eqCode: string): Promise<ApiResponse<string>> => 
-    apiClient.delete(`/equipment/${eqCode}`),
+  delete: async (eqCode: string): Promise<ApiResponse<string>> => {
+    const res = await apiClient.delete<ApiResponse<string>>(`/equipment/${eqCode}`);
+    return res.data;
+  },
 
   /** 장비 셀렉트 옵션 조회 */
-  getOptions: (): Promise<ApiResponseListEquipmentOptionResponse> => 
-    apiClient.get('/equipment/options'),
+  getOptions: async (): Promise<ApiResponseListEquipmentOptionResponse> => {
+    const res = await apiClient.get<ApiResponseListEquipmentOptionResponse>('/equipment/options');
+    return res.data;
+  },
 };

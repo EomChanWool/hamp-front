@@ -1,10 +1,12 @@
 import { useEffect, useState, useMemo, useCallback, type SyntheticEvent } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Panel } from "@components/card/Panel";
-import { apiClient } from "@/api/apiClient";
 import axios from "axios";
 import { CheckIcon, MinusIcon, ChevronRightIcon, ExclamationTriangleIcon } from "@heroicons/react/16/solid";
-import type { MenuResponse, ApiResponseListMenuResponse } from "@/api/Menu";
+import type { MenuResponse } from "@/api/Menu";
+import { MenuApi } from "@/api/Menu";
+import { AuthGroupApi } from "@/api/auth/Auth";
+import type { AuthGroupCreateRequest } from "@/api/auth/Auth";
 import { usePermission, PERMISSIONS } from "@/hooks/usePermission";
 import type { CheckState, PermRecord } from "@/hooks/usePermission";
 import "@components/permission/PermissonBoard.css";
@@ -77,16 +79,16 @@ export function SystemUserPermissionsCreatePage() {
         setTimeout(() => setToast(null), 2600);
     }, []);
 
-    // 1. 전체 메뉴 목록 조회 및 초기화
+    // 1. 전체 메뉴 목록 조회 및 초기화 (의존성 배열 문제 해결)
     useEffect(() => {
         let isMounted = true;
         const loadMenus = async () => {
             setIsLoadingMenus(true);
             try {
-                const response = await apiClient.get<ApiResponseListMenuResponse>("/menus");
+                const response = await MenuApi.getList();
                 if (!isMounted) return;
 
-                const menuData = response.data.data ?? [];
+                const menuData = response.data ?? [];
                 setMenus(menuData);
                 if (menuData.length > 0) {
                     setActiveTopMenuId(menuData[0].menuId);
@@ -125,7 +127,7 @@ export function SystemUserPermissionsCreatePage() {
         return () => {
             isMounted = false;
         };
-    }, [showToast]);
+    }, []);
 
     const handleFormChange = (key: string, value: string) => {
         setForm((prev) => ({ ...prev, [key]: value }));
@@ -175,8 +177,8 @@ export function SystemUserPermissionsCreatePage() {
                                                     hasChildren
                                                         ? getCheckState(menu, p.key)
                                                         : permState[menu.menuId]?.[p.key]
-                                                            ? "checked"
-                                                            : "unchecked"
+                                                        ? "checked"
+                                                        : "unchecked"
                                                 }
                                                 disabled={isSubmitting}
                                                 onToggle={() => handleToggle(menu.menuId, p.key)}
@@ -208,6 +210,7 @@ export function SystemUserPermissionsCreatePage() {
         return true;
     };
 
+    // 2. 권한 그룹 생성 처리
     const handleSubmit = async (e: SyntheticEvent) => {
         e.preventDefault();
         if (!validateForm()) return;
@@ -221,7 +224,7 @@ export function SystemUserPermissionsCreatePage() {
             approve: perms.approve ?? false,
         }));
 
-        const payload = {
+        const payload: AuthGroupCreateRequest = {
             authId: form.authId.trim(),
             authNm: form.authNm.trim(),
             authDesc: form.authDesc.trim(),
@@ -230,7 +233,7 @@ export function SystemUserPermissionsCreatePage() {
 
         setIsSubmitting(true);
         try {
-            await apiClient.post("/auth-groups", payload);
+            await AuthGroupApi.create(payload);
             alert("권한 그룹이 성공적으로 생성되었습니다.");
             navigate({
                 pathname: "/system/auths",
@@ -304,7 +307,7 @@ export function SystemUserPermissionsCreatePage() {
                         />
                     </div>
 
-                    {/* 2. 하단 메뉴별 권한 설정 영역 (전체 폭 확장) */}
+                    {/* 2. 하단 메뉴별 권한 설정 영역 */}
                     <div className="detailField permMatrixField" style={{ gridColumn: "1 / -1", marginTop: "12px" }}>
                         <label className="requiredLabel" style={{ display: "block", marginBottom: "8px" }}>
                             메뉴별 권한 설정
