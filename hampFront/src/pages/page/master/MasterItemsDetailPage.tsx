@@ -421,7 +421,8 @@ export function MasterItemsDetailPage() {
 
               {isEditing && routings.length > 0 && (
                 <div className="routingHint">
-                  💡 <kbd>방향키</kbd>로 공정 카드를 탐색하고, <kbd>Space</kbd>/<kbd>Enter</kbd>로 선택(잡기) 후 이동하세요. (<kbd>Esc</kbd> 취소)
+                  💡 <kbd>마우스</kbd>로 공정 카드를 선택하거나 드래그 하세요.
+                  <kbd>방향키</kbd>로 공정 카드를 탐색하고, <kbd>Space</kbd>/<kbd>Enter</kbd>로 선택(잡기) 후 이동하세요. (<kbd>Esc</kbd> 취소)
                 </div>
               )}
 

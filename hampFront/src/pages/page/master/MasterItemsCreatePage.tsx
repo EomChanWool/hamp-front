@@ -206,9 +206,10 @@ export function MasterItemsCreatePage() {
                 <button type="button" className="miniButton primary" disabled={isSubmitting} onClick={handleOpenModal}>공정 선택 / 추가</button>
               </div>
 
-              {/* 키보드 조작 가이드 안내 */}
+              {/* 조작 가이드 안내 */}
               <div className="routingHint">
-                💡 <kbd>방향키</kbd>로 공정 카드를 탐색하고, <kbd>Space</kbd>/<kbd>Enter</kbd>로 선택(잡기) 후 이동하세요. (<kbd>Esc</kbd> 취소)
+                💡 <kbd>마우스</kbd>로 공정 카드를 선택하거나 드래그 하세요.
+                  <kbd>방향키</kbd>로 공정 카드를 탐색하고, <kbd>Space</kbd>/<kbd>Enter</kbd>로 선택(잡기) 후 이동하세요. (<kbd>Esc</kbd> 취소)
               </div>
 
               {routings.length === 0 ? (
