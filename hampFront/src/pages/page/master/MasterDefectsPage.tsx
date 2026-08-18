@@ -90,6 +90,15 @@ export function MasterDefectsPage() {
     fetchOperationOptions();
   }, [fetchOperationOptions]);
 
+  // 테이블 인라인 수정/등록용 공정 select 옵션 메모이제이션
+  const operationSelectOptions = useMemo(() => [
+    { label: "공정 선택", value: "" },
+    ...operationOptions.map((opt) => ({
+      label: `${opt.operCode} (${opt.operNm ?? "-"})`,
+      value: opt.operCode,
+    })),
+  ], [operationOptions]);
+
   // 검색 필드 정의
   const searchFields: SearchField[] = useMemo(() => [
     { type: "input", label: "불량코드", ref: defCodeRef, name: "defCode" },
@@ -350,14 +359,19 @@ export function MasterDefectsPage() {
 
           if (isNewRow || isEditing) {
             return (
-              <input
+              <select
                 className="tableInput"
                 defaultValue={editFormRef.current.operCode ?? ""}
                 onChange={(e) => {
                   editFormRef.current.operCode = e.target.value;
                 }}
-                placeholder="공정코드 입력"
-              />
+              >
+                {operationSelectOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             );
           }
           return row.original.operCode || "-";
@@ -527,7 +541,7 @@ export function MasterDefectsPage() {
         },
       },
     ],
-    [editingDefCode, isCreatingNewRow, isUpdating, isDeletingDefCode]
+    [editingDefCode, isCreatingNewRow, isUpdating, isDeletingDefCode, operationSelectOptions]
   );
 
   const displayDefects = useMemo(() => {

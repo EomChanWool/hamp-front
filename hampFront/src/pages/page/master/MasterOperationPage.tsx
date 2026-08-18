@@ -6,22 +6,16 @@ import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
 import { formatDateTime } from "@/utils/common";
-import { apiClient } from "@/api/apiClient";
 import axios from "axios";
 import type {
     OperationResponse,
-    ApiResponseOperationResponse,
-    ApiResponsePageOperationResponse,
     OperationUpdateRequest,
     OperationOptionResponse,
-    ApiResponseListOperationOptionResponse,
+    OperationCreateRequest,
 } from "@/api/master/Operation";
+import { OperationApi } from "@/api/master/Operation";
 import Spinner from "@/components/common/Spinner";
-import type { ApiResponseListDepartmentOptionResponse, DepartmentOptionResponse } from "@/api/master/Department";
-
-interface OperationCreateRequest extends OperationUpdateRequest {
-    operCode: string;
-}
+import { DepartmentApi, type DepartmentOptionResponse } from "@/api/master/Department";
 
 export function MasterOperationPage() {
     const [operations, setOperations] = useState<OperationResponse[]>([]);
@@ -65,7 +59,12 @@ export function MasterOperationPage() {
     const [isCreatingNewRow, setIsCreatingNewRow] = useState(false);
 
     // 타이핑 시 리렌더링 방지 폼 Ref
-    const editFormRef = useRef<OperationUpdateRequest & { operCode?: string }>({
+    const editFormRef = useRef<{
+        operCode?: string;
+        depCode?: string;
+        operNm?: string;
+        stdTime?: string;
+    }>({
         operCode: "",
         depCode: "",
         operNm: "",
@@ -77,20 +76,20 @@ export function MasterOperationPage() {
 
     // 검색 필드 Refs
     const operCodeRef = useRef<HTMLSelectElement>(null);
-    const depCodeRef = useRef<HTMLInputElement>(null);
+    const depCodeRef = useRef<HTMLSelectElement>(null);
     const operNmRef = useRef<HTMLInputElement>(null);
     const useYnRef = useRef<HTMLSelectElement>(null);
     const stdTimeRef = useRef<HTMLInputElement>(null);
 
-    // 옵션 목록을 한 번에 불러오는 함수 (Promise.all 사용)
+    // 옵션 목록을 한 번에 불러오는 함수
     const fetchOptions = useCallback(async () => {
         try {
             const [opRes, deptRes] = await Promise.all([
-                apiClient.get<ApiResponseListOperationOptionResponse>("/operations/options"),
-                apiClient.get<ApiResponseListDepartmentOptionResponse>("/departments/options"),
+                OperationApi.getOptions(),
+                DepartmentApi.getOptions(),
             ]);
-            setOperationOptions(opRes.data.data ?? []);
-            setDepartmentOptions(deptRes.data.data ?? []);
+            setOperationOptions(opRes.data ?? []);
+            setDepartmentOptions(deptRes.data ?? []);
         } catch (error) {
             console.error("옵션 목록 조회 실패:", error);
         }
@@ -130,14 +129,14 @@ export function MasterOperationPage() {
         {
             type: "select",
             label: "사용여부",
-            ref: useYnRef,
+            ref: useYnRef as any,
             options: [
                 { label: "전체", value: "" },
                 { label: "사용", value: "Y" },
                 { label: "미사용", value: "N" },
             ],
         },
-        { type: "single-date", label: "표준시간", ref: stdTimeRef },
+        { type: "single-date", label: "표준시간", ref: stdTimeRef as any },
     ];
 
     // 공정 목록 조회
@@ -158,14 +157,12 @@ export function MasterOperationPage() {
                 params.sort = sortParams;
             }
 
-            const response = await apiClient.get<ApiResponsePageOperationResponse>("/operations", {
-                params,
-            });
+            const response = await OperationApi.getList(params);
 
-            const pageData = response.data.data;
-            setOperations(pageData.content ?? []);
-            setTotalElements(pageData.totalElements ?? 0);
-            setTotalPages(pageData.totalPages ?? 0);
+            const pageData = response.data;
+            setOperations(pageData?.content ?? []);
+            setTotalElements(pageData?.totalElements ?? 0);
+            setTotalPages(pageData?.totalPages ?? 0);
         } catch (error) {
             console.error("공정 목록 조회 실패:", error);
             window.alert("데이터를 불러오는 중 오류가 발생했습니다.");
@@ -247,14 +244,14 @@ export function MasterOperationPage() {
         try {
             const payload: OperationCreateRequest = {
                 operCode: newOperCode,
-                depCode: editFormRef.current.depCode?.trim() || null,
-                operNm: editFormRef.current.operNm?.trim() || null,
-                stdTime: editFormRef.current.stdTime?.toString().trim() || null,
+                depCode: editFormRef.current.depCode?.trim() ?? "",
+                operNm: editFormRef.current.operNm?.trim() ?? "",
+                stdTime: editFormRef.current.stdTime?.toString().trim() ?? "",
             };
 
-            const response = await apiClient.post<ApiResponseOperationResponse>("/operations", payload);
+            const response = await OperationApi.create(payload);
 
-            window.alert(response.data?.message || "등록되었습니다.");
+            window.alert(response.message || "등록되었습니다.");
             setIsCreatingNewRow(false);
 
             if (operCodeRef.current) operCodeRef.current.value = "";
@@ -305,18 +302,14 @@ export function MasterOperationPage() {
         setIsUpdating(true);
         try {
             const updatePayload: OperationUpdateRequest = {
-                depCode: editFormRef.current.depCode?.trim() ? editFormRef.current.depCode.trim() : null,
-                operNm: editFormRef.current.operNm?.trim() ? editFormRef.current.operNm.trim() : null,
-                stdTime: editFormRef.current.stdTime?.toString().trim() ? editFormRef.current.stdTime.toString().trim() : null,
+                depCode: editFormRef.current.depCode?.trim() ? editFormRef.current.depCode.trim() : "",
+                operNm: editFormRef.current.operNm?.trim() ? editFormRef.current.operNm.trim() : "",
+                stdTime: editFormRef.current.stdTime?.toString().trim() ? editFormRef.current.stdTime.toString().trim() : "",
             };
 
-            const encodedOperCode = encodeURIComponent(operCode);
-            const response = await apiClient.put<ApiResponseOperationResponse>(
-                `/operations/${encodedOperCode}`,
-                updatePayload
-            );
+            const response = await OperationApi.update(operCode, updatePayload);
 
-            window.alert(response.data?.message || "수정되었습니다.");
+            window.alert(response.message || "수정되었습니다.");
             setEditingOperCode(null);
             setRefreshKey((prev) => prev + 1);
             await fetchOptions();
@@ -338,8 +331,7 @@ export function MasterOperationPage() {
 
         setIsDeletingOperCode(row.operCode);
         try {
-            const encodedOperCode = encodeURIComponent(row.operCode);
-            await apiClient.delete(`/operations/${encodedOperCode}`);
+            await OperationApi.delete(row.operCode);
 
             window.alert("공정이 삭제(비활성화)되었습니다.");
             setRefreshKey((prev) => prev + 1);
@@ -384,14 +376,20 @@ export function MasterOperationPage() {
 
                     if (isNewRow || isEditing) {
                         return (
-                            <input
+                            <select
                                 className="tableInput"
                                 defaultValue={editFormRef.current.depCode ?? ""}
                                 onChange={(e) => {
                                     editFormRef.current.depCode = e.target.value;
                                 }}
-                                placeholder="부서코드 입력"
-                            />
+                            >
+                                <option value="">부서 선택</option>
+                                {departmentOptions.map((opt) => (
+                                    <option key={opt.depCode} value={opt.depCode}>
+                                        {opt.depCode} ({opt.taskDesc ?? "-"})
+                                    </option>
+                                ))}
+                            </select>
                         );
                     }
                     return row.original.depCode || "-";
@@ -544,7 +542,7 @@ export function MasterOperationPage() {
                 },
             },
         ],
-        [editingOperCode, isCreatingNewRow, isUpdating, isDeletingOperCode]
+        [editingOperCode, isCreatingNewRow, isUpdating, isDeletingOperCode, departmentOptions]
     );
 
     const displayOperations = useMemo(() => {
