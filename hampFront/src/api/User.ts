@@ -71,25 +71,31 @@ export const UserApi = {
     userDep?: string;
     [key: string]: any;
   }): Promise<ApiResponsePageUserResponse> => {
-    const res = await apiClient.get('/users', { params });
+    const res = await apiClient.get<ApiResponsePageUserResponse>('/users', { params });
     return res.data;
   },
 
   /** 회원 단건 상세 조회 */
-  getDetail: async (userId: string): Promise<ApiResponse<UserDetailResponse>> => {
-    const res = await apiClient.get(`/users/${userId}`);
+  getDetail: async (userId: string): Promise<ApiResponseUserDetailResponse> => {
+    const res = await apiClient.get<ApiResponseUserDetailResponse>(`/users/${userId}`);
     return res.data;
   },
 
   /** 회원 생성 */
-  create: (data: UserCreateRequest): Promise<ApiResponseUserResponse> =>
-    apiClient.post('/users', data),
+  create: async (data: UserCreateRequest): Promise<ApiResponseUserResponse> => {
+    const res = await apiClient.post<ApiResponseUserResponse>('/users', data);
+    return res.data;
+  },
 
   /** 회원 정보 수정 */
-  update: (userId: string, data: UserUpdateRequest): Promise<ApiResponseUserResponse> =>
-    apiClient.put(`/users/${userId}`, data),
+  update: async (userId: string, data: UserUpdateRequest): Promise<ApiResponseUserResponse> => {
+    const res = await apiClient.put<ApiResponseUserResponse>(`/users/${userId}`, data);
+    return res.data;
+  },
 
   /** 회원 비활성화 (소프트 삭제) */
-  delete: (userId: string): Promise<ApiResponse<string>> =>
-    apiClient.delete(`/users/${userId}`),
+  delete: async (userId: string): Promise<ApiResponse<string>> => {
+    const res = await apiClient.delete<ApiResponse<string>>(`/users/${userId}`);
+    return res.data;
+  },
 };

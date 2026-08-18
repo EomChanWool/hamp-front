@@ -78,18 +78,26 @@ export const DefectApi = {
   },
 
   /** 불량 단건 상세 조회 */
-  getDetail: (defCode: string): Promise<ApiResponseDefectDetailResponse> =>
-    apiClient.get(`/defects/${defCode}`),
+  getDetail: async (defCode: string): Promise<ApiResponseDefectDetailResponse> => {
+    const res = await apiClient.get(`/defects/${defCode}`);
+    return res.data;
+  },
 
   /** 불량 등록 */
-  create: (data: DefectCreateRequest): Promise<ApiResponseDefectResponse> =>
-    apiClient.post('/defects', data),
+  create: async (data: DefectCreateRequest): Promise<ApiResponseDefectResponse> => {
+    const res = await apiClient.post('/defects', data);
+    return res.data;
+  },
 
   /** 불량 수정 */
-  update: (defCode: string, data: DefectUpdateRequest): Promise<ApiResponseDefectResponse> =>
-    apiClient.put(`/defects/${defCode}`, data),
+  update: async (defCode: string, data: DefectUpdateRequest): Promise<ApiResponseDefectResponse> => {
+    const res = await apiClient.put(`/defects/${defCode}`, data);
+    return res.data;
+  },
 
   /** 불량 비활성화 (소프트 삭제) */
-  delete: (defCode: string): Promise<ApiResponse<string>> =>
-    apiClient.delete(`/defects/${defCode}`),
+  delete: async (defCode: string): Promise<ApiResponse<string>> => {
+    const res = await apiClient.delete(`/defects/${defCode}`);
+    return res.data;
+  }
 };

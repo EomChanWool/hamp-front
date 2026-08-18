@@ -77,7 +77,6 @@ export function MasterDefectsPage() {
   const severityRef = useRef<HTMLInputElement>(null);
   const useYnRef = useRef<HTMLSelectElement>(null);
 
-  // OperationApi를 이용한 공정 옵션 목록 조회
   const fetchOperationOptions = useCallback(async () => {
     try {
       const response = await OperationApi.getOptions();

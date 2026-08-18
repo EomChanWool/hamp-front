@@ -56,8 +56,8 @@ export interface ItemUpdateRequest {
   productType?: ProductType | null; // 종류 (0: 식품, 1: 작물)
   category?: ItemCategory | null;   // 품목 구분 (0: 원료, 1: 반제품, 2: 완제품)
   itemNm?: string | null;          
-  unit?: string | null;            
-  standard?: string | null;        
+  unit?: string | null;             
+  standard?: string | null;         
   routings?: ItemRoutingRequest[] | null;
 }
 
@@ -102,9 +102,6 @@ export type PageItemResponse = PageResponse<ItemResponse>;
 /** 품목 목록 페이징 API 최종 응답 타입 */
 export type ApiResponsePageItemResponse = ApiResponsePage<ItemResponse>;
 
-/** 품목 옵션 목록 API 최종 응답 타입 */
-export type ApiResponseListItemOptionResponse = ApiResponse<Pick<ItemResponse, 'itemCode' | 'itemNm'>[]>;
-
 // ── 품목 관리 API 함수 ────────────────────────────────────────────────────────
 
 export const ItemApi = {
@@ -119,23 +116,31 @@ export const ItemApi = {
     useYn?: string;
     [key: string]: any;
   }): Promise<ApiResponsePageItemResponse> => {
-    const res = await apiClient.get('/items', { params });
+    const res = await apiClient.get<ApiResponsePageItemResponse>('/items', { params });
     return res.data;
   },
 
   /** 품목 단건 상세 조회 */
-  getDetail: (itemCode: string): Promise<ApiResponseItemDetailResponse> =>
-    apiClient.get(`/items/${itemCode}`),
+  getDetail: async (itemCode: string): Promise<ApiResponseItemDetailResponse> => {
+    const res = await apiClient.get<ApiResponseItemDetailResponse>(`/items/${itemCode}`);
+    return res.data;
+  },
 
   /** 품목 등록 */
-  create: (data: ItemCreateRequest): Promise<ApiResponseItemResponse> =>
-    apiClient.post('/items', data),
+  create: async (data: ItemCreateRequest): Promise<ApiResponseItemResponse> => {
+    const res = await apiClient.post<ApiResponseItemResponse>('/items', data);
+    return res.data;
+  },
 
   /** 품목 수정 */
-  update: (itemCode: string, data: ItemUpdateRequest): Promise<ApiResponseItemResponse> =>
-    apiClient.put(`/items/${itemCode}`, data),
+  update: async (itemCode: string, data: ItemUpdateRequest): Promise<ApiResponseItemResponse> => {
+    const res = await apiClient.put<ApiResponseItemResponse>(`/items/${itemCode}`, data);
+    return res.data;
+  },
 
   /** 품목 비활성화 (소프트 삭제) */
-  delete: (itemCode: string): Promise<ApiResponse<string>> =>
-    apiClient.delete(`/items/${itemCode}`),
+  delete: async (itemCode: string): Promise<ApiResponse<string>> => {
+    const res = await apiClient.delete<ApiResponse<string>>(`/items/${itemCode}`);
+    return res.data;
+  },
 };

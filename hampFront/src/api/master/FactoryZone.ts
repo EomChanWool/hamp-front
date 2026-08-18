@@ -58,27 +58,37 @@ export const FactoryZoneApi = {
     useYn?: string;
     [key: string]: any;
   }): Promise<ApiResponsePageFactoryZoneResponse> => {
-    const res = await apiClient.get('/factory-zones', { params });
+    const res = await apiClient.get<ApiResponsePageFactoryZoneResponse>('/factory-zones', { params });
     return res.data;
   },
 
   /** 공장동 단건 상세 조회 */
-  getDetail: (facCode: string): Promise<ApiResponseFactoryZoneResponse> =>
-    apiClient.get(`/factory-zones/${facCode}`),
+  getDetail: async (facCode: string): Promise<ApiResponseFactoryZoneResponse> => {
+    const res = await apiClient.get<ApiResponseFactoryZoneResponse>(`/factory-zones/${facCode}`);
+    return res.data;
+  },
 
   /** 공장동 등록 */
-  create: (data: FactoryZoneCreateRequest): Promise<ApiResponseFactoryZoneResponse> =>
-    apiClient.post('/factory-zones', data),
+  create: async (data: FactoryZoneCreateRequest): Promise<ApiResponseFactoryZoneResponse> => {
+    const res = await apiClient.post<ApiResponseFactoryZoneResponse>('/factory-zones', data);
+    return res.data;
+  },
 
   /** 공장동 수정 */
-  update: (facCode: string, data: FactoryZoneUpdateRequest): Promise<ApiResponseFactoryZoneResponse> =>
-    apiClient.put(`/factory-zones/${facCode}`, data),
+  update: async (facCode: string, data: FactoryZoneUpdateRequest): Promise<ApiResponseFactoryZoneResponse> => {
+    const res = await apiClient.put<ApiResponseFactoryZoneResponse>(`/factory-zones/${facCode}`, data);
+    return res.data;
+  },
 
   /** 공장동 비활성화 (소프트 삭제) */
-  delete: (facCode: string): Promise<ApiResponse<string>> =>
-    apiClient.delete(`/factory-zones/${facCode}`),
+  delete: async (facCode: string): Promise<ApiResponse<string>> => {
+    const res = await apiClient.delete<ApiResponse<string>>(`/factory-zones/${facCode}`);
+    return res.data;
+  },
 
   /** 공장동 셀렉트 옵션 조회 */
-  getOptions: (): Promise<ApiResponseListFactoryZoneOptionResponse> =>
-    apiClient.get('/factory-zones/options'),
+  getOptions: async (): Promise<ApiResponseListFactoryZoneOptionResponse> => {
+    const res = await apiClient.get<ApiResponseListFactoryZoneOptionResponse>('/factory-zones/options');
+    return res.data;
+  },
 };

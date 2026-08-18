@@ -59,29 +59,37 @@ export const OperationApi = {
     stdTime?: string;
     [key: string]: any;
   }): Promise<ApiResponsePageOperationResponse> => {
-    const res = await apiClient.get('/operations', { params });
+    const res = await apiClient.get<ApiResponsePageOperationResponse>('/operations', { params });
     return res.data;
   },
 
   /** 공정 단건 상세 조회 */
-  getDetail: (operCode: string): Promise<ApiResponseOperationResponse> =>
-    apiClient.get(`/operations/${operCode}`),
+  getDetail: async (operCode: string): Promise<ApiResponseOperationResponse> => {
+    const res = await apiClient.get<ApiResponseOperationResponse>(`/operations/${operCode}`);
+    return res.data;
+  },
 
   /** 공정 등록 */
-  create: (data: OperationCreateRequest): Promise<ApiResponseOperationResponse> =>
-    apiClient.post('/operations', data),
+  create: async (data: OperationCreateRequest): Promise<ApiResponseOperationResponse> => {
+    const res = await apiClient.post<ApiResponseOperationResponse>('/operations', data);
+    return res.data;
+  },
 
   /** 공정 수정 */
-  update: (operCode: string, data: OperationUpdateRequest): Promise<ApiResponseOperationResponse> =>
-    apiClient.put(`/operations/${operCode}`, data),
+  update: async (operCode: string, data: OperationUpdateRequest): Promise<ApiResponseOperationResponse> => {
+    const res = await apiClient.put<ApiResponseOperationResponse>(`/operations/${operCode}`, data);
+    return res.data;
+  },
 
   /** 공정 비활성화 (소프트 삭제) */
-  delete: (operCode: string): Promise<ApiResponse<string>> =>
-    apiClient.delete(`/operations/${operCode}`),
+  delete: async (operCode: string): Promise<ApiResponse<string>> => {
+    const res = await apiClient.delete<ApiResponse<string>>(`/operations/${operCode}`);
+    return res.data;
+  },
 
   /** 공정 셀렉트 옵션 조회 */
   getOptions: async (): Promise<ApiResponseListOperationOptionResponse> => {
-    const res = await apiClient.get('/operations/options');
+    const res = await apiClient.get<ApiResponseListOperationOptionResponse>('/operations/options');
     return res.data;
   },
 };

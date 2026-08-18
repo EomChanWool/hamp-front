@@ -94,18 +94,26 @@ export const FacilityApi = {
   },
 
   /** 설비 단건 상세 조회 */
-  getDetail: (fcltCode: string): Promise<ApiResponseFacilityDetailResponse> =>
-    apiClient.get(`/facilities/${fcltCode}`),
+  getDetail: async (fcltCode: string): Promise<ApiResponseFacilityDetailResponse> => {
+    const res = await apiClient.get(`/facilities/${fcltCode}`)
+    return res.data;
+  },
 
   /** 설비 등록 */
-  create: (data: FacilityCreateRequest): Promise<ApiResponseFacilityResponse> =>
-    apiClient.post('/facilities', data),
+  create: async (data: FacilityCreateRequest): Promise<ApiResponseFacilityResponse> => {
+    const res = await apiClient.post('/facilities', data)
+    return res.data;
+  },
 
   /** 설비 수정 */
-  update: (fcltCode: string, data: FacilityUpdateRequest): Promise<ApiResponseFacilityResponse> =>
-    apiClient.put(`/facilities/${fcltCode}`, data),
+  update: async (fcltCode: string, data: FacilityUpdateRequest): Promise<ApiResponseFacilityResponse> => {
+    const res = await apiClient.put(`/facilities/${fcltCode}`, data)
+    return res.data;
+  },
 
   /** 설비 삭제 */
-  delete: (fcltCode: string): Promise<ApiResponse<string>> =>
-    apiClient.delete(`/facilities/${fcltCode}`),
+  delete: async (fcltCode: string): Promise<ApiResponse<string>> => {
+    const res = await apiClient.delete(`/facilities/${fcltCode}`)
+    return res.data;
+  }
 };
