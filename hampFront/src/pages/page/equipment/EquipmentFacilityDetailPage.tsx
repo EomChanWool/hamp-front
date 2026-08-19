@@ -2,17 +2,15 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Panel } from "@components/card/Panel";
 import { formatDateTime } from "@/utils/common";
-import { apiClient } from "@/api/apiClient";
 import axios from "axios";
 import type {
     FacilityDetailRespons,
-    ApiResponseFacilityDetailResponse,
-    ApiResponseFacilityResponse,
     FacilityUpdateRequest,
     StatusType,
 } from "@/api/equipment/Facility";
-import type { ApiResponseListEquipmentOptionResponse, EquipmentOptionResponse } from "@/api/master/Equipment";
-import type { ApiResponseListFactoryZoneOptionResponse, FactoryZoneOptionResponse } from "@/api/master/FactoryZone";
+import { FacilityApi } from "@/api/equipment/Facility";
+import { EquipmentApi } from "@/api/master/Equipment";
+import { FactoryZoneApi } from "@/api/master/FactoryZone";
 import Spinner from "@/components/common/Spinner";
 
 type Field = {
@@ -35,8 +33,8 @@ export function EquipmentFacilityDetailPage() {
     const [form, setForm] = useState<Record<string, any>>({});
 
     // 옵션 데이터 상태 추가
-    const [equipmentOptions, setEquipmentOptions] = useState<EquipmentOptionResponse[]>([]);
-    const [factoryZoneOptions, setFactoryZoneOptions] = useState<FactoryZoneOptionResponse[]>([]);
+    const [equipmentOptions, setEquipmentOptions] = useState<any[]>([]);
+    const [factoryZoneOptions, setFactoryZoneOptions] = useState<any[]>([]);
 
     const isBusy = isUpdating || isDeleting;
 
@@ -58,27 +56,24 @@ export function EquipmentFacilityDetailPage() {
     const fetchOptions = async () => {
         try {
             const [eqRes, facRes] = await Promise.all([
-                apiClient.get<ApiResponseListEquipmentOptionResponse>("/equipment/options"),
-                apiClient.get<ApiResponseListFactoryZoneOptionResponse>("/factory-zones/options"),
+                EquipmentApi.getOptions(),
+                FactoryZoneApi.getOptions(),
             ]);
-            setEquipmentOptions(eqRes.data.data ?? []);
-            setFactoryZoneOptions(facRes.data.data ?? []);
+            setEquipmentOptions(eqRes.data ?? []);
+            setFactoryZoneOptions(facRes.data ?? []);
         } catch (error) {
             console.error("옵션 목록 조회 실패:", error);
         }
     };
 
-    // 상세 데이터 조회 함수
+    // 상세 데이터 조회 함수 
     const fetchFacilityDetail = async () => {
         if (!fcltCode) return;
         setIsLoading(true);
 
         try {
-            const encodedFcltCode = encodeURIComponent(fcltCode);
-            const response = await apiClient.get<ApiResponseFacilityDetailResponse>(
-                `/facilities/${encodedFcltCode}`
-            );
-            const fcltData = response.data.data;
+            const response = await FacilityApi.getDetail(fcltCode);
+            const fcltData = response.data;
 
             if (fcltData) {
                 setFacility(fcltData);
@@ -119,11 +114,11 @@ export function EquipmentFacilityDetailPage() {
             setForm({
                 fcltCode: facility.fcltCode,
                 eqCode: facility.eqCode || "",
-                eqNm: facility.eqNm || "",             
-                eqType: facility.eqType || "",         
+                eqNm: facility.eqNm || "",            
+                eqType: facility.eqType || "",        
                 facCode: facility.facCode || "",
-                facNm: facility.facNm || "",           
-                location: facility.location || "",     
+                facNm: facility.facNm || "",          
+                location: facility.location || "",    
                 fcltNm: facility.fcltNm || "",
                 currentStatus: facility.currentStatus ?? 1,
                 useYn: facility.useYn ?? true,
@@ -146,13 +141,9 @@ export function EquipmentFacilityDetailPage() {
                 useYn: Boolean(form.useYn),
             };
 
-            const encodedFcltCode = encodeURIComponent(facility.fcltCode);
-            const response = await apiClient.put<ApiResponseFacilityResponse>(
-                `/facilities/${encodedFcltCode}`,
-                updatePayload
-            );
+            const response = await FacilityApi.update(facility.fcltCode, updatePayload);
 
-            alert(response.data?.message || "수정되었습니다.");
+            alert(response.message || "수정되었습니다.");
 
             // 수정 직후 서버에서 최신 데이터를 다시 조회하여 화면에 즉시 동기화
             await fetchFacilityDetail();
@@ -178,8 +169,7 @@ export function EquipmentFacilityDetailPage() {
 
         setIsDeleting(true);
         try {
-            const encodedFcltCode = encodeURIComponent(facility.fcltCode);
-            await apiClient.delete(`/facilities/${encodedFcltCode}`);
+            await FacilityApi.delete(facility.fcltCode);
             alert("설비가 삭제되었습니다.");
             navigate({ pathname: "/equipment/facility", search: location.search });
         } catch (error) {
@@ -227,7 +217,7 @@ export function EquipmentFacilityDetailPage() {
                                             <option value="">장비를 선택해주세요</option>
                                             {equipmentOptions.map((opt) => (
                                                 <option key={opt.eqCode} value={opt.eqCode}>
-                                                    {opt.eqCode} ({opt.eqNm})
+                                                    {opt.eqCode} ({opt.eqNm ?? '-'})
                                                 </option>
                                             ))}
                                         </select>
@@ -257,7 +247,7 @@ export function EquipmentFacilityDetailPage() {
                                             <option value="">공장을 선택해주세요</option>
                                             {factoryZoneOptions.map((opt) => (
                                                 <option key={opt.facCode} value={opt.facCode}>
-                                                    {opt.facCode} ({opt.facNm})
+                                                    {opt.facCode} ({opt.facNm ?? '-'})
                                                 </option>
                                             ))}
                                         </select>

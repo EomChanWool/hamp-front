@@ -6,19 +6,17 @@ import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
 import { formatDateTime } from "@/utils/common";
-import { apiClient } from "@/api/apiClient";
 import { useTableSorting } from "@/hooks/useTableSorting";
 import Spinner from "@/components/common/Spinner";
 
 import type {
   FacilityResponse,
-  ApiResponsePageFacilityResponse,
   StatusType,
 } from "@/api/equipment/Facility";
-import { STATUS_TONE, STATUS_TYPE_LABEL } from "@/api/equipment/Facility";
+import { FacilityApi, STATUS_TONE, STATUS_TYPE_LABEL } from "@/api/equipment/Facility";
+import { EquipmentApi } from "@/api/master/Equipment";
+import { FactoryZoneApi } from "@/api/master/FactoryZone";
 import { Badge } from "@/components/common/Badge";
-import type { ApiResponseListEquipmentOptionResponse } from "@/api/master/Equipment";
-import type { ApiResponseListFactoryZoneOptionResponse, FactoryZoneOptionResponse } from "@/api/master/FactoryZone";
 
 export function EquipmentFacilityPage() {
   const navigate = useNavigate();
@@ -26,7 +24,7 @@ export function EquipmentFacilityPage() {
 
   const [facilities, setFacilities] = useState<FacilityResponse[]>([]);
   const [equipmentOptions, setEquipmentOptions] = useState<any[]>([]);
-  const [factoryZoneOptions, setFactoryZoneOptions] = useState<FactoryZoneOptionResponse[]>([]);
+  const [factoryZoneOptions, setFactoryZoneOptions] = useState<any[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -86,11 +84,11 @@ export function EquipmentFacilityPage() {
   const fetchOptions = useCallback(async () => {
     try {
       const [eqRes, facRes] = await Promise.all([
-        apiClient.get<ApiResponseListEquipmentOptionResponse>("/equipment/options"),
-        apiClient.get<ApiResponseListFactoryZoneOptionResponse>("/factory-zones/options"),
+        EquipmentApi.getOptions(),
+        FactoryZoneApi.getOptions(),
       ]);
-      setEquipmentOptions(eqRes.data.data ?? []);
-      setFactoryZoneOptions(facRes.data.data ?? []);
+      setEquipmentOptions(eqRes.data ?? []);
+      setFactoryZoneOptions(facRes.data ?? []);
     } catch (error) {
       console.error("옵션 목록 조회 실패:", error);
     }
@@ -160,26 +158,23 @@ export function EquipmentFacilityPage() {
 
     setIsLoading(true);
     try {
-      const params: Record<string, any> = {
+      const params: any = {
         page: currentPage,
         size: 10,
+        fcltNm: queryFcltNm || undefined,
+        eqCode: queryEqCode || undefined,
+        facCode: queryFacCode || undefined,
+        currentStatus: queryCurrentStatus ? Number(queryCurrentStatus) as StatusType : undefined,
       };
-
-      if (queryFcltNm) params.fcltNm = queryFcltNm;
-      if (queryEqCode) params.eqCode = queryEqCode;
-      if (queryFacCode) params.facCode = queryFacCode;
-      if (queryCurrentStatus) params.currentStatus = Number(queryCurrentStatus);
 
       // 정렬 파라미터 반영
       if (sortParams.length > 0) {
         params.sort = sortParams;
       }
 
-      const response = await apiClient.get<ApiResponsePageFacilityResponse>("/facilities", {
-        params,
-      });
+      const response = await FacilityApi.getList(params);
 
-      const pageData = response.data.data;
+      const pageData = response.data;
       setFacilities(pageData?.content ?? []);
       setTotalElements(pageData?.totalElements ?? 0);
       setTotalPages(pageData?.totalPages ?? 0);
@@ -223,7 +218,6 @@ export function EquipmentFacilityPage() {
 
     if (currentStatus) nextParams.set("currentStatus", currentStatus);
     else nextParams.delete("currentStatus");
-
 
     setSearchParams(nextParams);
   };
