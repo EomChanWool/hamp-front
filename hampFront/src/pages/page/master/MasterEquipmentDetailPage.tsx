@@ -2,16 +2,15 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Panel } from "@components/card/Panel";
 import { formatDateTime } from "@/utils/common";
-import { apiClient } from "@/api/apiClient";
 import axios from "axios";
+import { EquipmentApi } from "@/api/master/Equipment";
 import type {
   EquipmentDetailResponse,
-  ApiResponseEquipmentDetailResponse,
-  ApiResponseEquipmentResponse,
   EquipmentUpdateRequest,
 } from "@/api/master/Equipment";
+import { OperationApi } from "@/api/master/Operation";
 import Spinner from "@/components/common/Spinner";
-import type { ApiResponseListOperationOptionResponse, OperationOptionResponse } from "@/api/master/Operation";
+import type { OperationOptionResponse } from "@/api/master/Operation";
 
 type Field = {
   label: string;
@@ -36,21 +35,19 @@ export function MasterEquipmentDetailPage() {
 
   const isBusy = isUpdating || isDeleting;
 
-  // 공정 옵션 API 호출
-  const loadOperationOptions = useCallback(async () => {
+  // 공정 옵션 목록 API 호출
+  const fetchOperationOptions = useCallback(async () => {
     try {
-      const response = await apiClient.get<ApiResponseListOperationOptionResponse>(
-        "/operations/options"
-      );
-      setOperationOptions(response.data.data ?? []);
+      const response = await OperationApi.getOptions();
+      setOperationOptions(response.data ?? []);
     } catch (error) {
       console.error("공정 옵션 목록 조회 실패:", error);
     }
   }, []);
 
   useEffect(() => {
-    loadOperationOptions();
-  }, [loadOperationOptions]);
+    fetchOperationOptions();
+  }, [fetchOperationOptions]);
 
   const fields: Field[] = [
     { label: "장비코드", key: "eqCode", editable: false },
@@ -65,17 +62,14 @@ export function MasterEquipmentDetailPage() {
     { label: "등록일자", key: "createdAt", editable: false },
   ];
 
-  // 상세 데이터 조회 함수
+  // 상세 데이터 조회
   const fetchEquipmentDetail = async () => {
     if (!eqCode) return;
     setIsLoading(true);
 
     try {
-      const encodedEqCode = encodeURIComponent(eqCode);
-      const response = await apiClient.get<ApiResponseEquipmentDetailResponse>(
-        `/equipment/${encodedEqCode}`
-      );
-      const eqData = response.data.data;
+      const response = await EquipmentApi.getDetail(eqCode);
+      const eqData = response.data;
 
       if (eqData) {
         setEquipment(eqData);
@@ -101,7 +95,6 @@ export function MasterEquipmentDetailPage() {
     }
   };
 
-  // 상세 데이터 최초 조회
   useEffect(() => {
     if (eqCode) {
       fetchEquipmentDetail();
@@ -126,7 +119,7 @@ export function MasterEquipmentDetailPage() {
     }
   }, [isEditing, equipment]);
 
-  // 저장 처리 핸들러
+  // 저장 처리
   const handleSave = async () => {
     if (!equipment || isUpdating) return;
 
@@ -139,17 +132,10 @@ export function MasterEquipmentDetailPage() {
         manufacturer: form.manufacturer?.trim() ? form.manufacturer.trim() : null,
       };
 
-      const encodedEqCode = encodeURIComponent(equipment.eqCode);
-      const response = await apiClient.put<ApiResponseEquipmentResponse>(
-        `/equipment/${encodedEqCode}`,
-        updatePayload
-      );
+      const response = await EquipmentApi.update(equipment.eqCode, updatePayload);
 
-      alert(response.data?.message || "수정되었습니다.");
-
-      // 수정 직후 서버에서 최신 데이터를 다시 조회하여 화면에 즉시 동기화
+      alert(response.message || "수정되었습니다.");
       await fetchEquipmentDetail();
-
       setIsEditing(false);
     } catch (err) {
       console.error("장비 수정 실패:", err);
@@ -160,7 +146,7 @@ export function MasterEquipmentDetailPage() {
     }
   };
 
-  // 장비 삭제 처리
+  // 삭제 처리
   const handleDelete = async () => {
     if (!equipment || isDeleting) return;
 
@@ -171,8 +157,7 @@ export function MasterEquipmentDetailPage() {
 
     setIsDeleting(true);
     try {
-      const encodedEqCode = encodeURIComponent(equipment.eqCode);
-      await apiClient.delete(`/equipment/${encodedEqCode}`);
+      await EquipmentApi.delete(equipment.eqCode);
       alert("장비가 삭제되었습니다.");
       navigate({ pathname: "/master/equipment", search: location.search });
     } catch (error) {
@@ -188,7 +173,9 @@ export function MasterEquipmentDetailPage() {
     return (
       <section className="screenStack">
         <Panel title="장비 상세 정보">
-          <div> <Spinner /> </div>
+          <div className="flex justify-center p-10">
+            <Spinner />
+          </div>
         </Panel>
       </section>
     );
@@ -203,7 +190,7 @@ export function MasterEquipmentDetailPage() {
           {fields.map(({ label, key, editable }) => {
             const isFieldEditable = isEditing && editable !== false;
 
-            // 공정코드 셀렉트박스 처리 (수정 모드일 때)
+            // 공정코드 셀렉트박스 처리
             if (key === "operCode") {
               return (
                 <div key={key} className="detailField">
@@ -213,9 +200,7 @@ export function MasterEquipmentDetailPage() {
                       className="tableInput"
                       value={form[key] ?? ""}
                       disabled={isBusy}
-                      onChange={(e) =>
-                        setForm((prev) => ({ ...prev, [key]: e.target.value }))
-                      }
+                      onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
                     >
                       <option value="">공정을 선택해주세요</option>
                       {operationOptions.map((opt) => (
@@ -225,14 +210,13 @@ export function MasterEquipmentDetailPage() {
                       ))}
                     </select>
                   ) : (
-                    <div className="detailValue">
-                      {form[key] || "-"}
-                    </div>
+                    <div className="detailValue">{form[key] || "-"}</div>
                   )}
                 </div>
               );
             }
 
+            // 사용여부 처리
             if (key === "operUseYn") {
               return (
                 <div key={key} className="detailField">
@@ -242,12 +226,7 @@ export function MasterEquipmentDetailPage() {
                       className="tableInput"
                       value={form[key] ?? ""}
                       disabled={isBusy}
-                      onChange={(e) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          [key]: e.target.value,
-                        }))
-                      }
+                      onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
                     >
                       <option value="Y">사용</option>
                       <option value="N">미사용</option>
@@ -261,26 +240,19 @@ export function MasterEquipmentDetailPage() {
               );
             }
 
+            // 기본 input 처리
             return (
               <div key={key} className="detailField">
                 <label>{label}</label>
-
                 {isFieldEditable ? (
                   <input
                     className="tableInput"
                     value={form[key] ?? ""}
                     disabled={isBusy}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        [key]: e.target.value,
-                      }))
-                    }
+                    onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
                   />
                 ) : (
-                  <div className="detailValue">
-                    {form[key] || "-"}
-                  </div>
+                  <div className="detailValue">{form[key] || "-"}</div>
                 )}
               </div>
             );
@@ -303,41 +275,15 @@ export function MasterEquipmentDetailPage() {
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               {isEditing ? (
                 <>
-                  <button
-                    type="button"
-                    className="ghostButton"
-                    onClick={() => setIsEditing(false)}
-                    disabled={isBusy}
-                  >
-                    취소
-                  </button>
-                  <button
-                    type="button"
-                    className="primaryButton"
-                    onClick={handleSave}
-                    disabled={isBusy}
-                  >
+                  <button type="button" className="ghostButton" onClick={() => setIsEditing(false)} disabled={isBusy}>취소</button>
+                  <button type="button" className="primaryButton" onClick={handleSave} disabled={isBusy}>
                     {isUpdating ? "저장 중..." : "저장"}
                   </button>
                 </>
               ) : (
                 <>
-                  <button
-                    type="button"
-                    className="ghostButton"
-                    onClick={() => navigate({ pathname: "/master/equipment", search: location.search })}
-                    disabled={isBusy}
-                  >
-                    목록
-                  </button>
-                  <button
-                    type="button"
-                    className="primaryButton"
-                    onClick={() => setIsEditing(true)}
-                    disabled={isBusy}
-                  >
-                    수정
-                  </button>
+                  <button type="button" className="ghostButton" onClick={() => navigate({ pathname: "/master/equipment", search: location.search })} disabled={isBusy}>목록</button>
+                  <button type="button" className="primaryButton" onClick={() => setIsEditing(true)} disabled={isBusy}>수정</button>
                 </>
               )}
             </div>

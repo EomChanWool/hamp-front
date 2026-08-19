@@ -144,9 +144,6 @@ const isServerDownError = (error: unknown) => {
   
   // 2. 404 에러 처리 (라우팅 실패 등)
   if (status === 404 && url.startsWith('/')) {
-    // 백엔드가 비즈니스 에러를 보낼 때 보통 에러 코드(code)나 메시지를 담습니다.
-    // 만약 데이터 자체가 없거나, 우리 백엔드의 비즈니스 에러 규격이 아니라면
-    // 이건 서버/프록시가 띄운 404이므로 서버 다운으로 간주합니다.
     const isBusinessError = !!(responseData?.code || responseData?.message)
     
     if (!isBusinessError) {
@@ -181,6 +178,22 @@ apiClient.interceptors.response.use(
     if (isServerDownError(error)) {
       goServerDown()
       // 서버 다운 페이지로 전환되므로, 호출한 페이지의 catch 알림을 억제합니다.
+      return new Promise(() => {})
+    }
+
+    // ── 3. 403 Forbidden 에러 핸들링 ──────────────────────────────
+    if (axios.isAxiosError(error) && error.response?.status === 403) {
+      const errorMessage =
+        error.response?.data?.message || '접근 권한이 없습니다.'
+
+      alert(errorMessage)
+
+      if (navigateFn) {
+        navigateFn('/', { replace: true })
+      } else {
+        window.location.href = '/'
+      }
+
       return new Promise(() => {})
     }
 

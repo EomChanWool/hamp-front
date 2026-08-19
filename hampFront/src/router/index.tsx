@@ -96,9 +96,10 @@ import { InpiDefectStatusPage } from '@pages/page/inpi/InpiDefectStatusPage'
 //영업관리
 import { DeliveryManagePage } from '@pages/page/sales/DeliveryManagePage'
 import { DeliveryStatusPage } from '@pages/page/sales/DeliveryStatusPage'
-import { OrderManagePage } from '@pages/page/sales/OrderManagePage'
+import { SalesOrderPage } from '@pages/page/sales/SalesOrderPage'
 import { OrderStatusPage } from '@pages/page/sales/OrderStatusPage'
 import { OrderPerformancePage } from '@pages/page/sales/OrderPerformancePage'
+import { SalesBusinessPartnerPage } from '@/pages/page/sales/SalesBusinessPartnerPage'
 
 const RootRouter = () => {
   const router = createBrowserRouter(routeObj)
@@ -226,8 +227,9 @@ export const menuRoutes: MenuRouteGroup[] = [
     icon: ClipboardDocumentCheckIcon,
     path: '/sales',
     items: [
-      { path: 'order-manage', name: '수주관리', element: <OrderManagePage /> },
+      { path: 'sales-order', name: '수주관리', element: <SalesOrderPage /> },
       { path: 'delivery-manage', name: '납품관리', element: <DeliveryManagePage /> },
+      { path: 'business-partner', name: '거래처관리', element: <SalesBusinessPartnerPage /> },
       { path: 'order-status', name: '수주현황', element: <OrderStatusPage /> },
       { path: 'delivery-status', name: '납품현황', element: <DeliveryStatusPage /> },
       { path: 'order-performance', name: '수주실적현황', element: <OrderPerformancePage /> },
