@@ -3,18 +3,18 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Panel } from "@components/card/Panel";
 import { Badge } from "@components/common/Badge";
 import { formatDateTime } from "@/utils/common";
-import { apiClient } from "@/api/apiClient";
 import axios from "axios";
 import {
   PRODUCT_TYPE_LABEL,
   CATEGORY_LABEL,
+  ItemApi,
   type ItemDetailResponse,
-  type ApiResponseItemDetailResponse,
   type ItemUpdateRequest,
   type ProductType,
   type ItemCategory,
   type ItemRoutingRequest,
 } from "@/api/master/Item";
+import { OperationApi } from "@/api/master/Operation";
 import Spinner from "@/components/common/Spinner";
 import { OperationSelectModal } from "@/components/common/OperationSelectModal"; 
 import { useItemRoutings } from "@/hooks/useItemRoutings";
@@ -102,8 +102,8 @@ export function MasterItemsDetailPage() {
   useEffect(() => {
     const fetchOperations = async () => {
       try {
-        const response = await apiClient.get("/operations/options");
-        const data = response.data?.data || response.data || [];
+        const response = await OperationApi.getOptions();
+        const data = response.data || [];
         setOperations(data);
       } catch (error) {
         console.error("공정 옵션 목록 조회 실패:", error);
@@ -120,11 +120,8 @@ export function MasterItemsDetailPage() {
       setIsLoading(true);
 
       try {
-        const encodedItemCode = encodeURIComponent(itemCode);
-        const response = await apiClient.get<ApiResponseItemDetailResponse>(
-          `/items/${encodedItemCode}`
-        );
-        const itemData = response.data.data;
+        const response = await ItemApi.getDetail(itemCode);
+        const itemData = response.data;
 
         if (itemData && isMounted) {
           setItem(itemData);
@@ -261,13 +258,9 @@ export function MasterItemsDetailPage() {
             : null,
       };
 
-      const encodedItemCode = encodeURIComponent(item.itemCode);
-      const response = await apiClient.put(
-        `/items/${encodedItemCode}`,
-        updatePayload
-      );
+      const response = await ItemApi.update(item.itemCode, updatePayload);
 
-      alert(response.data?.message || "수정되었습니다.");
+      alert(response.message || "수정되었습니다.");
 
       setItem((prev) =>
         prev
@@ -313,8 +306,7 @@ export function MasterItemsDetailPage() {
 
     setIsDeleting(true);
     try {
-      const encodedItemCode = encodeURIComponent(item.itemCode);
-      await apiClient.delete(`/items/${encodedItemCode}`);
+      await ItemApi.delete(item.itemCode);
       alert("품목이 삭제되었습니다.");
       navigate({ pathname: "/master/items", search: location.search });
     } catch (error) {

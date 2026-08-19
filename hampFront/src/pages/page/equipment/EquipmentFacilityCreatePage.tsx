@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Panel } from "@components/card/Panel";
-import { apiClient } from "@/api/apiClient";
 import axios from "axios";
 import type {
     FacilityCreateRequest,
-    ApiResponseFacilityResponse,
     StatusType
 } from "@/api/equipment/Facility";
-import type { ApiResponseListEquipmentOptionResponse, EquipmentOptionResponse } from "@/api/master/Equipment";
-import type { ApiResponseListFactoryZoneOptionResponse, FactoryZoneOptionResponse } from "@/api/master/FactoryZone";
+import { FacilityApi } from "@/api/equipment/Facility";
+import type { EquipmentOptionResponse } from "@/api/master/Equipment";
+import { EquipmentApi } from "@/api/master/Equipment";
+import type { FactoryZoneOptionResponse } from "@/api/master/FactoryZone";
+import { FactoryZoneApi } from "@/api/master/FactoryZone";
 
 export function EquipmentFacilityCreatePage() {
     const navigate = useNavigate();
@@ -22,11 +23,11 @@ export function EquipmentFacilityCreatePage() {
     const fetchOptions = useCallback(async () => {
         try {
             const [eqRes, facRes] = await Promise.all([
-                apiClient.get<ApiResponseListEquipmentOptionResponse>("/equipment/options"),
-                apiClient.get<ApiResponseListFactoryZoneOptionResponse>("/factory-zones/options")
+                EquipmentApi.getOptions(),
+                FactoryZoneApi.getOptions()
             ]);
-            setEquipmentOptions(eqRes.data.data ?? []);
-            setFactoryZoneOptions(facRes.data.data ?? []);
+            setEquipmentOptions(eqRes.data ?? []);
+            setFactoryZoneOptions(facRes.data ?? []);
         } catch (error) {
             console.error("옵션 목록 조회 실패:", error);
         }
@@ -90,7 +91,7 @@ export function EquipmentFacilityCreatePage() {
 
         setIsSubmitting(true);
         try {
-            await apiClient.post<ApiResponseFacilityResponse>("/facilities", payload);
+            await FacilityApi.create(payload);
             alert("성공적으로 등록되었습니다.");
             navigate("/equipment/facility", { replace: true });
         } catch (error) {

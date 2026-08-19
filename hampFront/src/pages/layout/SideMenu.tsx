@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FolderIcon, FolderOpenIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { menuRoutes } from "@/router";
-import { apiClient } from "@/api/apiClient";
-import type { ApiResponseListMenuResponse, MenuResponse } from "@/api/Menu";
+import { MenuApi } from "@/api/Menu"; 
+import type { MenuResponse } from "@/api/Menu"; 
 import Spinner from "@/components/common/Spinner";
 import './Layout.css';
 
@@ -18,13 +18,13 @@ export function SideMenu({ collapsed }: SideMenuProps) {
   const [myMenus, setMyMenus] = useState<MenuResponse[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // 컴포넌트 마운트 시 /api/menus/my 호출
+  // 컴포넌트 마운트 시 
   useEffect(() => {
     const fetchMyMenus = async () => {
       try {
-        const response = await apiClient.get<ApiResponseListMenuResponse>("/menus/my");
-        if (response.data && response.data.data) {
-          setMyMenus(response.data.data);
+        const response = await MenuApi.getMyList(); 
+        if (response && response.data) {
+          setMyMenus(response.data);
         }
       } catch (error) {
         console.error("내 메뉴 목록 조회 실패:", error);

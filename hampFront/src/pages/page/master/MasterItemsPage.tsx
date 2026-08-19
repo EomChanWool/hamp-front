@@ -6,14 +6,13 @@ import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
 import { formatDateTime } from "@/utils/common";
-import { apiClient } from "@/api/apiClient";
 import { useTableSorting } from "@/hooks/useTableSorting";
 
 import {
   PRODUCT_TYPE_LABEL,
   CATEGORY_LABEL,
+  ItemApi,
   type ItemResponse,
-  type ApiResponsePageItemResponse,
   type ProductType,
   type ItemCategory,
 } from "@/api/master/Item";
@@ -156,8 +155,8 @@ export function MasterItemsPage() {
       };
 
       if (queryItemCode) params.itemCode = queryItemCode;
-      if (queryProductType) params.productType = queryProductType;
-      if (queryCategory) params.category = queryCategory;
+      if (queryProductType) params.productType = Number(queryProductType) as ProductType;
+      if (queryCategory) params.category = Number(queryCategory) as ItemCategory;
       if (queryItemNm) params.itemNm = queryItemNm;
       if (queryUnit) params.unit = queryUnit;
       if (queryStandard) params.standard = queryStandard;
@@ -168,11 +167,9 @@ export function MasterItemsPage() {
         params.sort = sortParams;
       }
 
-      const response = await apiClient.get<ApiResponsePageItemResponse>("/items", {
-        params,
-      });
+      const response = await ItemApi.getList(params);
 
-      const pageData = response.data.data;
+      const pageData = response.data;
       setItems(pageData.content ?? []);
       setTotalElements(pageData.totalElements ?? 0);
       setTotalPages(pageData.totalPages ?? 0);
