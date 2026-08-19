@@ -24,6 +24,7 @@ export interface SalesOrderUpdateRequest {
 export interface SalesOrderResponse {
     orderCode: string;
     bpCode: string;
+    bpNm: string;
     dueDate: string;
     status: string;
     note: string;
@@ -35,6 +36,7 @@ export interface SalesOrderResponse {
 export interface SalesOrderDetailResponse {
     orderCode: string;
     bpCode: string;
+    bpNm: string;
     dueDate: string;
     status: string;
     note: string;
@@ -55,6 +57,7 @@ export interface SalesOrderLineResponse {
     salesOrderLineId: number;
     orderCode: string;
     itemCode: string;
+    itemNm: string;
     orderQty: number;
     orderAmount: number;
     createdAt: string;
