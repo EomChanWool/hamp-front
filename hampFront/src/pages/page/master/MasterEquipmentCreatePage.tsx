@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Panel } from "@components/card/Panel";
-import { apiClient } from "@/api/apiClient";
 import axios from "axios";
-import type {
-  EquipmentCreateRequest,
-  ApiResponseEquipmentResponse
-} from "@/api/master/Equipment";
-import type { ApiResponseListOperationOptionResponse, OperationOptionResponse } from "@/api/master/Operation";
+
+import { EquipmentApi, type EquipmentCreateRequest } from "@/api/master/Equipment";
+import { OperationApi, type OperationOptionResponse } from "@/api/master/Operation";
 
 export function MasterEquipmentCreatePage() {
   const navigate = useNavigate();
@@ -19,10 +16,8 @@ export function MasterEquipmentCreatePage() {
   // 공정 옵션 API 호출
   const loadOperationOptions = useCallback(async () => {
     try {
-      const response = await apiClient.get<ApiResponseListOperationOptionResponse>(
-        "/operations/options"
-      );
-      setOperationOptions(response.data.data ?? []);
+      const response = await OperationApi.getOptions();
+      setOperationOptions(response.data ?? []);
     } catch (error) {
       console.error("공정 옵션 목록 조회 실패:", error);
     }
@@ -51,13 +46,13 @@ export function MasterEquipmentCreatePage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  // 취소 버튼 클릭 시에만 기존 검색 조건을 유지하며 목록으로 이동
+  // 취소 버튼 클릭 시
   const handleCancel = () => {
     const queryString = searchParams.toString();
     navigate(queryString ? `/master/equipment?${queryString}` : "/master/equipment");
   };
 
-  // [1차 검증] 유효성 체크 (eqCode 필수)
+  // 유효성 검사
   const validateForm = (): boolean => {
     const trimmedCode = form.eqCode.trim();
     if (!trimmedCode) {
@@ -88,10 +83,8 @@ export function MasterEquipmentCreatePage() {
     setIsSubmitting(true);
 
     try {
-      // 제네릭으로 백엔드 응답 타입 명시
-      await apiClient.post<ApiResponseEquipmentResponse>("/equipment", payload);
+      await EquipmentApi.create(payload);
       alert("성공적으로 등록되었습니다.");
-
       navigate("/master/equipment", { replace: true });
     } catch (error) {
       console.error("장비 등록 실패:", error);
@@ -108,7 +101,7 @@ export function MasterEquipmentCreatePage() {
     <section className="screenStack">
       <Panel title="신규 장비 등록">
         <form className="pageForm" onSubmit={handleSubmit}>
-          {/* 장비 코드 (필수) */}
+          {/* 장비 코드 */}
           <div className="detailField">
             <label className="requiredLabel">
               장비코드 <span className="required">*</span>
@@ -123,12 +116,20 @@ export function MasterEquipmentCreatePage() {
             />
           </div>
 
+          {/* 공정 코드 */}
           <div className="detailField">
             <label>공정코드</label>
-            <select className="tableInput" value={form.operCode} disabled={isSubmitting} onChange={(e) => handleChange("operCode", e.target.value)}>
+            <select 
+              className="tableInput" 
+              value={form.operCode} 
+              disabled={isSubmitting} 
+              onChange={(e) => handleChange("operCode", e.target.value)}
+            >
               <option value="">공정을 선택해주세요</option>
               {operationOptions.map((option) => (
-                <option key={option.operCode} value={option.operCode}>{option.operCode} ({option.operNm})</option>
+                <option key={option.operCode} value={option.operCode}>
+                  {option.operCode} ({option.operNm})
+                </option>
               ))}
             </select>
           </div>
@@ -172,7 +173,7 @@ export function MasterEquipmentCreatePage() {
             />
           </div>
 
-          {/* 하단 버튼 영역 */}
+          {/* 버튼 영역 */}
           <div className="pageFormFooter">
             <button
               type="button"
