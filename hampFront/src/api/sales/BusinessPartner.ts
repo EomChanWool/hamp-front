@@ -19,7 +19,7 @@ export interface BusinessPartnerUpdateRequest {
     phone?: string | null;
     address?: string | null;
     managerNm?: string | null;
-    managerPhone?: string | null;     
+    managerPhone?: string | null;
 }
 
 /** 거래처 목록 조회 아이템 응답 */
@@ -35,6 +35,13 @@ export interface BusinessPartnerResponse {
     updatedAt: string;
 }
 
+/** 거래처 옵션 조회 응답 */
+export interface BusinessPartnerOptionResponse {
+    bpCode: string;
+    bpNm: string;
+}
+
+
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 거래처 단건/기본 응답 API 최종 응답 타입 */
@@ -45,6 +52,9 @@ export type PageBusinessPartnerResponse = PageResponse<BusinessPartnerResponse>;
 
 /** 거래처 목록 페이징 API 최종 응답 타입 */
 export type ApiResponsePageBusinessPartnerResponse = ApiResponsePage<BusinessPartnerResponse>;
+
+/** 거래처 옵션 목록 API 최종 응답 타입 */
+export type ApiResponseListBusinessPartnerOptionResponse = ApiResponse<BusinessPartnerOptionResponse[]>;
 
 // ── 거래처 관리 API 함수 ────────────────────────────────────────────────────────
 
@@ -84,5 +94,11 @@ export const BusinessPartnerApi = {
     delete: async (bpCode: string): Promise<ApiResponse<string>> => {
         const res = await apiClient.delete(`/business-partners/${bpCode}`);
         return res.data;
-    }
+    },
+
+    /** 거래처 셀렉트 옵션 조회 */
+    getOptions: async (): Promise<ApiResponseListBusinessPartnerOptionResponse> => {
+        const res = await apiClient.get<ApiResponseListBusinessPartnerOptionResponse>('/business-partners/options');
+        return res.data;
+    },
 };
