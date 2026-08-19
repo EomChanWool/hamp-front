@@ -1,7 +1,6 @@
 import { useState, useEffect, type SyntheticEvent, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Panel } from "@components/card/Panel";
-import { apiClient } from "@/api/apiClient";
 import axios from "axios";
 import {
   PRODUCT_TYPE_LABEL,
@@ -9,8 +8,9 @@ import {
   type ItemCreateRequest,
   type ProductType,
   type ItemCategory,
-  type ApiResponseItemResponse,
+  ItemApi,
 } from "@/api/master/Item";
+import { OperationApi } from "@/api/master/Operation";
 import { OperationSelectModal } from "@components/common/OperationSelectModal";
 import { useItemRoutings } from "@/hooks/useItemRoutings";
 import './MasterItem.css';
@@ -72,8 +72,8 @@ export function MasterItemsCreatePage() {
   useEffect(() => {
     const fetchOperations = async () => {
       try {
-        const response = await apiClient.get("/operations/options");
-        const data = response.data?.data || response.data || [];
+        const response = await OperationApi.getOptions();
+        const data = response.data || [];
         setOperations(data);
       } catch (error) {
         console.error("공정 옵션 목록 조회 실패:", error);
@@ -142,7 +142,7 @@ export function MasterItemsCreatePage() {
 
     setIsSubmitting(true);
     try {
-      await apiClient.post<ApiResponseItemResponse>("/items", payload);
+      await ItemApi.create(payload);
       alert("성공적으로 등록되었습니다.");
       navigate("/master/items", { replace: true });
     } catch (error) {
