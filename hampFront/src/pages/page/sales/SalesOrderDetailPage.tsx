@@ -10,11 +10,12 @@ import type {
 import { BusinessPartnerApi } from "@/api/sales/BusinessPartner";
 import { ItemApi } from "@/api/master/Item";
 import Spinner from "@/components/common/Spinner";
+import { formatDateTime } from "@/utils/common";
 
 /** 화면 표시용 필드 정의 */
 type Field = {
   label: string;
-  key: keyof SalesOrderDetailResponse | "createdAt" | "updatedAt";
+  key: keyof SalesOrderDetailResponse | "updatedAt";
   editable?: boolean;
 };
 
@@ -44,6 +45,7 @@ export function SalesOrderDetailPage() {
     { label: "납기일자", key: "dueDate", editable: true },
     { label: "상태", key: "status", editable: true },
     { label: "비고", key: "note", editable: true },
+    { label: "등록일자", key: "createdAt", editable: false },
   ];
 
   // 옵션 목록 조회 함수
@@ -78,6 +80,7 @@ export function SalesOrderDetailPage() {
           dueDate: data.dueDate,
           status: data.status,
           note: data.note,
+          createdAt: data.createdAt,
           lines: data.lines || [],
         });
       }
@@ -107,6 +110,7 @@ export function SalesOrderDetailPage() {
         dueDate: order.dueDate,
         status: order.status,
         note: order.note,
+        createdAt: formatDateTime(order.createdAt),
         lines: order.lines || [],
       });
     }

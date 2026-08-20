@@ -428,7 +428,7 @@ export function MasterOperationPage() {
                         return (
                             <input
                                 className="tableInput"
-                                type="text"
+                                type="date"
                                 defaultValue={editFormRef.current.stdTime?.toString() ?? ""}
                                 onChange={(e) => {
                                     editFormRef.current.stdTime = e.target.value;
