@@ -10,8 +10,8 @@ import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
 import { formatDateTime } from "@/utils/common";
 import { useTableSorting } from "@/hooks/useTableSorting";
-
-import type { SalesOrderResponse } from "@/api/sales/SalesOrder"; 
+import { BusinessPartnerApi, type BusinessPartnerOptionResponse } from "@/api/sales/BusinessPartner";
+import type { SalesOrderResponse } from "@/api/sales/SalesOrder";
 import { SalesOrderApi } from "@/api/sales/SalesOrder";
 import Spinner from "@/components/common/Spinner";
 
@@ -20,6 +20,8 @@ export function SalesOrderPage() {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [salesOrders, setSalesOrders] = useState<SalesOrderResponse[]>([]);
+    const [businessPartnerOptions, setBusinessPartnerOptions] = useState<BusinessPartnerOptionResponse[]>([]);
+
     const [totalElements, setTotalElements] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
@@ -53,20 +55,34 @@ export function SalesOrderPage() {
         };
     }, []);
 
-    // URL에서 현재 검색조건 추출 (단일 dueDate)
+    // URL에서 현재 검색조건 추출
     const currentPage = Number(searchParams.get("page") || "0");
     const queryOrderCode = searchParams.get("orderCode") || "";
     const queryBpCode = searchParams.get("bpCode") || "";
     const queryStatus = searchParams.get("status") || "";
     const queryDueDate = searchParams.get("dueDate") || "";
 
-    // 검색 input / single-date refs
+    // 검색 input
     const orderCodeRef = useRef<HTMLInputElement>(null);
-    const bpCodeRef = useRef<HTMLInputElement>(null);
-    const statusRef = useRef<HTMLInputElement>(null); 
+    const bpCodeRef = useRef<HTMLSelectElement>(null);
+    const statusRef = useRef<HTMLInputElement>(null);
     const dueDateRef = useRef<HTMLInputElement>(null);
 
-    // 검색 필드 정의 (single-date 사용)
+    // 거래처 옵션 API 호출
+    const loadBusinessPartnerOptions = useCallback(async () => {
+        try {
+            const response = await BusinessPartnerApi.getOptions();
+            setBusinessPartnerOptions(response.data ?? []);
+        } catch (error) {
+            console.error("공장 옵션 목록 조회 실패:", error);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadBusinessPartnerOptions();
+    }, [loadBusinessPartnerOptions]);
+
+    // 검색 필드 정의
     const searchFields: SearchField[] = useMemo(() => [
         {
             type: "input",
@@ -75,10 +91,16 @@ export function SalesOrderPage() {
             name: "orderCode",
         },
         {
-            type: "input",
+            type: "select",
             label: "거래처코드",
-            ref: bpCodeRef,
-            name: "bpCode",
+            ref: bpCodeRef as any,
+            options: [
+                { label: "전체", value: "" },
+                ...businessPartnerOptions.map((opt) => ({
+                    label: `${opt.bpCode} (${opt.bpNm ?? '-'})`,
+                    value: opt.bpCode,
+                })),
+            ],
         },
         {
             type: "input",
@@ -87,12 +109,12 @@ export function SalesOrderPage() {
             name: "status",
         },
         {
-            type: "single-date", // 단일 날짜 검색 타입
+            type: "single-date",
             label: "납기일자",
             ref: dueDateRef,
             name: "dueDate",
         },
-    ], []);
+    ], [businessPartnerOptions]);
 
     // URL → SearchBand 값 동기화
     useEffect(() => {
@@ -100,7 +122,7 @@ export function SalesOrderPage() {
         if (bpCodeRef.current) bpCodeRef.current.value = queryBpCode;
         if (statusRef.current) statusRef.current.value = queryStatus;
         if (dueDateRef.current) dueDateRef.current.value = queryDueDate;
-    }, [queryOrderCode, queryBpCode, queryStatus, queryDueDate]);
+    }, [queryOrderCode, queryBpCode, queryStatus, queryDueDate, businessPartnerOptions]);
 
     // 수주 목록 조회
     const loadSalesOrders = useCallback(async () => {
@@ -117,7 +139,7 @@ export function SalesOrderPage() {
             if (queryOrderCode) params.orderCode = queryOrderCode;
             if (queryBpCode) params.bpCode = queryBpCode;
             if (queryStatus) params.status = queryStatus;
-            if (queryDueDate) params.dueDate = queryDueDate; // 단일 날짜 파라미터 전달
+            if (queryDueDate) params.dueDate = queryDueDate;
 
             if (sortParams.length > 0) {
                 params.sort = sortParams;
@@ -187,8 +209,7 @@ export function SalesOrderPage() {
     const handleRowClick = (orderCode: string) => {
         const queryString = searchParams.toString();
         navigate(
-            `/sales/sales-order/${encodeURIComponent(orderCode)}${
-                queryString ? `?${queryString}` : ""
+            `/sales/sales-order/${encodeURIComponent(orderCode)}${queryString ? `?${queryString}` : ""
             }`
         );
     };
@@ -243,8 +264,7 @@ export function SalesOrderPage() {
                 onAction={() => {
                     const queryString = searchParams.toString();
                     navigate(
-                        `/sales/sales-order/create${
-                            queryString ? `?${queryString}` : ""
+                        `/sales/sales-order/create${queryString ? `?${queryString}` : ""
                         }`
                     );
                 }}

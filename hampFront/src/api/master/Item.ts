@@ -27,8 +27,8 @@ export const CATEGORY_LABEL: Record<ItemCategory, string> = {
 /** 공정 라우팅 요청 */
 export interface ItemRoutingRequest {
   operCode?: string | null;
-  operSeq?: number | null;  
-  finalYn?: string | null;  
+  operSeq?: number | null;
+  finalYn?: string | null;
 }
 
 /** 공정 라우팅 응답 */
@@ -42,22 +42,22 @@ export interface ItemRoutingResponse {
 
 /** 품목 등록 요청 */
 export interface ItemCreateRequest {
-  itemCode: string;                 
+  itemCode: string;
   productType?: ProductType | null; // 종류 (0: 식품, 1: 작물)
   category?: ItemCategory | null;   // 품목 구분 (0: 원료, 1: 반제품, 2: 완제품)
-  itemNm?: string | null;           
-  unit?: string | null;             
-  standard?: string | null;         
-  routings?: ItemRoutingRequest[] | null; 
+  itemNm?: string | null;
+  unit?: string | null;
+  standard?: string | null;
+  routings?: ItemRoutingRequest[] | null;
 }
 
 /** 품목 수정 요청 */
 export interface ItemUpdateRequest {
   productType?: ProductType | null; // 종류 (0: 식품, 1: 작물)
   category?: ItemCategory | null;   // 품목 구분 (0: 원료, 1: 반제품, 2: 완제품)
-  itemNm?: string | null;          
-  unit?: string | null;             
-  standard?: string | null;         
+  itemNm?: string | null;
+  unit?: string | null;
+  standard?: string | null;
   routings?: ItemRoutingRequest[] | null;
 }
 
@@ -70,7 +70,7 @@ export interface ItemResponse {
   unit: string;
   standard: string;
   useYn: string;
-  createdAt: string; 
+  createdAt: string;
   updatedAt: string;
 }
 
@@ -88,6 +88,13 @@ export interface ItemDetailResponse {
   routings: ItemRoutingResponse[]; // 상세 조회 시 라우팅 정보 목록 포함
 }
 
+/** 품목 옵션 조회 응답 */
+export interface ItemOptionResponse {
+  itemCode: string;
+  itemNm: string;
+}
+
+
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 품목 단건/기본 응답 API 최종 응답 타입 */
@@ -101,6 +108,9 @@ export type PageItemResponse = PageResponse<ItemResponse>;
 
 /** 품목 목록 페이징 API 최종 응답 타입 */
 export type ApiResponsePageItemResponse = ApiResponsePage<ItemResponse>;
+
+/** 품목 옵션 목록 API 최종 응답 타입 */
+export type ApiResponseListItemOptionResponse = ApiResponse<ItemOptionResponse[]>;
 
 // ── 품목 관리 API 함수 ────────────────────────────────────────────────────────
 
@@ -141,6 +151,12 @@ export const ItemApi = {
   /** 품목 비활성화 (소프트 삭제) */
   delete: async (itemCode: string): Promise<ApiResponse<string>> => {
     const res = await apiClient.delete<ApiResponse<string>>(`/items/${itemCode}`);
+    return res.data;
+  },
+
+  /** 품목 셀렉트 옵션 조회 */
+  getOptions: async (): Promise<ApiResponseListItemOptionResponse> => {
+    const res = await apiClient.get<ApiResponseListItemOptionResponse>('/items/options');
     return res.data;
   },
 };

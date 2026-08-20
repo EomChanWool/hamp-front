@@ -1,12 +1,14 @@
-import { useState, type SyntheticEvent } from "react";
+import { useEffect, useState, type SyntheticEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Panel } from "@components/card/Panel";
 import axios from "axios";
-import { 
-  SalesOrderApi, 
+import {
+  SalesOrderApi,
   type SalesOrderCreateRequest,
-  type SalesOrderLineRequest 
+  type SalesOrderLineRequest
 } from "@/api/sales/SalesOrder";
+import { BusinessPartnerApi } from "@/api/sales/BusinessPartner";
+import { ItemApi } from "@/api/master/Item";
 
 export function SalesOrderCreatePage() {
   const navigate = useNavigate();
@@ -22,6 +24,26 @@ export function SalesOrderCreatePage() {
     note: "",
     lines: [],
   });
+
+  const [businessPartnerOptions, setBusinessPartnerOptions] = useState<any[]>([]);
+  const [itemOptions, setItemOptions] = useState<any[]>([]);
+
+  // 옵션 목록 조회 함수
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const [bpRes, itemRes] = await Promise.all([
+          BusinessPartnerApi.getOptions(),
+          ItemApi.getOptions(),
+        ]);
+        setBusinessPartnerOptions(bpRes.data ?? []);
+        setItemOptions(itemRes.data ?? []);
+      } catch (error) {
+        console.error("옵션 목록 조회 실패:", error);
+      }
+    };
+    fetchOptions();
+  }, []);
 
   const handleChange = (key: keyof SalesOrderCreateRequest, value: any) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -81,57 +103,174 @@ export function SalesOrderCreatePage() {
     <section className="screenStack">
       <Panel title="신규 수주 등록">
         <form className="pageForm" onSubmit={handleSubmit}>
-          {/* 수주 헤더 정보 */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* 1. 기본 정보 입력 필드 영역 */}
+          <div className="detailField">
+            <label className="requiredLabel">
+              수주코드 <span className="required">*</span>
+            </label>
+            <input
+              className="tableInput"
+              value={form.orderCode}
+              onChange={(e) => handleChange("orderCode", e.target.value)}
+              disabled={isSubmitting}
+              placeholder="예: ORD001"
+            />
+          </div>
+
+          <div className="detailField">
+            <label className="requiredLabel">
+              거래처코드 <span className="required">*</span>
+              </label>
+            <select
+              className="tableInput"
+              value={form.bpCode}
+              onChange={(e) => handleChange("bpCode", e.target.value)}
+              disabled={isSubmitting}
+            >
+              <option value="">거래처를 선택해주세요</option>
+              {businessPartnerOptions.map((opt) => (
+                <option key={opt.bpCode} value={opt.bpCode}>
+                  {opt.bpCode} ({opt.bpNm ?? "-"})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="detailField">
+            <label>납기일자</label>
+            <input
+              type="date"
+              className="tableInput"
+              value={form.dueDate ?? ""}
+              onChange={(e) => handleChange("dueDate", e.target.value)}
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div className="detailField">
+            <label>상태</label>
+            <input
+              className="tableInput"
+              value={form.status ?? ""}
+              onChange={(e) => handleChange("status", e.target.value)}
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div className="detailField" style={{ gridColumn: "1 / -1" }}>
+            <label>비고</label>
+            <input
+              className="tableInput"
+              value={form.note ?? ""}
+              onChange={(e) => handleChange("note", e.target.value)}
+              disabled={isSubmitting}
+            />
+          </div>
+
+          {/* 2. 품목 정보 영역 (제일 하단 행 전체 차지) */}
+          <div style={{ gridColumn: "1 / -1", marginTop: "12px" }}>
             <div className="detailField">
-              <label>수주코드 <span className="text-red-500">*</span></label>
-              <input className="tableInput" value={form.orderCode} onChange={(e) => handleChange("orderCode", e.target.value)} disabled={isSubmitting} />
-            </div>
-            <div className="detailField">
-              <label>거래처코드</label>
-              <input className="tableInput" value={form.bpCode} onChange={(e) => handleChange("bpCode", e.target.value)} disabled={isSubmitting} />
-            </div>
-            <div className="detailField">
-              <label>납기일자</label>
-              <input type="date" className="tableInput" value={form.dueDate ?? ""} onChange={(e) => handleChange("dueDate", e.target.value)} disabled={isSubmitting} />
-            </div>
-            <div className="detailField">
-              <label>비고</label>
-              <input className="tableInput" value={form.note ?? ""} onChange={(e) => handleChange("note", e.target.value)} disabled={isSubmitting} />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <label className="requiredLabel" style={{ margin: 0, fontWeight: 600 }}>품목 정보</label>
+                <button type="button" className="miniButton primary" onClick={addLine} disabled={isSubmitting}>
+                  + 품목 추가
+                </button>
+              </div>
+
+              <div className="tableWrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>
+                        <div className="th-content">품목코드</div>
+                      </th>
+                      <th>
+                        <div className="th-content">주문수량</div>
+                      </th>
+                      <th>
+                        <div className="th-content">주문금액</div>
+                      </th>
+                      <th>
+                        <div className="th-content">삭제</div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {form.lines?.map((line, idx) => (
+                      <tr key={idx}>
+                        <td>
+                          <select
+                            className="tableInput"
+                            value={line.itemCode}
+                            onChange={(e) => handleLineChange(idx, "itemCode", e.target.value)}
+                            disabled={isSubmitting}
+                          >
+                            <option value="">품목을 선택해주세요</option>
+                            {itemOptions.map((opt) => (
+                              <option key={opt.itemCode} value={opt.itemCode}>
+                                {opt.itemCode} ({opt.itemNm ?? "-"})
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            className="tableInput"
+                            style={{ textAlign: "right" }}
+                            value={line.orderQty}
+                            disabled={isSubmitting}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9]/g, "");
+                              handleLineChange(idx, "orderQty", val === "" ? 0 : Number(val));
+                            }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            className="tableInput"
+                            style={{ textAlign: "right" }}
+                            value={line.orderAmount}
+                            disabled={isSubmitting}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9]/g, "");
+                              handleLineChange(idx, "orderAmount", val === "" ? 0 : Number(val));
+                            }}
+                          />
+                        </td>
+                        <td style={{ textAlign: "center" }}>
+                          <button
+                            type="button"
+                            className="miniButton danger"
+                            onClick={() => removeLine(idx)}
+                            disabled={isSubmitting}
+                          >
+                            삭제
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {(!form.lines || form.lines.length === 0) && (
+                      <tr>
+                        <td colSpan={4} style={{ textAlign: "center", padding: "20px" }}>
+                          등록된 품목 정보가 없습니다. 우측 상단의 [+ 품목 추가] 버튼을 눌러주세요.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
-          {/* 품목 리스트 */}
-          <div className="mt-6">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg font-bold">품목 정보</h3>
-              <button type="button" className="secondaryButton" onClick={addLine}>+ 품목 추가</button>
-            </div>
-            <table className="w-full border-collapse border">
-              <thead>
-                <tr>
-                  <th className="border p-2">품목코드</th>
-                  <th className="border p-2">수량</th>
-                  <th className="border p-2">금액</th>
-                  <th className="border p-2">삭제</th>
-                </tr>
-              </thead>
-              <tbody>
-                {form.lines?.map((line, idx) => (
-                  <tr key={idx}>
-                    <td className="border p-2"><input className="w-full" value={line.itemCode} onChange={(e) => handleLineChange(idx, "itemCode", e.target.value)} /></td>
-                    <td className="border p-2"><input type="number" className="w-full text-right" value={line.orderQty} onChange={(e) => handleLineChange(idx, "orderQty", Number(e.target.value))} /></td>
-                    <td className="border p-2"><input type="number" className="w-full text-right" value={line.orderAmount} onChange={(e) => handleLineChange(idx, "orderAmount", Number(e.target.value))} /></td>
-                    <td className="border p-2 text-center"><button type="button" className="text-red-500" onClick={() => removeLine(idx)}>삭제</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* 버튼 영역 */}
-          <div className="pageFormFooter mt-6">
-            <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>취소</button>
+          {/* 3. 하단 푸터 버튼 영역 */}
+          <div className="pageFormFooter" style={{ gridColumn: "1 / -1" }}>
+            <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
+              취소
+            </button>
             <button type="submit" className="primaryButton" disabled={isSubmitting}>
               {isSubmitting ? "등록 중..." : "등록"}
             </button>

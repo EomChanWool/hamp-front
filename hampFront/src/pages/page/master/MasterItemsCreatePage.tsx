@@ -186,7 +186,7 @@ export function MasterItemsCreatePage() {
 
           <div className="detailField">
             <label>품목명</label>
-            <input className="tableInput" value={form.itemNm} disabled={isSubmitting} onChange={(e) => handleChange("itemNm", e.target.value)} placeholder="예: 사과 통조림" />
+            <input className="tableInput" value={form.itemNm} disabled={isSubmitting} onChange={(e) => handleChange("itemNm", e.target.value)} placeholder="예: 헴프 파우더" />
           </div>
 
           <div className="detailField">
