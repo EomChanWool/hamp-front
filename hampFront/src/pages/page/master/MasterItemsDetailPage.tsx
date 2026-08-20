@@ -59,6 +59,7 @@ export function MasterItemsDetailPage() {
     syncRoutings,
     removeRouting: handleRemoveRouting,
     updateRouting: handleRoutingChange,
+    moveRouting,
     handleMouseDown,
     handleMouseEnter,
     handleMouseUp,
@@ -442,7 +443,6 @@ export function MasterItemsDetailPage() {
                         ref={(el) => {
                           routingItemRefs.current[index] = el;
                         }}
-                        // 수정 모드일 때만 0, 읽기 전용일 때는 tabIndex 자체를 없애서(undefined) 포커스 원천 차단
                         tabIndex={isEditing && !isBusy ? 0 : undefined}
                         role={isEditing ? "button" : undefined}
                         aria-pressed={isEditing ? isKeyboardActive : undefined}
@@ -456,10 +456,9 @@ export function MasterItemsDetailPage() {
                         onKeyDown={(e) => {
                           if (!isEditing || isBusy) return;
 
-                          // 1. 방향키 단독 입력 시 2D 그리드 포커스 이동 (상, 하, 좌, 우)
                           if (keyboardActiveIndex === null && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
                             let nextIndex = index;
-                            const columns = 2; // 2열 그리드 구조
+                            const columns = 2;
 
                             switch (e.key) {
                               case "ArrowUp": nextIndex = index - columns; break;
@@ -475,7 +474,6 @@ export function MasterItemsDetailPage() {
                             return;
                           }
 
-                          // 2. Space/Enter 잡기·놓기 및 잡은 상태에서의 방향키 순서 변경 처리
                           const nextIndex = handleKeyDown(e, index, 2);
                           if (nextIndex !== undefined) {
                              setTimeout(() => routingItemRefs.current[nextIndex]?.focus(), 0);
@@ -483,14 +481,36 @@ export function MasterItemsDetailPage() {
                         }}
                       >
                         {isEditing && (
-                          <span className="dragHandle" title="Space/Enter로 잡고 방향키로 이동">
+                          <span className="dragHandle" title="마우스로 잡고 이동">
                             ☰
                           </span>
                         )}
 
-                        <span className="routingSeq">
-                          순서 {route.operSeq ?? index + 1}
-                        </span>
+                        {/* 순서 드롭다운 영역 */}
+                        <div className="routingSeq">
+                          {isEditing ? (
+                            <select
+                              className="tableInput"
+                              style={{ width: "100%", padding: "2px 4px", height: "26px", fontSize: "12px", textAlign: "center" }}
+                              value={route.operSeq ?? index + 1}
+                              disabled={isBusy}
+                              tabIndex={-1}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => {
+                                const newSeq = Number(e.target.value);
+                                moveRouting(index, newSeq - 1);
+                              }}
+                            >
+                              {routings.map((_, idx) => (
+                                <option key={idx + 1} value={idx + 1}>
+                                  {idx + 1}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span>순서 {route.operSeq ?? index + 1}</span>
+                          )}
+                        </div>
 
                         <div className="routingInfo">
                           {route.operCode} {matchedOp ? `(${matchedOp.operNm})` : ""}

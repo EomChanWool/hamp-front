@@ -48,7 +48,7 @@ export function MasterItemsCreatePage() {
     standard: "",
   });
 
-  // 커스텀 훅을 통한 공정 라우팅 및 드래그/키보드 이동 관리
+  // 커스텀 훅을 통한 공정 라우팅 및 드래그/키보드 이동 관리 (moveRouting 추가)
   const {
     routings,
     draggingIndex,
@@ -61,6 +61,7 @@ export function MasterItemsCreatePage() {
     handleMouseEnter,
     handleMouseUp,
     handleKeyDown,
+    moveRouting,
   } = useItemRoutings();
 
   // 다중 선택 팝업 모달 관련 상태
@@ -208,9 +209,9 @@ export function MasterItemsCreatePage() {
 
               {/* 조작 가이드 안내 */}
               <div className="routingHint">
-                💡 <kbd>마우스</kbd>로 공정 카드를 선택하거나 드래그 하세요.
+                  💡 <kbd>마우스</kbd>로 공정 카드를 선택하거나 드래그 하세요.
                   <kbd>방향키</kbd>로 공정 카드를 탐색하고, <kbd>Space</kbd>/<kbd>Enter</kbd>로 선택(잡기) 후 이동하세요. (<kbd>Esc</kbd> 취소)
-              </div>
+                </div>
 
               {routings.length === 0 ? (
                 <div className="routingEmptyBox">선택된 공정이 없습니다. [공정 선택 / 추가] 버튼을 눌러주세요.</div>
@@ -259,34 +260,66 @@ export function MasterItemsCreatePage() {
                             return;
                           }
 
-                          // 훅의 handleKeyDown 호출 (Space/Enter 잡기·놓기, 잡은 상태에서의 방향키 이동 처리)
+                          // 훅의 handleKeyDown 호출
                           const nextIndex = handleKeyDown(e, index, 2);
                           if (nextIndex !== undefined) {
                              setTimeout(() => itemRefs.current[nextIndex]?.focus(), 0);
                           }
                         }}
                       >
-                        <span className="dragHandle" title="Space/Enter로 잡고 방향키로 이동">☰</span>
-                        <span className="routingSeq">순서 {route.operSeq}</span>
-                        <div className="routingInfo">{route.operCode} {matchedOp ? `(${matchedOp.operNm})` : ""}</div>
+                        {/* 1. 드래그 핸들 */}
+                        <span className="dragHandle" title="마우스로 잡고 이동">☰</span>
                         
-                        {/* Tab 키가 내부 select나 button으로 새지 않도록 tabIndex={-1} 처리 */}
+                        {/* 2. 기존 routingSeq 클래스를 그대로 활용한 순서 드롭다운 영역 */}
+                        <div className="routingSeq">
+                          <select
+                            className="tableInput"
+                            style={{ width: "100%", padding: "2px 4px", height: "26px", fontSize: "12px" }}
+                            value={route.operSeq ?? 0}
+                            disabled={isSubmitting}
+                            tabIndex={-1}
+                            onClick={(e) => e.stopPropagation()} // 드롭다운 클릭 시 드래그 방지
+                            onChange={(e) => {
+                              const newSeq = Number(e.target.value);
+                              moveRouting(index, newSeq - 1);
+                            }}
+                          >
+                            {routings.map((_, idx) => (
+                              <option key={idx + 1} value={idx + 1}>
+                                {idx + 1}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* 3. 공정 정보 */}
+                        <div className="routingInfo">
+                          {route.operCode} {matchedOp ? `(${matchedOp.operNm})` : ""}
+                        </div>
+                        
+                        {/* 4. 일반/최종공정 셀렉트 */}
                         <select 
                           className="tableInput routingSelect" 
                           value={route.finalYn ?? "N"} 
                           disabled={isSubmitting} 
                           tabIndex={-1}
+                          onClick={(e) => e.stopPropagation()}
                           onChange={(e) => handleRoutingChange(index, "finalYn", e.target.value)}
                         >
                           <option value="N">일반공정</option>
                           <option value="Y">최종공정</option>
                         </select>
+
+                        {/* 5. 제외 버튼 */}
                         <button 
                           type="button" 
                           className="miniButton danger" 
                           disabled={isSubmitting} 
                           tabIndex={-1}
-                          onClick={() => handleRemoveRouting(index)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveRouting(index);
+                          }}
                         >
                           제외
                         </button>
