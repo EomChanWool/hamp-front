@@ -10,8 +10,8 @@ import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
 import { formatDateTime } from "@/utils/common";
 import { useTableSorting } from "@/hooks/useTableSorting";
-
-import type { SalesOrderResponse } from "@/api/sales/SalesOrder"; 
+import { BusinessPartnerApi, type BusinessPartnerOptionResponse } from "@/api/sales/BusinessPartner";
+import type { SalesOrderResponse } from "@/api/sales/SalesOrder";
 import { SalesOrderApi } from "@/api/sales/SalesOrder";
 import Spinner from "@/components/common/Spinner";
 
@@ -20,11 +20,12 @@ export function SalesOrderPage() {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [salesOrders, setSalesOrders] = useState<SalesOrderResponse[]>([]);
+    const [businessPartnerOptions, setBusinessPartnerOptions] = useState<BusinessPartnerOptionResponse[]>([]);
+
     const [totalElements, setTotalElements] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
 
-    // 새로고침 초기화가 끝난 뒤에 목록 조회를 시작하기 위한 상태
     const [isReady, setIsReady] = useState(false);
 
     const {
@@ -33,40 +34,26 @@ export function SalesOrderPage() {
         handleSortingChange,
     } = useTableSorting();
 
-    // [정확한 새로고침 감지]
-    // 브라우저가 닫히거나 새로고침(F5)될 때만 플래그 설정
+    // 정확한 새로고침 감지 및 초기화 로직
     useEffect(() => {
         const handleBeforeUnload = () => {
             sessionStorage.setItem("is_browser_reload", "true");
         };
         window.addEventListener("beforeunload", handleBeforeUnload);
-        return () => {
-            window.removeEventListener("beforeunload", handleBeforeUnload);
-        };
-    }, []);
 
-    // 진입 시 실제 브라우저 새로고침 여부 확인 후 검색 조건 초기화
-    useEffect(() => {
         const isReload = sessionStorage.getItem("is_browser_reload") === "true";
-
         if (isReload) {
             sessionStorage.removeItem("is_browser_reload");
             if (searchParams.toString()) {
                 setSearchParams({}, { replace: true });
-                return;
             }
         }
-
         setIsReady(true);
-    }, []);
 
-    // 새로고침 때문에 setSearchParams가 실행된 경우 조회 가능 상태로 변경
-    useEffect(() => {
-        const isReload = sessionStorage.getItem("is_browser_reload") === "true";
-        if (!isReload && !isReady) {
-            setIsReady(true);
-        }
-    }, [searchParams, isReady]);
+        return () => {
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+        };
+    }, []);
 
     // URL에서 현재 검색조건 추출
     const currentPage = Number(searchParams.get("page") || "0");
@@ -75,14 +62,28 @@ export function SalesOrderPage() {
     const queryStatus = searchParams.get("status") || "";
     const queryDueDate = searchParams.get("dueDate") || "";
 
-    // 검색 input / select refs
+    // 검색 input
     const orderCodeRef = useRef<HTMLInputElement>(null);
-    const bpCodeRef = useRef<HTMLInputElement>(null);
-    const statusRef = useRef<HTMLInputElement>(null); 
+    const bpCodeRef = useRef<HTMLSelectElement>(null);
+    const statusRef = useRef<HTMLInputElement>(null);
     const dueDateRef = useRef<HTMLInputElement>(null);
 
+    // 거래처 옵션 API 호출
+    const loadBusinessPartnerOptions = useCallback(async () => {
+        try {
+            const response = await BusinessPartnerApi.getOptions();
+            setBusinessPartnerOptions(response.data ?? []);
+        } catch (error) {
+            console.error("공장 옵션 목록 조회 실패:", error);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadBusinessPartnerOptions();
+    }, [loadBusinessPartnerOptions]);
+
     // 검색 필드 정의
-    const searchFields: SearchField[] = [
+    const searchFields: SearchField[] = useMemo(() => [
         {
             type: "input",
             label: "수주코드",
@@ -90,10 +91,16 @@ export function SalesOrderPage() {
             name: "orderCode",
         },
         {
-            type: "input",
+            type: "select",
             label: "거래처코드",
-            ref: bpCodeRef,
-            name: "bpCode",
+            ref: bpCodeRef as any,
+            options: [
+                { label: "전체", value: "" },
+                ...businessPartnerOptions.map((opt) => ({
+                    label: `${opt.bpCode} (${opt.bpNm ?? '-'})`,
+                    value: opt.bpCode,
+                })),
+            ],
         },
         {
             type: "input",
@@ -102,39 +109,24 @@ export function SalesOrderPage() {
             name: "status",
         },
         {
-            type: "input", // 날짜 타입 컴포넌트에 맞춰 "date" 또는 "input" 사용
+            type: "single-date",
             label: "납기일자",
             ref: dueDateRef,
             name: "dueDate",
         },
-    ];
+    ], [businessPartnerOptions]);
 
-    // URL → SearchBand input / select 동기화
+    // URL → SearchBand 값 동기화
     useEffect(() => {
-        if (orderCodeRef.current) {
-            orderCodeRef.current.value = queryOrderCode;
-        }
-        if (bpCodeRef.current) {
-            bpCodeRef.current.value = queryBpCode;
-        }
-        if (statusRef.current) {
-            statusRef.current.value = queryStatus;
-        }
-        if (dueDateRef.current) {
-            dueDateRef.current.value = queryDueDate;
-        }
-    }, [
-        queryOrderCode,
-        queryBpCode,
-        queryStatus,
-        queryDueDate,
-    ]);
+        if (orderCodeRef.current) orderCodeRef.current.value = queryOrderCode;
+        if (bpCodeRef.current) bpCodeRef.current.value = queryBpCode;
+        if (statusRef.current) statusRef.current.value = queryStatus;
+        if (dueDateRef.current) dueDateRef.current.value = queryDueDate;
+    }, [queryOrderCode, queryBpCode, queryStatus, queryDueDate, businessPartnerOptions]);
 
     // 수주 목록 조회
     const loadSalesOrders = useCallback(async () => {
-        if (!isReady) {
-            return;
-        }
+        if (!isReady) return;
 
         setIsLoading(true);
 
@@ -144,18 +136,10 @@ export function SalesOrderPage() {
                 size: 10,
             };
 
-            if (queryOrderCode) {
-                params.orderCode = queryOrderCode;
-            }
-            if (queryBpCode) {
-                params.bpCode = queryBpCode;
-            }
-            if (queryStatus) {
-                params.status = queryStatus;
-            }
-            if (queryDueDate) {
-                params.dueDate = queryDueDate;
-            }
+            if (queryOrderCode) params.orderCode = queryOrderCode;
+            if (queryBpCode) params.bpCode = queryBpCode;
+            if (queryStatus) params.status = queryStatus;
+            if (queryDueDate) params.dueDate = queryDueDate;
 
             if (sortParams.length > 0) {
                 params.sort = sortParams;
@@ -173,15 +157,7 @@ export function SalesOrderPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [
-        isReady,
-        currentPage,
-        queryOrderCode,
-        queryBpCode,
-        queryStatus,
-        queryDueDate,
-        sortParams,
-    ]);
+    }, [isReady, currentPage, queryOrderCode, queryBpCode, queryStatus, queryDueDate, sortParams]);
 
     useEffect(() => {
         loadSalesOrders();
@@ -197,29 +173,17 @@ export function SalesOrderPage() {
         const status = statusRef.current?.value.trim() || "";
         const dueDate = dueDateRef.current?.value.trim() || "";
 
-        if (orderCode) {
-            nextParams.set("orderCode", orderCode);
-        } else {
-            nextParams.delete("orderCode");
-        }
+        if (orderCode) nextParams.set("orderCode", orderCode);
+        else nextParams.delete("orderCode");
 
-        if (bpCode) {
-            nextParams.set("bpCode", bpCode);
-        } else {
-            nextParams.delete("bpCode");
-        }
+        if (bpCode) nextParams.set("bpCode", bpCode);
+        else nextParams.delete("bpCode");
 
-        if (status) {
-            nextParams.set("status", status);
-        } else {
-            nextParams.delete("status");
-        }
+        if (status) nextParams.set("status", status);
+        else nextParams.delete("status");
 
-        if (dueDate) {
-            nextParams.set("dueDate", dueDate);
-        } else {
-            nextParams.delete("dueDate");
-        }
+        if (dueDate) nextParams.set("dueDate", dueDate);
+        else nextParams.delete("dueDate");
 
         setSearchParams(nextParams);
     };
@@ -245,8 +209,7 @@ export function SalesOrderPage() {
     const handleRowClick = (orderCode: string) => {
         const queryString = searchParams.toString();
         navigate(
-            `/sales/sales-order/${encodeURIComponent(orderCode)}${
-                queryString ? `?${queryString}` : ""
+            `/sales/sales-order/${encodeURIComponent(orderCode)}${queryString ? `?${queryString}` : ""
             }`
         );
     };
@@ -301,8 +264,7 @@ export function SalesOrderPage() {
                 onAction={() => {
                     const queryString = searchParams.toString();
                     navigate(
-                        `/sales/sales-order/create${
-                            queryString ? `?${queryString}` : ""
+                        `/sales/sales-order/create${queryString ? `?${queryString}` : ""
                         }`
                     );
                 }}

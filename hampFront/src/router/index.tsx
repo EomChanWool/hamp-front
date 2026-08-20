@@ -97,6 +97,9 @@ import { InpiDefectStatusPage } from '@pages/page/inpi/InpiDefectStatusPage'
 import { DeliveryManagePage } from '@pages/page/sales/DeliveryManagePage'
 import { DeliveryStatusPage } from '@pages/page/sales/DeliveryStatusPage'
 import { SalesOrderPage } from '@pages/page/sales/SalesOrderPage'
+import { SalesOrderCreatePage } from '@pages/page/sales/SalesOrderCreatePage'
+import { SalesOrderDetailPage } from '@pages/page/sales/SalesOrderDetailPage'
+
 import { OrderStatusPage } from '@pages/page/sales/OrderStatusPage'
 import { OrderPerformancePage } from '@pages/page/sales/OrderPerformancePage'
 import { SalesBusinessPartnerPage } from '@/pages/page/sales/SalesBusinessPartnerPage'
@@ -231,6 +234,8 @@ export const menuRoutes: MenuRouteGroup[] = [
     path: '/sales',
     items: [
       { path: 'sales-order', name: '수주관리', element: <SalesOrderPage /> },
+      { path: 'sales-order/create', name: '수주 등록', element: <SalesOrderCreatePage />, hidden: true },
+      { path: 'sales-order/:orderCode', name: '수주 상세', element: <SalesOrderDetailPage />, hidden: true },
       { path: 'delivery-manage', name: '납품관리', element: <DeliveryManagePage /> },
       { path: 'business-partner', name: '거래처관리', element: <SalesBusinessPartnerPage /> },
       { path: 'business-partner/create', name: '거래처 등록', element: <SalesBusinessPartnerCreatePage />, hidden: true },

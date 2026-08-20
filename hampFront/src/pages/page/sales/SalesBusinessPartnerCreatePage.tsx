@@ -110,7 +110,7 @@ export function SalesBusinessPartnerCreatePage() {
               value={form.bpNm ?? ""}
               disabled={isSubmitting}
               onChange={(e) => handleChange("bpNm", e.target.value)}
-              placeholder="예: (주)한국상사"
+              placeholder="예: (주)한국헴프"
               maxLength={100}
             />
           </div>
