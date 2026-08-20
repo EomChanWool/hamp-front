@@ -219,8 +219,8 @@ export function SalesOrderPage() {
         () => [
             { accessorKey: "orderCode", header: "수주코드" },
             {
-                accessorKey: "bpCode",
-                header: "거래처코드",
+                accessorKey: "bpNm",
+                header: "거래처명",
                 cell: ({ getValue }) => getValue<string>() || "-",
             },
             {
@@ -231,11 +231,6 @@ export function SalesOrderPage() {
             {
                 accessorKey: "status",
                 header: "상태",
-                cell: ({ getValue }) => getValue<string>() || "-",
-            },
-            {
-                accessorKey: "note",
-                header: "비고",
                 cell: ({ getValue }) => getValue<string>() || "-",
             },
             {
