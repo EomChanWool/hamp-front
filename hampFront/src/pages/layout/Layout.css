@@ -612,83 +612,158 @@
 }
 
 /* ================================
-   DetailLayout
+   DetailLayout — Card Grid
 ================================ */
-
 .detailCard {
+  --dl-bg: #fcfcfb;
+  --dl-panel: #ffffff;
+  --dl-ink: #14181f;
+  --dl-ink-soft: #5b6472;
+  --dl-ink-faint: #9aa3b0;
+  --dl-line: #e3e6ea;
+  --dl-line-strong: #c7cdd5;
+
+  --dl-accent: #0f6e5c;
+  --dl-accent-soft: #e7f3f0;
+  --dl-accent-ink: #0a4a3e;
+
+  --dl-danger: #c0293d;
+  --dl-danger-soft: #fbe9eb;
+
+  --dl-mono: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, monospace;
+
   display: flex;
   flex-direction: column;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  background: var(--dl-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
   overflow: hidden;
 }
 
-/* 헤더 */
+/* ================================
+   헤더
+================================ */
 .detailHeader {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  padding: 20px 24px;
-  border-bottom: 1px solid #f0f0f0;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 20px 24px 16px;
 }
 
 .detailHeaderTitleGroup {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
 }
 
 .detailTitle {
-  font-size: 20px;
-  font-weight: 600;
-  color: #111827;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--dl-ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .detailCode {
-  font-size: 13px;
-  color: #9ca3af;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--dl-line-strong);
+  border-radius: 5px;
+  background: var(--dl-bg);
+  color: var(--dl-ink-soft);
+  font-family: var(--dl-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   white-space: nowrap;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.detailCode::before {
+  content: "#";
+  margin-right: 2px;
+  color: var(--dl-ink-faint);
+  font-weight: 500;
 }
 
 .detailMeta {
-  font-size: 13px;
-  color: #6b7280;
+  font-family: var(--dl-mono);
+  font-size: 11px;
+  color: var(--dl-ink-faint);
   white-space: nowrap;
 }
 
-/* 본문 */
+/* ================================
+   본문 — 카드형 섹션
+================================ */
 .detailBody {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 18px;
 }
 
 .detailSection {
-  display: flex;
-  flex-direction: column;
+  border: 1px solid var(--dl-line);
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: var(--dl-panel);
+}
+
+/* fullWidth 필드가 하나라도 있는 섹션(예: 주소)은 2열 전체 사용 */
+.detailSection:has(.detailField--full) {
+  grid-column: 1 / -1;
 }
 
 .detailSectionTitle {
-  font-size: 13px;
-  font-weight: 600;
-  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dl-ink);
   margin: 0 0 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--dl-line);
 }
 
+/* 섹션 타이틀 앞 아이콘 배지 — .detailSectionIcon 사용 시 자동 스타일 */
+.detailSectionIcon {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--dl-accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: var(--dl-accent-ink);
+  flex-shrink: 0;
+}
+
+/* ================================
+   필드 그리드
+================================ */
 .detailGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px 24px;
+  display: flex;
+  gap: 12px;
+}
+
+/* 필드 3개 미만인 섹션(기본정보/분류정보처럼 세로 나열)은 1열로 */
+.detailSection:not(:has(.detailField--full)) .detailGrid {
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
 
 .detailField {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -700,35 +775,94 @@
 }
 
 .detailField label {
-  font-size: 13px;
-  color: #6b7280;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dl-ink-faint);
+  padding-left: 5px;
 }
 
 .detailField label.requiredLabel {
-  color: #374151;
-  font-weight: 500;
+  color: var(--dl-ink);
+  font-weight: 600;
 }
 
 .detailField label .required {
-  color: #ef4444;
+  color: var(--dl-danger);
+  margin-left: 2px;
 }
 
+/* 읽기 전용 값 */
 .detailValue {
-  font-size: 14px;
-  color: #111827;
-  min-height: 36px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dl-ink);
+  min-height: 20px;
   display: flex;
   align-items: center;
+  word-break: break-word;
+  padding: 6px 10px;
 }
 
-/* 푸터 */
+/* 뱃지형 값 (거래유형, 상태 등) — renderValue에서 className="detailBadge" 부여 시 사용 */
+.detailBadge {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--dl-accent-ink);
+  background: var(--dl-accent-soft);
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+
+/* 입력 필드 (edit 모드) */
+.tableInput {
+  height: 34px;
+  padding: 0 10px;
+  font-size: 13px;
+  color: var(--dl-ink);
+  background: var(--dl-bg);
+  border: 1px solid var(--dl-line-strong);
+  border-radius: 5px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.tableInput::placeholder {
+  color: var(--dl-ink-faint);
+}
+
+.tableInput:hover:not(:disabled) {
+  border-color: var(--dl-ink-faint);
+}
+
+.tableInput:focus {
+  background: var(--dl-panel);
+  border-color: var(--dl-accent);
+  box-shadow: 0 0 0 3px var(--dl-accent-soft);
+}
+
+.tableInput:disabled {
+  background: var(--dl-line);
+  color: var(--dl-ink-faint);
+  cursor: not-allowed;
+}
+
+/* 필수 입력 + 편집 중인 fullWidth 필드(주소 등) 강조 카드 */
+.detailSection:has(.tableInput:focus) {
+  border-color: var(--dl-accent);
+}
+
+/* ================================
+   푸터
+================================ */
 .detailFooter {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
-  border-top: 1px solid #f0f0f0;
-  background: #fafafa;
+  padding: 14px 24px;
+  border-top: 1px solid var(--dl-line-strong);
+  background: var(--dl-bg);
 }
 
 .detailFooterActions {
@@ -737,15 +871,79 @@
   align-items: center;
 }
 
-/* 반응형: 좁은 화면에서는 1열로 */
-@media (max-width: 640px) {
-  .detailGrid {
-    grid-template-columns: 1fr;
-  }
+.detailFooter button {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--dl-line-strong);
+  background: var(--dl-panel);
+  color: var(--dl-ink-soft);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, transform 0.05s ease;
+}
 
+.detailFooter button:hover {
+  border-color: var(--dl-ink-faint);
+  color: var(--dl-ink);
+}
+
+.detailFooter button:active {
+  transform: translateY(1px);
+}
+
+.detailFooter button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.detailFooter .btnPrimary {
+  background: var(--dl-ink);
+  border-color: var(--dl-ink);
+  color: #ffffff;
+}
+
+.detailFooter .btnPrimary:hover {
+  background: var(--dl-accent-ink);
+  border-color: var(--dl-accent-ink);
+}
+
+.detailFooter .btnDanger {
+  color: var(--dl-danger);
+  border-color: var(--dl-danger-soft);
+}
+
+.detailFooter .btnDanger:hover {
+  background: var(--dl-danger-soft);
+  border-color: var(--dl-danger);
+}
+
+.detailFooter button:focus-visible,
+.tableInput:focus-visible {
+  outline: 2px solid var(--dl-accent);
+  outline-offset: 2px;
+}
+
+/* ================================
+   반응형
+================================ */
+@media (max-width: 640px) {
   .detailHeader {
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
+    gap: 6px;
+    padding: 16px 20px 14px;
+  }
+
+  .detailBody {
+    grid-template-columns: 1fr;
+    padding: 16px 20px;
+    gap: 12px;
+  }
+
+  .detailFooter {
+    padding: 12px 20px;
   }
 }
