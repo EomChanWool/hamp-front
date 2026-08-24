@@ -259,7 +259,7 @@ export function SystemUserDetailPage() {
           user.use && (
             <button
               type="button"
-              className="dangerButton text-sm text-red-500 hover:underline px-2 py-1"
+              className="btnDanger"
               onClick={handleDeactivate}
               disabled={isBusy}
             >
