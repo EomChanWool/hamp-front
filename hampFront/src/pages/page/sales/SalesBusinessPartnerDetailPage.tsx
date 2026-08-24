@@ -28,16 +28,20 @@ export function SalesBusinessPartnerDetailPage() {
   // 필드 정의: 헤더/섹션 구조에 맞게 그룹핑
   const sections: DetailSection<BusinessPartnerResponse>[] = [
     {
-      title: "거래처 정보",
+      title: "기본 정보",
       fields: [
         { label: "거래처명", key: "bpNm", editable: true },
         { label: "대표자명", key: "ceoNm", editable: true },
         { label: "전화번호", key: "phone", editable: true },
+      ],
+    },
+    {
+      title: "주소 정보",
+      fields: [
         {
           label: "주소",
           key: "address",
           editable: true,
-          fullWidth: true,
           renderEditor: (value, onChange, disabled) => (
             <AddressSearchInput value={value} onChange={onChange} disabled={disabled} />
           ),

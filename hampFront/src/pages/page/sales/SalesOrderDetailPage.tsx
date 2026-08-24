@@ -62,7 +62,7 @@ export function SalesOrderDetailPage() {
       fields: [
         { label: "납기일자", key: "dueDate", editable: true },
         { label: "상태", key: "status", editable: true },
-        { label: "비고", key: "note", editable: true, fullWidth: true },
+        { label: "비고", key: "note", editable: true },
       ],
     },
   ];
@@ -286,7 +286,7 @@ export function SalesOrderDetailPage() {
         }
       >
         {/* 품목 정보 테이블 영역 */}
-        <div className="detailSection">
+        <div className="detailSection detailSection--full">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
             <h3 className="detailSectionTitle" style={{ margin: 0 }}>품목 정보</h3>
             {isEditing && (
