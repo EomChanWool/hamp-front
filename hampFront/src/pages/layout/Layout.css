@@ -362,13 +362,14 @@
   background: #fee2e2;
   color: #dc2626;
 }
+
 /* ================================
-   MAIN CONTENT
+    MAIN CONTENT
 ================================ */
 
 .mainContent {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-columns: 310px minmax(0, 1fr);
   transition: grid-template-columns 0.3s ease;
   flex: 1;
   min-height: 0;
@@ -376,45 +377,44 @@
 }
 
 .mainContent.collapsed {
-  grid-template-columns: 72px 1fr;
+  grid-template-columns: 84px 1fr;
 }
 
 /* ================================
-   SIDEBAR (메인 틀: 스크롤 및 숨김 처리 제거)
+    SIDEBAR
 ================================ */
 .sidebar {
   color: var(--text-main);
   background: var(--bg-card);
   border-right: 1px solid var(--border);
-  padding: 16px 12px;
+  padding: 20px 16px; 
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  height: 100%; /* 전체 높이는 유지하되 */
-  /* overflow-y: auto; <-- 이 줄을 제거하여 서브메뉴가 바깥으로 튀어나갈 수 있게 함 */
-  overflow: visible; /* 팝업이 잘리지 않도록 허용 */
+  gap: 12px; 
+  height: 100%;
+  overflow-y: auto; /* 사이드바 전체에 스크롤 부여 */
+  overflow-x: visible !important; /* 가로축은 절대 잘리지 않도록 강제 */
   box-sizing: border-box;
+
+  scrollbar-width: thin; /* 파이어폭스용 얇은 스크롤바 */
+ scrollbar-color: #e2e8f0 transparent; /* (막대 색상, 트랙 색상) */
 }
 
-/* ================================
-   SIDEBAR MENU WRAPPER (내부 스크롤 영역)
-================================ */
 .sidebarMenuWrapper {
-  flex: 1;              /* 남은 공간을 모두 차지 */
-  overflow-y: auto;     /* 메뉴가 많을 경우 여기만 스크롤 생성 */
-  overflow-x: visible;  /* 가로 넘침은 허용 */
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px; 
+  width: 100%;
+  overflow: visible !important; /* 내부 래퍼도 가로축 잘림 방지 */
 }
 
 /* ================================
-   NAV
+    NAV
 ================================ */
 
 .navMenu {
   display: grid;
-  gap: 2px;
+  gap: 4px; 
 }
 
 .navGroup {
@@ -423,15 +423,15 @@
 
 .navGroupHeader {
   width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 13px 16px; 
+  border-radius: 12px; 
   background: transparent;
   color: var(--text-main);
   border: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
   text-align: left;
   transition:
     background 0.2s ease,
@@ -442,18 +442,18 @@
 .navGroupHeader .groupLabel {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   overflow: hidden;
 }
 
 .navGroupHeader .groupLabel svg {
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
 }
 
 .navGroupHeader .groupLabel span {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -462,14 +462,14 @@
 
 .navGroupHeader .chevron {
   flex-shrink: 0;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   color: inherit;
   opacity: 0.6;
 }
 
 .navGroupHeader svg {
-  width: 14px;
+  width: 16px;
 }
 
 .navGroup.current .navGroupHeader,
@@ -482,8 +482,8 @@
 /* collapsed */
 .mainContent.collapsed .navGroupHeader {
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 52px; 
+  height: 52px;
   padding: 0;
 }
 
@@ -496,14 +496,14 @@
 }
 
 /* ================================
-   NAV ITEMS
+    NAV ITEMS
 ================================ */
 
 .navItems {
   display: grid;
-  gap: 2px;
-  padding-left: 12px;
-  margin-top: 3px;
+  gap: 4px;
+  padding-left: 16px;
+  margin-top: 4px;
   max-height: 0;
   overflow: hidden;
   opacity: 0;
@@ -515,7 +515,7 @@
 }
 
 .navItems.open {
-  max-height: 500px;
+  max-height: 600px;
   opacity: 1;
   transform: translateY(0);
 }
@@ -524,9 +524,9 @@
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 10px;
-  border-radius: 8px;
+  gap: 12px; 
+  padding: 9px 14px;
+  border-radius: 10px;
   background: transparent;
   color: var(--text-sub);
   text-align: left;
@@ -547,8 +547,8 @@
 
 .navItems button svg {
   flex-shrink: 0;
-  width: 15px;
-  height: 15px;
+  width: 18px;
+  height: 18px;
   color: #7d8a91;
 }
 
@@ -557,7 +557,7 @@
 }
 
 .navItems button span {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -577,20 +577,17 @@
 
 .mainContent.collapsed .navItems,
 .mainContent.collapsed .navItems.open {
-  position: absolute;
-  left: calc(100% + 8px);
-  top: 0;
-  width: 180px;
-  padding: 6px;
+  position: fixed; 
+  left: 70px;
+  width: 215px;
+  padding: 8px;
   background: var(--bg-card);
   border: 1px solid var(--sidebar-border);
-  border-radius: 10px;
+  border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  z-index: 100;
+  z-index: 9999; /* 가장 위로 오도록 높게 설정 */
   max-height: none;
   overflow: visible;
-  padding-left: 6px;
-  margin-top: 0;
   opacity: 0;
   transform: translateX(-6px);
   pointer-events: none;
@@ -606,12 +603,12 @@
 }
 
 .mainContent.collapsed .navItems button {
-  padding: 7px 10px;
-  border-radius: 7px;
+  padding: 10px 12px;
+  border-radius: 8px;
 }
 
 /* ================================
-   DetailLayout — Card Grid
+    DetailLayout — Card Grid 
 ================================ */
 .detailCard {
   --dl-bg: #fcfcfb;
@@ -635,30 +632,30 @@
   flex-direction: column;
   background: var(--dl-panel);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 16px;
   overflow: hidden;
 }
 
 /* ================================
-   헤더
+    헤더
 ================================ */
 .detailCard .detailHeader {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 16px;
-  padding: 20px 24px 16px;
+  gap: 22px;
+  padding: 34px 38px 24px; 
 }
 
 .detailCard .detailHeaderTitleGroup {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 18px;
   min-width: 0;
 }
 
 .detailCard .detailTitle {
-  font-size: 18px;
+  font-size: 32px;
   font-weight: 700;
   letter-spacing: -0.015em;
   color: var(--dl-ink);
@@ -670,14 +667,14 @@
 .detailCard .detailCode {
   display: inline-flex;
   align-items: center;
-  height: 24px;
-  padding: 0 8px;
+  height: 40px;
+  padding: 0 16px;
   border: 1px solid var(--dl-line-strong);
-  border-radius: 5px;
+  border-radius: 10px;
   background: var(--dl-bg);
   color: var(--dl-ink-soft);
   font-family: var(--dl-mono);
-  font-size: 10.5px;
+  font-size: 15px; 
   font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -694,29 +691,28 @@
 
 .detailCard .detailMeta {
   font-family: var(--dl-mono);
-  font-size: 11px;
+  font-size: 16px; 
   color: var(--dl-ink-faint);
   white-space: nowrap;
 }
 
 /* ================================
-   본문 — 카드형 섹션
+    본문 — 카드형 섹션
 ================================ */
 .detailCard .detailBody {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  padding: 18px;
+  gap: 26px; 
+  padding: 32px; 
 }
 
 .detailCard .detailSection {
   border: 1px solid var(--dl-line);
-  border-radius: 8px;
-  padding: 14px 16px;
+  border-radius: 14px;
+  padding: 28px 30px; 
   background: var(--dl-panel);
 }
 
-/* fullWidth 필드가 하나라도 있는 섹션(예: 주소)은 2열 전체 사용 */
 .detailCard .detailSection:has(.detailField--full) {
   grid-column: 1 / -1;
 }
@@ -724,53 +720,50 @@
 .detailCard .detailSectionTitle {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: 16px;
+  font-size: 20px; 
   font-weight: 700;
   color: var(--dl-ink);
-  margin: 0 0 12px;
-  padding-bottom: 10px;
+  margin: 0 0 20px;
+  padding-bottom: 18px;
   border-bottom: 1px solid var(--dl-line);
 }
 
-/* 섹션 타이틀 앞 아이콘 배지 — .detailSectionIcon 사용 시 자동 스타일 */
 .detailCard .detailSectionIcon {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
+  width: 44px;
+  height: 44px; 
+  border-radius: 12px;
   background: var(--dl-accent-soft);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  font-size: 22px; 
   color: var(--dl-accent-ink);
   flex-shrink: 0;
 }
 
-/* 전체 너비를 차지하는 섹션 (품목 정보 테이블 등) */
 .detailCard .detailSection--full {
   grid-column: 1 / -1;
 }
 
 /* ================================
-   필드 그리드
+    필드 그리드
 ================================ */
 .detailCard .detailGrid {
   display: flex;
-  gap: 12px;
+  gap: 20px; 
 }
 
-/* 필드 3개 미만인 섹션(기본정보/분류정보처럼 세로 나열)은 1열로 */
 .detailCard .detailSection:not(:has(.detailField--full)) .detailGrid {
   grid-template-columns: 1fr;
-  gap: 10px;
+  gap: 18px;
 }
 
 .detailCard .detailField {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px; 
   min-width: 0;
 }
 
@@ -779,15 +772,15 @@
 }
 
 .detailCard .detailField label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--dl-ink-faint);
-  padding-left: 5px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--dl-ink-soft);
+  padding-left: 4px;
 }
 
 .detailCard .detailField label.requiredLabel {
   color: var(--dl-ink);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .detailCard .detailField label .required {
@@ -797,37 +790,37 @@
 
 /* 읽기 전용 값 */
 .detailCard .detailValue {
-  font-size: 13px;
+  font-size: 19px; 
   font-weight: 500;
   color: var(--dl-ink);
-  min-height: 20px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   word-break: break-word;
-  padding: 6px 10px;
+  padding: 14px 18px; 
 }
 
-/* 뱃지형 값 (거래유형, 상태 등) — renderValue에서 className="detailBadge" 부여 시 사용 */
+/* 뱃지형 값 */
 .detailCard .detailBadge {
-  font-size: 11.5px;
+  font-size: 16px; 
   font-weight: 600;
   color: var(--dl-accent-ink);
   background: var(--dl-accent-soft);
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 10px 16px; 
+  border-radius: 10px;
   display: inline-block;
   width: fit-content;
 }
 
 /* 입력 필드 (edit 모드) */
 .detailCard .tableInput {
-  height: 34px;
-  padding: 0 10px;
-  font-size: 13px;
+  height: 60px; 
+  padding: 0 20px; 
+  font-size: 19px; 
   color: var(--dl-ink);
   background: var(--dl-bg);
-  border: 1px solid var(--dl-line-strong);
-  border-radius: 5px;
+  border: 2px solid var(--dl-line-strong); 
+  border-radius: 12px; 
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
@@ -843,7 +836,7 @@
 .detailCard .tableInput:focus {
   background: var(--dl-panel);
   border-color: var(--dl-accent);
-  box-shadow: 0 0 0 3px var(--dl-accent-soft);
+  box-shadow: 0 0 0 4px var(--dl-accent-soft);
 }
 
 .detailCard .tableInput:disabled {
@@ -852,35 +845,34 @@
   cursor: not-allowed;
 }
 
-/* 필수 입력 + 편집 중인 fullWidth 필드(주소 등) 강조 카드 */
 .detailCard .detailSection:has(.tableInput:focus) {
   border-color: var(--dl-accent);
 }
 
 /* ================================
-   푸터
+    푸터
 ================================ */
 .detailCard .detailFooter {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 24px;
+  padding: 28px 38px; 
   border-top: 1px solid var(--dl-line-strong);
   background: var(--dl-bg);
 }
 
 .detailCard .detailFooterActions {
   display: flex;
-  gap: 8px;
+  gap: 16px; 
   align-items: center;
 }
 
 .detailCard .detailFooter button {
-  height: 34px;
-  padding: 0 14px;
-  font-size: 12.5px;
+  height: 56px; 
+  padding: 0 28px; 
+  font-size: 18px; 
   font-weight: 600;
-  border-radius: 6px;
+  border-radius: 12px;
   border: 1px solid var(--dl-line-strong);
   background: var(--dl-panel);
   color: var(--dl-ink-soft);
@@ -931,23 +923,23 @@
 }
 
 /* ================================
-   반응형
+    반응형
 ================================ */
 @media (max-width: 640px) {
   .detailCard .detailHeader {
     flex-direction: column;
     align-items: flex-start;
-    gap: 6px;
-    padding: 16px 20px 14px;
+    gap: 14px;
+    padding: 24px 20px 20px;
   }
 
   .detailCard .detailBody {
     grid-template-columns: 1fr;
-    padding: 16px 20px;
-    gap: 12px;
+    padding: 20px;
+    gap: 20px;
   }
 
   .detailCard .detailFooter {
-    padding: 12px 20px;
+    padding: 20px;
   }
 }

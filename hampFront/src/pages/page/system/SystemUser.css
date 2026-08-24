@@ -8,16 +8,16 @@
 
 .authGroupList {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
+  gap: 12px; 
 
-  max-height: 180px;
+  max-height: 220px;
   overflow-y: auto;
 
-  padding: 12px;
+  padding: 16px; 
 
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px; 
 
   background: var(--bg-subtle);
 }
@@ -25,9 +25,9 @@
 .authGroupItem {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px; 
 
-  padding: 10px 12px;
+  padding: 12px 14px; 
 
   border: 1px solid transparent;
   border-radius: 8px;
@@ -49,25 +49,26 @@
 }
 
 .authGroupItem input {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   margin: 0;
 }
 
 .authGroupItem span {
-  font-size: 13px;
+  font-size: 15px; 
   color: var(--text-body);
   font-weight: 500;
 }
 
 .authGroupEmpty {
-  padding: 14px;
+  padding: 18px; 
   border-radius: 8px;
 
   border: 1px dashed var(--border);
 
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 15px; 
 
   background: var(--bg-subtle);
+  text-align: center;
 }
