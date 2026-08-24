@@ -252,14 +252,14 @@
 }
 
 /* ================================
-    FORM ELEMENTS
+   FORM ELEMENTS
 ================================ */
 
 label {
   display: grid;
-  gap: 7px;
+  gap: 8px; 
   color: #475569;
-  font-size: 13px;
+  font-size: 14px; 
   font-weight: 700;
 }
 
@@ -273,23 +273,24 @@ textarea {
   background: #fff;
   color: #0b1f3a;
   font: inherit;
+  font-size: 15px;
   font-weight: 400;
   outline: none;
 }
 
-/* input과 select 전용 (고정 높이) */
+/* input과 select 전용 */
 input,
 select {
-  height: 40px;
-  padding: 0 10px;
+  height: 42px;
+  padding: 0 14px;
 }
 
 /* textarea 전용 (여러 줄 입력에 맞게 조정) */
 textarea {
-  min-height: 80px;
-  padding: 10px;
+  min-height: 100px; 
+  padding: 12px 14px;
   resize: vertical;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 /* textarea focus 추가 */
@@ -312,11 +313,11 @@ button {
 .ghostButton,
 .dangerButton,
 .iconButton {
-  height: 40px;
+  height: 42px;
   border-radius: 8px !important;
   padding: 0 20px;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 14px; 
 }
 
 .primaryButton {
@@ -349,8 +350,8 @@ button {
 }
 
 .iconButton {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   background: #fff2f0;
   color: #e94f37;
@@ -364,20 +365,20 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 2px;
-  margin-top: 14px;
+  padding: 6px 2px;
+  margin-top: 16px;
   position: relative;
 }
 
 .paginationInfo {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-muted);
 }
 
 .paginationBtns {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px; 
   position: absolute;
   top: 50%;
   left: 50%;
@@ -386,12 +387,12 @@ button {
 }
 
 .pageBtn {
-  min-width: 30px;
-  height: 30px;
-  border-radius: 7px;
+  min-width: 34px;
+  height: 34px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: none;
-  font-size: 12px;
+  font-size: 13px; 
   font-weight: 500;
   color: var(--text-muted);
   display: grid;
@@ -420,8 +421,8 @@ button {
 }
 
 .pageBtn svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 /* 다크모드 */
@@ -462,13 +463,18 @@ button {
   min-width: 0;
   min-height: 0;
   height: 100%;
-  padding: 16px 16px 40px;
+  padding: 18px 18px 40px; 
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px; 
   background: var(--bg-app);
   overflow-y: auto;
   box-sizing: border-box;
+}
+
+/* workspace 내부의 가장 마지막에 오는 요소가 잘리지 않도록 밀어줌 */
+.workspace > *:last-child {
+  margin-bottom: 40px; 
 }
 
 /* ================================
@@ -477,13 +483,13 @@ button {
 
 .screenStack {
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .metricGrid {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px; 
 }
 
 .metricCard,
@@ -493,19 +499,18 @@ button {
 .equipmentCard {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .metricCard {
   flex: 1;
-  padding: 20px;
+  padding: 22px; 
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   border: 1px solid var(--border);
   border-radius: 14px;
   border-left: 1px solid var(--border);
-  /* border-left 3px 제거 */
   transition: box-shadow 0.15s;
 }
 
@@ -514,8 +519,8 @@ button {
 }
 
 .metricCard .metricIcon {
-  width: 36px;
-  height: 36px;
+  width: 42px; 
+  height: 42px;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -527,18 +532,18 @@ button {
   align-items: center;
   gap: 6px;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 14px; 
   font-weight: 500;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .metricCard span svg {
-  width: 14px;
-  height: 14px;
+  width: 16px; 
+  height: 16px;
 }
 
 .metricCard strong {
-  font-size: 26px;
+  font-size: 30px; 
   font-weight: 700;
   color: var(--text-heading);
   letter-spacing: -0.5px;
@@ -593,7 +598,7 @@ button {
 
 .contentGrid {
   display: grid;
-  gap: 18px;
+  gap: 20px;
 }
 
 .contentGrid.two {
@@ -602,34 +607,34 @@ button {
 
 .panel {
   min-width: 0;
-  padding: 18px;
+  padding: 22px; 
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .toolbarRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
 .rowActions {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .miniButton {
-  height: 28px;
-  line-height: 26px;
+  height: 36px; 
+  line-height: 34px;
   box-sizing: border-box;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
   color: #475569;
-  padding: 0 10px;
-  font-size: 12px;
+  padding: 0 14px;
+  font-size: 13px; 
   font-weight: 500;
   white-space: nowrap;
   display: inline-flex;
@@ -670,48 +675,48 @@ button {
 /* input과 textarea 공통 스타일 */
 .tableInput {
   width: 100%;
-  border: 1px solid #d1d5db; /* 프로젝트에 맞는 테두리 색상 사용 */
-  border-radius: 4px;
-  font-size: 12px; /* 기존 크기 유지 */
+  border: 1px solid #d1d5db;
+  border-radius: 8px; 
+  font-size: 15px; 
   font-family: inherit;
   box-sizing: border-box;
 }
 
 /* input 전용 */
 input.tableInput {
-  height: 36px;
-  padding: 0 8px;
+  height: 42px; 
+  padding: 0 14px;
 }
 
-/* textarea 전용 (상단 input과 테두리/폰트 등 디자인 일치) */
+/* textarea 전용 */
 textarea.tableInput {
-  min-height: 72px; /* 적당히 잡힌 두세 줄 높이 */
-  padding: 8px;     /* 위아래 여백을 주어 자연스럽게 표시 */
-  resize: vertical; /* 사용자가 크기를 세로로 조절할 수 있게 허용 */
-  line-height: 1.4;
+  min-height: 90px; 
+  padding: 12px 14px;
+  resize: vertical;
+  line-height: 1.5;
 }
 
 .permissionGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .checkRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 38px;
+  gap: 10px;
+  min-height: 44px; 
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg-subtle);
-  padding: 0 12px;
-  font-size: 13px;
+  padding: 0 14px;
+  font-size: 15px; 
 }
 
 .checkRow input {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   padding: 0;
 }
 
@@ -724,7 +729,7 @@ textarea.tableInput {
 
 .panelHeader h2 {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px; 
   font-weight: 600;
   color: var(--text-heading);
 }
@@ -737,11 +742,11 @@ textarea.tableInput {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 54px;
-  height: 24px;
-  padding: 0 10px;
+  min-width: 64px; 
+  height: 28px; 
+  padding: 0 12px;
   border-radius: 9999px;
-  font-size: 12px;
+  font-size: 13px; 
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -781,11 +786,11 @@ textarea.tableInput {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 54px;
-  height: 24px;
-  padding: 0 10px;
+  min-width: 64px;
+  height: 28px;
+  padding: 0 12px;
   border-radius: 9999px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -805,30 +810,30 @@ textarea.tableInput {
 .detailList,
 .summaryList {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .progressRow {
   display: grid;
-  grid-template-columns: 150px minmax(120px, 1fr) 72px;
+  grid-template-columns: 160px minmax(140px, 1fr) 80px;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .progressRow div:first-child {
   display: grid;
-  gap: 2px;
+  gap: 4px;
 }
 
 .progressRow span,
 .progressRow em {
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 13px; 
   font-style: normal;
 }
 
 .progressBar {
-  height: 8px;
+  height: 10px; 
   background: var(--bg-subtle);
   border-radius: 999px;
   overflow: hidden;
@@ -847,23 +852,24 @@ textarea.tableInput {
 .searchBand {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px;
+  gap: 18px;
+  padding: 20px; 
 }
 
 .searchBand .searchBandTop {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center; 
 }
 
 .resetButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  font-size: 13px;
-  padding: 6px 14px;
+  gap: 8px;
+  font-size: 14px; 
+  height: 38px; 
+  padding: 0 16px;
   background: #ffffff;
   color: #475569;
   border: 1px solid #cbd5e1;
@@ -877,7 +883,7 @@ textarea.tableInput {
 }
 
 .resetButton svg {
-  width: 16px;
+  width: 18px;
 }
 
 [data-theme="dark"] .resetButton {
@@ -896,8 +902,8 @@ textarea.tableInput {
   display: flex;
   align-items: center;
   line-height: 1;
-  gap: 5px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 14px;
   color: #888;
   margin: 0;
   font-family: "Montserrat", sans-serif;
@@ -905,7 +911,7 @@ textarea.tableInput {
 }
 
 .searchBand .searchBandTop h2 svg {
-  width: 15px;
+  width: 17px;
 }
 
 /* ===================================================
@@ -914,26 +920,32 @@ textarea.tableInput {
 .searchBand .serchItem {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px 12px;
+  gap: 18px 14px;
   align-items: end;
 }
 
 .searchBand .serchItem label {
-  gap: 3px;
+  gap: 4px;
   font-weight: 500;
   position: relative;
 }
 
 .searchBand .serchItem label p {
   background: #fff;
-  padding: 0 3px;
+  padding: 0 4px;
   position: absolute;
-  top: -7px;
-  left: 8px;
+  top: -8px;
+  left: 10px;
   color: #999;
-  font-size: 10px;
+  font-size: 11px; 
   font-weight: 500;
   margin: 0;
+}
+
+.searchBand .serchItem select,
+.searchBand .serchItem input {
+  height: 42px; 
+  font-size: 15px; 
 }
 
 .searchBand .serchItem select {
@@ -951,7 +963,7 @@ textarea.tableInput {
   background-size: 6px 6px;
   background-repeat: no-repeat;
 
-  padding-right: 34px;
+  padding-right: 36px;
 }
 
 [data-theme="dark"] .searchBand .serchItem select {
@@ -971,7 +983,7 @@ textarea.tableInput {
 .searchBand .serchItem .dateRangeGroup {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .searchBand .serchItem .dateRangeGroup input {
@@ -984,32 +996,33 @@ textarea.tableInput {
    ★ 선택자 경로를 정확히 작성하여 grid-column: 4 적용
    =================================================== */
 .searchBand .serchItem .searchActions {
-  grid-column: 4; /* 무조건 4번째 열(맨 오른쪽) 위치 고정 */
+  grid-column: 4;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 8px; /* 간격 확대 */
   width: 100%;
 }
 
 /* 조회 버튼 스타일 */
 .searchBand .searchActions .primaryButton {
-  min-width: 70px;
-  height: 40px;
+  min-width: 80px;
+  height: 42px;
   border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 0 12px;
+  gap: 6px;
+  padding: 0 16px;
   white-space: nowrap;
+  font-size: 14px;
 }
 
 /* 상세검색 / 접기 버튼 스타일 */
 .searchBand .searchActions .expandButton {
-  height: 40px;
-  min-width: 96px;
-  padding: 0 16px;
+  height: 42px;
+  min-width: 104px;
+  padding: 0 18px;
 
   display: inline-flex;
   align-items: center;
@@ -1022,7 +1035,7 @@ textarea.tableInput {
   background: #ffffff;
   color: #475569;
 
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 
   white-space: nowrap;
@@ -1041,8 +1054,8 @@ textarea.tableInput {
 }
 
 .searchBand .searchActions .expandButton svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 [data-theme="dark"] .searchBand .searchActions .expandButton {
@@ -1060,7 +1073,7 @@ textarea.tableInput {
 .sensorPanel {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 14px; 
 }
 
 .locationGrid span,
@@ -1071,108 +1084,113 @@ textarea.tableInput {
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 14px;
+  padding: 16px; 
 }
 
 .detailList div {
   display: grid;
-  gap: 5px;
+  gap: 6px;
 }
 
 .detailList span,
 .sensorPanel span {
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 
 .fieldBoard {
-  min-height: 520px;
+  min-height: 540px;
   display: grid;
   grid-template-columns: 0.9fr 1.1fr;
   overflow: hidden;
+  border-radius: 12px;
 }
 
 .fieldHero {
   background: #0b1f3a;
   color: #fff;
-  padding: 42px;
+  padding: 48px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 14px;
+  gap: 16px;
 }
 
 .fieldHero span {
   color: #00a6a6;
   font-weight: 900;
+  font-size: 15px;
 }
 
 .fieldHero h2 {
   margin: 0;
-  font-size: 34px;
+  font-size: 38px;
 }
 
 .fieldHero p {
   color: #d8dee9;
+  font-size: 16px;
 }
 
 .fieldActions {
-  padding: 32px;
+  padding: 36px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 18px;
   align-content: center;
 }
 
 .fieldActions button {
-  min-height: 108px;
-  border-radius: 8px;
+  min-height: 116px;
+  border-radius: 10px;
   background: #eef7f7;
   color: #0b6666;
   border: 1px solid rgba(0, 166, 166, 0.2);
-  font-size: 20px;
+  font-size: 21px;
+  font-weight: 700;
 }
 
 .fieldActions button.start {
   grid-column: span 2;
   background: #00a6a6;
   color: #fff;
-  font-size: 24px;
+  font-size: 25px;
 }
 
 .formGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
 .equipmentGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 18px;
 }
 
 .equipmentCard {
-  padding: 20px;
+  padding: 24px; 
   display: grid;
-  gap: 20px;
-  border-top: 3px solid #22c55e;
+  gap: 22px;
+  border-top: 4px solid #22c55e;
 }
 
 .equipmentCard h2 {
   margin: 4px 0 0;
-  font-size: 24px;
+  font-size: 26px; 
 }
 
 .equipmentCard span,
 .equipmentCard small {
   color: var(--text-muted);
   font-weight: 600;
+  font-size: 14px;
 }
 
 .equipmentCard strong {
-  font-size: 32px;
+  font-size: 34px; 
 }
 
 .equipmentCard.warn {
@@ -1191,7 +1209,7 @@ textarea.tableInput {
 
 .noteBox {
   color: #475569;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -1213,7 +1231,7 @@ textarea.tableInput {
 
   transform: translate(-50%, -50%);
 
-  width: min(700px, 92vw);
+  width: min(740px, 92vw); 
   max-height: 85vh;
 
   overflow: hidden;
@@ -1235,14 +1253,14 @@ textarea.tableInput {
   justify-content: space-between;
   align-items: center;
 
-  padding: 22px 28px;
+  padding: 24px 30px; 
 
   border-bottom: 1px solid var(--border);
 }
 
 .detailModalHeader h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 20px; 
   font-weight: 700;
   color: var(--text-heading);
 }
@@ -1251,13 +1269,13 @@ textarea.tableInput {
   display: block;
   margin-top: 4px;
 
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-muted);
 }
 
 .detailModalClose {
-  width: 36px;
-  height: 36px;
+  width: 40px; 
+  height: 40px;
 
   border-radius: 10px;
 
@@ -1274,13 +1292,13 @@ textarea.tableInput {
 }
 
 .detailModalBody {
-  padding: 24px 28px;
+  padding: 26px 30px;
 
   display: grid;
 
   grid-template-columns: repeat(2, minmax(0, 1fr));
 
-  gap: 18px 24px;
+  gap: 20px 24px;
 
   overflow-y: auto;
 }
@@ -1288,22 +1306,22 @@ textarea.tableInput {
 .detailField {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px; 
 }
 
 .detailField label {
-  font-size: 12px;
+  font-size: 13px; 
   font-weight: 600;
   color: var(--text-muted);
 }
 
 .detailValue {
-  min-height: 36px;
+  min-height: 42px; 
 
   display: flex;
   align-items: center;
 
-  padding: 0 8px;
+  padding: 0 12px;
 
   background: var(--bg-subtle);
 
@@ -1312,22 +1330,22 @@ textarea.tableInput {
   border-radius: 8px;
 
   color: var(--text-body);
-  font-size: 12px;
+  font-size: 15px; 
 }
 
 .detailModalFooter {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  padding: 18px 28px;
+  gap: 10px;
+  padding: 20px 30px;
   border-top: 1px solid var(--border);
   background: var(--bg-subtle);
 }
 
 .detailModalFooterRight {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
   margin-left: auto;
 }
@@ -1352,7 +1370,7 @@ textarea.tableInput {
 }
 
 .modalCountText {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-muted);
 }
 
@@ -1361,24 +1379,24 @@ textarea.tableInput {
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
-  max-height: 300px;
+  max-height: 320px;
   background: var(--bg-subtle);
 }
 
 .modalEmptyText {
-  padding: 24px;
+  padding: 28px;
   text-align: center;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .modalListItem {
-  padding: 10px 12px;
+  padding: 12px 14px; 
   border-bottom: 1px solid var(--border);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .modalListItemChecked {
@@ -1389,15 +1407,17 @@ textarea.tableInput {
   flex: 1;
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 
 .modalListItemTitle {
   font-weight: 500;
   color: var(--text-body);
+  font-size: 15px; 
 }
 
 .modalListItemCode {
-  font-size: 12px;
+  font-size: 13px; 
   color: var(--text-muted);
 }
 
@@ -1405,14 +1425,13 @@ textarea.tableInput {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 4px;
+  margin-top: 6px;
 }
-
 
 .requiredLabel {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .required {
@@ -1427,19 +1446,19 @@ textarea.tableInput {
 .pageForm {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px 24px;
+  gap: 20px 24px;
 }
 
 .pageFormFooter {
   grid-column: 1 / -1;
 
   display: flex;
-  justify-content: flex-end; /* 우측 정렬 */
+  justify-content: flex-end;
   align-items: center;
-  gap: 8px; /* 버튼 사이 간격 8px */
+  gap: 10px;
 
-  margin-top: 8px;
-  padding-top: 20px;
+  margin-top: 10px;
+  padding-top: 22px;
 
   border-top: 1px solid var(--border);
 }
@@ -1451,34 +1470,10 @@ textarea.tableInput {
   justify-content: space-between;
   align-items: center;
 
-  margin-top: 8px;
-  padding-top: 20px;
+  margin-top: 10px;
+  padding-top: 22px;
 
   border-top: 1px solid var(--border);
-}
-
-.detailField {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.detailField label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.detailValue {
-  min-height: 36px;
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text-body);
-  font-size: 13px;
 }
 
 /* ================================
@@ -1486,7 +1481,6 @@ textarea.tableInput {
 ================================ */
 
 @media (max-width: 1180px) {
-
   .metricGrid,
   .equipmentGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1499,7 +1493,6 @@ textarea.tableInput {
 }
 
 @media (max-width: 860px) {
-
   .loginPanel,
   .contentGrid.two,
   .fieldBoard {
@@ -1556,32 +1549,32 @@ textarea.tableInput {
 
 .timelineList {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
 .timelineItem {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
+  gap: 14px;
+  padding: 12px 16px; 
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 14px; 
 }
 
 .timelineItem span:first-child {
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
+  width: 26px; 
+  height: 26px;
   border-radius: 50%;
   background: var(--primary);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 1;
 }

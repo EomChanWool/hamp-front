@@ -1,10 +1,10 @@
 /* ================================
-   ROUTING SECTION
+    ROUTING SECTION
 ================================ */
 .routingSection {
   grid-column: 1 / -1;
-  margin-top: 8px;
-  padding-top: 16px;
+  margin-top: 16px;
+  padding-top: 24px;
   border-top: 1px solid var(--border);
 }
 
@@ -12,43 +12,43 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 18px;
 }
 
 .routingHint {
-  font-size: 12px;
+  font-size: 15px; 
   color: var(--text-muted);
-  margin-bottom: 8px;
+  margin-bottom: 14px;
   display: flex;
   align-items: center;
-  gap: 4px; 
+  gap: 8px; 
 }
 
 .routingHint kbd,
 .routingHint span span {
   background: var(--bg-subtle, #f1f5f9);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 1px 5px;
-  font-size: 11px;
+  border-radius: 6px;
+  padding: 4px 8px; 
+  font-size: 13px; 
   font-weight: 600;
   color: var(--primary, #3b82f6);
 }
 
 .routingEmptyBox {
-  padding: 16px;
+  padding: 28px;
   text-align: center;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 17px;
   background: var(--bg-subtle);
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid var(--border);
 }
 
 .routingGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 12px;
+  gap: 14px 18px; 
   cursor: default; 
   user-select: none;
   -webkit-user-select: none;
@@ -57,11 +57,11 @@
 .routingItem {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 14px; 
   background: var(--bg-subtle);
-  padding: 6px 10px;
+  padding: 14px 18px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 12px; 
   cursor: grab; 
   user-select: none;
   -webkit-user-select: none;
@@ -114,16 +114,16 @@
 }
 
 .routingSeq {
-  font-size: 12px;
+  font-size: 15px; 
   font-weight: 600;
   color: var(--text-muted);
-  width: 60px;
+  width: 75px; 
   flex-shrink: 0;
 }
 
 .routingInfo {
   flex: 1;
-  font-size: 13px;
+  font-size: 17px; 
   font-weight: 500;
   color: var(--text-body);
 }
@@ -136,12 +136,12 @@
 }
 
 .routingSelect {
-  width: 100px;
+  width: 140px; 
   flex-shrink: 0;
 }
 
 .routingActionButtons {
   display: flex;
-  gap: 4px;
+  gap: 8px; 
   flex-shrink: 0;
 }

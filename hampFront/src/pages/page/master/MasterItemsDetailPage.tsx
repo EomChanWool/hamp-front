@@ -542,8 +542,8 @@ export function MasterItemsDetailPage() {
                             style={{
                               width: "100%",
                               padding: "2px 4px",
-                              height: "26px",
-                              fontSize: "12px",
+                              height: "60px",
+                              fontSize: "15px",
                               textAlign: "center",
                             }}
                             value={route.operSeq ?? index + 1}

@@ -5,27 +5,27 @@
 ================================ */
 
 .permissionBoard {
-  --check-col: 56px;
-  --nav-col: 250px;
-  --radius-lg: 12px;
-  --radius-md: 8px;
+  --check-col: 64px;
+  --nav-col: 260px;  
+  --radius-lg: 14px;
+  --radius-md: 10px;
   --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
 
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 16px;
+  padding: 20px;
 }
 
 .permBoardActions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
 }
 
@@ -33,14 +33,14 @@
 
 .permToast {
   position: absolute;
-  top: -14px;
-  right: 16px;
+  top: -16px;
+  right: 20px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: 8px;
+  padding: 10px 16px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 13px; 
   font-weight: 600;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
   animation: permToastIn 0.2s var(--ease);
@@ -48,8 +48,8 @@
 }
 
 .permToast svg {
-  width: 14px;
-  height: 14px;
+  width: 16px; 
+  height: 16px;
   flex-shrink: 0;
 }
 
@@ -80,30 +80,30 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 18px;
   flex-wrap: wrap;
 }
 
 .permissionTabsBox {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .permissionTabsEmpty {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-muted);
-  padding: 8px 4px;
+  padding: 10px 6px;
 }
 
 .permissionTab {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  font-size: 13px;
+  gap: 8px;
+  padding: 10px 18px; 
+  font-size: 15px; 
   font-weight: 500;
   color: var(--text-muted);
   cursor: pointer;
@@ -132,8 +132,8 @@
 }
 
 .permTabDirtyDot {
-  width: 6px;
-  height: 6px;
+  width: 8px; 
+  height: 8px;
   border-radius: 999px;
   background: #e0a030;
   flex-shrink: 0;
@@ -144,12 +144,12 @@
 }
 
 .permissionDesc {
-  flex: 1 1 260px;
-  min-width: 200px;
-  font-size: 12px;
+  flex: 1 1 280px;
+  min-width: 220px;
+  font-size: 13px;
   line-height: 1.5;
   color: var(--text-muted);
-  padding: 8px 14px;
+  padding: 10px 16px;
   margin: 0;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -174,8 +174,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
+  gap: 14px;
+  padding: 14px 18px; 
   border-bottom: 1px solid var(--border);
   background: var(--bg-card);
 }
@@ -184,22 +184,23 @@
   position: relative;
   display: flex;
   align-items: center;
-  flex: 0 1 240px;
+  flex: 0 1 280px;
 }
 
 .permSearchIcon {
   position: absolute;
-  left: 9px;
-  width: 14px;
-  height: 14px;
+  left: 12px;
+  width: 16px;
+  height: 16px;
   color: var(--text-muted);
   pointer-events: none;
 }
 
 .permSearchBox input {
   width: 100%;
-  padding: 6px 28px 6px 28px;
-  font-size: 12px;
+  height: 42px; 
+  padding: 0 34px 0 36px;
+  font-size: 15px; 
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--bg-subtle);
@@ -215,12 +216,12 @@
 
 .permSearchClear {
   position: absolute;
-  right: 6px;
+  right: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border: none;
   background: none;
   color: var(--text-muted);
@@ -233,16 +234,16 @@
 }
 
 .permSearchClear svg {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
 }
 
 .permDirtyBadge {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 13px; 
   font-weight: 600;
   color: var(--text-muted);
-  padding: 4px 10px;
+  padding: 6px 12px;
   border-radius: 999px;
   background: var(--bg-subtle);
   border: 1px solid var(--border);
@@ -273,25 +274,25 @@
   flex: 0 0 var(--nav-col);
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px;
+  gap: 4px;
+  padding: 10px;
   border-right: 1px solid var(--border);
   background: var(--bg-subtle);
-  max-height: min(560px, 60vh);
+  max-height: min(580px, 60vh);
   overflow-y: auto;
 }
 
 .permMenuNavItem {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 9px 10px;
+  padding: 11px 14px; 
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--text-body);
-  font-size: 13px;
+  font-size: 15px; 
   text-align: left;
   cursor: pointer;
   transition: background 0.15s var(--ease), color 0.15s var(--ease);
@@ -317,12 +318,12 @@
 
 .permMenuNavCount {
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
   background: var(--bg-subtle);
   border: 1px solid var(--border);
-  padding: 1px 6px;
+  padding: 2px 8px;
   border-radius: 999px;
 }
 
@@ -333,8 +334,8 @@
 }
 
 .permMenuNavArrow {
-  width: 13px;
-  height: 13px;
+  width: 15px; 
+  height: 15px;
   flex-shrink: 0;
   color: var(--text-muted);
   opacity: 0;
@@ -347,8 +348,8 @@
 }
 
 .permNavEmpty {
-  padding: 16px 10px;
-  font-size: 12px;
+  padding: 20px 12px;
+  font-size: 14px;
   color: var(--text-muted);
   text-align: center;
 }
@@ -356,11 +357,11 @@
 .permNavSkeleton {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .permNavSkeletonRow {
-  height: 34px;
+  height: 42px; 
   border-radius: var(--radius-md);
   background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-subtle) 37%, var(--bg-card) 63%);
   background-size: 400% 100%;
@@ -390,8 +391,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 16px;
-  font-size: 13px;
+  padding: 48px 16px;
+  font-size: 15px;
   color: var(--text-muted);
 }
 
@@ -401,31 +402,31 @@
   z-index: 2;
   display: flex;
   align-items: center;
-  padding: 10px 16px;
+  padding: 14px 20px;
   background: #eceff4;
   border-bottom: 1px solid var(--border);
 }
 
 .permMatrixHeaderLabel {
   flex: 1;
-  font-size: 13px;
+  font-size: 15px; 
   font-weight: 700;
   color: var(--text-heading);
 }
 
 .permCheckCellHeader {
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .permCheckCellHeader span {
-  font-size: 11px;
+  font-size: 13px; 
   font-weight: 600;
   color: var(--text-muted);
 }
 
 .permGroupListScroll {
-  max-height: min(560px, 60vh);
+  max-height: min(580px, 60vh);
   overflow-y: auto;
 }
 
@@ -439,9 +440,9 @@
 }
 
 .permEmptyState {
-  padding: 40px 16px;
+  padding: 48px 16px;
   text-align: center;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text-muted);
 }
 
@@ -453,7 +454,7 @@
 }
 
 .permSubChildren .permSubChildren {
-  margin-left: 20px;
+  margin-left: 22px;
   border-left: 1px dashed var(--border);
 }
 
@@ -461,8 +462,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 9px 16px;
+  gap: 14px;
+  padding: 12px 20px; 
   transition: background 0.15s var(--ease);
 }
 
@@ -473,15 +474,15 @@
 .permSubLabel {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: 8px;
+  font-size: 15px;
   color: var(--text-body);
   min-width: 0;
 }
 
 .permSubToggleIcon {
-  width: 12px;
-  height: 12px;
+  width: 14px; 
+  height: 14px;
   color: var(--text-muted);
   flex-shrink: 0;
   transition: transform 0.2s var(--ease);
@@ -492,12 +493,12 @@
 }
 
 .permSubDot {
-  width: 4px;
-  height: 4px;
+  width: 6px; 
+  height: 6px;
   border-radius: 999px;
   background: var(--border);
   flex-shrink: 0;
-  margin: 0 4px;
+  margin: 0 6px;
 }
 
 /* ── 체크박스 그룹 (헤더/서브 공용, --check-col 폭으로 완전 정렬) ── */
@@ -516,10 +517,10 @@
 
 .permCheck {
   flex-shrink: 0;
-  width: 17px;
-  height: 17px;
+  width: 20px;
+  height: 20px;
   padding: 0;
-  border-radius: 5px;
+  border-radius: 6px;
   border: 1.5px solid var(--border);
   background: var(--bg-subtle);
   display: flex;
@@ -558,22 +559,26 @@
 }
 
 .permCheck svg {
-  width: 11px;
-  height: 11px;
+  width: 13px;
+  height: 13px;
   color: #fff;
 }
 
 /* ── 하단 버튼 ── */
 
 .ghostButton {
-  padding: 8px 16px;
-  font-size: 13px;
+  height: 42px;
+  padding: 0 18px;
+  font-size: 15px; 
   font-weight: 600;
   color: var(--text-muted);
   background: transparent;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.15s var(--ease), color 0.15s var(--ease);
 }
 
@@ -583,14 +588,18 @@
 }
 
 .primaryButton {
-  padding: 8px 18px;
-  font-size: 13px;
+  height: 42px;
+  padding: 0 20px;
+  font-size: 15px; 
   font-weight: 600;
   color: #fff;
   background: #17875f;
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.15s var(--ease), opacity 0.15s var(--ease);
 }
 
@@ -608,7 +617,7 @@
 
 @media (max-width: 860px) {
   .permissionBoard {
-    --nav-col: 160px;
+    --nav-col: 180px;
   }
 
   .permissionDesc {
