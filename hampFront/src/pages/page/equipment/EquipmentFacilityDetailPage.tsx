@@ -36,6 +36,47 @@ export function EquipmentFacilityDetailPage() {
   // 섹션 정의: 장비/공장 정보 / 설비 정보로 그룹핑
   const sections: DetailSection<FacilityDetailRespons>[] = [
     {
+      title: "설비 정보",
+      fields: [
+        { label: "설비명", key: "fcltNm", editable: true },
+        {
+          label: "현재상태",
+          key: "currentStatus",
+          editable: true,
+          renderEditor: (value, onChange, disabled) => (
+            <select
+              className="tableInput"
+              value={value || "1"}
+              disabled={disabled}
+              onChange={(e) => onChange(e.target.value)}
+            >
+              <option value="0">정지</option>
+              <option value="1">작동</option>
+              <option value="2">고장</option>
+            </select>
+          ),
+          renderValue: (value) => STATUS_TYPE_LABEL[Number(value) as StatusType] ?? "-",
+        },
+        {
+          label: "사용여부",
+          key: "useYn",
+          editable: true,
+          renderEditor: (value, onChange, disabled) => (
+            <select
+              className="tableInput"
+              value={value === "true" ? "true" : "false"}
+              disabled={disabled}
+              onChange={(e) => onChange(e.target.value)}
+            >
+              <option value="true">사용</option>
+              <option value="false">미사용</option>
+            </select>
+          ),
+          renderValue: (value) => (value === "true" ? "사용" : "미사용"),
+        },
+      ],
+    },
+    {
       title: "장비 정보",
       fields: [
         {
@@ -87,47 +128,6 @@ export function EquipmentFacilityDetailPage() {
         },
         { label: "공장구역명", key: "facNm", editable: false },
         { label: "위치", key: "location", editable: false },
-      ],
-    },
-    {
-      title: "설비 정보",
-      fields: [
-        { label: "설비명", key: "fcltNm", editable: true },
-        {
-          label: "현재상태",
-          key: "currentStatus",
-          editable: true,
-          renderEditor: (value, onChange, disabled) => (
-            <select
-              className="tableInput"
-              value={value || "1"}
-              disabled={disabled}
-              onChange={(e) => onChange(e.target.value)}
-            >
-              <option value="0">정지</option>
-              <option value="1">작동</option>
-              <option value="2">고장</option>
-            </select>
-          ),
-          renderValue: (value) => STATUS_TYPE_LABEL[Number(value) as StatusType] ?? "-",
-        },
-        {
-          label: "사용여부",
-          key: "useYn",
-          editable: true,
-          renderEditor: (value, onChange, disabled) => (
-            <select
-              className="tableInput"
-              value={value === "true" ? "true" : "false"}
-              disabled={disabled}
-              onChange={(e) => onChange(e.target.value)}
-            >
-              <option value="true">사용</option>
-              <option value="false">미사용</option>
-            </select>
-          ),
-          renderValue: (value) => (value === "true" ? "사용" : "미사용"),
-        },
       ],
     },
   ];

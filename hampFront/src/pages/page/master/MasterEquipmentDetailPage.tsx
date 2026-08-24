@@ -46,6 +46,14 @@ export function MasterEquipmentDetailPage() {
   // 섹션 정의: 공정 정보 / 장비 정보로 그룹핑
   const sections: DetailSection<EquipmentDetailResponse>[] = [
     {
+      title: "장비 정보",
+      fields: [
+        { label: "장비명", key: "eqNm", editable: true },
+        { label: "장비유형", key: "eqType", editable: true },
+        { label: "제조사", key: "manufacturer", editable: true },
+      ],
+    },
+    {
       title: "공정 정보",
       fields: [
         {
@@ -82,14 +90,6 @@ export function MasterEquipmentDetailPage() {
       fields: [
         { label: "부서코드", key: "depCode", editable: false },
         { label: "작업설명", key: "taskDesc", editable: false },
-      ],
-    },
-    {
-      title: "장비 정보",
-      fields: [
-        { label: "장비명", key: "eqNm", editable: true },
-        { label: "장비유형", key: "eqType", editable: true },
-        { label: "제조사", key: "manufacturer", editable: true },
       ],
     },
   ];
