@@ -235,7 +235,7 @@ export function SalesOrderDetailPage() {
           isEditing && (
             <button
               type="button"
-              className="dangerButton text-sm text-red-500 hover:underline px-2 py-1"
+              className="btnDanger"
               onClick={handleDelete}
               disabled={isBusy}
             >
