@@ -701,7 +701,6 @@
 }
 
 .detailCard .detailCode::before {
-  content: "#";
   margin-right: 2px;
   color: var(--dl-ink-faint);
   font-weight: 500;
@@ -966,4 +965,108 @@
   .detailCard .detailFooter {
     padding: 20px;
   }
+}
+
+/* ================================
+   신규 등록 페이지 전용 스타일 (Create Page Only)
+================================ */
+.createCard {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.createHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 34px 38px 24px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.createTitle {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-heading, #14181f);
+  margin: 0;
+}
+
+.createMeta {
+  font-size: 16px;
+  color: var(--text-muted, #9aa3b0);
+}
+
+.createBody {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  padding: 32px;
+}
+
+.createSection {
+  border: 1px solid var(--border, #e3e6ea);
+  border-radius: 14px;
+  padding: 28px 30px;
+  background: var(--bg-card, #ffffff);
+}
+
+.createSectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-heading, #14181f);
+  margin: 0 0 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border, #e3e6ea);
+}
+
+/* 기본 정보 및 분류 정보 모두 2열로 배치하는 공용 그리드 */
+.createGrid2Cols {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px 24px;
+}
+
+.createField {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* 만약 전체 너비를 써야 하는 특수 필드가 있다면 사용 */
+.createField.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.createField label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-body, #5b6472);
+  padding-left: 4px;
+}
+
+.createField label.requiredLabel {
+  color: var(--text-heading, #14181f);
+  font-weight: 700;
+}
+
+.createField label .required {
+  color: #c0293d;
+  margin-left: 2px;
+}
+
+.createFooter {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  padding: 28px 38px;
+  border-top: 1px solid var(--border, #e3e6ea);
+  background: var(--bg-subtle, #fcfcfb);
 }

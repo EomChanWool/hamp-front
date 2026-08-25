@@ -1,6 +1,6 @@
 import { useState, useEffect, type SyntheticEvent, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Panel } from "@components/card/Panel";
+import { FoodIcon, PlantIcon } from "@/components/icons/CustomIcons";
 import axios from "axios";
 import {
   PRODUCT_TYPE_LABEL,
@@ -48,20 +48,15 @@ export function MasterItemsCreatePage() {
     standard: "",
   });
 
-  // 커스텀 훅을 통한 공정 라우팅 및 드래그/키보드 이동 관리 (moveRouting 추가)
+  // 슬림화된 커스텀 훅 구조분해 할당
   const {
     routings,
-    draggingIndex,
-    targetIndex,
     keyboardActiveIndex,
     syncRoutings,
     removeRouting: handleRemoveRouting,
     updateRouting: handleRoutingChange,
-    handleMouseDown,
-    handleMouseEnter,
-    handleMouseUp,
-    handleKeyDown,
     moveRouting,
+    handleKeyDown,
   } = useItemRoutings();
 
   // 다중 선택 팝업 모달 관련 상태
@@ -134,10 +129,10 @@ export function MasterItemsCreatePage() {
       standard: form.standard.trim() || null,
       routings: (selectedCategory === 1 || selectedCategory === 2)
         ? routings.map((r) => ({
-          operCode: r.operCode?.trim() || null,
-          operSeq: r.operSeq,
-          finalYn: r.finalYn || "N",
-        }))
+            operCode: r.operCode?.trim() || null,
+            operSeq: r.operSeq,
+            finalYn: r.finalYn || "N",
+          }))
         : null,
     };
 
@@ -159,223 +154,289 @@ export function MasterItemsCreatePage() {
 
   return (
     <section className="screenStack">
-      <Panel title="신규 품목 등록">
-        <form className="pageForm" onSubmit={handleSubmit}>
-          <div className="detailField">
-            <label className="requiredLabel">품목코드 <span className="required">*</span></label>
-            <input className="tableInput" value={form.itemCode} disabled={isSubmitting} onChange={(e) => handleChange("itemCode", e.target.value)} placeholder="예: ITM001" />
-          </div>
+      {/* 등록 전용 독립 카드 컨테이너 */}
+      <div className="createCard">
+        
+        {/* 헤더 영역 */}
+        <div className="createHeader">
+          <h1 className="createTitle">신규 품목 등록</h1>
+          <span className="createMeta">* 표시는 필수 입력 항목입니다</span>
+        </div>
 
-          <div className="detailField">
-            <label>종류</label>
-            <div className="radioGroup">
-              {Object.entries(PRODUCT_TYPE_LABEL).map(([key, label]) => {
-                const isSelected = form.productType === key;
-                return (
-                  <label
-                    key={key}
-                    className={`radioRow ${isSelected ? "checked" : ""}`}
-                    style={{ cursor: isSubmitting ? "not-allowed" : "pointer" }}
-                  >
-                    <input
-                      type="radio"
-                      name="productType"
-                      value={key}
-                      checked={isSelected}
-                      disabled={isSubmitting}
-                      onChange={(e) => handleChange("productType", e.target.value)}
-                    />
-                    <span>{label}</span>
+        {/* 본문 폼 영역 */}
+        <form onSubmit={handleSubmit}>
+          <div className="createBody">
+            
+            {/* 1. 기본 정보 섹션 */}
+            <div className="createSection">
+              <h2 className="createSectionTitle">기본정보</h2>
+              <div className="createGrid2Cols">
+                <div className="createField">
+                  <label className="requiredLabel">
+                    품목코드 <span className="required">*</span>
                   </label>
-                );
-              })}
-            </div>
-          </div>
+                  <input 
+                    className="tableInput" 
+                    value={form.itemCode} 
+                    disabled={isSubmitting} 
+                    onChange={(e) => handleChange("itemCode", e.target.value)} 
+                    placeholder="예: ITM001" 
+                  />
+                </div>
 
-          <div className="detailField">
-            <label>품목구분</label>
-            <div className="radioGroup">
-              {Object.entries(CATEGORY_LABEL).map(([key, label]) => {
-                const isSelected = form.category === key;
-                return (
-                  <label
-                    key={key}
-                    className={`radioRow ${isSelected ? "checked" : ""}`}
-                    style={{ cursor: isSubmitting ? "not-allowed" : "pointer" }}
-                  >
-                    <input
-                      type="radio"
-                      name="category"
-                      value={key}
-                      checked={isSelected}
-                      disabled={isSubmitting}
-                      onChange={(e) => handleChange("category", e.target.value)}
-                    />
-                    <span>{label}</span>
+                <div className="createField">
+                  <label className="requiredLabel">
+                    품목명 <span className="required">*</span>
                   </label>
-                );
-              })}
+                  <input 
+                    className="tableInput" 
+                    value={form.itemNm} 
+                    disabled={isSubmitting} 
+                    onChange={(e) => handleChange("itemNm", e.target.value)} 
+                    placeholder="예: 헴프 파우더" 
+                  />
+                </div>
+
+                <div className="createField">
+                  <label>단위</label>
+                  <input 
+                    className="tableInput" 
+                    value={form.unit} 
+                    disabled={isSubmitting} 
+                    onChange={(e) => handleChange("unit", e.target.value)} 
+                    placeholder="예: EA, BOX, KG" 
+                  />
+                </div>
+
+                <div className="createField">
+                  <label>규격</label>
+                  <input 
+                    className="tableInput" 
+                    value={form.standard} 
+                    disabled={isSubmitting} 
+                    onChange={(e) => handleChange("standard", e.target.value)} 
+                    placeholder="예: 500g" 
+                  />
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="detailField">
-            <label>품목명</label>
-            <input className="tableInput" value={form.itemNm} disabled={isSubmitting} onChange={(e) => handleChange("itemNm", e.target.value)} placeholder="예: 헴프 파우더" />
-          </div>
-
-          <div className="detailField">
-            <label>단위</label>
-            <input className="tableInput" value={form.unit} disabled={isSubmitting} onChange={(e) => handleChange("unit", e.target.value)} placeholder="예: EA, BOX, KG" />
-          </div>
-
-          <div className="detailField">
-            <label>규격</label>
-            <input className="tableInput" value={form.standard} disabled={isSubmitting} onChange={(e) => handleChange("standard", e.target.value)} placeholder="예: 500g" />
-          </div>
-
-          {isRoutingRequired && (
-            <div className="routingSection">
-              <div className="routingHeader">
-                <label className="requiredLabel" style={{ fontWeight: 600 }}>공정 라우팅 설정 <span className="required">*</span></label>
-                <button type="button" className="miniButton primary" disabled={isSubmitting} onClick={handleOpenModal}>공정 선택 / 추가</button>
-              </div>
-
-              {/* 조작 가이드 안내 */}
-              <div className="routingHint">
-                💡 <kbd>마우스</kbd>로 공정 카드를 선택하거나 드래그 하세요.
-                <kbd>방향키</kbd>로 공정 카드를 탐색하고, <kbd>Space</kbd>/<kbd>Enter</kbd>로 선택(잡기) 후 이동하세요. (<kbd>Esc</kbd> 취소)
-              </div>
-
-              {routings.length === 0 ? (
-                <div className="routingEmptyBox">선택된 공정이 없습니다. [공정 선택 / 추가] 버튼을 눌러주세요.</div>
-              ) : (
-                <div className="routingGrid" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
-                  {routings.map((route, index) => {
-                    const matchedOp = operations.find((op) => op.operCode === route.operCode);
-                    const isDragging = draggingIndex === index;
-                    const isTarget = targetIndex === index && draggingIndex !== index;
-                    const isKeyboardActive = keyboardActiveIndex === index;
-
-                    return (
-                      <div
-                        key={`${route.operCode}-${index}`}
-                        ref={(el) => { itemRefs.current[index] = el; }}
-                        tabIndex={!isSubmitting ? 0 : -1}
-                        role="button"
-                        aria-pressed={isKeyboardActive}
-                        className={`routingItem ${isDragging ? "dragging" : ""} ${isTarget ? "dragTarget" : ""} ${isKeyboardActive ? "keyboardActive" : ""}`}
-                        onMouseDown={() => {
-                          if (!isSubmitting) {
-                            handleMouseDown(index);
-                            itemRefs.current[index]?.focus();
-                          }
-                        }}
-                        onMouseEnter={() => !isSubmitting && handleMouseEnter(index)}
-                        onKeyDown={(e) => {
-                          if (isSubmitting) return;
-
-                          // 방향키 단독 입력 시 카드 간 포커스 이동 (잡기 상태가 아닐 때)
-                          if (keyboardActiveIndex === null && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-                            let nextIndex = index;
-                            const columns = 2; // 2열 그리드 구조
-
-                            switch (e.key) {
-                              case "ArrowUp": nextIndex = index - columns; break;
-                              case "ArrowDown": nextIndex = index + columns; break;
-                              case "ArrowLeft": nextIndex = index - 1; break;
-                              case "ArrowRight": nextIndex = index + 1; break;
-                            }
-
-                            if (nextIndex >= 0 && nextIndex < routings.length) {
-                              e.preventDefault();
-                              itemRefs.current[nextIndex]?.focus();
-                            }
-                            return;
-                          }
-
-                          // 훅의 handleKeyDown 호출
-                          const nextIndex = handleKeyDown(e, index, 2);
-                          if (nextIndex !== undefined) {
-                            setTimeout(() => itemRefs.current[nextIndex]?.focus(), 0);
-                          }
-                        }}
-                      >
-                        {/* 1. 드래그 핸들 */}
-                        <span className="dragHandle" title="마우스로 잡고 이동">☰</span>
-
-                        {/* 2. 기존 routingSeq 클래스를 그대로 활용한 순서 드롭다운 영역 */}
-                        <div className="routingSeq">
-                          <select
-                            className="tableInput"
-                            style={{
-                              width: "100%",
-                              padding: "2px 4px",
-                              height: "42px",
-                              fontSize: "15px",
-                              textAlign: "center",
-                            }}
-                            value={route.operSeq ?? 0}
-                            disabled={isSubmitting}
-                            tabIndex={-1}
-                            onClick={(e) => e.stopPropagation()} // 드롭다운 클릭 시 드래그 방지
-                            onChange={(e) => {
-                              const newSeq = Number(e.target.value);
-                              moveRouting(index, newSeq - 1);
-                            }}
-                          >
-                            {routings.map((_, idx) => (
-                              <option key={idx + 1} value={idx + 1}>
-                                {idx + 1}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {/* 3. 공정 정보 */}
-                        <div className="routingInfo">
-                          {route.operCode} {matchedOp ? `(${matchedOp.operNm})` : ""}
-                        </div>
-
-                        {/* 4. 일반/최종공정 셀렉트 */}
-                        <select
-                          className="tableInput routingSelect"
-                          value={route.finalYn ?? "N"}
-                          disabled={isSubmitting}
-                          tabIndex={-1}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={(e) => handleRoutingChange(index, "finalYn", e.target.value)}
-                        >
-                          <option value="N">일반공정</option>
-                          <option value="Y">최종공정</option>
-                        </select>
-
-                        {/* 5. 제외 버튼 */}
+            {/* 2. 분류 정보 섹션 */}
+            <div className="createSection">
+              <h2 className="createSectionTitle">분류정보</h2>
+              <div className="createGrid2Cols">
+                <div className="createField">
+                  <label className="requiredLabel">
+                    종류 <span className="required">*</span>
+                  </label>
+                  <div className="cardButtonGroup" style={{ width: "100%" }}>
+                    {Object.entries(PRODUCT_TYPE_LABEL).map(([key, label]) => {
+                      const isSelected = form.productType === key;
+                      return (
                         <button
+                          key={key}
                           type="button"
-                          className="miniButton danger"
+                          className={`inlineTypeButton ${isSelected ? "active" : ""}`}
                           disabled={isSubmitting}
-                          tabIndex={-1}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveRouting(index);
+                          onClick={() => handleChange("productType", key)}
+                        >
+                          <span className="inlineButtonInner">
+                            <span className="cardIcon">
+                              {key === "0" ? <FoodIcon /> : <PlantIcon />}
+                            </span>
+                            <span className="cardText">{label}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="createField">
+                  <label className="requiredLabel">
+                    품목구분 <span className="required">*</span>
+                  </label>
+                  <div className="cardButtonGroup" style={{ width: "100%" }}>
+                    {Object.entries(CATEGORY_LABEL).map(([key, label]) => {
+                      const isSelected = form.category === key;
+                      const subDescriptions: Record<string, string> = {
+                        "0": "입고 소재",
+                        "1": "공정 중간산출",
+                        "2": "출하 대상",
+                      };
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          className={`typeCardButton ${isSelected ? "active" : ""}`}
+                          disabled={isSubmitting}
+                          onClick={() => handleChange("category", key)}
+                        >
+                          <span className="cardText main">{label}</span>
+                          {subDescriptions[key] && (
+                            <span className="cardText sub">{subDescriptions[key]}</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. 공정 라우팅 설정 영역 */}
+            {isRoutingRequired && (
+              <div className="createSection">
+                <div className="routingHeader">
+                  <label className="requiredLabel">
+                    공정 라우팅 설정 <span className="required">*</span>
+                  </label>
+                  <div className="routingHeaderRight">
+                    <span className="routingCount">총 {routings.length}단계</span>
+                    <button 
+                      type="button" 
+                      className="miniButton primary" 
+                      disabled={isSubmitting} 
+                      onClick={handleOpenModal}
+                    >
+                      공정 선택 / 추가
+                    </button>
+                  </div>
+                </div>
+
+                <div className="routingHint">
+                  💡 <kbd>방향키(상/하)</kbd>로 공정 아이템을 탐색하고, <kbd>Space</kbd>/<kbd>Enter</kbd>로 선택(활성화) 후 상/하 방향키로 순서를 변경하세요. (<kbd>Esc</kbd> 취소)
+                </div>
+
+                {routings.length === 0 ? (
+                  <div className="routingEmptyBox">선택된 공정이 없습니다. [공정 선택 / 추가] 버튼을 눌러주세요.</div>
+                ) : (
+                  <div className="routingList">
+                    {routings.map((route, index) => {
+                      const matchedOp = operations.find((op) => op.operCode === route.operCode);
+                      const isKeyboardActive = keyboardActiveIndex === index;
+                      const isFinal = route.finalYn === "Y";
+
+                      return (
+                        <div
+                          key={`${route.operCode}-${index}`}
+                          ref={(el) => { itemRefs.current[index] = el; }}
+                          tabIndex={!isSubmitting ? 0 : -1}
+                          role="button"
+                          aria-pressed={isKeyboardActive}
+                          className={`routingItem isEditing ${isKeyboardActive ? "keyboardActive" : ""}`}
+                          onMouseDown={() => {
+                            if (!isSubmitting) {
+                              itemRefs.current[index]?.focus();
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (isSubmitting) return;
+
+                            if (keyboardActiveIndex === null && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+                              let nextIndex = index;
+                              if (e.key === "ArrowUp") nextIndex = index - 1;
+                              if (e.key === "ArrowDown") nextIndex = index + 1;
+
+                              if (nextIndex >= 0 && nextIndex < routings.length) {
+                                e.preventDefault();
+                                itemRefs.current[nextIndex]?.focus();
+                              }
+                              return;
+                            }
+
+                            const nextIndex = handleKeyDown(e, index);
+                            if (nextIndex !== undefined) {
+                              setTimeout(() => itemRefs.current[nextIndex]?.focus(), 0);
+                            }
                           }}
                         >
-                          제외
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
+                          {/* STEP 동그란 뱃지 및 순서 변경 투명 셀렉트 오버레이 영역 */}
+                          <div className="routingStepWrapper">
+                            <div className="routingStepContainer">
+                              <div className={`routingStepBadge ${isFinal ? "final" : ""}`}>
+                                <span className="stepText">STEP</span>
+                                <span className="stepNum">{String(route.operSeq ?? index + 1).padStart(2, "0")}</span>
+                              </div>
 
-          <div className="pageFormFooter">
-            <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>취소</button>
-            <button type="submit" className="primaryButton" disabled={isSubmitting}>{isSubmitting ? "등록 중..." : "등록"}</button>
+                              <select
+                                className="routingStepOverlaySelect"
+                                value={route.operSeq ?? index + 1}
+                                disabled={isSubmitting}
+                                tabIndex={-1}
+                                title="순서 변경"
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => {
+                                  const newSeq = Number(e.target.value);
+                                  moveRouting(index, newSeq - 1);
+                                }}
+                              >
+                                {routings.map((_, idx) => (
+                                  <option key={idx + 1} value={idx + 1}>
+                                    {idx + 1}순서로 이동
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* 공정 정보 영역 */}
+                          <div className="routingInfoWrapper">
+                            <span className="routingCode">{route.operCode}</span>
+                            <span className="routingName">
+                              {matchedOp ? matchedOp.operNm : ""}
+                            </span>
+                          </div>
+
+                          {/* 최종공정 여부 셀렉트 */}
+                          <div>
+                            <select
+                              className="tableInput routingSelect"
+                              value={route.finalYn ?? "N"}
+                              disabled={isSubmitting}
+                              tabIndex={-1}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => handleRoutingChange(index, "finalYn", e.target.value)}
+                            >
+                              <option value="N">일반공정</option>
+                              <option value="Y">최종공정</option>
+                            </select>
+                          </div>
+
+                          {/* 제외 버튼 */}
+                          <button
+                            type="button"
+                            className="miniButton danger"
+                            disabled={isSubmitting}
+                            tabIndex={-1}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveRouting(index);
+                            }}
+                          >
+                            제외
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+          </div>
+
+          {/* 푸터 버튼 영역 */}
+          <div className="createFooter">
+            <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
+              취소
+            </button>
+            <button type="submit" className="primaryButton" disabled={isSubmitting}>
+              {isSubmitting ? "등록 중..." : "등록"}
+            </button>
           </div>
         </form>
-      </Panel>
+      </div>
 
       <OperationSelectModal
         isOpen={isModalOpen}

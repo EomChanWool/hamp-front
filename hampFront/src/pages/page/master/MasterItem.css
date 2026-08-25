@@ -3,7 +3,7 @@
 ================================ */
 .routingSection {
   grid-column: 1 / -1;
-  margin-top: 16px;
+  margin-top: 20px;
   padding-top: 24px;
   border-top: 1px solid var(--border);
 }
@@ -12,59 +12,57 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 
 .routingHint {
-  font-size: 15px; 
-  color: var(--text-muted);
+  font-size: 14px; 
+  color: var(--text-muted, #4b5563);
   margin-bottom: 14px;
   display: flex;
   align-items: center;
-  gap: 8px; 
+  gap: 8px;
+  background: var(--bg-subtle, #f9fafb);
+  padding: 10px 14px;
+  border-radius: 10px;
 }
 
 .routingHint kbd,
 .routingHint span span {
   background: var(--bg-subtle, #f1f5f9);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 4px 8px; 
   font-size: 13px; 
   font-weight: 600;
-  color: #00a6a6; /* 포인트 컬러로 통일 */
+  color: #00a6a6; /* 포인트 컬러 */
 }
 
 .routingEmptyBox {
-  padding: 28px;
+  padding: 32px;
   text-align: center;
   color: var(--text-muted);
-  font-size: 17px;
-  background: var(--bg-subtle);
+  font-size: 15px;
+  background: var(--bg-subtle, #f9fafb);
   border-radius: 12px;
   border: 1px solid var(--border);
 }
 
-.routingGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px 18px; 
-  cursor: default; 
-  user-select: none;
-  -webkit-user-select: none;
+.routingList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .routingItem {
   display: flex;
   align-items: center;
-  gap: 14px; 
-  background: var(--bg-subtle);
+  gap: 16px; 
+  background: var(--bg-card, #ffffff);
   padding: 14px 18px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border, #e5e7eb);
   border-radius: 12px; 
-  cursor: grab; 
-  user-select: none;
-  -webkit-user-select: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -83,23 +81,8 @@
   box-shadow: 0 0 0 2px rgba(0, 166, 166, 0.15);
 }
 
-.routingItem.dragging {
-  opacity: 0.9;
-  background: var(--bg-card);
-  border: 2px dashed #00a6a6; 
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12); 
-  transform: scale(1.02); 
-  cursor: grabbing;
-  z-index: 10;
-}
-
-.routingItem.dragTarget {
-  border: 2px dashed #00a6a6;
-  background: var(--bg-card);
-}
-
 .routingItem.keyboardActive {
-  border: 2px dashed #00a6a6;
+  border: 2px dashed #00a6a6 !important;
   background: var(--bg-card);
   box-shadow: 0 8px 20px rgba(0, 166, 166, 0.2);
   transform: translateY(-2px);
@@ -113,35 +96,233 @@
   100% { border-color: #00a6a6; }
 }
 
-.routingSeq {
-  font-size: 15px; 
-  font-weight: 600;
-  color: var(--text-muted);
-  width: 75px; 
-  flex-shrink: 0;
-}
-
-.routingInfo {
-  flex: 1;
-  font-size: 17px; 
-  font-weight: 500;
-  color: var(--text-body);
-}
-
-.dragHandle {
-  cursor: grab;
-}
-.dragHandle:active {
-  cursor: grabbing;
-}
-
 .routingSelect {
-  width: 140px; 
+  width: 130px; 
   flex-shrink: 0;
+  height: 42px !important;
+  font-size: 14px !important;
+  padding: 0 10px !important;
 }
 
-.routingActionButtons {
+.subtitleWrapper {
   display: flex;
-  gap: 8px; 
-  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.requiredLabel {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-heading, #14181f);
+}
+
+.required {
+  color: #ef4444;
+}
+
+.routingHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.routingCount {
+  font-size: 14px;
+  color: var(--text-muted, #6b7280);
+  font-weight: 500;
+}
+
+.routingStepWrapper {
+  display: flex;
+  align-items: center;
+  min-width: 50px;
+}
+
+/* STEP 뱃지를 감싸는 컨테이너 (relative 기준점) */
+.routingStepContainer {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* 뱃지 위에 완전히 겹쳐서 투명하게 자리 잡을 select */
+.routingStepOverlaySelect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0; /* 눈에 안 보이게 숨김 */
+  cursor: pointer;
+  z-index: 2; /* 뱃지보다 위에 와서 클릭을 가로챔 */
+}
+
+.routingStepBadge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: #f3f4f6;
+  color: #374151;
+  font-weight: 700;
+  font-size: 12px;
+  border: 1px solid #d1d5db;
+}
+
+.routingStepBadge.final {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.routingStepBadge .stepText {
+  font-size: 9px;
+  line-height: 1;
+  margin-bottom: 2px;
+  opacity: 0.8;
+}
+
+.routingStepBadge .stepNum {
+  line-height: 1;
+}
+
+.routingInfoWrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.routingCode {
+  font-weight: 600;
+  color: #1d4ed8;
+  font-size: 15px;
+}
+
+.routingName {
+  font-weight: 600;
+  color: var(--text-body, #1f2937);
+  font-size: 15px;
+}
+
+
+/* ================================
+   TYPE & CATEGORY CARD BUTTON COMPONENT
+================================ */
+.cardButtonGroup {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+/* 1. '종류' 전용 가로형 아이콘 버튼 스타일 */
+.inlineTypeButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 16px; 
+  background-color: var(--bg-card, #ffffff);
+  border: 1px solid var(--border, #d1d5db);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-use;
+}
+
+.inlineTypeButton:hover {
+  border-color: #10b981;
+  background-color: var(--bg-subtle, #f9fafb);
+}
+
+.inlineTypeButton.active {
+  border-color: #10b981;
+  background-color: #f0fdf4;
+  box-shadow: 0 0 0 1px #10b981;
+}
+
+.inlineButtonInner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.inlineTypeButton .cardIcon {
+  display: flex;
+  align-items: center;
+  color: #4b5563;
+}
+
+.inlineTypeButton.active .cardIcon {
+  color: #10b981;
+}
+
+.inlineTypeButton .cardText {
+  font-weight: 600;
+  color: var(--text-body, #1f2937);
+  font-size: 15px;
+}
+
+
+/* 2. '품목구분' 전용 세로형 카드 버튼 스타일 (원료/반제품/완제품) */
+.typeCardButton {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 14px; 
+  background-color: var(--bg-card, #ffffff);
+  border: 1px solid var(--border, #d1d5db);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-use;
+}
+
+.typeCardButton:hover {
+  border-color: #10b981;
+  background-color: var(--bg-subtle, #f9fafb);
+}
+
+.typeCardButton.active {
+  border-color: #10b981;
+  background-color: #f0fdf4;
+  box-shadow: 0 0 0 1px #10b981;
+}
+
+.typeCardButton .cardText.main {
+  font-weight: 700;
+  color: var(--text-body, #1f2937);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.typeCardButton .cardText.sub {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 2px;
+  line-height: 1.2;
+}
+
+/* 공통 비활성화(disabled) 상태 처리 */
+.inlineTypeButton:disabled,
+.typeCardButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* 다크모드 대응 */
+[data-theme="dark"] .inlineTypeButton:hover,
+[data-theme="dark"] .typeCardButton:hover {
+  border-color: #10b981;
+  background-color: #334155;
+}
+
+[data-theme="dark"] .inlineTypeButton.active,
+[data-theme="dark"] .typeCardButton.active {
+  border-color: #10b981;
+  background-color: #064e3b;
 }

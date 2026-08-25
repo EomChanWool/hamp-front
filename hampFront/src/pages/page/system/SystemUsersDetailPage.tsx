@@ -26,7 +26,6 @@ export function SystemUserDetailPage() {
 
   const [isEditing, setIsEditing] = useState(false);
 
-  // 기본 정보 필드는 DetailLayout이 다루고, 권한 그룹(체크박스 다중선택)은 별도 상태로 관리
   const [form, setForm] = useState<Record<string, string>>({
     userId: "",
     userNm: "",
@@ -39,7 +38,6 @@ export function SystemUserDetailPage() {
 
   const isBusy = isUpdating || isDeactivating || isLoadingGroups;
 
-  // 섹션 정의: 기본 정보로 그룹핑
   const sections: DetailSection<UserDetailResponse>[] = [
     {
       title: "기본 정보",
@@ -51,7 +49,7 @@ export function SystemUserDetailPage() {
     },
   ];
 
-  // 1. 전체 권한 그룹 목록 조회 (수정 모드 체크박스용)
+  // 1. 전체 권한 그룹 목록 조회 (의존성 및 마운트 시점 보완)
   useEffect(() => {
     let isMounted = true;
     const loadAuthGroups = async () => {
@@ -73,51 +71,44 @@ export function SystemUserDetailPage() {
     };
   }, []);
 
-  // 2. 사용자 상세 데이터 조회
-  useEffect(() => {
-    let isMounted = true;
+  // 2. 사용자 상세 데이터 조회 함수 (저장 후 재조회용으로도 사용)
+  const fetchUserDetail = async () => {
+    if (!userId) return;
+    setIsLoading(true);
 
-    const fetchUserDetail = async () => {
-      if (!userId) return;
-      setIsLoading(true);
+    try {
+      const encodedUserId = encodeURIComponent(userId);
+      const response = await UserApi.getDetail(encodedUserId);
+      const userData = response.data;
 
-      try {
-        const encodedUserId = encodeURIComponent(userId);
-        const response = await UserApi.getDetail(encodedUserId);
-        const userData = response.data;
+      if (userData) {
+        setUser(userData);
+        const initialAuthIds = userData.authGroups?.map((g) => g.authId) || [];
 
-        if (userData && isMounted) {
-          setUser(userData);
-          const initialAuthIds = userData.authGroups?.map((g) => g.authId) || [];
-
-          setForm({
-            userId: userData.userId,
-            userNm: userData.userNm || "",
-            phone: userData.phone || "",
-            position: userData.position || "",
-            use: userData.use ? "Y" : "N",
-            createdAt: formatDateTime(userData.createdAt),
-          });
-          setAuthIds(initialAuthIds);
-        }
-      } catch (error) {
-        console.error("사용자 상세 조회 실패:", error);
-        if (isMounted) {
-          alert("상세 정보를 불러오는 중 오류가 발생했습니다.");
-          navigate({ pathname: "/system/users", search: location.search });
-        }
-      } finally {
-        if (isMounted) setIsLoading(false);
+        setForm({
+          userId: userData.userId,
+          userNm: userData.userNm || "",
+          phone: userData.phone || "",
+          position: userData.position || "",
+          use: userData.use ? "Y" : "N",
+          createdAt: formatDateTime(userData.createdAt),
+        });
+        setAuthIds(initialAuthIds);
       }
-    };
+    } catch (error) {
+      console.error("사용자 상세 조회 실패:", error);
+      alert("상세 정보를 불러오는 중 오류가 발생했습니다.");
+      navigate({ pathname: "/system/users", search: location.search });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchUserDetail();
-    return () => {
-      isMounted = false;
-    };
   }, [userId, navigate, location.search]);
 
-  // 수정 모드 취소 시 롤백
+  // 수정 모드 취소 시 롤백 및 동기화
   useEffect(() => {
     if (user && !isEditing) {
       setForm({
@@ -139,7 +130,7 @@ export function SystemUserDetailPage() {
     );
   };
 
-  // 저장 처리 핸들러
+  // 저장 처리 핸들러 (서버 재조회 로직 추가로 권한 및 메뉴 권한 즉시 갱신)
   const handleSave = async () => {
     if (!user || isUpdating) return;
 
@@ -166,23 +157,8 @@ export function SystemUserDetailPage() {
 
       alert("수정되었습니다.");
 
-      // 수정한 권한 목록을 기반으로 user state 내부의 authGroups도 즉시 갱신
-      const updatedAuthGroups = authIds.map((id) => {
-        const found = authGroups.find((g) => g.authId === id);
-        return { authId: id, authNm: found ? found.authNm : id };
-      });
-
-      setUser((prev) =>
-        prev
-          ? {
-            ...prev,
-            userNm: updatePayload.userNm ?? "",
-            phone: updatePayload.phone ?? "",
-            position: updatePayload.position ?? "",
-            authGroups: updatedAuthGroups,
-          }
-          : null
-      );
+      // 수정 후 최신 상세 정보를 서버로부터 다시 불러와 상태 갱신 (메뉴 권한 등 포함 완벽 동기화)
+      await fetchUserDetail();
 
       setIsEditing(false);
     } catch (err) {
@@ -311,7 +287,6 @@ export function SystemUserDetailPage() {
           )
         }
       >
-        {/* 권한 그룹 영역: 체크박스 다중선택이라 섹션 grid 대신 children으로 렌더링 */}
         <div className="detailSection detailSection--full">
           <label className={isEditing ? "requiredLabel" : undefined}>
             권한 그룹 {isEditing && <span className="required">*</span>}
@@ -344,10 +319,44 @@ export function SystemUserDetailPage() {
               </div>
             )
           ) : (
-            <div className="detailValue">
-              {user.authGroups && user.authGroups.length > 0
-                ? user.authGroups.map((g) => g.authNm).join(", ")
-                : "-"}
+            <div className="userAuthGroupDetails">
+              {user.authGroups && user.authGroups.length > 0 ? (
+                user.authGroups.map((group) => (
+                  <div key={group.authId} className="authGroupCard">
+                    <div className="authGroupCardHeader">
+                      <h4 className="authGroupCardTitle">{group.authNm}</h4>
+                      <span className="authGroupCardId">ID: {group.authId}</span>
+                    </div>
+
+                    {group.authDesc && (
+                      <p className="authGroupCardDesc">
+                        {group.authDesc}
+                      </p>
+                    )}
+
+                    <div className="menuPermissionsSection">
+                      <span className="menuPermissionsTitle">
+                        부여된 메뉴 권한:
+                      </span>
+                      {group.menuPermissions && group.menuPermissions.filter(menu => menu.read).length > 0 ? (
+                        <div className="menuBadgeList">
+                          {group.menuPermissions
+                            .filter(menu => menu.read)
+                            .map((menu, idx) => (
+                              <Badge key={idx} tone="muted">
+                                {menu.menuNm || menu.menuId}
+                              </Badge>
+                            ))}
+                        </div>
+                      ) : (
+                        <span className="menuPermissionsEmpty">설정된 메뉴 권한이 없습니다.</span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="detailValue">-</div>
+              )}
             </div>
           )}
         </div>

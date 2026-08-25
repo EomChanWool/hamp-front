@@ -39,22 +39,17 @@ export function MasterItemsDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
 
-  // 공정 라우팅 DOM 포커스 관리를 위한 ref 배열
+  // 1열 공정 라우팅 DOM 포커스 관리를 위한 ref 배열
   const routingItemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // 커스텀 훅 연동
   const {
     routings,
-    draggingIndex,
-    targetIndex,
     keyboardActiveIndex,
     syncRoutings,
     removeRouting: handleRemoveRouting,
     updateRouting: handleRoutingChange,
     moveRouting,
-    handleMouseDown,
-    handleMouseEnter,
-    handleMouseUp,
     handleKeyDown,
   } = useItemRoutings();
 
@@ -272,10 +267,10 @@ export function MasterItemsDetailPage() {
         routings:
           selectedCategory === 1 || selectedCategory === 2
             ? routings.map((r) => ({
-                operCode: r.operCode?.trim() || null,
-                operSeq: r.operSeq ?? 1,
-                finalYn: r.finalYn || "N",
-              }))
+              operCode: r.operCode?.trim() || null,
+              operSeq: r.operSeq ?? 1,
+              finalYn: r.finalYn || "N",
+            }))
             : null,
       };
 
@@ -286,22 +281,22 @@ export function MasterItemsDetailPage() {
       setItem((prev) =>
         prev
           ? {
-              ...prev,
-              productType: updatePayload.productType ?? prev.productType,
-              category: updatePayload.category ?? prev.category,
-              itemNm: updatePayload.itemNm ?? prev.itemNm,
-              unit: updatePayload.unit ?? prev.unit,
-              standard: updatePayload.standard ?? prev.standard,
-              routings: updatePayload.routings
-                ? updatePayload.routings.map((r, idx) => ({
-                    routingId: 0,
-                    itemCode: prev.itemCode,
-                    operCode: r.operCode ?? "",
-                    operSeq: r.operSeq ?? idx + 1,
-                    finalYn: r.finalYn ?? "N",
-                  }))
-                : [],
-            }
+            ...prev,
+            productType: updatePayload.productType ?? prev.productType,
+            category: updatePayload.category ?? prev.category,
+            itemNm: updatePayload.itemNm ?? prev.itemNm,
+            unit: updatePayload.unit ?? prev.unit,
+            standard: updatePayload.standard ?? prev.standard,
+            routings: updatePayload.routings
+              ? updatePayload.routings.map((r, idx) => ({
+                routingId: 0,
+                itemCode: prev.itemCode,
+                operCode: r.operCode ?? "",
+                operSeq: r.operSeq ?? idx + 1,
+                finalYn: r.finalYn ?? "N",
+              }))
+              : [],
+          }
           : null
       );
 
@@ -359,13 +354,13 @@ export function MasterItemsDetailPage() {
       <DetailLayout
         title={item.itemNm}
         subtitle={
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span>{form.itemCode}</span>
-          <Badge tone={form.useYn === "Y" ? "good" : "muted"}>
-            {form.useYn === "Y" ? "사용" : "미사용"}
-          </Badge>
-        </div>
-      }
+          <div className="subtitleWrapper">
+            <Badge tone="muted">{form.itemCode}</Badge>
+            <Badge tone={form.useYn === "Y" ? "good" : "muted"}>
+              {form.useYn === "Y" ? "사용" : "미사용"}
+            </Badge>
+          </div>
+        }
         meta={`등록일자 ${form.createdAt}`}
         sections={sections}
         form={form}
@@ -414,7 +409,7 @@ export function MasterItemsDetailPage() {
               <button
                 type="button"
                 className="ghostButton"
-                 onClick={() =>
+                onClick={() =>
                   navigate({ pathname: "/master/items", search: location.search })
                 }
                 disabled={isBusy}
@@ -433,46 +428,45 @@ export function MasterItemsDetailPage() {
           )
         }
       >
-        {/* 공정 라우팅 영역: 섹션 아래, 푸터 위에 렌더링 */}
+        {/* 공정 라우팅 영역 */}
         {(isRoutingRequired || (routings && routings.length > 0)) && (
           <div className="routingSection">
             <div className="routingHeader">
-              <label className="requiredLabel" style={{ fontWeight: 600 }}>
+              <label className="requiredLabel">
                 공정 라우팅 설정{" "}
                 {isRoutingRequired && <span className="required">*</span>}
               </label>
-              {isEditing && (
-                <button
-                  type="button"
-                  className="miniButton primary"
-                  disabled={isBusy}
-                  onClick={handleOpenModal}
-                >
-                  공정 선택 / 추가
-                </button>
-              )}
+              <div className="routingHeaderRight">
+                <span className="routingCount">총 {routings.length}단계</span>
+                {isEditing && (
+                  <button
+                    type="button"
+                    className="miniButton primary"
+                    disabled={isBusy}
+                    onClick={handleOpenModal}
+                  >
+                    공정 선택 / 추가
+                  </button>
+                )}
+              </div>
             </div>
 
             {isEditing && routings.length > 0 && (
               <div className="routingHint">
-                💡 <kbd>마우스</kbd>로 공정 카드를 선택하거나 드래그 하세요.
-                <kbd>방향키</kbd>로 공정 카드를 탐색하고, <kbd>Space</kbd>/<kbd>Enter</kbd>로 선택(잡기) 후 이동하세요. (<kbd>Esc</kbd> 취소)
+                💡 <kbd>상하 방향키</kbd>로 공정 카드를 탐색하고, <kbd>Space</kbd>/<kbd>Enter</kbd>로 선택 후 상하 방향키로 순서를 이동하세요. (<kbd>Esc</kbd> 취소)
               </div>
             )}
 
             {routings.length === 0 ? (
-              <div className="routingEmptyBox">등록된 공정 라우팅이 없습니다.</div>
+              <div className="routingEmptyBox">
+                등록된 공정 라우팅이 없습니다.
+              </div>
             ) : (
-              <div
-                className="routingGrid"
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-              >
+              <div className="routingList">
                 {routings.map((route, index) => {
                   const matchedOp = operations.find((op) => op.operCode === route.operCode);
-                  const isDragging = draggingIndex === index;
-                  const isTarget = targetIndex === index && draggingIndex !== index;
                   const isKeyboardActive = keyboardActiveIndex === index;
+                  const isFinal = route.finalYn === "Y";
 
                   return (
                     <div
@@ -483,112 +477,98 @@ export function MasterItemsDetailPage() {
                       tabIndex={isEditing && !isBusy ? 0 : undefined}
                       role={isEditing ? "button" : undefined}
                       aria-pressed={isEditing ? isKeyboardActive : undefined}
-                      className={`routingItem 
-                        ${isDragging ? "dragging" : ""} 
-                        ${isTarget ? "dragTarget" : ""}
-                        ${isKeyboardActive ? "keyboardActive" : ""}
-                      `}
-                      onMouseDown={() => isEditing && !isBusy && handleMouseDown(index)}
-                      onMouseEnter={() => isEditing && !isBusy && handleMouseEnter(index)}
+                      className={`routingItem ${isKeyboardActive ? "keyboardActive" : ""}`}
+                      // 💡 마우스 클릭 시 즉시 해당 항목으로 포커스를 이동시켜 방향키 입력 보장
+                      onMouseDown={() => {
+                        if (isEditing && !isBusy) {
+                          routingItemRefs.current[index]?.focus();
+                        }
+                      }}
                       onKeyDown={(e) => {
                         if (!isEditing || isBusy) return;
 
-                        if (
-                          keyboardActiveIndex === null &&
-                          ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)
-                        ) {
-                          let nextIndex = index;
-                          const columns = 2;
-
-                          switch (e.key) {
-                            case "ArrowUp":
-                              nextIndex = index - columns;
-                              break;
-                            case "ArrowDown":
-                              nextIndex = index + columns;
-                              break;
-                            case "ArrowLeft":
-                              nextIndex = index - 1;
-                              break;
-                            case "ArrowRight":
-                              nextIndex = index + 1;
-                              break;
-                          }
-
-                          if (nextIndex >= 0 && nextIndex < routings.length) {
+                        // 💡 활성화(keyboardActiveIndex)가 안 된 상태에서 상하 방향키 입력 시 스크롤바 이동 방지 및 포커스 이동 처리
+                        if (keyboardActiveIndex === null) {
+                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
                             e.preventDefault();
-                            routingItemRefs.current[nextIndex]?.focus();
+                            let nextIndex = index;
+                            if (e.key === "ArrowUp") nextIndex = index - 1;
+                            if (e.key === "ArrowDown") nextIndex = index + 1;
+
+                            if (nextIndex >= 0 && nextIndex < routings.length) {
+                              routingItemRefs.current[nextIndex]?.focus();
+                            }
+                            return;
                           }
-                          return;
                         }
 
-                        const nextIndex = handleKeyDown(e, index, 2);
-                        if (nextIndex !== undefined) {
+                        // Enter/Space 이거나 활성화된 상태에서의 키다운 처리 위임
+                        const nextIndex = handleKeyDown(e, index);
+                        if (nextIndex !== undefined && nextIndex !== index) {
                           setTimeout(() => routingItemRefs.current[nextIndex]?.focus(), 0);
                         }
                       }}
                     >
-                      {isEditing && (
-                        <span className="dragHandle" title="마우스로 잡고 이동">
-                          ☰
-                        </span>
-                      )}
+                      {/* STEP 원형 뱃지 및 순서 변경 드롭다운 오버레이 영역 */}
+                      <div className="routingStepWrapper">
+                        <div className="routingStepContainer">
+                          <div className={`routingStepBadge ${isFinal ? "final" : ""}`}>
+                            <span className="stepText">STEP</span>
+                            <span className="stepNum">{String(route.operSeq ?? index + 1).padStart(2, "0")}</span>
+                          </div>
 
-                      {/* 순서 드롭다운 영역 */}
-                      <div className="routingSeq">
+                          {isEditing && (
+                            <select
+                              className="routingStepOverlaySelect"
+                              value={route.operSeq ?? index + 1}
+                              disabled={isBusy}
+                              tabIndex={-1}
+                              title="순서 변경"
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => {
+                                const newSeq = Number(e.target.value);
+                                moveRouting(index, newSeq - 1);
+                              }}
+                            >
+                              {routings.map((_, idx) => (
+                                <option key={idx + 1} value={idx + 1}>
+                                  {idx + 1}순서로 이동
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 공정 코드 및 명칭 */}
+                      <div className="routingInfoWrapper">
+                        <span className="routingCode">{route.operCode}</span>
+                        <span className="routingName">
+                          {matchedOp ? matchedOp.operNm : ""}
+                        </span>
+                      </div>
+
+                      {/* 최종공정 여부 뱃지 또는 셀렉트 */}
+                      <div>
                         {isEditing ? (
                           <select
-                            className="tableInput"
-                            style={{
-                              width: "100%",
-                              padding: "2px 4px",
-                              height: "60px",
-                              fontSize: "15px",
-                              textAlign: "center",
-                            }}
-                            value={route.operSeq ?? index + 1}
+                            className="tableInput routingSelect"
+                            value={route.finalYn ?? "N"}
                             disabled={isBusy}
                             tabIndex={-1}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => {
-                              const newSeq = Number(e.target.value);
-                              moveRouting(index, newSeq - 1);
-                            }}
+                            onChange={(e) => handleRoutingChange(index, "finalYn", e.target.value)}
                           >
-                            {routings.map((_, idx) => (
-                              <option key={idx + 1} value={idx + 1}>
-                                {idx + 1}
-                              </option>
-                            ))}
+                            <option value="N">일반공정</option>
+                            <option value="Y">최종공정</option>
                           </select>
                         ) : (
-                          <span>순서 {route.operSeq ?? index + 1}</span>
+                          <Badge tone={isFinal ? "good" : "muted"}>
+                            {isFinal ? "최종공정" : "일반공정"}
+                          </Badge>
                         )}
                       </div>
 
-                      <div className="routingInfo">
-                        {route.operCode} {matchedOp ? `(${matchedOp.operNm})` : ""}
-                      </div>
-
-                      {isEditing ? (
-                        <select
-                          className="tableInput routingSelect"
-                          value={route.finalYn ?? "N"}
-                          disabled={isBusy}
-                          tabIndex={-1}
-                          onChange={(e) => handleRoutingChange(index, "finalYn", e.target.value)}
-                        >
-                          <option value="N">일반공정</option>
-                          <option value="Y">최종공정</option>
-                        </select>
-                      ) : (
-                        <div className="flex items-center justify-center w-full h-full text-xs">
-                          <Badge tone={route.finalYn === "Y" ? "good" : "muted"}>
-                            {route.finalYn === "Y" ? "최종공정" : "일반공정"}
-                          </Badge>
-                        </div>
-                      )}
-
+                      {/* 제외 버튼 */}
                       {isEditing && (
                         <button
                           type="button"
