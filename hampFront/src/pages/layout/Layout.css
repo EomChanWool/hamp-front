@@ -608,7 +608,7 @@
 }
 
 /* ================================
-    DetailLayout — Card Grid 
+   DetailLayout — Card Grid 
 ================================ */
 .detailCard {
   --dl-bg: #fcfcfb;
@@ -619,7 +619,7 @@
   --dl-line: #e3e6ea;
   --dl-line-strong: #c7cdd5;
 
-  --dl-accent: #0f6e5c;
+  --dl-accent: #00a6a6; /* 포인트 컬러 통일 */
   --dl-accent-soft: #e7f3f0;
   --dl-accent-ink: #0a4a3e;
 
@@ -636,8 +636,26 @@
   overflow: hidden;
 }
 
+/* 다크모드 색상 변수 오버라이딩 (프로젝트 전역 변수 기준 연동) */
+[data-theme="dark"] .detailCard {
+  --dl-bg: var(--bg-subtle);
+  --dl-panel: var(--bg-card);
+  --dl-ink: var(--text-heading);
+  --dl-ink-soft: var(--text-body);
+  --dl-ink-faint: var(--text-muted);
+  --dl-line: var(--border);
+  --dl-line-strong: #334155;
+
+  --dl-accent: #57d3a1;
+  --dl-accent-soft: var(--primary-light);
+  --dl-accent-ink: #57d3a1;
+
+  --dl-danger: #f87171;
+  --dl-danger-soft: rgba(248, 113, 113, 0.15);
+}
+
 /* ================================
-    헤더
+   헤더
 ================================ */
 .detailCard .detailHeader {
   display: flex;
@@ -697,7 +715,7 @@
 }
 
 /* ================================
-    본문 — 카드형 섹션
+   본문 — 카드형 섹션
 ================================ */
 .detailCard .detailBody {
   display: grid;
@@ -747,7 +765,7 @@
 }
 
 /* ================================
-    필드 그리드
+   필드 그리드
 ================================ */
 .detailCard .detailGrid {
   display: flex;
@@ -850,7 +868,7 @@
 }
 
 /* ================================
-    푸터
+   푸터
 ================================ */
 .detailCard .detailFooter {
   display: flex;
@@ -901,6 +919,12 @@
   color: #ffffff;
 }
 
+[data-theme="dark"] .detailCard .detailFooter .btnPrimary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #0f1117;
+}
+
 .detailCard .detailFooter .btnPrimary:hover {
   background: var(--dl-accent-ink);
   border-color: var(--dl-accent-ink);
@@ -923,7 +947,7 @@
 }
 
 /* ================================
-    반응형
+   반응형
 ================================ */
 @media (max-width: 640px) {
   .detailCard .detailHeader {
