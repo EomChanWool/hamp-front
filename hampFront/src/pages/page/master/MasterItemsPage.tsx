@@ -16,7 +16,6 @@ import {
   type ProductType,
   type ItemCategory,
 } from "@/api/master/Item";
-import { Badge } from "@/components/common/Badge";
 import Spinner from "@/components/common/Spinner";
 
 export function MasterItemsPage() {
@@ -298,18 +297,6 @@ export function MasterItemsPage() {
         cell: ({ getValue }) => {
           const val = getValue<string>();
           return val ? val : "-";
-        },
-      },
-      {
-        accessorKey: "useYn",
-        header: "사용여부",
-        cell: ({ getValue }) => {
-          const isUse = getValue<string>() === "Y";
-          return (
-            <Badge tone={isUse ? "good" : "muted"}>
-              {isUse ? "사용" : "미사용"}
-            </Badge>
-          );
         },
       },
       {

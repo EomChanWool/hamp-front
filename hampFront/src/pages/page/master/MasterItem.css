@@ -1,5 +1,5 @@
 /* ================================
-    ROUTING SECTION
+   ROUTING SECTION
 ================================ */
 .routingSection {
   grid-column: 1 / -1;
@@ -32,7 +32,7 @@
   padding: 4px 8px; 
   font-size: 13px; 
   font-weight: 600;
-  color: var(--primary, #3b82f6);
+  color: #00a6a6; /* 포인트 컬러로 통일 */
 }
 
 .routingEmptyBox {
@@ -70,23 +70,23 @@
 
 .routingItem:focus {
   outline: none;
-  border: 2px solid var(--primary, #3b82f6);
-  background: var(--bg-active, #eff6ff);
-  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+  border: 2px solid #00a6a6;
+  background: var(--bg-card);
+  box-shadow: 0 0 8px rgba(0, 166, 166, 0.25);
   z-index: 5;
 }
 
 .routingItem:focus-visible {
   outline: none;
-  border-color: var(--primary, #3b82f6);
-  background: var(--bg-hover, #f8fafc);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  border-color: #00a6a6;
+  background: var(--bg-card);
+  box-shadow: 0 0 0 2px rgba(0, 166, 166, 0.15);
 }
 
 .routingItem.dragging {
   opacity: 0.9;
-  background: var(--bg-active, #eff6ff);
-  border: 2px dashed var(--primary, #3b82f6); 
+  background: var(--bg-card);
+  border: 2px dashed #00a6a6; 
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12); 
   transform: scale(1.02); 
   cursor: grabbing;
@@ -94,23 +94,23 @@
 }
 
 .routingItem.dragTarget {
-  border: 2px dashed var(--primary, #3b82f6);
-  background: var(--bg-hover, #f8fafc);
+  border: 2px dashed #00a6a6;
+  background: var(--bg-card);
 }
 
 .routingItem.keyboardActive {
-  border: 2px dashed var(--primary, #3b82f6);
-  background: var(--bg-active, #eff6ff);
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
+  border: 2px dashed #00a6a6;
+  background: var(--bg-card);
+  box-shadow: 0 8px 20px rgba(0, 166, 166, 0.2);
   transform: translateY(-2px);
   z-index: 10;
   animation: pulseBorder 1.5s infinite;
 }
 
 @keyframes pulseBorder {
-  0% { border-color: var(--primary, #3b82f6); }
-  50% { border-color: #93c5fd; }
-  100% { border-color: var(--primary, #3b82f6); }
+  0% { border-color: #00a6a6; }
+  50% { border-color: #5eead4; }
+  100% { border-color: #00a6a6; }
 }
 
 .routingSeq {

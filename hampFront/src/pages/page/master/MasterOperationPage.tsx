@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
-import { Badge } from "@components/common/Badge";
 import { Panel } from "@components/card/Panel";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
@@ -375,15 +374,27 @@ export function MasterOperationPage() {
                     const isEditing = row.original.operCode === editingOperCode;
 
                     if (isNewRow || isEditing) {
+                        const currentVal = editFormRef.current.depCode ?? "";
+
+                        // 현재 선택된 부서코드가 옵션 목록에 존재하는지 확인
+                        const existsInOptions = departmentOptions.some(opt => opt.depCode === currentVal);
+
                         return (
                             <select
                                 className="tableInput"
-                                defaultValue={editFormRef.current.depCode ?? ""}
+                                defaultValue={currentVal}
                                 onChange={(e) => {
                                     editFormRef.current.depCode = e.target.value;
                                 }}
                             >
-                                <option value="">부서 선택</option>
+                                <option value="" disabled>부서 선택</option>
+
+                                {!existsInOptions && currentVal && (
+                                    <option value={currentVal} style={{ color: "#9ca3af" }}>
+                                        {currentVal} (삭제된 부서)
+                                    </option>
+                                )}
+
                                 {departmentOptions.map((opt) => (
                                     <option key={opt.depCode} value={opt.depCode}>
                                         {opt.depCode} ({opt.taskDesc ?? "-"})
@@ -438,21 +449,6 @@ export function MasterOperationPage() {
                         );
                     }
                     return row.original.stdTime || "-";
-                },
-            },
-            {
-                accessorKey: "useYn",
-                header: "사용여부",
-                cell: ({ row, getValue }) => {
-                    if (row.original.operCode === "__NEW_ROW__") {
-                        return <Badge tone="good">사용</Badge>;
-                    }
-                    const isUse = getValue<string>() === "Y";
-                    return (
-                        <Badge tone={isUse ? "good" : "muted"}>
-                            {isUse ? "사용" : "미사용"}
-                        </Badge>
-                    );
                 },
             },
             {

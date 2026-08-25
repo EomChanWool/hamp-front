@@ -134,10 +134,10 @@ export function MasterItemsCreatePage() {
       standard: form.standard.trim() || null,
       routings: (selectedCategory === 1 || selectedCategory === 2)
         ? routings.map((r) => ({
-            operCode: r.operCode?.trim() || null,
-            operSeq: r.operSeq,
-            finalYn: r.finalYn || "N",
-          }))
+          operCode: r.operCode?.trim() || null,
+          operSeq: r.operSeq,
+          finalYn: r.finalYn || "N",
+        }))
         : null,
     };
 
@@ -168,21 +168,54 @@ export function MasterItemsCreatePage() {
 
           <div className="detailField">
             <label>종류</label>
-            <select className="tableInput" value={form.productType} disabled={isSubmitting} onChange={(e) => handleChange("productType", e.target.value)}>
-              <option value="">선택</option>
-              <option value="0">{PRODUCT_TYPE_LABEL[0]}</option>
-              <option value="1">{PRODUCT_TYPE_LABEL[1]}</option>
-            </select>
+            <div className="radioGroup">
+              {Object.entries(PRODUCT_TYPE_LABEL).map(([key, label]) => {
+                const isSelected = form.productType === key;
+                return (
+                  <label
+                    key={key}
+                    className={`radioRow ${isSelected ? "checked" : ""}`}
+                    style={{ cursor: isSubmitting ? "not-allowed" : "pointer" }}
+                  >
+                    <input
+                      type="radio"
+                      name="productType"
+                      value={key}
+                      checked={isSelected}
+                      disabled={isSubmitting}
+                      onChange={(e) => handleChange("productType", e.target.value)}
+                    />
+                    <span>{label}</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
 
           <div className="detailField">
             <label>품목구분</label>
-            <select className="tableInput" value={form.category} disabled={isSubmitting} onChange={(e) => handleChange("category", e.target.value)}>
-              <option value="">선택</option>
-              <option value="0">{CATEGORY_LABEL[0]}</option>
-              <option value="1">{CATEGORY_LABEL[1]}</option>
-              <option value="2">{CATEGORY_LABEL[2]}</option>
-            </select>
+            <div className="radioGroup">
+              {Object.entries(CATEGORY_LABEL).map(([key, label]) => {
+                const isSelected = form.category === key;
+                return (
+                  <label
+                    key={key}
+                    className={`radioRow ${isSelected ? "checked" : ""}`}
+                    style={{ cursor: isSubmitting ? "not-allowed" : "pointer" }}
+                  >
+                    <input
+                      type="radio"
+                      name="category"
+                      value={key}
+                      checked={isSelected}
+                      disabled={isSubmitting}
+                      onChange={(e) => handleChange("category", e.target.value)}
+                    />
+                    <span>{label}</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
 
           <div className="detailField">
@@ -209,9 +242,9 @@ export function MasterItemsCreatePage() {
 
               {/* 조작 가이드 안내 */}
               <div className="routingHint">
-                  💡 <kbd>마우스</kbd>로 공정 카드를 선택하거나 드래그 하세요.
-                  <kbd>방향키</kbd>로 공정 카드를 탐색하고, <kbd>Space</kbd>/<kbd>Enter</kbd>로 선택(잡기) 후 이동하세요. (<kbd>Esc</kbd> 취소)
-                </div>
+                💡 <kbd>마우스</kbd>로 공정 카드를 선택하거나 드래그 하세요.
+                <kbd>방향키</kbd>로 공정 카드를 탐색하고, <kbd>Space</kbd>/<kbd>Enter</kbd>로 선택(잡기) 후 이동하세요. (<kbd>Esc</kbd> 취소)
+              </div>
 
               {routings.length === 0 ? (
                 <div className="routingEmptyBox">선택된 공정이 없습니다. [공정 선택 / 추가] 버튼을 눌러주세요.</div>
@@ -221,7 +254,7 @@ export function MasterItemsCreatePage() {
                     const matchedOp = operations.find((op) => op.operCode === route.operCode);
                     const isDragging = draggingIndex === index;
                     const isTarget = targetIndex === index && draggingIndex !== index;
-                    const isKeyboardActive = keyboardActiveIndex === index; 
+                    const isKeyboardActive = keyboardActiveIndex === index;
 
                     return (
                       <div
@@ -263,18 +296,24 @@ export function MasterItemsCreatePage() {
                           // 훅의 handleKeyDown 호출
                           const nextIndex = handleKeyDown(e, index, 2);
                           if (nextIndex !== undefined) {
-                             setTimeout(() => itemRefs.current[nextIndex]?.focus(), 0);
+                            setTimeout(() => itemRefs.current[nextIndex]?.focus(), 0);
                           }
                         }}
                       >
                         {/* 1. 드래그 핸들 */}
                         <span className="dragHandle" title="마우스로 잡고 이동">☰</span>
-                        
+
                         {/* 2. 기존 routingSeq 클래스를 그대로 활용한 순서 드롭다운 영역 */}
                         <div className="routingSeq">
                           <select
                             className="tableInput"
-                            style={{ width: "100%", padding: "2px 4px", height: "26px", fontSize: "12px" }}
+                            style={{
+                              width: "100%",
+                              padding: "2px 4px",
+                              height: "42px",
+                              fontSize: "15px",
+                              textAlign: "center",
+                            }}
                             value={route.operSeq ?? 0}
                             disabled={isSubmitting}
                             tabIndex={-1}
@@ -296,12 +335,12 @@ export function MasterItemsCreatePage() {
                         <div className="routingInfo">
                           {route.operCode} {matchedOp ? `(${matchedOp.operNm})` : ""}
                         </div>
-                        
+
                         {/* 4. 일반/최종공정 셀렉트 */}
-                        <select 
-                          className="tableInput routingSelect" 
-                          value={route.finalYn ?? "N"} 
-                          disabled={isSubmitting} 
+                        <select
+                          className="tableInput routingSelect"
+                          value={route.finalYn ?? "N"}
+                          disabled={isSubmitting}
                           tabIndex={-1}
                           onClick={(e) => e.stopPropagation()}
                           onChange={(e) => handleRoutingChange(index, "finalYn", e.target.value)}
@@ -311,10 +350,10 @@ export function MasterItemsCreatePage() {
                         </select>
 
                         {/* 5. 제외 버튼 */}
-                        <button 
-                          type="button" 
-                          className="miniButton danger" 
-                          disabled={isSubmitting} 
+                        <button
+                          type="button"
+                          className="miniButton danger"
+                          disabled={isSubmitting}
                           tabIndex={-1}
                           onClick={(e) => {
                             e.stopPropagation();

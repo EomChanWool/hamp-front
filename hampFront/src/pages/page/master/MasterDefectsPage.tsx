@@ -13,7 +13,6 @@ import type {
 } from "@/api/master/Defect";
 import { DefectApi } from "@/api/master/Defect";
 import { OperationApi, type OperationOptionResponse } from "@/api/master/Operation";
-import { Badge } from "@/components/common/Badge";
 import Spinner from "@/components/common/Spinner";
 
 export function MasterDefectsPage() {
@@ -358,19 +357,35 @@ export function MasterDefectsPage() {
           const isEditing = row.original.defCode === editingDefCode;
 
           if (isNewRow || isEditing) {
+            const currentVal = editFormRef.current.operCode ?? "";
+
+            // 현재 선택된 값이 옵션 목록에 존재하는지 확인
+            const existsInOptions = operationSelectOptions.some(opt => opt.value === currentVal);
+
             return (
               <select
                 className="tableInput"
-                defaultValue={editFormRef.current.operCode ?? ""}
+                defaultValue={currentVal}
                 onChange={(e) => {
                   editFormRef.current.operCode = e.target.value;
                 }}
               >
-                {operationSelectOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                <option value="" disabled>공정 선택</option>
+
+                {!existsInOptions && currentVal && (
+                  <option value={currentVal} style={{ color: "#9ca3af" }}>
+                    {currentVal} (삭제된 공정)
                   </option>
-                ))}
+                )}
+
+                {operationSelectOptions.map((opt) => {
+                  if (opt.value === "") return null;
+                  return (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  );
+                })}
               </select>
             );
           }
@@ -441,17 +456,6 @@ export function MasterDefectsPage() {
             );
           }
           return row.original.severity || "-";
-        },
-      },
-      {
-        accessorKey: "useYn",
-        header: "사용여부",
-        cell: ({ row, getValue }) => {
-          if (row.original.defCode === "__NEW_ROW__") {
-            return <Badge tone="good">사용</Badge>;
-          }
-          const isUse = getValue<string>() === "Y";
-          return <Badge tone={isUse ? "good" : "muted"}>{isUse ? "사용" : "미사용"}</Badge>;
         },
       },
       {
@@ -566,7 +570,7 @@ export function MasterDefectsPage() {
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
       <Panel title="불량관리 목록" action="등록" onAction={handleStartCreate}>
-         <div className="relative min-h-[300px]">
+        <div className="relative min-h-[300px]">
           {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <Spinner />
