@@ -26,13 +26,12 @@
   display: flex;
   align-items: center;
   gap: 12px; 
-
   padding: 12px 14px; 
-
-  border: 1px solid transparent;
+  border: 1px solid var(--border); 
   border-radius: 8px;
-
+  background: var(--bg-card); 
   cursor: pointer;
+  user-select: none;
 
   transition:
     background .15s,
@@ -40,18 +39,52 @@
 }
 
 .authGroupItem:hover {
-  background: rgba(87, 211, 161, .08);
+  border-color: #94a3b8;
+  background: var(--bg-card);
 }
 
 .authGroupItem.checked {
-  background: var(--primary-light);
-  border-color: rgba(87, 211, 161, .35);
+  background: var(--bg-card);
+  border-color: #00a6a6; 
+  box-shadow: 0 0 0 1px rgba(0, 166, 166, 0.15);
 }
 
-.authGroupItem input {
+/* 체크박스 디자인 커스텀 (다른 입력 폼과 통일) */
+.authGroupItem input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
   width: 18px;
-  height: 18px;
+  height: 35px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  outline: none;
+  background: var(--bg-card);
+  display: grid;
+  place-content: center;
   margin: 0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+/* 체크박스 체크 시 체크 아이콘(체크표시) 구현 */
+.authGroupItem input[type="checkbox"]::before {
+  content: "";
+  width: 10px;
+  height: 6px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: scale(0) rotate(-45deg);
+  transition: transform 0.15s ease-in-out;
+  margin-top: -2px;
+}
+
+.authGroupItem input[type="checkbox"]:checked {
+  background-color: #00a6a6;
+  border-color: #00a6a6;
+}
+
+.authGroupItem input[type="checkbox"]:checked::before {
+  transform: scale(1) rotate(-45deg);
 }
 
 .authGroupItem span {
@@ -71,4 +104,81 @@
 
   background: var(--bg-subtle);
   text-align: center;
+}
+
+
+/* ================================
+   USER AUTH GROUP DETAILS (권한 그룹 상세 조회)
+================================ */
+
+.userAuthGroupDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  grid-column: 1 / -1;
+}
+
+.authGroupCard {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  transition: border-color 0.15s ease;
+}
+
+.authGroupCard:hover {
+  border-color: #94a3b8;
+}
+
+.authGroupCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.authGroupCardTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-heading, var(--text-body));
+}
+
+.authGroupCardId {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+.authGroupCardDesc {
+  margin: 0 0 14px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.menuPermissionsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.menuPermissionsTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-body);
+}
+
+.menuBadgeList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.menuPermissionsEmpty {
+  font-size: 12px;
+  color: var(--text-muted);
 }
