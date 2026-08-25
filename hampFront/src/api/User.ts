@@ -1,5 +1,6 @@
 import { apiClient } from '@/api/apiClient';
 import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
+import type { AuthGroupDetailResponse } from './auth/Auth';
 
 /** 회원 등록(가입) 요청 */
 export interface UserCreateRequest {
@@ -44,7 +45,7 @@ export interface UserDetailResponse {
   use: boolean;
   passwordChanged: boolean;
   createdAt: string;
-  authGroups: AuthGroupOptionResponse[];
+  authGroups: AuthGroupDetailResponse[];
 }
 
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
