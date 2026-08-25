@@ -276,23 +276,6 @@ export function EquipmentFacilityPage() {
         },
       },
       {
-        accessorKey: "useYn",
-        header: "사용여부",
-        cell: ({ getValue }) => (
-          <Badge
-            tone={
-              getValue<boolean>()
-                ? "good"
-                : "muted"
-            }
-          >
-            {getValue<boolean>()
-              ? "사용"
-              : "미사용"}
-          </Badge>
-        ),
-      },
-      {
         accessorKey: "createdAt",
         header: "등록일자",
         cell: ({ getValue }) => formatDateTime(getValue<string>()),

@@ -13,7 +13,6 @@ import type {
 } from "@/api/master/Defect";
 import { DefectApi } from "@/api/master/Defect";
 import { OperationApi, type OperationOptionResponse } from "@/api/master/Operation";
-import { Badge } from "@/components/common/Badge";
 import Spinner from "@/components/common/Spinner";
 
 export function MasterDefectsPage() {
@@ -441,17 +440,6 @@ export function MasterDefectsPage() {
             );
           }
           return row.original.severity || "-";
-        },
-      },
-      {
-        accessorKey: "useYn",
-        header: "사용여부",
-        cell: ({ row, getValue }) => {
-          if (row.original.defCode === "__NEW_ROW__") {
-            return <Badge tone="good">사용</Badge>;
-          }
-          const isUse = getValue<string>() === "Y";
-          return <Badge tone={isUse ? "good" : "muted"}>{isUse ? "사용" : "미사용"}</Badge>;
         },
       },
       {

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
-import { Badge } from "@components/common/Badge";
 import { Panel } from "@components/card/Panel";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
@@ -438,21 +437,6 @@ export function MasterOperationPage() {
                         );
                     }
                     return row.original.stdTime || "-";
-                },
-            },
-            {
-                accessorKey: "useYn",
-                header: "사용여부",
-                cell: ({ row, getValue }) => {
-                    if (row.original.operCode === "__NEW_ROW__") {
-                        return <Badge tone="good">사용</Badge>;
-                    }
-                    const isUse = getValue<string>() === "Y";
-                    return (
-                        <Badge tone={isUse ? "good" : "muted"}>
-                            {isUse ? "사용" : "미사용"}
-                        </Badge>
-                    );
                 },
             },
             {
