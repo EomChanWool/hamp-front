@@ -143,9 +143,15 @@
   background: #fff;
 }
 
+/* ── 권한그룹 설명 (탭 영역과 분리된 하단 별도 행) ── */
+
+.permissionDescRow {
+  display: flex;
+}
+
 .permissionDesc {
-  flex: 1 1 280px;
-  min-width: 220px;
+  flex: 1;
+  min-width: 0;
   font-size: 13px;
   line-height: 1.5;
   color: var(--text-muted);
@@ -155,7 +161,29 @@
   border-radius: 10px;
   background: var(--bg-subtle);
   word-break: keep-all;
-  text-align: right;
+}
+
+.permissionDescInput {
+  flex: 1;
+  min-width: 0;
+  min-height: 60px;
+  font-size: 13px;
+  line-height: 1.5;
+  font-family: inherit;
+  color: var(--text-body);
+  padding: 10px 16px;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-card);
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
+}
+
+.permissionDescInput:focus {
+  border-color: #17875f;
+  background: var(--bg-card);
 }
 
 /* ── 매트릭스 패널 (대메뉴 탭 + 서브메뉴 상세) ── */
@@ -414,9 +442,9 @@
   color: var(--text-heading);
 }
 
+/* 헤더 셀은 더 이상 일괄 토글 버튼을 갖지 않고 라벨 텍스트만 중앙 정렬로 표시 */
 .permCheckCellHeader {
-  flex-direction: column;
-  gap: 4px;
+  justify-content: center;
 }
 
 .permCheckCellHeader span {
@@ -501,7 +529,7 @@
   margin: 0 6px;
 }
 
-/* ── 체크박스 그룹 (헤더/서브 공용, --check-col 폭으로 완전 정렬) ── */
+/* ── 권한 열 그룹 (헤더/서브 공용, --check-col 폭으로 완전 정렬) ── */
 
 .permCheckGroup {
   display: flex;
@@ -515,53 +543,61 @@
   justify-content: center;
 }
 
-.permCheck {
+/* ── 권한 토글 스위치 ── */
+
+.permToggle {
+  position: relative;
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
+  width: 40px;
+  height: 22px;
   padding: 0;
-  border-radius: 6px;
-  border: 1.5px solid var(--border);
-  background: var(--bg-subtle);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border: none;
+  border-radius: 999px;
+  background: var(--border);
   cursor: pointer;
-  transition: background 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.1s var(--ease);
+  transition: background 0.15s var(--ease), opacity 0.15s var(--ease);
 }
 
-.permCheck:active:not(:disabled) {
-  transform: scale(0.9);
+.permToggle:active:not(:disabled) .permToggleKnob {
+  width: 20px;
 }
 
-.permCheck:focus-visible {
+.permToggle:focus-visible {
   outline: 2px solid #17875f;
   outline-offset: 2px;
 }
 
-.permCheck.checked {
-  background: var(--primary);
-  border-color: var(--primary);
+.permToggleKnob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s var(--ease), width 0.1s var(--ease);
 }
 
-.permCheck.mixed {
-  background: var(--bg-card);
-  border-color: var(--primary);
+.permToggle.checked {
+  background: var(--primary, #17875f);
 }
 
-.permCheck.mixed svg {
-  color: var(--primary);
+.permToggle.checked .permToggleKnob {
+  transform: translateX(18px);
 }
 
-.permCheck:disabled {
+.permToggle.mixed {
+  background: linear-gradient(90deg, var(--primary, #17875f) 50%, var(--border) 50%);
+}
+
+.permToggle.mixed .permToggleKnob {
+  transform: translateX(9px);
+}
+
+.permToggle:disabled {
   cursor: not-allowed;
-  opacity: 0.65;
-}
-
-.permCheck svg {
-  width: 13px;
-  height: 13px;
-  color: #fff;
+  opacity: 0.55;
 }
 
 /* ── 하단 버튼 ── */
@@ -619,10 +655,6 @@
   .permissionBoard {
     --nav-col: 180px;
   }
-
-  .permissionDesc {
-    text-align: left;
-  }
 }
 
 @media (max-width: 640px) {
@@ -671,9 +703,14 @@
   color: #fff;
 }
 
-[data-theme="dark"] .permissionDesc {
+[data-theme="dark"] .permissionDesc,
+[data-theme="dark"] .permissionDescInput {
   background: var(--bg-subtle);
   border-color: var(--border);
+}
+
+[data-theme="dark"] .permissionDescInput:focus {
+  background: #1e2130;
 }
 
 [data-theme="dark"] .permMatrixToolbar {
@@ -712,18 +749,16 @@
   background: #1e2130;
 }
 
-[data-theme="dark"] .permCheck {
-  border-color: var(--border);
-  background: var(--bg-subtle);
+[data-theme="dark"] .permToggle {
+  background: #33384a;
 }
 
-[data-theme="dark"] .permCheck.checked {
-  background: var(--primary);
-  border-color: var(--primary);
+[data-theme="dark"] .permToggle.checked {
+  background: #57d3a1;
 }
 
-[data-theme="dark"] .permCheck.mixed {
-  background: var(--bg-card);
+[data-theme="dark"] .permToggle.mixed {
+  background: linear-gradient(90deg, #57d3a1 50%, #33384a 50%);
 }
 
 [data-theme="dark"] .permNavSkeletonRow {
@@ -737,7 +772,8 @@
   .permissionTab,
   .permMenuNavItem,
   .permSubRow,
-  .permCheck,
+  .permToggle,
+  .permToggleKnob,
   .permSubToggleIcon,
   .permMenuNavArrow,
   .permToast,

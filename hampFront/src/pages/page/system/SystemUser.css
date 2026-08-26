@@ -108,22 +108,23 @@
 
 
 /* ================================
-   USER AUTH GROUP DETAILS (권한 그룹 상세 조회)
+   USER AUTH GROUP DETAILS (권한 그룹 상세 현황)
 ================================ */
 
 .userAuthGroupDetails {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   grid-column: 1 / -1;
 }
 
 .authGroupCard {
-  background: var(--bg-subtle);
+  background: var(--bg-card, #fff);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 18px;
+  padding: 20px;
   transition: border-color 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .authGroupCard:hover {
@@ -133,52 +134,156 @@
 .authGroupCardHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.authGroupCardHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .authGroupCardTitle {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-heading, var(--text-body));
-}
-
-.authGroupCardId {
-  font-size: 12px;
-  color: var(--text-muted);
-  font-family: monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-heading, #1e293b);
 }
 
 .authGroupCardDesc {
-  margin: 0 0 14px 0;
+  margin: 0;
   font-size: 13px;
   color: var(--text-muted);
-  line-height: 1.4;
 }
 
-.menuPermissionsSection {
+.authGroupCardHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 총 메뉴 개수 배지 (이미지 상단 초록색 뱃지 스타일) */
+.totalMenuBadge {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* 요약 보기 / 전체 메뉴 보기 토글 버튼 */
+.toggleViewBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-body);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.15s;
+}
+
+.toggleViewBtn:hover {
+  background: var(--bg-subtle);
+}
+
+/* 카테고리 그리드 레이아웃 */
+.categoryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+/* 개별 카테고리 서브 박스 */
+.categorySubCard {
+  background: var(--bg-subtle, #f8fafc);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--border);
+  gap: 8px;
 }
 
-.menuPermissionsTitle {
-  font-size: 12px;
+.categorySubHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.categorySubTitle {
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-body);
 }
 
-.menuBadgeList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 2px;
+.categorySubCount {
+  font-size: 11px;
+  font-weight: 600;
+  color: #16a34a;
+  background: #f0fdf4;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
-.menuPermissionsEmpty {
+/* 메뉴 배지 리스트 (알약 형태의 세부 메뉴 태그) */
+.categoryMenuTags {
+  display: flex;
+  flex-wrap: wrap; /* 핵심: 줄바꿈 허용 */
+  gap: 6px;
+}
+
+.menuItemTag {
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--text-body);
+  font-weight: 500;
+  display: inline-flex; /* 혹은 inline-block */
+  align-items: center;
+}
+
+/* 권한 그룹 카드 헤더 우측 버튼 영역 */
+.toggleViewBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 13px;
+  color: var(--color-text-secondary, #666);
+}
+
+.toggleViewBtn:hover {
+  color: var(--color-text-primary, #111);
+}
+
+/* 토글 아이콘 공통 스타일 */
+.toggleIcon {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  display: inline-block;
+}
+
+/* 소메뉴 아이템 태그 (투명도 조절용) */
+.menuItemTag {
+  display: inline-block;
+}
+
+.menuItemTag.dimmed {
+  opacity: 0.6;
 }

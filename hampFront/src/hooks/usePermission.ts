@@ -112,31 +112,6 @@ export function usePermission(menus: MenuResponse[]) {
     });
   };
 
-  const handleGroupPermToggle = (menu: MenuResponse, permKey: PermKey) => {
-    const ids = getAllDescendantIds(menu);
-    const allChecked = ids.every((id) => permState[id]?.[permKey]);
-    const newValue = !allChecked;
-    const targetIdsSet = new Set(ids);
-
-    setPermState((prev) => {
-      const next: Record<number, PermRecord> = {};
-      const allIds = new Set([...Object.keys(prev).map(Number), ...ids]);
-      
-      allIds.forEach((id) => {
-        if (targetIdsSet.has(id)) {
-          next[id] = {
-            ...(prev[id] || EMPTY_PERM),
-            [permKey]: newValue,
-          };
-        } else {
-          next[id] = { ...(prev[id] || EMPTY_PERM) };
-        }
-      });
-
-      return next;
-    });
-  };
-
   // 4. 변경사항 체크 (개별 버튼/권한 단위로 카운트)
   const dirtyMenuCount = useMemo(() => {
     let count = 0;
@@ -171,7 +146,6 @@ export function usePermission(menus: MenuResponse[]) {
     initializePerms,
     getCheckState,
     handleToggle,
-    handleGroupPermToggle,
     dirtyMenuCount,
     isDirty,
     resetPerms,

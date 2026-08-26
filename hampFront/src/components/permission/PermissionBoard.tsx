@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import {
-    CheckIcon,
-    MinusIcon,
     ChevronRightIcon,
     MagnifyingGlassIcon,
     XMarkIcon,
     ExclamationTriangleIcon,
+    CheckIcon,
 } from "@heroicons/react/16/solid";
 import axios from "axios";
 import type {
@@ -21,9 +20,9 @@ import type { CheckState, PermRecord } from "@/hooks/usePermission";
 import "./PermissonBoard.css";
 
 /* ================================
-    접근성 체크박스 (3-state: checked / unchecked / mixed)
+    권한 토글 스위치 (checked / unchecked / mixed)
 ================================ */
-function PermCheckbox({
+function PermToggle({
     state,
     disabled,
     onToggle,
@@ -37,18 +36,17 @@ function PermCheckbox({
     return (
         <button
             type="button"
-            role="checkbox"
-            aria-checked={state === "mixed" ? "mixed" : state === "checked"}
+            role="switch"
+            aria-checked={state === "checked"}
             aria-label={label}
             disabled={disabled}
-            className={`permCheck ${state}`}
+            className={`permToggle ${state}`}
             onClick={(e) => {
                 e.stopPropagation();
                 onToggle();
             }}
         >
-            {state === "checked" && <CheckIcon />}
-            {state === "mixed" && <MinusIcon />}
+            <span className="permToggleKnob" />
         </button>
     );
 }
@@ -64,17 +62,19 @@ export function PermissionBoard() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
 
+    // 수정 모드에서 편집 중인 권한그룹 설명 (저장 전까지는 groupDetail.authDesc와 분리해서 관리)
+    const [editedDesc, setEditedDesc] = useState("");
+
     // 우측 상세 패널에 표시 중인 대메뉴 및 서브메뉴 펼침 상태
     const [activeTopMenuId, setActiveTopMenuId] = useState<number | null>(null);
     const [collapsedSub, setCollapsedSub] = useState<Record<number, boolean>>({});
 
-    // usePermission 훅 연동
+    // usePermission 훅 연동 (전체 열 일괄 토글은 더 이상 사용하지 않음)
     const {
         permState,
         initializePerms,
         getCheckState,
         handleToggle,
-        handleGroupPermToggle,
         dirtyMenuCount,
         isDirty,
         resetPerms,
@@ -152,6 +152,7 @@ export function PermissionBoard() {
                 const detail = response.data;
                 if (detail) {
                     setGroupDetail(detail);
+                    setEditedDesc(detail.authDesc ?? "");
 
                     const initialPerms: Record<number, PermRecord> = {};
                     const flattenMenus = (menuList: MenuResponse[]): MenuResponse[] =>
@@ -197,13 +198,19 @@ export function PermissionBoard() {
         };
     }, [activeAuthId, menus, showToast, initializePerms]);
 
+    // 설명이 수정 모드에서 실제로 바뀌었는지 여부
+    const isDescDirty = editedDesc !== (groupDetail?.authDesc ?? "");
+    const hasAnyChange = isDirty || isDescDirty;
+
     const handleStartEdit = () => {
+        setEditedDesc(groupDetail?.authDesc ?? "");
         setIsEditing(true);
     };
 
     const handleCancelEdit = () => {
-        if (isDirty && !window.confirm("변경사항이 저장되지 않았습니다. 취소하시겠습니까?")) return;
+        if (hasAnyChange && !window.confirm("변경사항이 저장되지 않았습니다. 취소하시겠습니까?")) return;
         resetPerms();
+        setEditedDesc(groupDetail?.authDesc ?? "");
         setIsEditing(false);
     };
 
@@ -252,7 +259,7 @@ export function PermissionBoard() {
 
     // 권한 설정 저장 핸들러
     const handleSave = async () => {
-        if (!groupDetail || isSaving || !isDirty) return;
+        if (!groupDetail || isSaving || !hasAnyChange) return;
 
         const flattenMenus = (menuList: MenuResponse[]): MenuResponse[] =>
             menuList.reduce<MenuResponse[]>((acc, menu) => {
@@ -297,13 +304,14 @@ export function PermissionBoard() {
 
             const updatePayload: AuthGroupUpdateRequest = {
                 authNm: groupDetail.authNm,
-                authDesc: groupDetail.authDesc,
+                authDesc: editedDesc,
                 menuPermissions,
             };
 
             await AuthGroupApi.update(groupDetail.authId, updatePayload);
             showToast("success", "권한 설정이 저장되었습니다.");
 
+            setGroupDetail((prev) => (prev ? { ...prev, authDesc: editedDesc } : prev));
             commitPerms();
             setIsEditing(false);
         } catch (error) {
@@ -347,6 +355,51 @@ export function PermissionBoard() {
     const activeTopMenu = visibleTopMenus.find((m) => m.menuId === activeTopMenuId) ?? null;
     const activeRole = authGroups.find((g) => g.authId === activeAuthId);
 
+    // 헤더의 "권한 n개 · 설명 변경됨" 요약 뱃지 텍스트 (수정 모드)
+    const changeSummaryText = useMemo(() => {
+        const parts: string[] = [];
+        if (dirtyMenuCount > 0) parts.push(`권한 ${dirtyMenuCount}개`);
+        if (isDescDirty) parts.push("설명");
+
+        if (parts.length === 0) return "변경사항 없음";
+        
+        // 항목들을 합치고 맨 뒤에 "변경됨"을 붙입니다.
+        return `${parts.join(" · ")} 변경됨`;
+    }, [dirtyMenuCount, isDescDirty]);
+
+    // 읽기 모드에서 현재 선택된 대메뉴 기준 "몇 개 선택됨" 요약 (하위 메뉴 전체 × 5개 권한 슬롯 중 켜진 개수)
+    const activeMenuSelectionSummary = useMemo(() => {
+        if (!activeTopMenu?.children || activeTopMenu.children.length === 0) {
+            return { selected: 0, total: 0 };
+        }
+
+        const flattenDescendants = (menuList: MenuResponse[]): MenuResponse[] =>
+            menuList.reduce<MenuResponse[]>((acc, menu) => {
+                acc.push(menu);
+                if (menu.children && menu.children.length > 0) {
+                    acc.push(...flattenDescendants(menu.children));
+                }
+                return acc;
+            }, []);
+
+        const descendants = flattenDescendants(activeTopMenu.children);
+        let selected = 0;
+        descendants.forEach((menu) => {
+            const perm = permState[menu.menuId];
+            if (!perm) return;
+            PERMISSIONS.forEach((p) => {
+                if (perm[p.key]) selected += 1;
+            });
+        });
+
+        return { selected, total: descendants.length * PERMISSIONS.length };
+    }, [activeTopMenu, permState]);
+
+    const selectionSummaryText =
+        activeMenuSelectionSummary.total > 0
+            ? `권한 ${activeMenuSelectionSummary.selected}/${activeMenuSelectionSummary.total}개 선택됨`
+            : "하위 메뉴 없음";
+
     /* ── 하위 트리 렌더링 ── */
     const renderSubTree = (menuList: MenuResponse[], depth = 1) => (
         <div className="permSubChildren" style={{ ["--depth" as string]: depth }}>
@@ -373,7 +426,7 @@ export function PermissionBoard() {
                             <div className="permCheckGroup">
                                 {PERMISSIONS.map((p) => (
                                     <div key={p.key} className="permCheckCell">
-                                        <PermCheckbox
+                                        <PermToggle
                                             state={
                                                 hasChildren
                                                     ? getCheckState(menu, p.key)
@@ -407,7 +460,7 @@ export function PermissionBoard() {
                 </div>
             )}
 
-            {/* 역할 탭: 상단 가로 배치 */}
+            {/* 역할 탭: 상단 가로 배치 (설명은 아래 별도 영역으로 분리) */}
             <div className="permissionTabsRow">
                 <div className="permissionTabsBox" role="tablist" aria-label="권한 그룹">
                     {authGroups.map((role) => (
@@ -424,16 +477,31 @@ export function PermissionBoard() {
                             <span className="permTabUserCount" style={{ fontSize: "0.85em", opacity: 0.8 }}>
                                 ({role.userCount ?? 0}명)
                             </span>
-                            {role.authId === activeAuthId && isDirty && <span className="permTabDirtyDot" aria-hidden />}
+                            {role.authId === activeAuthId && hasAnyChange && <span className="permTabDirtyDot" aria-hidden />}
                         </button>
                     ))}
                     {authGroups.length === 0 && !isLoading && (
                         <p className="permissionTabsEmpty">등록된 권한 그룹이 없습니다.</p>
                     )}
                 </div>
-                <p className="permissionDesc">
-                    {groupDetail?.authDesc || activeRole?.authDesc || "권한 그룹 설명이 없습니다."}
-                </p>
+            </div>
+
+            {/* 권한그룹 설명: 평소엔 안내 텍스트, 수정 모드에서는 textarea로 인라인 편집 */}
+            <div className="permissionDescRow">
+                {isEditing ? (
+                    <textarea
+                        className="permissionDescInput"
+                        value={editedDesc}
+                        onChange={(e) => setEditedDesc(e.target.value)}
+                        placeholder="권한 그룹에 대한 설명을 입력하세요."
+                        rows={2}
+                        aria-label="권한 그룹 설명"
+                    />
+                ) : (
+                    <p className="permissionDesc">
+                        {groupDetail?.authDesc || activeRole?.authDesc || "권한 그룹 설명이 없습니다."}
+                    </p>
+                )}
             </div>
 
             {/* 대메뉴(좌측 세로 탭) + 서브메뉴(우측 상세) */}
@@ -454,10 +522,12 @@ export function PermissionBoard() {
                             </button>
                         )}
                     </div>
-                    {isEditing && (
-                        <span className={`permDirtyBadge ${isDirty ? "active" : ""}`}>
-                            {isDirty ? `${dirtyMenuCount}개 항목 변경됨` : "변경사항 없음"}
+                    {isEditing ? (
+                        <span className={`permDirtyBadge ${hasAnyChange ? "active" : ""}`}>
+                            {changeSummaryText}
                         </span>
+                    ) : (
+                        <span className="permDirtyBadge">{selectionSummaryText}</span>
                     )}
                     <div className="permBoardActions">
                         {isEditing ? (
@@ -465,7 +535,7 @@ export function PermissionBoard() {
                                 <button type="button" className="ghostButton" onClick={handleCancelEdit} disabled={isSaving}>
                                     취소
                                 </button>
-                                <button type="button" className="primaryButton" onClick={handleSave} disabled={isSaving || !isDirty}>
+                                <button type="button" className="primaryButton" onClick={handleSave} disabled={isSaving || !hasAnyChange}>
                                     {isSaving ? "저장 중..." : "저장"}
                                 </button>
                             </>
@@ -525,17 +595,12 @@ export function PermissionBoard() {
                             <div className="permDetailEmpty">좌측에서 메뉴를 선택하세요.</div>
                         ) : (
                             <>
+                                {/* 컬럼 라벨만 표시 — 열 단위 일괄 토글은 제공하지 않음 */}
                                 <div className="permMatrixHeader">
                                     <span className="permMatrixHeaderLabel">{activeTopMenu.menuNm}</span>
                                     <div className="permCheckGroup">
                                         {PERMISSIONS.map((p) => (
                                             <div key={p.key} className="permCheckCell permCheckCellHeader">
-                                                <PermCheckbox
-                                                    state={getCheckState(activeTopMenu, p.key)}
-                                                    disabled={!isEditing}
-                                                    onToggle={() => handleGroupPermToggle(activeTopMenu, p.key)}
-                                                    label={`${activeTopMenu.menuNm} 전체 ${p.label} 권한`}
-                                                />
                                                 <span>{p.label}</span>
                                             </div>
                                         ))}

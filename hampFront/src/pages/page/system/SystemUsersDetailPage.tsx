@@ -9,6 +9,7 @@ import Spinner from "@/components/common/Spinner";
 import { UserApi } from "@/api/User";
 import { AuthGroupApi } from "@/api/auth/Auth";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
+import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import "./SystemUser.css";
 
 export function SystemUserDetailPage() {
@@ -26,7 +27,9 @@ export function SystemUserDetailPage() {
 
   const [isEditing, setIsEditing] = useState(false);
 
-  // 기본 정보 필드는 DetailLayout이 다루고, 권한 그룹(체크박스 다중선택)은 별도 상태로 관리
+  // 각 권한 그룹별 소메뉴 전체 접힘/펼침 상태 (authId 기준)
+  const [collapsedMap, setCollapsedMap] = useState<Record<string, boolean>>({});
+
   const [form, setForm] = useState<Record<string, string>>({
     userId: "",
     userNm: "",
@@ -39,19 +42,18 @@ export function SystemUserDetailPage() {
 
   const isBusy = isUpdating || isDeactivating || isLoadingGroups;
 
-  // 섹션 정의: 기본 정보로 그룹핑
   const sections: DetailSection<UserDetailResponse>[] = [
     {
       title: "기본 정보",
       fields: [
         { label: "이름", key: "userNm", editable: true, required: true },
         { label: "전화번호", key: "phone", editable: true },
-        { label: "부서", key: "position", editable: true },
+        { label: "부서", key: "position", editable: true, fullWidth: true },
       ],
     },
   ];
 
-  // 1. 전체 권한 그룹 목록 조회 (수정 모드 체크박스용)
+  // 1. 전체 권한 그룹 목록 조회
   useEffect(() => {
     let isMounted = true;
     const loadAuthGroups = async () => {
@@ -73,51 +75,43 @@ export function SystemUserDetailPage() {
     };
   }, []);
 
-  // 2. 사용자 상세 데이터 조회
-  useEffect(() => {
-    let isMounted = true;
+  // 2. 사용자 상세 데이터 조회 함수
+  const fetchUserDetail = async () => {
+    if (!userId) return;
+    setIsLoading(true);
 
-    const fetchUserDetail = async () => {
-      if (!userId) return;
-      setIsLoading(true);
+    try {
+      const encodedUserId = encodeURIComponent(userId);
+      const response = await UserApi.getDetail(encodedUserId);
+      const userData = response.data;
 
-      try {
-        const encodedUserId = encodeURIComponent(userId);
-        const response = await UserApi.getDetail(encodedUserId);
-        const userData = response.data;
+      if (userData) {
+        setUser(userData);
+        const initialAuthIds = userData.authGroups?.map((g) => g.authId) || [];
 
-        if (userData && isMounted) {
-          setUser(userData);
-          const initialAuthIds = userData.authGroups?.map((g) => g.authId) || [];
-
-          setForm({
-            userId: userData.userId,
-            userNm: userData.userNm || "",
-            phone: userData.phone || "",
-            position: userData.position || "",
-            use: userData.use ? "Y" : "N",
-            createdAt: formatDateTime(userData.createdAt),
-          });
-          setAuthIds(initialAuthIds);
-        }
-      } catch (error) {
-        console.error("사용자 상세 조회 실패:", error);
-        if (isMounted) {
-          alert("상세 정보를 불러오는 중 오류가 발생했습니다.");
-          navigate({ pathname: "/system/users", search: location.search });
-        }
-      } finally {
-        if (isMounted) setIsLoading(false);
+        setForm({
+          userId: userData.userId,
+          userNm: userData.userNm || "",
+          phone: userData.phone || "",
+          position: userData.position || "",
+          use: userData.use ? "Y" : "N",
+          createdAt: formatDateTime(userData.createdAt),
+        });
+        setAuthIds(initialAuthIds);
       }
-    };
+    } catch (error) {
+      console.error("사용자 상세 조회 실패:", error);
+      alert("상세 정보를 불러오는 중 오류가 발생했습니다.");
+      navigate({ pathname: "/system/users", search: location.search });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchUserDetail();
-    return () => {
-      isMounted = false;
-    };
   }, [userId, navigate, location.search]);
 
-  // 수정 모드 취소 시 롤백
   useEffect(() => {
     if (user && !isEditing) {
       setForm({
@@ -132,14 +126,12 @@ export function SystemUserDetailPage() {
     }
   }, [isEditing, user]);
 
-  // 권한 체크박스 토글 핸들러
   const handleAuthCheck = (authId: string, checked: boolean) => {
     setAuthIds((prev) =>
       checked ? [...prev, authId] : prev.filter((id) => id !== authId)
     );
   };
 
-  // 저장 처리 핸들러
   const handleSave = async () => {
     if (!user || isUpdating) return;
 
@@ -165,25 +157,7 @@ export function SystemUserDetailPage() {
       await UserApi.update(encodedUserId, updatePayload);
 
       alert("수정되었습니다.");
-
-      // 수정한 권한 목록을 기반으로 user state 내부의 authGroups도 즉시 갱신
-      const updatedAuthGroups = authIds.map((id) => {
-        const found = authGroups.find((g) => g.authId === id);
-        return { authId: id, authNm: found ? found.authNm : id };
-      });
-
-      setUser((prev) =>
-        prev
-          ? {
-            ...prev,
-            userNm: updatePayload.userNm ?? "",
-            phone: updatePayload.phone ?? "",
-            position: updatePayload.position ?? "",
-            authGroups: updatedAuthGroups,
-          }
-          : null
-      );
-
+      await fetchUserDetail();
       setIsEditing(false);
     } catch (err) {
       console.error("저장 실패:", err);
@@ -194,7 +168,6 @@ export function SystemUserDetailPage() {
     }
   };
 
-  // 회원 비활성화 처리
   const handleDeactivate = async () => {
     if (!user || !user.use || isDeactivating) return;
 
@@ -216,6 +189,17 @@ export function SystemUserDetailPage() {
     } finally {
       setIsDeactivating(false);
     }
+  };
+
+  // 권한 그룹별 전체 펼치기/접기 토글 함수
+  const toggleCollapse = (authId: string) => {
+    setCollapsedMap((prev) => {
+      const currentState = prev[authId] ?? true; // 기본값: 요약 상태(true = 소메뉴 숨김)
+      return {
+        ...prev,
+        [authId]: !currentState,
+      };
+    });
   };
 
   if (isLoading) {
@@ -311,7 +295,6 @@ export function SystemUserDetailPage() {
           )
         }
       >
-        {/* 권한 그룹 영역: 체크박스 다중선택이라 섹션 grid 대신 children으로 렌더링 */}
         <div className="detailSection detailSection--full">
           <label className={isEditing ? "requiredLabel" : undefined}>
             권한 그룹 {isEditing && <span className="required">*</span>}
@@ -344,10 +327,129 @@ export function SystemUserDetailPage() {
               </div>
             )
           ) : (
-            <div className="detailValue">
-              {user.authGroups && user.authGroups.length > 0
-                ? user.authGroups.map((g) => g.authNm).join(", ")
-                : "-"}
+            <div className="userAuthGroupDetails">
+              {user.authGroups && user.authGroups.length > 0 ? (
+                user.authGroups.map((group) => {
+                  const rawMenus: any[] = group.menuPermissions || [];
+
+                  const permittedMenuIds = new Set(
+                    rawMenus
+                      .filter((m) => m.read === 1 || m.read === true)
+                      .map((m) => m.menuId)
+                  );
+
+                  const parentMenus = rawMenus.filter((m) => m.menuId % 100 === 0);
+
+                  const processedParents = parentMenus
+                    .map((parent) => {
+                      const children = rawMenus.filter(
+                        (m) =>
+                          m.menuId > parent.menuId &&
+                          m.menuId < parent.menuId + 100 &&
+                          (m.read === 1 || m.read === true)
+                      );
+
+                      if (children.length > 0) {
+                        return {
+                          ...parent,
+                          children,
+                        };
+                      }
+                      return null;
+                    })
+                    .filter(Boolean);
+
+                  const totalCount = processedParents.reduce((acc, parent) => {
+                    return acc + (parent.children?.length || 0);
+                  }, 0);
+
+                  // true면 요약 상태(소메뉴 숨김), false면 전체 보기 상태(소메뉴 전부 노출)
+                  const isCollapsed = collapsedMap[group.authId] ?? true;
+
+                  return (
+                    <div key={group.authId} className="authGroupCard">
+                      {/* 권한 그룹 카드 헤더 (상단 토글 버튼) */}
+                      <div className="authGroupCardHeader">
+                        <div className="authGroupCardHeaderLeft">
+                          <h4 className="authGroupCardTitle">{group.authNm}</h4>
+                          {group.authDesc && (
+                            <p className="authGroupCardDesc">{group.authDesc}</p>
+                          )}
+                        </div>
+                        <div className="authGroupCardHeaderRight">
+                          <span className="totalMenuBadge">
+                            총 {totalCount}개 메뉴
+                          </span>
+                          <button
+                            type="button"
+                            className="toggleViewBtn"
+                            onClick={() => toggleCollapse(group.authId)}
+                          >
+                            {isCollapsed ? (
+                              <>
+                                <span>전체 메뉴 보기</span>
+                                <ChevronDownIcon className="toggleIcon" aria-hidden="true" />
+                              </>
+                            ) : (
+                              <>
+                                <span>요약으로 보기</span>
+                                <ChevronUpIcon className="toggleIcon" aria-hidden="true" />
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 대메뉴별 서브 카드 그리드 */}
+                      {processedParents.length > 0 ? (
+                        <div className="categoryGrid">
+                          {processedParents.map((parentMenu) => {
+                            const childMenus = parentMenu.children || [];
+
+                            return (
+                              <div key={parentMenu.menuId} className="categorySubCard">
+                                <div className="categorySubHeader">
+                                  <span className="categorySubTitle">{parentMenu.menuNm}</span>
+                                  {childMenus.length > 0 && (
+                                    <span className="categorySubCount">{childMenus.length}개</span>
+                                  )}
+                                </div>
+
+                                {/* isCollapsed가 false(전체 보기)일 때만 하위 소메뉴 전체 노출, true(요약)면 아예 숨김 */}
+                                {!isCollapsed && (
+                                  <div className="categoryMenuTags" style={{ paddingTop: "8px" }}>
+                                    {childMenus.length > 0 ? (
+                                      childMenus.map((node: any) => {
+                                        const hasPerm = permittedMenuIds.has(node.menuId);
+                                        return (
+                                          <span
+                                            key={node.menuId}
+                                            className={`menuItemTag ${!hasPerm ? "dimmed" : ""}`}
+                                          >
+                                            {node.menuNm}
+                                          </span>
+                                        );
+                                      })
+                                    ) : (
+                                      <span className="menuPermissionsEmpty">하위 메뉴 없음</span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="menuPermissionsEmpty">
+                          설정된 유효 메뉴 권한이 없습니다.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="detailValue">-</div>
+              )}
             </div>
           )}
         </div>
