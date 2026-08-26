@@ -807,7 +807,7 @@
 
 /* 읽기 전용 값 */
 .detailCard .detailValue {
-  font-size: 19px; 
+  font-size: 18px; 
   font-weight: 500;
   color: var(--dl-ink);
   min-height: 36px;
