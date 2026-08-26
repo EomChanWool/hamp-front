@@ -49,7 +49,7 @@
   box-shadow: 0 0 0 1px rgba(0, 166, 166, 0.15);
 }
 
-/* 체크박스 디자인 커스텀 (다른 입력 폼과 통일) */
+/* 체크박스 디자인 커스텀 */
 .authGroupItem input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
@@ -146,14 +146,14 @@
 
 .authGroupCardTitle {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-heading, #1e293b);
 }
 
 .authGroupCardDesc {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-muted);
 }
 
@@ -163,111 +163,35 @@
   gap: 10px;
 }
 
-/* 총 메뉴 개수 배지 (이미지 상단 초록색 뱃지 스타일) */
+/* 총 메뉴 개수 배지 */
 .totalMenuBadge {
   background-color: #f0fdf4;
   color: #16a34a;
   border: 1px solid #bbf7d0;
-  padding: 4px 10px;
+  padding: 6px 12px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
 /* 요약 보기 / 전체 메뉴 보기 토글 버튼 */
 .toggleViewBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background: transparent;
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 5px 10px;
-  font-size: 13px;
+  padding: 6px 12px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-body);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
   transition: background 0.15s;
 }
 
 .toggleViewBtn:hover {
   background: var(--bg-subtle);
-}
-
-/* 카테고리 그리드 레이아웃 */
-.categoryGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
-  margin-top: 12px;
-}
-
-/* 개별 카테고리 서브 박스 */
-.categorySubCard {
-  background: var(--bg-subtle, #f8fafc);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.categorySubHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.categorySubTitle {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-body);
-}
-
-.categorySubCount {
-  font-size: 11px;
-  font-weight: 600;
-  color: #16a34a;
-  background: #f0fdf4;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-/* 메뉴 배지 리스트 (알약 형태의 세부 메뉴 태그) */
-.categoryMenuTags {
-  display: flex;
-  flex-wrap: wrap; /* 핵심: 줄바꿈 허용 */
-  gap: 6px;
-}
-
-.menuItemTag {
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 12px;
-  color: var(--text-body);
-  font-weight: 500;
-  display: inline-flex; /* 혹은 inline-block */
-  align-items: center;
-}
-
-/* 권한 그룹 카드 헤더 우측 버튼 영역 */
-.toggleViewBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px 8px;
-  font-size: 13px;
-  color: var(--color-text-secondary, #666);
-}
-
-.toggleViewBtn:hover {
-  color: var(--color-text-primary, #111);
 }
 
 /* 토글 아이콘 공통 스타일 */
@@ -279,9 +203,64 @@
   display: inline-block;
 }
 
-/* 소메뉴 아이템 태그 (투명도 조절용) */
+/* 카테고리 그리드 레이아웃 */
+.categoryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 12px;
+}
+
+/* 개별 카테고리 서브 박스 */
+.categorySubCard {
+  background: var(--bg-subtle, #f8fafc);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.categorySubHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.categorySubTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-body);
+}
+
+.categorySubCount {
+  font-size: 12px;
+  font-weight: 600;
+  color: #16a34a;
+  background: #f0fdf4;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+/* 메뉴 배지 리스트 (알약 형태의 세부 메뉴 태그) */
+.categoryMenuTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .menuItemTag {
-  display: inline-block;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 13px;
+  color: var(--text-body);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
 }
 
 .menuItemTag.dimmed {
