@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Badge } from "@components/common/Badge";
 import { formatDateTime } from "@/utils/common";
 import axios from "axios";
@@ -47,6 +48,12 @@ export function MasterItemsDetailPage() {
     updateRouting: handleRoutingChange,
     moveRouting,
   } = useItemRoutings();
+
+  // 라우팅 UI(드래그/선택/상세패널) 상태
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
+  const routingItemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalSearchKeyword, setModalSearchKeyword] = useState("");
@@ -216,6 +223,25 @@ export function MasterItemsDetailPage() {
     }
   }, [isEditing, item]);
 
+  // 라우팅 목록이 바뀔 때 선택 인덱스 보정 (등록 페이지와 동일한 로직)
+  useEffect(() => {
+    if (routings.length === 0) {
+      setSelectedIndex(null);
+    } else if (selectedIndex === null || selectedIndex >= routings.length) {
+      setSelectedIndex(0);
+    }
+  }, [routings.length, selectedIndex]);
+
+  // 선택된 항목으로 스크롤 (수정 모드에서만 의미 있음)
+  useEffect(() => {
+    if (isEditing && selectedIndex !== null && routingItemRefs.current[selectedIndex]) {
+      routingItemRefs.current[selectedIndex]?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }
+  }, [selectedIndex, isEditing]);
+
   const handleOpenModal = () => {
     setModalSearchKeyword("");
     const currentCodes = routings.map((r) => r.operCode).filter(Boolean) as string[];
@@ -343,6 +369,11 @@ export function MasterItemsDetailPage() {
 
   const currentCategory = isEditing ? form.category : item.category?.toString();
   const isRoutingRequired = currentCategory === "1" || currentCategory === "2";
+  const selectedRouting =
+    selectedIndex !== null && routings[selectedIndex] ? routings[selectedIndex] : null;
+  const selectedMatchedOp = selectedRouting
+    ? operations.find((op) => op.operCode === selectedRouting.operCode)
+    : null;
 
   return (
     <section className="screenStack">
@@ -426,13 +457,13 @@ export function MasterItemsDetailPage() {
         {/* 공정 라우팅 영역 */}
         {(isRoutingRequired || (routings && routings.length > 0)) && (
           <div className="routingSection">
-            <div className="routingHeader">
-              <label className="requiredLabel">
+            <div className="routing-header-wrapper">
+              <label className="requiredLabel routing-header-label">
                 공정 라우팅 설정{" "}
-                {isRoutingRequired && <span className="required">*</span>}
+                {isRoutingRequired && isEditing && <span className="required">*</span>}
               </label>
-              <div className="routingHeaderRight">
-                <span className="routingCount">총 {routings.length}단계</span>
+              <div className="routing-header-right">
+                <span className="routing-count-text">총 {routings.length}단계</span>
                 {isEditing && (
                   <button
                     type="button"
@@ -440,102 +471,234 @@ export function MasterItemsDetailPage() {
                     disabled={isBusy}
                     onClick={handleOpenModal}
                   >
-                    공정 선택 / 추가
+                    + 공정 선택 / 추가
                   </button>
                 )}
               </div>
             </div>
 
+            {isEditing && (
+              <div className="routing-guide-text">
+                ⠿ 드래그로 순서 변경, 항목 선택 시 우측에서 상세 편집
+              </div>
+            )}
+
             {routings.length === 0 ? (
-              <div className="routingEmptyBox">등록된 공정 라우팅이 없습니다.</div>
+              <div className="routingEmptyBox">
+                {isEditing
+                  ? "선택된 공정이 없습니다. [+ 공정 선택 / 추가] 버튼을 눌러주세요."
+                  : "등록된 공정 라우팅이 없습니다."}
+              </div>
+            ) : isEditing ? (
+              /* ===== 수정 모드: 등록 페이지와 동일한 2단 레이아웃 ===== */
+              <div className="routing-layout-grid">
+                {/* [좌측 영역] 공정 리스트 */}
+                <div className="routing-list-container">
+                  {routings.map((route, index) => {
+                    const matchedOp = operations.find((op) => op.operCode === route.operCode);
+                    const isFinal = route.finalYn === "Y";
+                    const isSelected = selectedIndex === index;
+                    const isDragOver = dragOverIndex === index;
+                    const isDragged = draggedIndex === index;
+
+                    return (
+                      <div
+                        key={`${route.operCode}-${index}`}
+                        ref={(el) => {
+                          routingItemRefs.current[index] = el;
+                        }}
+                        draggable
+                        onDragStart={() => setDraggedIndex(index)}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setDragOverIndex(index);
+                        }}
+                        onDragLeave={() => {
+                          if (dragOverIndex === index) setDragOverIndex(null);
+                        }}
+                        onDragEnd={() => {
+                          setDraggedIndex(null);
+                          setDragOverIndex(null);
+                        }}
+                        onDrop={() => {
+                          if (draggedIndex !== null) {
+                            moveRouting(draggedIndex, index);
+                            setSelectedIndex(index);
+                          }
+                          setDraggedIndex(null);
+                          setDragOverIndex(null);
+                        }}
+                        onClick={() => setSelectedIndex(index)}
+                        className={`routing-list-item ${isSelected ? "is-selected" : ""} ${
+                          isDragOver ? "is-drag-over" : ""
+                        } ${isDragged ? "is-dragged" : ""}`}
+                      >
+                        <div className="routing-item-left">
+                          <span
+                            className={`routing-drag-handle ${isDragged ? "is-dragging" : ""}`}
+                            title="드래그하여 순서 변경"
+                          >
+                            ⠿
+                          </span>
+                          <span className="routing-seq">
+                            {String(route.operSeq ?? index + 1).padStart(2, "0")}
+                          </span>
+                          <Badge tone="info">{route.operCode}</Badge>
+                          <span className="routing-oper-nm">
+                            {matchedOp ? matchedOp.operNm : ""}
+                          </span>
+                        </div>
+
+                        <div className="routing-item-right">
+                          <span className={`routing-type-badge ${isFinal ? "is-final" : ""}`}>
+                            {isFinal ? "최종공정" : "일반공정"}
+                          </span>
+
+                          <div className="routing-arrow-group">
+                            <button
+                              type="button"
+                              className="routing-arrow-btn"
+                              disabled={index === 0 || isBusy}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                moveRouting(index, index - 1);
+                                setSelectedIndex(index - 1);
+                              }}
+                              title="위로 이동"
+                            >
+                              <ChevronUpIcon className="routing-arrow-icon" aria-hidden="true" />
+                            </button>
+                            <button
+                              type="button"
+                              className="routing-arrow-btn"
+                              disabled={index === routings.length - 1 || isBusy}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                moveRouting(index, index + 1);
+                                setSelectedIndex(index + 1);
+                              }}
+                              title="아래로 이동"
+                            >
+                              <ChevronDownIcon className="routing-arrow-icon" aria-hidden="true" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* [우측 영역] 선택된 공정 상세 편집 패널 */}
+                <div className="routing-detail-panel">
+                  {selectedRouting && selectedIndex !== null ? (
+                    <div>
+                      <div className="routing-step-card">
+                        <div className="routing-step-badge">
+                          <div className="routing-step-badge-title">STEP</div>
+                          <div className="routing-step-badge-num">
+                            {String(selectedIndex + 1).padStart(2, "0")}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="routing-step-info-nm">
+                            {selectedMatchedOp ? selectedMatchedOp.operNm : selectedRouting.operCode}
+                          </div>
+                          <div className="routing-step-info-code">{selectedRouting.operCode}</div>
+                        </div>
+                      </div>
+
+                      <div className="routing-move-grid">
+                        <button
+                          type="button"
+                          className="routing-move-btn"
+                          disabled={selectedIndex === 0 || isBusy}
+                          onClick={() => {
+                            moveRouting(selectedIndex, selectedIndex - 1);
+                            setSelectedIndex(selectedIndex - 1);
+                          }}
+                        >
+                          <ChevronUpIcon className="routing-arrow-icon" aria-hidden="true" />
+                          앞으로
+                        </button>
+                        <button
+                          type="button"
+                          className="routing-move-btn"
+                          disabled={selectedIndex === routings.length - 1 || isBusy}
+                          onClick={() => {
+                            moveRouting(selectedIndex, selectedIndex + 1);
+                            setSelectedIndex(selectedIndex + 1);
+                          }}
+                        >
+                          <ChevronDownIcon className="routing-arrow-icon" aria-hidden="true" />
+                          뒤로
+                        </button>
+                      </div>
+
+                      <div className="routing-form-group">
+                        <label className="routing-label">공정명</label>
+                        <input
+                          type="text"
+                          className="tableInput routing-input-readonly"
+                          value={selectedMatchedOp ? selectedMatchedOp.operNm : ""}
+                          disabled
+                        />
+                      </div>
+
+                      <div className="routing-form-group last">
+                        <label className="routing-label">공정구분</label>
+                        <select
+                          className="tableInput routing-select"
+                          value={selectedRouting.finalYn ?? "N"}
+                          disabled={isBusy}
+                          onChange={(e) =>
+                            handleRoutingChange(selectedIndex, "finalYn", e.target.value)
+                          }
+                        >
+                          <option value="N">일반공정</option>
+                          <option value="Y">최종공정</option>
+                        </select>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="routing-delete-btn"
+                        disabled={isBusy}
+                        onClick={() => {
+                          handleRemoveRouting(selectedIndex);
+                          setSelectedIndex(null);
+                        }}
+                      >
+                        이 공정 제외
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="routing-empty-panel">좌측에서 공정을 선택해주세요.</div>
+                  )}
+                </div>
+              </div>
             ) : (
-              <div className="routingTimeline">
+              /* ===== 읽기 모드: 좌측 리스트만 전체 폭으로 표시 ===== */
+              <div className="routing-list-container">
                 {routings.map((route, index) => {
                   const matchedOp = operations.find((op) => op.operCode === route.operCode);
                   const isFinal = route.finalYn === "Y";
-                  const isLast = index === routings.length - 1;
 
                   return (
-                    <div
-                      key={`${route.operCode}-${index}`}
-                      className={`timelineStep ${isFinal ? "finalStep" : ""}`}
-                    >
-                      <div className="timelineMarker">
-                        <div className="routingStepWrapper">
-                          <div className="routingStepContainer">
-                            <div className={`timelineBadge ${isFinal ? "final" : ""}`}>
-                              <span className="timelineBadgeLabel">STEP</span>
-                              <span className="timelineBadgeNum">
-                                {String(route.operSeq ?? index + 1).padStart(2, "0")}
-                              </span>
-                            </div>
-
-                            {isEditing && (
-                              <select
-                                className="routingStepOverlaySelect"
-                                value={route.operSeq ?? index + 1}
-                                disabled={isBusy}
-                                tabIndex={-1}
-                                title="순서 변경"
-                                onClick={(e) => e.stopPropagation()}
-                                onChange={(e) => {
-                                  const newSeq = Number(e.target.value);
-                                  moveRouting(index, newSeq - 1);
-                                }}
-                              >
-                                {routings.map((_, idx) => (
-                                  <option key={idx + 1} value={idx + 1}>
-                                    {idx + 1}순서로 이동
-                                  </option>
-                                ))}
-                              </select>
-                            )}
-                          </div>
-                        </div>
-
-                        {!isLast && <div className="timelineConnector" />}
+                    <div key={`${route.operCode}-${index}`} className="routing-list-item">
+                      <div className="routing-item-left">
+                        <span className="routing-seq">
+                          {String(route.operSeq ?? index + 1).padStart(2, "0")}
+                        </span>
+                        <Badge tone="info">{route.operCode}</Badge>
+                        <span className="routing-oper-nm">
+                          {matchedOp ? matchedOp.operNm : ""}
+                        </span>
                       </div>
 
-                      <div className="timelineRow">
-                        <div className="timelineInfo">
-                          <Badge tone="info">{route.operCode}</Badge>
-                          <span className="timelineOperNm">{matchedOp ? matchedOp.operNm : ""}</span>
-                        </div>
-
-                        <div>
-                          {isEditing ? (
-                            <select
-                              className={`timelineFinalSelect ${isFinal ? "final" : ""}`}
-                              value={route.finalYn ?? "N"}
-                              disabled={isBusy}
-                              tabIndex={-1}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => handleRoutingChange(index, "finalYn", e.target.value)}
-                            >
-                              <option value="N">일반공정</option>
-                              <option value="Y">최종공정</option>
-                            </select>
-                          ) : (
-                            <Badge tone={isFinal ? "good" : "muted"}>
-                              {isFinal ? "최종공정" : "일반공정"}
-                            </Badge>
-                          )}
-                        </div>
-
-                        {isEditing && (
-                          <button
-                            type="button"
-                            className="miniButton danger"
-                            disabled={isBusy}
-                            tabIndex={-1}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveRouting(index);
-                            }}
-                          >
-                            제외
-                          </button>
-                        )}
+                      <div className="routing-item-right">
+                        <span className={`routing-type-badge ${isFinal ? "is-final" : ""}`}>
+                          {isFinal ? "최종공정" : "일반공정"}
+                        </span>
                       </div>
                     </div>
                   );
