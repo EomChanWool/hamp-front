@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Panel } from "@components/card/Panel";
 import axios from "axios";
 import type {
     FacilityCreateRequest,
@@ -105,62 +104,81 @@ export function EquipmentFacilityCreatePage() {
 
     return (
         <section className="screenStack">
-            <Panel title="신규 설비 등록">
-                <form className="pageForm" onSubmit={handleSubmit}>
+            <div className="createCard">
+                <div className="createHeader">
+                    <h1 className="createTitle">신규 설비 등록</h1>
+                    <span className="createMeta">* 표시는 필수 입력 항목입니다</span>
+                </div>
 
-                    <div className="detailField">
-                        <label className="requiredLabel">설비코드 <span className="required">*</span></label>
-                        <input className="tableInput" value={form.fcltCode} disabled={isSubmitting} onChange={(e) => handleChange("fcltCode", e.target.value)} placeholder="예: FCLT001" maxLength={30} />
+                <form onSubmit={handleSubmit}>
+                    <div className="createBody">
+                        <div className="createSection">
+                            <h2 className="createSectionTitle">설비정보</h2>
+                            <div className="createGrid2Cols">
+                                <div className="createField">
+                                    <label className="requiredLabel">설비코드 <span className="required">*</span></label>
+                                    <input className="tableInput" value={form.fcltCode} disabled={isSubmitting} onChange={(e) => handleChange("fcltCode", e.target.value)} placeholder="예: FCLT001" maxLength={30} />
+                                </div>
+
+                                <div className="createField">
+                                    <label>설비명</label>
+                                    <input className="tableInput" value={form.fcltNm} disabled={isSubmitting} onChange={(e) => handleChange("fcltNm", e.target.value)} maxLength={100} />
+                                </div>
+
+                                <div className="createField">
+                                    <label>현재상태</label>
+                                    <select className="tableInput" value={form.currentStatus} disabled={isSubmitting} onChange={(e) => handleChange("currentStatus", e.target.value)}>
+                                        <option value="0">정지</option>
+                                        <option value="1">작동</option>
+                                        <option value="2">고장</option>
+                                    </select>
+                                </div>
+
+                                <div className="createField">
+                                    <label>사용여부</label>
+                                    <select className="tableInput" value={form.useYn ? "true" : "false"} disabled={isSubmitting} onChange={(e) => handleChange("useYn", e.target.value === "true")}>
+                                        <option value="true">사용</option>
+                                        <option value="false">미사용</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="createSection">
+                            <h2 className="createSectionTitle">장비/공장 정보</h2>
+                            <div className="createGrid2Cols">
+                                <div className="createField">
+                                    <label>장비코드</label>
+                                    <select className="tableInput" value={form.eqCode} disabled={isSubmitting} onChange={(e) => handleChange("eqCode", e.target.value)}>
+                                        <option value="">장비를 선택해주세요</option>
+                                        {equipmentOptions.map((option) => (
+                                            <option key={option.eqCode} value={option.eqCode}>{option.eqCode} ({option.eqNm})</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="createField">
+                                    <label>공장코드</label>
+                                    <select className="tableInput" value={form.facCode} disabled={isSubmitting} onChange={(e) => handleChange("facCode", e.target.value)}>
+                                        <option value="">공장을 선택해주세요</option>
+                                        {factoryZoneOptions.map((option) => (
+                                            <option key={option.facCode} value={option.facCode}>{option.facCode} ({option.facNm})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="detailField">
-                        <label>장비코드</label>
-                        <select className="tableInput" value={form.eqCode} disabled={isSubmitting} onChange={(e) => handleChange("eqCode", e.target.value)}>
-                            <option value="">장비를 선택해주세요</option>
-                            {equipmentOptions.map((option) => (
-                                <option key={option.eqCode} value={option.eqCode}>{option.eqCode} ({option.eqNm})</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="detailField">
-                        <label>공장코드</label>
-                        <select className="tableInput" value={form.facCode} disabled={isSubmitting} onChange={(e) => handleChange("facCode", e.target.value)}>
-                            <option value="">공장을 선택해주세요</option>
-                            {factoryZoneOptions.map((option) => (
-                                <option key={option.facCode} value={option.facCode}>{option.facCode} ({option.facNm})</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="detailField">
-                        <label>설비명</label>
-                        <input className="tableInput" value={form.fcltNm} disabled={isSubmitting} onChange={(e) => handleChange("fcltNm", e.target.value)} maxLength={100} />
-                    </div>
-
-                    <div className="detailField">
-                        <label>현재상태</label>
-                        <select className="tableInput" value={form.currentStatus} disabled={isSubmitting} onChange={(e) => handleChange("currentStatus", e.target.value)}>
-                            <option value="0">정지</option>
-                            <option value="1">작동</option>
-                            <option value="2">고장</option>
-                        </select>
-                    </div>
-
-                    <div className="detailField">
-                        <label>사용여부</label>
-                        <select className="tableInput" value={form.useYn ? "true" : "false"} disabled={isSubmitting} onChange={(e) => handleChange("useYn", e.target.value === "true")}>
-                            <option value="true">사용</option>
-                            <option value="false">미사용</option>
-                        </select>
-                    </div>
-
-                    <div className="pageFormFooter">
+                    <div className="createFooter">
                         <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>취소</button>
                         <button type="submit" className="primaryButton" disabled={isSubmitting}>{isSubmitting ? "등록 중..." : "등록"}</button>
                     </div>
                 </form>
-            </Panel>
+            </div>
         </section>
     );
 }
+
+
+
