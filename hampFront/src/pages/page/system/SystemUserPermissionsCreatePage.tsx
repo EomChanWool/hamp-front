@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useCallback, type SyntheticEvent } from "
 import { useNavigate, useLocation } from "react-router-dom";
 import { Panel } from "@components/card/Panel";
 import axios from "axios";
-import { CheckIcon, MinusIcon, ChevronRightIcon, ExclamationTriangleIcon } from "@heroicons/react/16/solid";
+import { ChevronRightIcon, ExclamationTriangleIcon, CheckIcon } from "@heroicons/react/16/solid";
 import type { MenuResponse } from "@/api/Menu";
 import { MenuApi } from "@/api/Menu";
 import { AuthGroupApi } from "@/api/auth/Auth";
@@ -12,9 +12,9 @@ import type { CheckState, PermRecord } from "@/hooks/usePermission";
 import "@components/permission/PermissonBoard.css";
 
 /* ================================
-    접근성 체크박스 (3-state)
+    권한 토글 스위치 (checked / unchecked / mixed)
 ================================ */
-function PermCheckbox({
+function PermToggle({
     state,
     disabled,
     onToggle,
@@ -28,18 +28,17 @@ function PermCheckbox({
     return (
         <button
             type="button"
-            role="checkbox"
-            aria-checked={state === "mixed" ? "mixed" : state === "checked"}
+            role="switch"
+            aria-checked={state === "checked"}
             aria-label={label}
             disabled={disabled}
-            className={`permCheck ${state}`}
+            className={`permToggle ${state}`}
             onClick={(e) => {
                 e.stopPropagation();
                 onToggle();
             }}
         >
-            {state === "checked" && <CheckIcon />}
-            {state === "mixed" && <MinusIcon />}
+            <span className="permToggleKnob" />
         </button>
     );
 }
@@ -69,7 +68,6 @@ export function SystemUserPermissionsCreatePage() {
         initializePerms,
         getCheckState,
         handleToggle,
-        handleGroupPermToggle,
     } = usePermission(menus);
 
     const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -172,7 +170,7 @@ export function SystemUserPermissionsCreatePage() {
                                 <div className="permCheckGroup">
                                     {PERMISSIONS.map((p) => (
                                         <div key={p.key} className="permCheckCell">
-                                            <PermCheckbox
+                                            <PermToggle
                                                 state={
                                                     hasChildren
                                                         ? getCheckState(menu, p.key)
@@ -345,17 +343,12 @@ export function SystemUserPermissionsCreatePage() {
                                                 <div className="permDetailEmpty">좌측에서 메뉴를 선택하세요.</div>
                                             ) : (
                                                 <>
+                                                    {/* 컬럼 라벨만 표시 — 열 단위 일괄 토글은 제공하지 않음 */}
                                                     <div className="permMatrixHeader">
                                                         <span className="permMatrixHeaderLabel">{activeTopMenu.menuNm}</span>
                                                         <div className="permCheckGroup">
                                                             {PERMISSIONS.map((p) => (
                                                                 <div key={p.key} className="permCheckCell permCheckCellHeader">
-                                                                    <PermCheckbox
-                                                                        state={getCheckState(activeTopMenu, p.key)}
-                                                                        disabled={isSubmitting}
-                                                                        onToggle={() => handleGroupPermToggle(activeTopMenu, p.key)}
-                                                                        label={`${activeTopMenu.menuNm} 전체 ${p.label} 권한`}
-                                                                    />
                                                                     <span>{p.label}</span>
                                                                 </div>
                                                             ))}
