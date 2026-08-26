@@ -62,14 +62,14 @@ export function PermissionBoard() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
 
-    // 수정 모드에서 편집 중인 권한그룹 설명 (저장 전까지는 groupDetail.authDesc와 분리해서 관리)
+    // 수정 모드에서 편집 중인 권한그룹 설명
     const [editedDesc, setEditedDesc] = useState("");
 
     // 우측 상세 패널에 표시 중인 대메뉴 및 서브메뉴 펼침 상태
     const [activeTopMenuId, setActiveTopMenuId] = useState<number | null>(null);
     const [collapsedSub, setCollapsedSub] = useState<Record<number, boolean>>({});
 
-    // usePermission 훅 연동 (전체 열 일괄 토글은 더 이상 사용하지 않음)
+    // usePermission 훅 연동
     const {
         permState,
         initializePerms,
