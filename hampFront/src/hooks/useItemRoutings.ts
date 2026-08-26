@@ -3,12 +3,17 @@ import type { ItemRoutingRequest } from "@/api/master/Item";
 
 export function useItemRoutings() {
   const [routings, setRoutings] = useState<ItemRoutingRequest[]>([]);
-  
-  // 키보드로 아이템을 선택(활성화)한 상태를 추적하는 인덱스
-  const [keyboardActiveIndex, setKeyboardActiveIndex] = useState<number | null>(null);
 
+  // 순번을 매기면서, 항상 마지막 항목은 finalYn을 "Y", 나머지는 "N"으로 자동 설정
   const reorderSequences = (items: ItemRoutingRequest[]) => {
-    return items.map((item, i) => ({ ...item, operSeq: i + 1 }));
+    return items.map((item, i) => {
+      const isLast = i === items.length - 1;
+      return {
+        ...item,
+        operSeq: i + 1,
+        finalYn: isLast ? "Y" : "N",
+      };
+    });
   };
 
   const syncRoutings = (selectedCodes: string[]) => {
@@ -21,11 +26,9 @@ export function useItemRoutings() {
       }));
       return reorderSequences(newRoutings);
     });
-    setKeyboardActiveIndex(null);
   };
 
   const removeRouting = (index: number) => {
-    setKeyboardActiveIndex(null);
     setRoutings((prev) => reorderSequences(prev.filter((_, i) => i !== index)));
   };
 
@@ -46,49 +49,11 @@ export function useItemRoutings() {
     });
   };
 
-  /**
-   * 키보드 이벤트 핸들러 (Enter/Space로 선택, 상하 방향키로 순서 이동)
-   */
-  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
-    // 1. Space 또는 Enter: 선택 토글
-    if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
-      e.preventDefault();
-      setKeyboardActiveIndex(keyboardActiveIndex === index ? null : index);
-      return index;
-    }
-
-    // 2. Escape: 선택 취소
-    if (e.key === "Escape") {
-      e.preventDefault();
-      setKeyboardActiveIndex(null);
-      return index;
-    }
-
-    // 3. 선택된 상태에서 상하 방향키로 순서 변경
-    if (keyboardActiveIndex === index) {
-      let newIndex = index;
-      if (e.key === "ArrowUp") newIndex = index - 1;
-      if (e.key === "ArrowDown") newIndex = index + 1;
-
-      if (newIndex >= 0 && newIndex < routings.length && newIndex !== index) {
-        e.preventDefault();
-        moveRouting(index, newIndex);
-        setKeyboardActiveIndex(newIndex);
-        return newIndex;
-      }
-    }
-
-    return index;
-  };
-
   return {
     routings,
-    keyboardActiveIndex,
-    setKeyboardActiveIndex,
     syncRoutings,
     removeRouting,
     updateRouting,
     moveRouting,
-    handleKeyDown,
   };
 }
