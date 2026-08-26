@@ -3,7 +3,7 @@
 ================================ */
 .routingSection {
   grid-column: 1 / -1;
-  margin-top: 20px;
+  margin-top: 16px;
   padding-top: 24px;
   border-top: 1px solid var(--border);
 }
@@ -12,38 +12,15 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
-}
-
-.routingHint {
-  font-size: 14px; 
-  color: var(--text-muted, #4b5563);
-  margin-bottom: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--bg-subtle, #f9fafb);
-  padding: 10px 14px;
-  border-radius: 10px;
-}
-
-.routingHint kbd,
-.routingHint span span {
-  background: var(--bg-subtle, #f1f5f9);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 4px 8px; 
-  font-size: 13px; 
-  font-weight: 600;
-  color: #00a6a6; /* 포인트 컬러 */
+  margin-bottom: 18px;
 }
 
 .routingEmptyBox {
-  padding: 32px;
+  padding: 28px;
   text-align: center;
   color: var(--text-muted);
-  font-size: 15px;
-  background: var(--bg-subtle, #f9fafb);
+  font-size: 17px;
+  background: var(--bg-subtle);
   border-radius: 12px;
   border: 1px solid var(--border);
 }
@@ -325,4 +302,144 @@
 [data-theme="dark"] .typeCardButton.active {
   border-color: #10b981;
   background-color: #064e3b;
+}
+
+/* ================================
+   ROUTING - STEP TIMELINE
+================================ */
+.routingTimeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.timelineStep {
+  display: flex;
+  gap: 16px;
+}
+
+.timelineMarker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 56px;
+  flex-shrink: 0;
+}
+
+.timelineBadge {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--bg-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.1;
+}
+
+.timelineBadgeLabel {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.timelineBadgeNum {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-body);
+}
+
+.finalStep .timelineBadge {
+  border-color: #00a6a6;
+  background: rgba(0, 166, 166, 0.1);
+}
+
+.finalStep .timelineBadgeLabel,
+.finalStep .timelineBadgeNum {
+  color: #00a6a6;
+}
+
+.timelineConnector {
+  width: 2px;
+  flex: 1;
+  min-height: 24px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.timelineRow {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-subtle);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.timelineSeqSelect {
+  width: 60px;
+  height: 36px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-card);
+  flex-shrink: 0;
+}
+
+.timelineInfo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--text-body);
+}
+
+.timelineOperCode {
+  font-weight: 600;
+  color: var(--text-body);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.timelineOperNm {
+  color: var(--text-body);
+  font-size: 15px;
+}
+
+.timelineFinalSelect {
+  width: 140px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  flex-shrink: 0;
+}
+
+.timelineFinalSelect.final {
+  border-color: #00a6a6;
+  background: rgba(0, 166, 166, 0.1);
+  color: #00a6a6;
+  font-weight: 600;
+}
+
+.routingActionButtons {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
 }

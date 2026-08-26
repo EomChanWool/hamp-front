@@ -1,4 +1,4 @@
-import { useState, useEffect, type SyntheticEvent, useRef } from "react";
+import { useState, useEffect, type SyntheticEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { FoodIcon, PlantIcon } from "@/components/icons/CustomIcons";
 import axios from "axios";
@@ -14,6 +14,7 @@ import { OperationApi } from "@/api/master/Operation";
 import { OperationSelectModal } from "@components/common/OperationSelectModal";
 import { useItemRoutings } from "@/hooks/useItemRoutings";
 import './MasterItem.css';
+import { Badge } from "@/components/common/Badge";
 
 interface OperationOption {
   operCode: string;
@@ -24,9 +25,6 @@ export function MasterItemsCreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // 키보드 이동 후 포커스 유지를 위한 ref 배열
-  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // 전체 공정 옵션 목록 상태
   const [operations, setOperations] = useState<OperationOption[]>([]);
@@ -51,12 +49,10 @@ export function MasterItemsCreatePage() {
   // 슬림화된 커스텀 훅 구조분해 할당
   const {
     routings,
-    keyboardActiveIndex,
     syncRoutings,
     removeRouting: handleRemoveRouting,
     updateRouting: handleRoutingChange,
     moveRouting,
-    handleKeyDown,
   } = useItemRoutings();
 
   // 다중 선택 팝업 모달 관련 상태
@@ -156,7 +152,7 @@ export function MasterItemsCreatePage() {
     <section className="screenStack">
       {/* 등록 전용 독립 카드 컨테이너 */}
       <div className="createCard">
-        
+
         {/* 헤더 영역 */}
         <div className="createHeader">
           <h1 className="createTitle">신규 품목 등록</h1>
@@ -166,7 +162,7 @@ export function MasterItemsCreatePage() {
         {/* 본문 폼 영역 */}
         <form onSubmit={handleSubmit}>
           <div className="createBody">
-            
+
             {/* 1. 기본 정보 섹션 */}
             <div className="createSection">
               <h2 className="createSectionTitle">기본정보</h2>
@@ -175,12 +171,12 @@ export function MasterItemsCreatePage() {
                   <label className="requiredLabel">
                     품목코드 <span className="required">*</span>
                   </label>
-                  <input 
-                    className="tableInput" 
-                    value={form.itemCode} 
-                    disabled={isSubmitting} 
-                    onChange={(e) => handleChange("itemCode", e.target.value)} 
-                    placeholder="예: ITM001" 
+                  <input
+                    className="tableInput"
+                    value={form.itemCode}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange("itemCode", e.target.value)}
+                    placeholder="예: ITM001"
                   />
                 </div>
 
@@ -188,34 +184,34 @@ export function MasterItemsCreatePage() {
                   <label className="requiredLabel">
                     품목명 <span className="required">*</span>
                   </label>
-                  <input 
-                    className="tableInput" 
-                    value={form.itemNm} 
-                    disabled={isSubmitting} 
-                    onChange={(e) => handleChange("itemNm", e.target.value)} 
-                    placeholder="예: 헴프 파우더" 
+                  <input
+                    className="tableInput"
+                    value={form.itemNm}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange("itemNm", e.target.value)}
+                    placeholder="예: 헴프 파우더"
                   />
                 </div>
 
                 <div className="createField">
                   <label>단위</label>
-                  <input 
-                    className="tableInput" 
-                    value={form.unit} 
-                    disabled={isSubmitting} 
-                    onChange={(e) => handleChange("unit", e.target.value)} 
-                    placeholder="예: EA, BOX, KG" 
+                  <input
+                    className="tableInput"
+                    value={form.unit}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange("unit", e.target.value)}
+                    placeholder="예: EA, BOX, KG"
                   />
                 </div>
 
                 <div className="createField">
                   <label>규격</label>
-                  <input 
-                    className="tableInput" 
-                    value={form.standard} 
-                    disabled={isSubmitting} 
-                    onChange={(e) => handleChange("standard", e.target.value)} 
-                    placeholder="예: 500g" 
+                  <input
+                    className="tableInput"
+                    value={form.standard}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange("standard", e.target.value)}
+                    placeholder="예: 500g"
                   />
                 </div>
               </div>
@@ -293,10 +289,10 @@ export function MasterItemsCreatePage() {
                   </label>
                   <div className="routingHeaderRight">
                     <span className="routingCount">총 {routings.length}단계</span>
-                    <button 
-                      type="button" 
-                      className="miniButton primary" 
-                      disabled={isSubmitting} 
+                    <button
+                      type="button"
+                      className="miniButton primary"
+                      disabled={isSubmitting}
                       onClick={handleOpenModal}
                     >
                       공정 선택 / 추가
@@ -304,118 +300,90 @@ export function MasterItemsCreatePage() {
                   </div>
                 </div>
 
-                <div className="routingHint">
-                  💡 <kbd>방향키(상/하)</kbd>로 공정 아이템을 탐색하고, <kbd>Space</kbd>/<kbd>Enter</kbd>로 선택(활성화) 후 상/하 방향키로 순서를 변경하세요. (<kbd>Esc</kbd> 취소)
-                </div>
-
                 {routings.length === 0 ? (
-                  <div className="routingEmptyBox">선택된 공정이 없습니다. [공정 선택 / 추가] 버튼을 눌러주세요.</div>
+                  <div className="routingEmptyBox">
+                    선택된 공정이 없습니다. [공정 선택 / 추가] 버튼을 눌러주세요.
+                  </div>
                 ) : (
-                  <div className="routingList">
+                  <div className="routingTimeline">
                     {routings.map((route, index) => {
                       const matchedOp = operations.find((op) => op.operCode === route.operCode);
-                      const isKeyboardActive = keyboardActiveIndex === index;
                       const isFinal = route.finalYn === "Y";
-
+                      const isLast = index === routings.length - 1;
                       return (
                         <div
                           key={`${route.operCode}-${index}`}
-                          ref={(el) => { itemRefs.current[index] = el; }}
-                          tabIndex={!isSubmitting ? 0 : -1}
-                          role="button"
-                          aria-pressed={isKeyboardActive}
-                          className={`routingItem isEditing ${isKeyboardActive ? "keyboardActive" : ""}`}
-                          onMouseDown={() => {
-                            if (!isSubmitting) {
-                              itemRefs.current[index]?.focus();
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (isSubmitting) return;
-
-                            if (keyboardActiveIndex === null && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
-                              let nextIndex = index;
-                              if (e.key === "ArrowUp") nextIndex = index - 1;
-                              if (e.key === "ArrowDown") nextIndex = index + 1;
-
-                              if (nextIndex >= 0 && nextIndex < routings.length) {
-                                e.preventDefault();
-                                itemRefs.current[nextIndex]?.focus();
-                              }
-                              return;
-                            }
-
-                            const nextIndex = handleKeyDown(e, index);
-                            if (nextIndex !== undefined) {
-                              setTimeout(() => itemRefs.current[nextIndex]?.focus(), 0);
-                            }
-                          }}
+                          className={`timelineStep ${isFinal ? "finalStep" : ""}`}
                         >
-                          {/* STEP 동그란 뱃지 및 순서 변경 투명 셀렉트 오버레이 영역 */}
-                          <div className="routingStepWrapper">
-                            <div className="routingStepContainer">
-                              <div className={`routingStepBadge ${isFinal ? "final" : ""}`}>
-                                <span className="stepText">STEP</span>
-                                <span className="stepNum">{String(route.operSeq ?? index + 1).padStart(2, "0")}</span>
-                              </div>
+                          <div className="timelineMarker">
+                            {/* STEP 동그란 뱃지 및 순서 변경 투명 셀렉트 오버레이 영역 */}
+                            <div className="routingStepWrapper">
+                              <div className="routingStepContainer">
+                                <div className={`timelineBadge ${isFinal ? "final" : ""}`}>
+                                  <span className="timelineBadgeLabel">STEP</span>
+                                  <span className="timelineBadgeNum">{String(route.operSeq ?? index + 1).padStart(2, "0")}</span>
+                                </div>
 
+                                <select
+                                  className="routingStepOverlaySelect"
+                                  value={route.operSeq ?? index + 1}
+                                  disabled={isSubmitting}
+                                  tabIndex={-1}
+                                  title="순서 변경"
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={(e) => {
+                                    const newSeq = Number(e.target.value);
+                                    moveRouting(index, newSeq - 1);
+                                  }}
+                                >
+                                  {routings.map((_, idx) => (
+                                    <option key={idx + 1} value={idx + 1}>
+                                      {idx + 1}순서로 이동
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+
+                            {!isLast && <div className="timelineConnector" />}
+                          </div>
+
+                          <div className="timelineRow">
+                            {/* 공정 정보 영역 */}
+                            <div className="timelineInfo">
+                              <Badge tone="info">{route.operCode}</Badge>
+                              <span className="timelineOperNm">{matchedOp ? matchedOp.operNm : ""}</span>
+                            </div>
+
+                            {/* 최종공정 여부 셀렉트 */}
+                            <div>
                               <select
-                                className="routingStepOverlaySelect"
-                                value={route.operSeq ?? index + 1}
+                                className={`timelineFinalSelect ${isFinal ? "final" : ""}`}
+                                value={route.finalYn ?? "N"}
                                 disabled={isSubmitting}
                                 tabIndex={-1}
-                                title="순서 변경"
                                 onClick={(e) => e.stopPropagation()}
-                                onChange={(e) => {
-                                  const newSeq = Number(e.target.value);
-                                  moveRouting(index, newSeq - 1);
-                                }}
+                                onChange={(e) => handleRoutingChange(index, "finalYn", e.target.value)}
                               >
-                                {routings.map((_, idx) => (
-                                  <option key={idx + 1} value={idx + 1}>
-                                    {idx + 1}순서로 이동
-                                  </option>
-                                ))}
+                                <option value="N">일반공정</option>
+                                <option value="Y">최종공정</option>
                               </select>
                             </div>
-                          </div>
 
-                          {/* 공정 정보 영역 */}
-                          <div className="routingInfoWrapper">
-                            <span className="routingCode">{route.operCode}</span>
-                            <span className="routingName">
-                              {matchedOp ? matchedOp.operNm : ""}
-                            </span>
-                          </div>
-
-                          {/* 최종공정 여부 셀렉트 */}
-                          <div>
-                            <select
-                              className="tableInput routingSelect"
-                              value={route.finalYn ?? "N"}
+                            {/* 제외 버튼 */}
+                            <button
+                              type="button"
+                              className="miniButton danger"
                               disabled={isSubmitting}
                               tabIndex={-1}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => handleRoutingChange(index, "finalYn", e.target.value)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveRouting(index);
+                              }}
                             >
-                              <option value="N">일반공정</option>
-                              <option value="Y">최종공정</option>
-                            </select>
+                              제외
+                            </button>
                           </div>
-
-                          {/* 제외 버튼 */}
-                          <button
-                            type="button"
-                            className="miniButton danger"
-                            disabled={isSubmitting}
-                            tabIndex={-1}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveRouting(index);
-                            }}
-                          >
-                            제외
-                          </button>
                         </div>
                       );
                     })}
