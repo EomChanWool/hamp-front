@@ -443,3 +443,83 @@
   gap: 8px;
   flex-shrink: 0;
 }
+
+/* ========================================================
+   공정 라우팅 설정 영역 (신규 품목 등록)
+======================================================== */
+
+/* 헤더 및 안내 문구 */
+.routing-header-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.routing-header-label { font-size: 16px; font-weight: 600; }
+.routing-header-right { display: flex; align-items: center; gap: 12px; }
+.routing-count-text { font-weight: 500; }
+.routing-guide-text { font-size: 13px; color: #6b7280; margin-bottom: 12px; }
+
+/* 레이아웃 */
+.routing-layout-grid { display: grid; grid-template-columns: 1fr 500px; gap: 20px; align-items: start; }
+.routing-w-100 { width: 100%; }
+
+/* 좌측: 공정 리스트 박스 */
+.routing-list-container { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; background: #f9fafb; max-height: 600px; overflow-y: auto; }
+
+/* 개별 아이템 (드래그 앤 드롭) */
+.routing-list-item { 
+  display: flex; justify-content: space-between; align-items: center; 
+  padding: 10px 14px; margin-bottom: 8px; border-radius: 6px; 
+  cursor: grab; transition: all 0.15s ease; user-select: none; 
+  background: #ffffff; border: 1px solid #e5e7eb;
+}
+.routing-list-item.is-dragged { opacity: 0.4; }
+.routing-list-item.is-drag-over { background: #d1fae5; border: 2px dashed #059669; }
+.routing-list-item.is-selected { background: #ecfdf5; border: 2px solid #10b981; }
+
+.routing-item-left { display: flex; align-items: center; gap: 12px; }
+.routing-drag-handle { color: #9ca3af; font-size: 16px; letter-spacing: 1px; padding: 2px 4px; display: inline-block; }
+.routing-drag-handle.is-dragging { cursor: grabbing; }
+.routing-drag-handle:not(.is-dragging) { cursor: grab; }
+
+.routing-seq { font-weight: 600; color: #374151; min-width: 24px; }
+.routing-oper-nm { font-weight: 500; color: #1f2937; }
+.routing-item-right { display: flex; align-items: center; gap: 8px; }
+
+/* 공정 타입 배지 (일반/최종) */
+.routing-type-badge { font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: 500; background: #f3f4f6; color: #4b5563; }
+.routing-type-badge.is-final { background: #d1fae5; color: #065f46; }
+
+/* 이동 화살표 버튼 */
+.routing-arrow-group { display: flex; flex-direction: column; gap: 2px; }
+.routing-arrow-btn { 
+  border: none; background: transparent; cursor: pointer; padding: 4px; 
+  border-radius: 4px; display: flex; align-items: center; justify-content: center; 
+  transition: background-color 0.15s ease; 
+}
+.routing-arrow-btn:hover:not(:disabled) { background-color: #e6f4ea; }
+.routing-arrow-icon { width: 16px; height: 16px; color: #374151; }
+
+/* 우측: 상세 편집 패널 */
+.routing-detail-panel { border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.routing-empty-panel { text-align: center; color: #9ca3af; padding: 40px 0; }
+
+/* 상세 패널 내부 UI */
+.routing-step-card { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f0fdf4; border-radius: 8px; margin-bottom: 20px; border: 1px solid #bbf7d0; }
+.routing-step-badge { background: #10b981; color: #fff; padding: 8px 12px; border-radius: 6px; text-align: center; font-weight: bold; }
+.routing-step-badge-title { font-size: 10px; opacity: 0.9; }
+.routing-step-badge-num { font-size: 16px; }
+.routing-step-info-nm { font-size: 16px; font-weight: bold; color: #065f46; }
+.routing-step-info-code { font-size: 12px; color: #047857; }
+
+/* 빠른 이동 버튼 그룹 */
+.routing-move-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.routing-move-btn { padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.routing-move-btn:hover:not(:disabled) { background: #f9fafb; }
+
+/* 폼 요소 */
+.routing-form-group { margin-bottom: 16px; }
+.routing-form-group.last { margin-bottom: 24px; }
+.routing-label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+.routing-input-readonly { background-color: #f3f4f6; cursor: not-allowed; }
+.routing-select { width: 100%; padding: 8px; background: #fff; }
+
+/* 삭제 버튼 */
+.routing-delete-btn { width: 100%; padding: 10px; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
+.routing-delete-btn:hover:not(:disabled) { background: #fecaca; }
