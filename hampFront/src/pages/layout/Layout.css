@@ -885,9 +885,9 @@
 }
 
 .detailCard .detailFooter button {
-  height: 56px; 
-  padding: 0 28px; 
-  font-size: 18px; 
+  height: 42px; 
+  padding: 0 20px; 
+  font-size: 15px; 
   font-weight: 600;
   border-radius: 12px;
   border: 1px solid var(--dl-line-strong);

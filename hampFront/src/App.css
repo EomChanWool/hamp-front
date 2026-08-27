@@ -90,14 +90,16 @@
 }
 
 [data-theme="dark"] input,
-[data-theme="dark"] select {
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
   background: var(--bg-subtle);
   border-color: var(--border);
   color: var(--text-main);
 }
 
 [data-theme="dark"] input:focus,
-[data-theme="dark"] select:focus {
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
   border-color: #57d3a1;
   box-shadow: 0 0 0 3px rgba(87, 211, 161, 0.15);
 }
