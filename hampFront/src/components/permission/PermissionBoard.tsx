@@ -398,7 +398,7 @@ export function PermissionBoard() {
 
     const selectionSummaryText =
         activeMenuSelectionSummary.total > 0
-            ? `권한 ${activeMenuSelectionSummary.selected}/${activeMenuSelectionSummary.total}개 선택됨`
+            ? `권한 ${activeMenuSelectionSummary.selected}/${activeMenuSelectionSummary.total}개 부여됨`
             : "하위 메뉴 없음";
 
     /* ── 하위 트리 렌더링 ── */
