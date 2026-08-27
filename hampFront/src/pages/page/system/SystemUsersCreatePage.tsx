@@ -202,22 +202,24 @@ export function SystemUsersCreatePage() {
                 ) : authGroups.length === 0 ? (
                   <div className="authGroupEmpty">선택 가능한 권한 그룹이 없습니다.</div>
                 ) : (
-                  <div className="authGroupList">
+                  <div className="cardButtonGroup" style={{ flexWrap: 'wrap' }}>
                     {authGroups.map((auth) => {
                       const isChecked = form.authIds?.includes(auth.authId) ?? false;
                       return (
-                        <label
+                        <div
                           key={auth.authId}
-                          className={`authGroupItem ${isChecked ? "checked" : ""}`}
+                          className={`typeCardButton ${isChecked ? "active" : ""}`}
+                          onClick={() => {
+                            if (isSubmitting) return;
+                            handleAuthCheck(auth.authId, !isChecked);
+                          }}
+                          style={{ cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
                         >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            disabled={isSubmitting}
-                            onChange={(e) => handleAuthCheck(auth.authId, e.target.checked)}
-                          />
-                          <span>{auth.authNm}</span>
-                        </label>
+                          <div className="cardText main">{auth.authNm}</div>
+                          {auth.authDesc && (
+                            <div className="cardText sub">{auth.authDesc}</div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>

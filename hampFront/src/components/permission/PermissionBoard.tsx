@@ -6,6 +6,7 @@ import {
     ExclamationTriangleIcon,
     CheckIcon,
 } from "@heroicons/react/16/solid";
+import { PenLineIcon } from "@/components/icons/CustomIcons";
 import axios from "axios";
 import type {
     AuthGroupResponse,
@@ -524,6 +525,7 @@ export function PermissionBoard() {
                     </div>
                     {isEditing ? (
                         <span className={`permDirtyBadge ${hasAnyChange ? "active" : ""}`}>
+                            <PenLineIcon />
                             {changeSummaryText}
                         </span>
                     ) : (

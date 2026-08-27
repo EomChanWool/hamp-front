@@ -106,7 +106,6 @@ export function AddressSearchInput({
           disabled={disabled}
           readOnly
           placeholder={placeholder}
-          style={{ flex: 1, backgroundColor: "#f9f9f9" }}
         />
         <button
           type="button"
