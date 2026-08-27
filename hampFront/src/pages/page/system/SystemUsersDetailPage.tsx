@@ -300,32 +300,36 @@ export function SystemUserDetailPage() {
             권한 그룹 {isEditing && <span className="required">*</span>}
           </label>
 
-          {isEditing ? (
-            isLoadingGroups ? (
-              <div className="authGroupEmpty">권한 그룹 목록을 불러오는 중...</div>
-            ) : authGroups.length === 0 ? (
-              <div className="authGroupEmpty">선택 가능한 권한 그룹이 없습니다.</div>
-            ) : (
-              <div className="authGroupList">
-                {authGroups.map((auth) => {
-                  const isChecked = authIds?.includes(auth.authId) ?? false;
-                  return (
-                    <label
-                      key={auth.authId}
-                      className={`authGroupItem ${isChecked ? "checked" : ""}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        disabled={isBusy}
-                        onChange={(e) => handleAuthCheck(auth.authId, e.target.checked)}
-                      />
-                      <span>{auth.authNm}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            )
+         {isEditing ? (
+  isLoadingGroups ? (
+    <div className="authGroupEmpty">권한 그룹 목록을 불러오는 중...</div>
+  ) : authGroups.length === 0 ? (
+    <div className="authGroupEmpty">선택 가능한 권한 그룹이 없습니다.</div>
+  ) : (
+    <div className="authGroupList">
+      {authGroups.map((auth) => {
+        const isChecked = authIds?.includes(auth.authId) ?? false;
+        return (
+          <div
+            key={auth.authId}
+            className={`typeCardButton ${isChecked ? "active" : ""}`}
+            onClick={() => {
+              if (isBusy) return;
+              handleAuthCheck(auth.authId, !isChecked);
+            }}
+            style={{
+              cursor: isBusy ? "not-allowed" : "pointer",
+            }}
+          >
+            <div className="cardText main">{auth.authNm}</div>
+            {auth.authDesc && (
+              <div className="cardText sub">{auth.authDesc}</div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  )
           ) : (
             <div className="userAuthGroupDetails">
               {user.authGroups && user.authGroups.length > 0 ? (
