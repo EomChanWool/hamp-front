@@ -1,6 +1,5 @@
 import { useEffect, useState, type SyntheticEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Panel } from "@components/card/Panel";
 import axios from "axios";
 import {
   SalesOrderApi,
@@ -101,75 +100,85 @@ export function SalesOrderCreatePage() {
 
   return (
     <section className="screenStack">
-      <Panel title="신규 수주 등록">
-        <form className="pageForm" onSubmit={handleSubmit}>
-          {/* 1. 기본 정보 입력 필드 영역 */}
-          <div className="detailField">
-            <label className="requiredLabel">
-              수주코드 <span className="required">*</span>
-            </label>
-            <input
-              className="tableInput"
-              value={form.orderCode}
-              onChange={(e) => handleChange("orderCode", e.target.value)}
-              disabled={isSubmitting}
-              placeholder="예: ORD001"
-            />
-          </div>
+      <div className="createCard">
+        <div className="createHeader">
+          <h1 className="createTitle">신규 수주 등록</h1>
+          <span className="createMeta">* 표시는 필수 입력 항목입니다</span>
+        </div>
 
-          <div className="detailField">
-            <label className="requiredLabel">
-              거래처코드 <span className="required">*</span>
-              </label>
-            <select
-              className="tableInput"
-              value={form.bpCode}
-              onChange={(e) => handleChange("bpCode", e.target.value)}
-              disabled={isSubmitting}
-            >
-              <option value="">거래처를 선택해주세요</option>
-              {businessPartnerOptions.map((opt) => (
-                <option key={opt.bpCode} value={opt.bpCode}>
-                  {opt.bpCode} ({opt.bpNm ?? "-"})
-                </option>
-              ))}
-            </select>
-          </div>
+        <form onSubmit={handleSubmit}>
+          <div className="createBody">
+            {/* 1. 기본 정보 섹션 */}
+            <div className="createSection">
+              <h2 className="createSectionTitle">기본정보</h2>
+              <div className="createGrid2Cols">
+                <div className="createField">
+                  <label className="requiredLabel">
+                    수주코드 <span className="required">*</span>
+                  </label>
+                  <input
+                    className="tableInput"
+                    value={form.orderCode}
+                    onChange={(e) => handleChange("orderCode", e.target.value)}
+                    disabled={isSubmitting}
+                    placeholder="예: ORD001"
+                  />
+                </div>
 
-          <div className="detailField">
-            <label>납기일자</label>
-            <input
-              type="date"
-              className="tableInput"
-              value={form.dueDate ?? ""}
-              onChange={(e) => handleChange("dueDate", e.target.value)}
-              disabled={isSubmitting}
-            />
-          </div>
+                <div className="createField">
+                  <label className="requiredLabel">
+                    거래처코드 <span className="required">*</span>
+                  </label>
+                  <select
+                    className="tableInput"
+                    value={form.bpCode}
+                    onChange={(e) => handleChange("bpCode", e.target.value)}
+                    disabled={isSubmitting}
+                  >
+                    <option value="">거래처를 선택해주세요</option>
+                    {businessPartnerOptions.map((opt) => (
+                      <option key={opt.bpCode} value={opt.bpCode}>
+                        {opt.bpCode} ({opt.bpNm ?? "-"})
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-          <div className="detailField">
-            <label>상태</label>
-            <input
-              className="tableInput"
-              value={form.status ?? ""}
-              onChange={(e) => handleChange("status", e.target.value)}
-              disabled={isSubmitting}
-            />
-          </div>
+                <div className="createField">
+                  <label>납기일자</label>
+                  <input
+                    type="date"
+                    className="tableInput"
+                    value={form.dueDate ?? ""}
+                    onChange={(e) => handleChange("dueDate", e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                </div>
 
-          <div className="detailField" style={{ gridColumn: "1 / -1" }}>
-            <label>비고</label>
-            <input
-              className="tableInput"
-              value={form.note ?? ""}
-              onChange={(e) => handleChange("note", e.target.value)}
-              disabled={isSubmitting}
-            />
-          </div>
+                <div className="createField">
+                  <label>상태</label>
+                  <input
+                    className="tableInput"
+                    value={form.status ?? ""}
+                    onChange={(e) => handleChange("status", e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                </div>
 
-          {/* 2. 품목 정보 영역 (제일 하단 행 전체 차지) */}
-          <div style={{ gridColumn: "1 / -1", marginTop: "12px" }}>
-            <div className="detailField">
+                <div className="createField fullWidth">
+                  <label>비고</label>
+                  <input
+                    className="tableInput"
+                    value={form.note ?? ""}
+                    onChange={(e) => handleChange("note", e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 2. 품목 정보 섹션 */}
+            <div className="createSection">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                 <label className="requiredLabel" style={{ margin: 0, fontWeight: 600 }}>품목 정보</label>
                 <button type="button" className="miniButton primary" onClick={addLine} disabled={isSubmitting}>
@@ -266,8 +275,7 @@ export function SalesOrderCreatePage() {
             </div>
           </div>
 
-          {/* 3. 하단 푸터 버튼 영역 */}
-          <div className="pageFormFooter" style={{ gridColumn: "1 / -1" }}>
+          <div className="createFooter">
             <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
               취소
             </button>
@@ -276,7 +284,7 @@ export function SalesOrderCreatePage() {
             </button>
           </div>
         </form>
-      </Panel>
+      </div>
     </section>
   );
 }

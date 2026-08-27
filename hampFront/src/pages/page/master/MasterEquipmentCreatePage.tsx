@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Panel } from "@components/card/Panel";
 import axios from "axios";
 
 import { EquipmentApi, type EquipmentCreateRequest } from "@/api/master/Equipment";
@@ -99,100 +98,98 @@ export function MasterEquipmentCreatePage() {
 
   return (
     <section className="screenStack">
-      <Panel title="신규 장비 등록">
-        <form className="pageForm" onSubmit={handleSubmit}>
-          {/* 장비 코드 */}
-          <div className="detailField">
-            <label className="requiredLabel">
-              장비코드 <span className="required">*</span>
-            </label>
-            <input
-              className="tableInput"
-              value={form.eqCode}
-              disabled={isSubmitting}
-              onChange={(e) => handleChange("eqCode", e.target.value)}
-              placeholder="예: EQ001"
-              maxLength={30}
-            />
+      <div className="createCard">
+        <div className="createHeader">
+          <h1 className="createTitle">신규 장비 등록</h1>
+          <span className="createMeta">* 표시는 필수 입력 항목입니다</span>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="createBody">
+            {/* 기본 정보 섹션 */}
+            <div className="createSection">
+              <h2 className="createSectionTitle">기본정보</h2>
+              <div className="createGrid2Cols">
+                <div className="createField">
+                  <label className="requiredLabel">
+                    장비코드 <span className="required">*</span>
+                  </label>
+                  <input
+                    className="tableInput"
+                    value={form.eqCode}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange("eqCode", e.target.value)}
+                    placeholder="예: EQ001"
+                    maxLength={30}
+                  />
+                </div>
+
+                <div className="createField">
+                  <label>공정코드</label>
+                  <select
+                    className="tableInput"
+                    value={form.operCode}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange("operCode", e.target.value)}
+                  >
+                    <option value="">공정을 선택해주세요</option>
+                    {operationOptions.map((option) => (
+                      <option key={option.operCode} value={option.operCode}>
+                        {option.operCode} ({option.operNm})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="createField">
+                  <label>장비명</label>
+                  <input
+                    className="tableInput"
+                    value={form.eqNm}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange("eqNm", e.target.value)}
+                    placeholder="예: 프레스 1호기"
+                    maxLength={100}
+                  />
+                </div>
+
+                <div className="createField">
+                  <label>장비유형</label>
+                  <input
+                    className="tableInput"
+                    value={form.eqType}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange("eqType", e.target.value)}
+                    placeholder="예: 생산설비"
+                    maxLength={30}
+                  />
+                </div>
+
+                <div className="createField">
+                  <label>제조사</label>
+                  <input
+                    className="tableInput"
+                    value={form.manufacturer}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange("manufacturer", e.target.value)}
+                    placeholder="예: ABC하이테크"
+                    maxLength={50}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* 공정 코드 */}
-          <div className="detailField">
-            <label>공정코드</label>
-            <select 
-              className="tableInput" 
-              value={form.operCode} 
-              disabled={isSubmitting} 
-              onChange={(e) => handleChange("operCode", e.target.value)}
-            >
-              <option value="">공정을 선택해주세요</option>
-              {operationOptions.map((option) => (
-                <option key={option.operCode} value={option.operCode}>
-                  {option.operCode} ({option.operNm})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* 장비명 */}
-          <div className="detailField">
-            <label>장비명</label>
-            <input
-              className="tableInput"
-              value={form.eqNm}
-              disabled={isSubmitting}
-              onChange={(e) => handleChange("eqNm", e.target.value)}
-              placeholder="예: 프레스 1호기"
-              maxLength={100}
-            />
-          </div>
-
-          {/* 장비 유형 */}
-          <div className="detailField">
-            <label>장비유형</label>
-            <input
-              className="tableInput"
-              value={form.eqType}
-              disabled={isSubmitting}
-              onChange={(e) => handleChange("eqType", e.target.value)}
-              placeholder="예: 생산설비"
-              maxLength={30}
-            />
-          </div>
-
-          {/* 제조사 */}
-          <div className="detailField">
-            <label>제조사</label>
-            <input
-              className="tableInput"
-              value={form.manufacturer}
-              disabled={isSubmitting}
-              onChange={(e) => handleChange("manufacturer", e.target.value)}
-              placeholder="예: ABC하이테크"
-              maxLength={50}
-            />
-          </div>
-
-          {/* 버튼 영역 */}
-          <div className="pageFormFooter">
-            <button
-              type="button"
-              className="ghostButton"
-              onClick={handleCancel}
-              disabled={isSubmitting}
-            >
+          <div className="createFooter">
+            <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
               취소
             </button>
-            <button
-              type="submit"
-              className="primaryButton"
-              disabled={isSubmitting}
-            >
+            <button type="submit" className="primaryButton" disabled={isSubmitting}>
               {isSubmitting ? "등록 중..." : "등록"}
             </button>
           </div>
         </form>
-      </Panel>
+      </div>
     </section>
   );
 }

@@ -1,12 +1,11 @@
 import { useState, type SyntheticEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Panel } from "@components/card/Panel";
 import { AddressSearchInput } from "@/components/common/AddressSearchInput";
 import axios from "axios";
 
-import { 
-  BusinessPartnerApi, 
-  type BusinessPartnerCreateRequest 
+import {
+  BusinessPartnerApi,
+  type BusinessPartnerCreateRequest
 } from "@/api/sales/BusinessPartner";
 
 export function SalesBusinessPartnerCreatePage() {
@@ -50,7 +49,7 @@ export function SalesBusinessPartnerCreatePage() {
     return true;
   };
 
- // 제출 핸들러
+  // 제출 핸들러
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
 
@@ -85,119 +84,120 @@ export function SalesBusinessPartnerCreatePage() {
 
   return (
     <section className="screenStack">
-      <Panel title="신규 거래처 등록">
-        <form className="pageForm" onSubmit={handleSubmit}>
-          {/* 거래처 코드 */}
-          <div className="detailField">
-            <label className="requiredLabel">
-              거래처코드 <span className="required">*</span>
-            </label>
-            <input
-              className="tableInput"
-              value={form.bpCode}
-              disabled={isSubmitting}
-              onChange={(e) => handleChange("bpCode", e.target.value)}
-              placeholder="예: BP001"
-              maxLength={30}
-            />
-          </div>
+      <div className="createCard">
+        <div className="createHeader">
+          <h1 className="createTitle">신규 거래처 등록</h1>
+          <span className="createMeta">* 표시는 필수 입력 항목입니다</span>
+        </div>
 
-          {/* 거래처명 */}
-          <div className="detailField">
-            <label>거래처명</label>
-            <input
-              className="tableInput"
-              value={form.bpNm ?? ""}
-              disabled={isSubmitting}
-              onChange={(e) => handleChange("bpNm", e.target.value)}
-              placeholder="예: (주)한국헴프"
-              maxLength={100}
-            />
-          </div>
+        <form onSubmit={handleSubmit}>
+          <div className="createBody">
+            {/* 기본 정보 섹션 */}
+            <div className="createSection">
+              <h2 className="createSectionTitle">기본정보</h2>
+              <div className="createGrid2Cols">
+                <div className="createField">
+                  <label className="requiredLabel">
+                    거래처코드 <span className="required">*</span>
+                  </label>
+                  <input
+                    className="tableInput"
+                    value={form.bpCode}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange("bpCode", e.target.value)}
+                    placeholder="예: BP001"
+                    maxLength={30}
+                  />
+                </div>
 
-          {/* 대표자명 */}
-          <div className="detailField">
-            <label>대표자명</label>
-            <input
-              className="tableInput"
-              value={form.ceoNm ?? ""}
-              disabled={isSubmitting}
-              onChange={(e) => handleChange("ceoNm", e.target.value)}
-              placeholder="예: 홍길동"
-              maxLength={50}
-            />
-          </div>
+                <div className="createField">
+                  <label>거래처명</label>
+                  <input
+                    className="tableInput"
+                    value={form.bpNm ?? ""}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange("bpNm", e.target.value)}
+                    placeholder="예: (주)한국헴프"
+                    maxLength={100}
+                  />
+                </div>
 
-          {/* 전화번호 */}
-          <div className="detailField">
-            <label>전화번호</label>
-            <input
-              className="tableInput"
-              value={form.phone ?? ""}
-              disabled={isSubmitting}
-              onChange={(e) => handleChange("phone", e.target.value)}
-              placeholder="예: 02-1234-5678"
-              maxLength={30}
-            />
-          </div>
+                <div className="createField">
+                  <label>대표자명</label>
+                  <input
+                    className="tableInput"
+                    value={form.ceoNm ?? ""}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange("ceoNm", e.target.value)}
+                    placeholder="예: 홍길동"
+                    maxLength={50}
+                  />
+                </div>
 
-          {/* 주소 (공통 컴포넌트 적용) */}
-          <div className="detailField">
-            <label>주소</label>
-            <AddressSearchInput
-              value={form.address ?? ""}
-              onChange={(val) => handleChange("address", val)}
-              disabled={isSubmitting}
-              placeholder="주소 검색 버튼을 클릭하세요"
-            />
-          </div>
+                <div className="createField">
+                  <label>전화번호</label>
+                  <input
+                    className="tableInput"
+                    value={form.phone ?? ""}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange("phone", e.target.value)}
+                    placeholder="예: 02-1234-5678"
+                    maxLength={30}
+                  />
+                </div>
 
-          {/* 담당자명 */}
-          <div className="detailField">
-            <label>담당자명</label>
-            <input
-              className="tableInput"
-              value={form.managerNm ?? ""}
-              disabled={isSubmitting}
-              onChange={(e) => handleChange("managerNm", e.target.value)}
-              placeholder="예: 김담당"
-              maxLength={50}
-            />
-          </div>
+                <div className="createField fullWidth">
+                  <label>주소</label>
+                  <AddressSearchInput
+                    value={form.address ?? ""}
+                    onChange={(val) => handleChange("address", val)}
+                    disabled={isSubmitting}
+                    placeholder="주소 검색 버튼을 클릭하세요"
+                  />
+                </div>
+              </div>
+            </div>
 
-          {/* 담당자 연락처 */}
-          <div className="detailField">
-            <label>담당자 연락처</label>
-            <input
-              className="tableInput"
-              value={form.managerPhone ?? ""}
-              disabled={isSubmitting}
-              onChange={(e) => handleChange("managerPhone", e.target.value)}
-              placeholder="예: 010-1234-5678"
-              maxLength={30}
-            />
-          </div>
+            <div className="createSection">
+              <h2 className="createSectionTitle">담당자 정보</h2>
+              <div className="createGrid2Cols">
+                <div className="createField">
+                  <label>담당자명</label>
+                  <input
+                    className="tableInput"
+                    value={form.managerNm ?? ""}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange("managerNm", e.target.value)}
+                    placeholder="예: 김담당"
+                    maxLength={50}
+                  />
+                </div>
 
-          {/* 버튼 영역 */}
-          <div className="pageFormFooter">
-            <button
-              type="button"
-              className="ghostButton"
-              onClick={handleCancel}
-              disabled={isSubmitting}
-            >
-              취소
-            </button>
-            <button
-              type="submit"
-              className="primaryButton"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "등록 중..." : "등록"}
-            </button>
+                <div className="createField">
+                  <label>담당자 연락처</label>
+                  <input
+                    className="tableInput"
+                    value={form.managerPhone ?? ""}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange("managerPhone", e.target.value)}
+                    placeholder="예: 010-1234-5678"
+                    maxLength={30}
+                  />
+                </div>
+            </div>
           </div>
-        </form>
-      </Panel>
-    </section>
+      </div>
+
+      <div className="createFooter">
+        <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
+          취소
+        </button>
+        <button type="submit" className="primaryButton" disabled={isSubmitting}>
+          {isSubmitting ? "등록 중..." : "등록"}
+        </button>
+      </div>
+    </form>
+      </div >
+    </section >
   );
 }

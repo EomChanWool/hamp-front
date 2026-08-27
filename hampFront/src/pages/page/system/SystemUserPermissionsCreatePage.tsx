@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo, useCallback, type SyntheticEvent } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Panel } from "@components/card/Panel";
 import axios from "axios";
 import { ChevronRightIcon, ExclamationTriangleIcon, CheckIcon } from "@heroicons/react/16/solid";
 import type { MenuResponse } from "@/api/Menu";
@@ -263,134 +262,136 @@ export function SystemUserPermissionsCreatePage() {
                 </div>
             )}
 
-            <Panel title="신규 권한 그룹 등록">
-                <form className="pageForm" onSubmit={handleSubmit}>
+            <div className="createCard">
+                <div className="createHeader">
+                    <h1 className="createTitle">신규 권한 그룹 등록</h1>
+                    <span className="createMeta">* 표시는 필수 입력 항목입니다</span>
+                </div>
 
-                    {/* 1. 상단 기본 정보 입력 영역 */}
-                    <div className="detailField">
-                        <label className="requiredLabel">
-                            권한 그룹 ID <span className="required">*</span>
-                        </label>
-                        <input
-                            className="tableInput"
-                            value={form.authId}
-                            disabled={isSubmitting}
-                            onChange={(e) => handleFormChange("authId", e.target.value)}
-                            placeholder="예: ADMIN"
-                        />
-                    </div>
+                <form onSubmit={handleSubmit}>
+                    <div className="createBody">
+                        {/* 1. 기본 정보 섹션 */}
+                        <div className="createSection">
+                            <h2 className="createSectionTitle">기본정보</h2>
+                            <div className="createGrid2Cols">
+                                <div className="createField">
+                                    <label className="requiredLabel">
+                                        권한 그룹 ID <span className="required">*</span>
+                                    </label>
+                                    <input
+                                        className="tableInput"
+                                        value={form.authId}
+                                        disabled={isSubmitting}
+                                        onChange={(e) => handleFormChange("authId", e.target.value)}
+                                        placeholder="예: ADMIN"
+                                    />
+                                </div>
 
-                    <div className="detailField">
-                        <label className="requiredLabel">
-                            권한 그룹명 <span className="required">*</span>
-                        </label>
-                        <input
-                            className="tableInput"
-                            value={form.authNm}
-                            disabled={isSubmitting}
-                            onChange={(e) => handleFormChange("authNm", e.target.value)}
-                            placeholder="예: 시스템 관리자"
-                        />
-                    </div>
+                                <div className="createField">
+                                    <label className="requiredLabel">
+                                        권한 그룹명 <span className="required">*</span>
+                                    </label>
+                                    <input
+                                        className="tableInput"
+                                        value={form.authNm}
+                                        disabled={isSubmitting}
+                                        onChange={(e) => handleFormChange("authNm", e.target.value)}
+                                        placeholder="예: 시스템 관리자"
+                                    />
+                                </div>
 
-                    <div className="detailField" style={{ gridColumn: "1 / -1" }}>
-                        <label>설명</label>
-                        <textarea
-                            className="tableInput"
-                            rows={3}
-                            value={form.authDesc}
-                            disabled={isSubmitting}
-                            onChange={(e) => handleFormChange("authDesc", e.target.value)}
-                            placeholder="권한 그룹에 대한 설명 입력"
-                        />
-                    </div>
+                                <div className="createField fullWidth">
+                                    <label>설명</label>
+                                    <textarea
+                                        className="tableInput"
+                                        rows={3}
+                                        value={form.authDesc}
+                                        disabled={isSubmitting}
+                                        onChange={(e) => handleFormChange("authDesc", e.target.value)}
+                                        placeholder="권한 그룹에 대한 설명 입력"
+                                    />
+                                </div>
+                            </div>
+                        </div>
 
-                    {/* 2. 하단 메뉴별 권한 설정 영역 */}
-                    <div className="detailField permMatrixField" style={{ gridColumn: "1 / -1", marginTop: "12px" }}>
-                        <label className="requiredLabel" style={{ display: "block", marginBottom: "8px" }}>
-                            메뉴별 권한 설정
-                        </label>
-                        {isLoadingMenus ? (
-                            <div className="authGroupEmpty">메뉴 구조 로딩 중...</div>
-                        ) : (
-                            <div className="permissionBoard" style={{ padding: 0, background: "transparent" }}>
-                                <div className="permMatrixPanel" style={{ marginTop: "0" }}>
-                                    <div className="permMatrixBody">
-                                        {/* 좌측 대메뉴 세로 탭 */}
-                                        <nav className="permMenuNav" aria-label="대메뉴">
-                                            {menus.map((topMenu) => {
-                                                const isActive = topMenu.menuId === activeTopMenuId;
-                                                return (
-                                                    <button
-                                                        key={topMenu.menuId}
-                                                        type="button"
-                                                        className={`permMenuNavItem ${isActive ? "active" : ""}`}
-                                                        onClick={() => setActiveTopMenuId(topMenu.menuId)}
-                                                    >
-                                                        <span className="permMenuNavLabel">{topMenu.menuNm}</span>
-                                                        {topMenu.children && topMenu.children.length > 0 && (
-                                                            <span className="permMenuNavCount">{topMenu.children.length}</span>
-                                                        )}
-                                                        <ChevronRightIcon className="permMenuNavArrow" />
-                                                    </button>
-                                                );
-                                            })}
-                                        </nav>
+                        {/* 2. 메뉴별 권한 설정 섹션 */}
+                        <div className="createSection">
+                            <h2 className="createSectionTitle">
+                                메뉴별 권한 설정 <span className="required">*</span>
+                            </h2>
 
-                                        {/* 우측 서브메뉴 매트릭스 */}
-                                        <div className="permMenuDetail">
-                                            {!activeTopMenu ? (
-                                                <div className="permDetailEmpty">좌측에서 메뉴를 선택하세요.</div>
-                                            ) : (
-                                                <>
-                                                    {/* 컬럼 라벨만 표시 — 열 단위 일괄 토글은 제공하지 않음 */}
-                                                    <div className="permMatrixHeader">
-                                                        <span className="permMatrixHeaderLabel">{activeTopMenu.menuNm}</span>
-                                                        <div className="permCheckGroup">
-                                                            {PERMISSIONS.map((p) => (
-                                                                <div key={p.key} className="permCheckCell permCheckCellHeader">
-                                                                    <span>{p.label}</span>
-                                                                </div>
-                                                            ))}
+                            {isLoadingMenus ? (
+                                <div className="authGroupEmpty">메뉴 구조 로딩 중...</div>
+                            ) : (
+                                <div className="permissionBoard" style={{ padding: 0, background: "transparent" }}>
+                                    <div className="permMatrixPanel" style={{ marginTop: "0" }}>
+                                        <div className="permMatrixBody">
+                                            {/* 좌측 대메뉴 세로 탭 */}
+                                            <nav className="permMenuNav" aria-label="대메뉴">
+                                                {menus.map((topMenu) => {
+                                                    const isActive = topMenu.menuId === activeTopMenuId;
+                                                    return (
+                                                        <button
+                                                            key={topMenu.menuId}
+                                                            type="button"
+                                                            className={`permMenuNavItem ${isActive ? "active" : ""}`}
+                                                            onClick={() => setActiveTopMenuId(topMenu.menuId)}
+                                                        >
+                                                            <span className="permMenuNavLabel">{topMenu.menuNm}</span>
+                                                            {topMenu.children && topMenu.children.length > 0 && (
+                                                                <span className="permMenuNavCount">{topMenu.children.length}</span>
+                                                            )}
+                                                            <ChevronRightIcon className="permMenuNavArrow" />
+                                                        </button>
+                                                    );
+                                                })}
+                                            </nav>
+
+                                            {/* 우측 서브메뉴 매트릭스 */}
+                                            <div className="permMenuDetail">
+                                                {!activeTopMenu ? (
+                                                    <div className="permDetailEmpty">좌측에서 메뉴를 선택하세요.</div>
+                                                ) : (
+                                                    <>
+                                                        {/* 컬럼 라벨만 표시 — 열 단위 일괄 토글은 제공하지 않음 */}
+                                                        <div className="permMatrixHeader">
+                                                            <span className="permMatrixHeaderLabel">{activeTopMenu.menuNm}</span>
+                                                            <div className="permCheckGroup">
+                                                                {PERMISSIONS.map((p) => (
+                                                                    <div key={p.key} className="permCheckCell permCheckCellHeader">
+                                                                        <span>{p.label}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
                                                         </div>
-                                                    </div>
 
-                                                    <div className="permGroupListScroll">
-                                                        {activeTopMenu.children && activeTopMenu.children.length > 0 ? (
-                                                            renderSubTree(activeTopMenu.children, 1)
-                                                        ) : (
-                                                            <div className="permEmptyState">하위 메뉴가 없습니다.</div>
-                                                        )}
-                                                    </div>
-                                                </>
-                                            )}
+                                                        <div className="permGroupListScroll">
+                                                            {activeTopMenu.children && activeTopMenu.children.length > 0 ? (
+                                                                renderSubTree(activeTopMenu.children, 1)
+                                                            ) : (
+                                                                <div className="permEmptyState">하위 메뉴가 없습니다.</div>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
 
-                    {/* 하단 버튼 영역 */}
-                    <div className="pageFormFooter" style={{ gridColumn: "1 / -1" }}>
-                        <button
-                            type="button"
-                            className="ghostButton"
-                            onClick={handleCancel}
-                            disabled={isSubmitting}
-                        >
+                    <div className="createFooter">
+                        <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
                             취소
                         </button>
-                        <button
-                            type="submit"
-                            className="primaryButton"
-                            disabled={isSubmitting}
-                        >
+                        <button type="submit" className="primaryButton" disabled={isSubmitting}>
                             {isSubmitting ? "생성 중..." : "생성"}
                         </button>
                     </div>
                 </form>
-            </Panel>
+            </div>
         </section>
     );
 }
