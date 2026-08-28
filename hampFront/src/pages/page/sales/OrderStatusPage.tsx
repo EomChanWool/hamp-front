@@ -9,6 +9,7 @@ import Spinner from "@/components/common/Spinner";
 import { useTableSorting } from "@/hooks/useTableSorting";
 import { BusinessPartnerApi, type BusinessPartnerOptionResponse } from "@/api/sales/BusinessPartner";
 import { SalesOrderApi, type SalesOrderStatusLineResponse, type SalesOrderStatusGroupResponse } from "@/api/sales/SalesOrder";
+import { Badge } from "@/components/common/Badge";
 
 export function OrderStatusPage() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -244,20 +245,22 @@ export function OrderStatusPage() {
                     
                     if (pct === null || pct === undefined) {
                         return (
-                            <span style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                padding: '4px 10px',
-                                background: 'var(--border)',
-                                borderRadius: '12px',
-                                fontSize: '12px',
-                                color: 'var(--text-muted)',
-                                fontWeight: 500
-                            }}>
-                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#64748b' }} />
-                                실적 미연동
-                            </span>
+                            <Badge tone="muted">
+                                <span style={{ 
+                                    display: 'inline-flex', 
+                                    alignItems: 'center', 
+                                    gap: '6px' 
+                                }}>
+                                    <span style={{ 
+                                        width: '6px', 
+                                        height: '6px', 
+                                        borderRadius: '50%', 
+                                        background: '#64748b',
+                                        flexShrink: 0 
+                                    }} />
+                                    실적 미연동
+                                </span>
+                            </Badge>
                         );
                     }
 
@@ -310,6 +313,7 @@ export function OrderStatusPage() {
                     <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
                         기준을 선택하면 해당 기준으로 데이터를 합산해 진행률을 비교합니다.
                     </span>
+
                     <div style={{ display: 'flex', gap: '12px', fontSize: '12px' }}>
                         <span><span style={{ color: '#10b981', fontWeight: 'bold' }}>■</span> 90% 이상</span>
                         <span><span style={{ color: '#f59e0b', fontWeight: 'bold' }}>■</span> 50~89%</span>
@@ -317,21 +321,24 @@ export function OrderStatusPage() {
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+                {/* 세그먼트 버튼 스타일 적용된 탭 영역 */}
+                <div style={{ display: 'flex', background: 'var(--border)', padding: '3px', borderRadius: '8px', gap: '4px', marginBottom: '20px', width: 'fit-content' }}>
                     {(['item', 'bp', 'order'] as const).map((tab) => (
                         <button
                             key={tab}
                             type="button"
                             onClick={() => setGroupTab(tab)}
                             style={{
-                                padding: '6px 14px',
+                                padding: '8px 16px',
                                 borderRadius: '6px',
-                                border: '1px solid var(--border)',
-                                background: groupTab === tab ? 'var(--primary, #3b82f6)' : 'var(--bg-card)',
-                                color: groupTab === tab ? '#fff' : 'var(--text-main)',
+                                border: 'none',
+                                background: groupTab === tab ? 'var(--bg-card, #fff)' : 'transparent',
+                                color: groupTab === tab ? 'var(--text-main)' : 'var(--text-muted)',
+                                boxShadow: groupTab === tab ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
                                 cursor: 'pointer',
                                 fontSize: '13px',
-                                fontWeight: 500,
+                                fontWeight: groupTab === tab ? 600 : 500,
+                                transition: 'all 0.2s ease',
                             }}
                         >
                             {tab === 'item' ? '품목별' : tab === 'bp' ? '거래처별' : '수주별'}
