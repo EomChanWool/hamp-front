@@ -5,12 +5,25 @@ import { formatDateTime } from "@/utils/common";
 import axios from "axios";
 import type { UserDetailResponse, UserUpdateRequest } from "@/api/User";
 import type { AuthGroupResponse } from "@/api/auth/Auth";
+import type { MenuPermissionResponse } from "@/api/Menu";
 import Spinner from "@/components/common/Spinner";
 import { UserApi } from "@/api/User";
 import { AuthGroupApi } from "@/api/auth/Auth";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
 import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import "./SystemUser.css";
+
+// 소메뉴 옆에 표시할 CRUD 권한 필드 정의
+const PERMISSION_FIELDS: {
+  key: "create" | "read" | "update" | "delete" | "approve";
+  label: string;
+}[] = [
+    { key: "read", label: "조회" },
+    { key: "create", label: "등록" },
+    { key: "update", label: "수정" },
+    { key: "delete", label: "삭제" },
+    { key: "approve", label: "승인" },
+  ];
 
 export function SystemUserDetailPage() {
   const { userId } = useParams<{ userId: string }>();
@@ -27,7 +40,7 @@ export function SystemUserDetailPage() {
 
   const [isEditing, setIsEditing] = useState(false);
 
-  // 각 권한 그룹별 소메뉴 전체 접힘/펼침 상태 (authId 기준)
+  // 각 권한 그룹별 접힘/펼침 상태 (authId 기준, 기본값 true = 요약 상태)
   const [collapsedMap, setCollapsedMap] = useState<Record<string, boolean>>({});
 
   const [form, setForm] = useState<Record<string, string>>({
@@ -191,10 +204,10 @@ export function SystemUserDetailPage() {
     }
   };
 
-  // 권한 그룹별 전체 펼치기/접기 토글 함수
+  // 권한 그룹별 요약/전체보기 토글 함수
   const toggleCollapse = (authId: string) => {
     setCollapsedMap((prev) => {
-      const currentState = prev[authId] ?? true; // 기본값: 요약 상태(true = 소메뉴 숨김)
+      const currentState = prev[authId] ?? true;
       return {
         ...prev,
         [authId]: !currentState,
@@ -296,63 +309,59 @@ export function SystemUserDetailPage() {
         }
       >
         <div className="detailSection detailSection--full">
-          <label className={isEditing ? "requiredLabel" : undefined}>
+          <label className={isEditing ? "requiredLabel" : "sectionTitleUnderline"}>
             권한 그룹 {isEditing && <span className="required">*</span>}
           </label>
 
-         {isEditing ? (
-  isLoadingGroups ? (
-    <div className="authGroupEmpty">권한 그룹 목록을 불러오는 중...</div>
-  ) : authGroups.length === 0 ? (
-    <div className="authGroupEmpty">선택 가능한 권한 그룹이 없습니다.</div>
-  ) : (
-    <div className="authGroupList">
-      {authGroups.map((auth) => {
-        const isChecked = authIds?.includes(auth.authId) ?? false;
-        return (
-          <div
-            key={auth.authId}
-            className={`typeCardButton ${isChecked ? "active" : ""}`}
-            onClick={() => {
-              if (isBusy) return;
-              handleAuthCheck(auth.authId, !isChecked);
-            }}
-            style={{
-              cursor: isBusy ? "not-allowed" : "pointer",
-            }}
-          >
-            <div className="cardText main">{auth.authNm}</div>
-            {auth.authDesc && (
-              <div className="cardText sub">{auth.authDesc}</div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  )
+          {isEditing ? (
+            isLoadingGroups ? (
+              <div className="authGroupEmpty">권한 그룹 목록을 불러오는 중...</div>
+            ) : authGroups.length === 0 ? (
+              <div className="authGroupEmpty">선택 가능한 권한 그룹이 없습니다.</div>
+            ) : (
+              <div className="authGroupList">
+                {authGroups.map((auth) => {
+                  const isChecked = authIds?.includes(auth.authId) ?? false;
+                  return (
+                    <div
+                      key={auth.authId}
+                      className={`typeCardButton ${isChecked ? "active" : ""}`}
+                      onClick={() => {
+                        if (isBusy) return;
+                        handleAuthCheck(auth.authId, !isChecked);
+                      }}
+                      style={{
+                        cursor: isBusy ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      <div className="cardText main">{auth.authNm}</div>
+                      {auth.authDesc && (
+                        <div className="cardText sub">{auth.authDesc}</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )
           ) : (
             <div className="userAuthGroupDetails">
               {user.authGroups && user.authGroups.length > 0 ? (
                 user.authGroups.map((group) => {
-                  const rawMenus: any[] = group.menuPermissions || [];
-
-                  const permittedMenuIds = new Set(
-                    rawMenus
-                      .filter((m) => m.read === 1 || m.read === true)
-                      .map((m) => m.menuId)
-                  );
+                  const rawMenus: MenuPermissionResponse[] = group.menuPermissions || [];
 
                   const parentMenus = rawMenus.filter((m) => m.menuId % 100 === 0);
 
                   const processedParents = parentMenus
                     .map((parent) => {
+                      // 1. 하위 메뉴 중 READ(조회) 권한이 true인 항목만 필터링
                       const children = rawMenus.filter(
                         (m) =>
                           m.menuId > parent.menuId &&
                           m.menuId < parent.menuId + 100 &&
-                          (m.read === 1 || m.read === true)
+                          m.read === true
                       );
 
+                      // 2. READ 가능한 소메뉴가 하나라도 있는 경우에만 유효한 대메뉴로 반환
                       if (children.length > 0) {
                         return {
                           ...parent,
@@ -361,18 +370,20 @@ export function SystemUserDetailPage() {
                       }
                       return null;
                     })
-                    .filter(Boolean);
+                    .filter(Boolean) as (MenuPermissionResponse & {
+                      children: MenuPermissionResponse[];
+                    })[];
 
                   const totalCount = processedParents.reduce((acc, parent) => {
                     return acc + (parent.children?.length || 0);
                   }, 0);
 
-                  // true면 요약 상태(소메뉴 숨김), false면 전체 보기 상태(소메뉴 전부 노출)
+                  // true면 요약 상태 (알약 태그 표시), false면 전체 보기 상태 (상세 CRUD 닷 리스트)
                   const isCollapsed = collapsedMap[group.authId] ?? true;
 
                   return (
                     <div key={group.authId} className="authGroupCard">
-                      {/* 권한 그룹 카드 헤더 (상단 토글 버튼) */}
+                      {/* 권한 그룹 카드 헤더 */}
                       <div className="authGroupCardHeader">
                         <div className="authGroupCardHeaderLeft">
                           <h4 className="authGroupCardTitle">{group.authNm}</h4>
@@ -419,21 +430,50 @@ export function SystemUserDetailPage() {
                                   )}
                                 </div>
 
-                                {/* isCollapsed가 false(전체 보기)일 때만 하위 소메뉴 전체 노출, true(요약)면 아예 숨김 */}
-                                {!isCollapsed && (
-                                  <div className="categoryMenuTags" style={{ paddingTop: "8px" }}>
+                                {isCollapsed ? (
+                                  <div className="categoryMenuTags">
                                     {childMenus.length > 0 ? (
-                                      childMenus.map((node: any) => {
-                                        const hasPerm = permittedMenuIds.has(node.menuId);
-                                        return (
-                                          <span
-                                            key={node.menuId}
-                                            className={`menuItemTag ${!hasPerm ? "dimmed" : ""}`}
-                                          >
-                                            {node.menuNm}
-                                          </span>
-                                        );
-                                      })
+                                      childMenus.map((child) => (
+                                        <span key={child.menuId} className="menuItemTag">
+                                          {child.menuNm}
+                                        </span>
+                                      ))
+                                    ) : (
+                                      <span className="menuPermissionsEmpty">하위 메뉴 없음</span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="menuPermList">
+                                    {childMenus.length > 0 && (
+                                      <div className="menuPermHeader">
+                                        <span className="menuPermHeaderName" />
+                                        <div className="menuPermHeaderLabels">
+                                          {PERMISSION_FIELDS.map(({ key, label }) => (
+                                            <span key={key} className="permHeaderLabel" title={label}>
+                                              {label}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {childMenus.length > 0 ? (
+                                      childMenus.map((node) => (
+                                        <div key={node.menuId} className="menuPermRow">
+                                          <span className="menuPermName">{node.menuNm}</span>
+                                          <div className="menuPermDots">
+                                            {PERMISSION_FIELDS.map(({ key, label }) => (
+                                              <span
+                                                key={key}
+                                                className={`permDot ${
+                                                  node[key] ? "permDot--on" : "permDot--off"
+                                                }`}
+                                                title={label}
+                                              />
+                                            ))}
+                                          </div>
+                                        </div>
+                                      ))
                                     ) : (
                                       <span className="menuPermissionsEmpty">하위 메뉴 없음</span>
                                     )}

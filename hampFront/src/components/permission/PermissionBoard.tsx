@@ -363,7 +363,7 @@ export function PermissionBoard() {
         if (isDescDirty) parts.push("설명");
 
         if (parts.length === 0) return "변경사항 없음";
-        
+
         // 항목들을 합치고 맨 뒤에 "변경됨"을 붙입니다.
         return `${parts.join(" · ")} 변경됨`;
     }, [dirtyMenuCount, isDescDirty]);
@@ -398,7 +398,7 @@ export function PermissionBoard() {
 
     const selectionSummaryText =
         activeMenuSelectionSummary.total > 0
-            ? `권한 ${activeMenuSelectionSummary.selected}/${activeMenuSelectionSummary.total}개 선택됨`
+            ? `권한 ${activeMenuSelectionSummary.selected}/${activeMenuSelectionSummary.total}개 부여됨`
             : "하위 메뉴 없음";
 
     /* ── 하위 트리 렌더링 ── */
@@ -507,99 +507,106 @@ export function PermissionBoard() {
 
             {/* 대메뉴(좌측 세로 탭) + 서브메뉴(우측 상세) */}
             <div className="permMatrixPanel">
-                <div className="permMatrixToolbar">
-                    <div className="permSearchBox">
-                        <MagnifyingGlassIcon className="permSearchIcon" />
-                        <input
-                            type="text"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="메뉴 검색"
-                            aria-label="메뉴 검색"
-                        />
-                        {query && (
-                            <button type="button" className="permSearchClear" onClick={() => setQuery("")} aria-label="검색어 지우기">
-                                <XMarkIcon />
-                            </button>
-                        )}
-                    </div>
-                    {isEditing ? (
-                        <span className={`permDirtyBadge ${hasAnyChange ? "active" : ""}`}>
-                            <PenLineIcon />
-                            {changeSummaryText}
-                        </span>
-                    ) : (
-                        <span className="permDirtyBadge">{selectionSummaryText}</span>
-                    )}
-                    <div className="permBoardActions">
-                        {isEditing ? (
-                            <>
-                                <button type="button" className="ghostButton" onClick={handleCancelEdit} disabled={isSaving}>
-                                    취소
-                                </button>
-                                <button type="button" className="primaryButton" onClick={handleSave} disabled={isSaving || !hasAnyChange}>
-                                    {isSaving ? "저장 중..." : "저장"}
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <button type="button" className="primaryButton" onClick={handleStartEdit} disabled={!groupDetail}>
-                                    수정
-                                </button>
-                                <button
-                                    type="button"
-                                    className="dangerButton"
-                                    onClick={handleDelete}
-                                    disabled={!groupDetail || isDeleting}
-                                >
-                                    {isDeleting ? "삭제 중..." : "삭제"}
-                                </button>
-                            </>
-                        )}
-                    </div>
-                </div>
-
                 <div className="permMatrixBody">
-                    {/* 대메뉴 좌측 세로 탭 */}
+                    {/* 좌측: 검색창 + 대메뉴 세로 탭 */}
                     <nav className="permMenuNav" aria-label="대메뉴">
-                        {isLoading && menus.length === 0 ? (
-                            <div className="permNavSkeleton">
-                                {Array.from({ length: 6 }).map((_, i) => (
-                                    <div key={i} className="permNavSkeletonRow" />
-                                ))}
-                            </div>
-                        ) : visibleTopMenus.length === 0 ? (
-                            <p className="permNavEmpty">{isSearching ? "일치하는 메뉴 없음" : "메뉴 없음"}</p>
-                        ) : (
-                            visibleTopMenus.map((topMenu) => {
-                                const isActive = topMenu.menuId === activeTopMenuId;
-                                return (
-                                    <button
-                                        key={topMenu.menuId}
-                                        type="button"
-                                        className={`permMenuNavItem ${isActive ? "active" : ""}`}
-                                        onClick={() => handleTopMenuSelect(topMenu.menuId)}
-                                    >
-                                        <span className="permMenuNavLabel">{topMenu.menuNm}</span>
-                                        {topMenu.children && topMenu.children.length > 0 && (
-                                            <span className="permMenuNavCount">{topMenu.children.length}</span>
-                                        )}
-                                        <ChevronRightIcon className="permMenuNavArrow" />
-                                    </button>
-                                );
-                            })
-                        )}
+                        <div className="permNavSearchBox">
+                            <MagnifyingGlassIcon className="permSearchIcon" />
+                            <input
+                                type="text"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder="메뉴 검색"
+                                aria-label="메뉴 검색"
+                            />
+                            {query && (
+                                <button type="button" className="permSearchClear" onClick={() => setQuery("")} aria-label="검색어 지우기">
+                                    <XMarkIcon />
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="permNavList">
+                            {isLoading && menus.length === 0 ? (
+                                <div className="permNavSkeleton">
+                                    {Array.from({ length: 6 }).map((_, i) => (
+                                        <div key={i} className="permNavSkeletonRow" />
+                                    ))}
+                                </div>
+                            ) : visibleTopMenus.length === 0 ? (
+                                <p className="permNavEmpty">{isSearching ? "일치하는 메뉴 없음" : "메뉴 없음"}</p>
+                            ) : (
+                                visibleTopMenus.map((topMenu) => {
+                                    const isActive = topMenu.menuId === activeTopMenuId;
+                                    return (
+                                        <button
+                                            key={topMenu.menuId}
+                                            type="button"
+                                            className={`permMenuNavItem ${isActive ? "active" : ""}`}
+                                            onClick={() => handleTopMenuSelect(topMenu.menuId)}
+                                        >
+                                            <span className="permMenuNavLabel">{topMenu.menuNm}</span>
+                                            {topMenu.children && topMenu.children.length > 0 && (
+                                                <span className="permMenuNavCount">{topMenu.children.length}</span>
+                                            )}
+                                            <ChevronRightIcon className="permMenuNavArrow" />
+                                        </button>
+                                    );
+                                })
+                            )}
+                        </div>
                     </nav>
 
-                    {/* 선택된 대메뉴의 서브메뉴 매트릭스 */}
+                    {/* 우측: 선택된 대메뉴의 서브메뉴 매트릭스 */}
                     <div className="permMenuDetail">
                         {!activeTopMenu ? (
                             <div className="permDetailEmpty">좌측에서 메뉴를 선택하세요.</div>
                         ) : (
                             <>
-                                {/* 컬럼 라벨만 표시 — 열 단위 일괄 토글은 제공하지 않음 */}
+                                {/* 1단: 제목 + 변경사항/선택 요약 뱃지 + 액션 버튼 */}
+                                <div className="permDetailHeader">
+                                    <div className="permDetailHeaderLeft">
+                                        <span className="permDetailTitle">{activeTopMenu.menuNm}</span>
+                                        {isEditing ? (
+                                            <span className={`permDirtyBadge ${hasAnyChange ? "active" : ""}`}>
+                                                <PenLineIcon />
+                                                {changeSummaryText}
+                                            </span>
+                                        ) : (
+                                            <span className="permDirtyBadge">{selectionSummaryText}</span>
+                                        )}
+                                    </div>
+                                    <div className="permBoardActions">
+                                        {isEditing ? (
+                                            <>
+                                                <button type="button" className="ghostButton" onClick={handleCancelEdit} disabled={isSaving}>
+                                                    취소
+                                                </button>
+                                                <button type="button" className="primaryButton" onClick={handleSave} disabled={isSaving || !hasAnyChange}>
+                                                    {isSaving ? "저장 중..." : "저장"}
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button type="button" className="primaryButton" onClick={handleStartEdit} disabled={!groupDetail}>
+                                                    수정
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="dangerButton"
+                                                    onClick={handleDelete}
+                                                    disabled={!groupDetail || isDeleting}
+                                                >
+                                                    {isDeleting ? "삭제 중..." : "삭제"}
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* 2단: 컬럼 라벨 (메뉴명 / 조회 / 등록 / 수정 / 삭제 / 승인) */}
                                 <div className="permMatrixHeader">
-                                    <span className="permMatrixHeaderLabel">{activeTopMenu.menuNm}</span>
+                                    <span className="permMatrixHeaderLabel">메뉴명</span>
                                     <div className="permCheckGroup">
                                         {PERMISSIONS.map((p) => (
                                             <div key={p.key} className="permCheckCell permCheckCellHeader">

@@ -1,5 +1,5 @@
 import { apiClient } from '@/api/apiClient';
-import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
+import type { ApiResponse, ApiResponsePage, AttachmentResponse, PageResponse } from '@/api/Common';
 
 /** 종류 (0: 정지, 1: 작동, 2: 고장) */
 export type StatusType = 0 | 1 | 2;
@@ -62,6 +62,7 @@ export interface FacilityDetailRespons {
     useYn: boolean;
     createdAt: string;
     updatedAt: string;
+    attachments: AttachmentResponse[];
 }
 
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────

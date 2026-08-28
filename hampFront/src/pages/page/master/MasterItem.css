@@ -383,3 +383,151 @@
 /* 삭제 버튼 */
 .routing-delete-btn { width: 100%; padding: 10px; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
 .routing-delete-btn:hover:not(:disabled) { background: #fecaca; }
+
+
+/* ========================================================
+   공정 라우팅 설정 영역 (다크모드)
+======================================================== */
+
+[data-theme="dark"] .routing-header-label {
+  color: var(--text-heading);
+}
+
+[data-theme="dark"] .routing-count-text {
+  color: var(--text-body);
+}
+
+[data-theme="dark"] .routing-guide-text {
+  color: var(--text-muted);
+}
+
+/* 좌측: 공정 리스트 박스 */
+[data-theme="dark"] .routing-list-container {
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+}
+
+/* 개별 아이템 (드래그 앤 드롭) */
+[data-theme="dark"] .routing-list-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+
+[data-theme="dark"] .routing-list-item.is-drag-over {
+  background: var(--primary-light);
+  border: 2px dashed #57d3a1;
+}
+
+[data-theme="dark"] .routing-list-item.is-selected {
+  background: var(--primary-light);
+  border: 2px solid #57d3a1;
+}
+
+[data-theme="dark"] .routing-drag-handle {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .routing-seq {
+  color: var(--text-body);
+}
+
+[data-theme="dark"] .routing-oper-nm {
+  color: var(--text-main);
+}
+
+/* 공정 타입 배지 (일반/최종) */
+[data-theme="dark"] .routing-type-badge {
+  background: #252a36;
+  color: var(--text-body);
+  border: 1px solid var(--border);
+}
+
+[data-theme="dark"] .routing-type-badge.is-final {
+  background: var(--primary-light);
+  color: #57d3a1;
+  border-color: rgba(87, 211, 161, 0.25);
+}
+
+/* 이동 화살표 버튼 */
+[data-theme="dark"] .routing-arrow-btn:hover:not(:disabled) {
+  background-color: #1e2130;
+}
+
+[data-theme="dark"] .routing-arrow-icon {
+  color: var(--text-muted);
+}
+
+/* 우측: 상세 편집 패널 */
+[data-theme="dark"] .routing-detail-panel {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  box-shadow: var(--shadow);
+}
+
+[data-theme="dark"] .routing-empty-panel {
+  color: var(--text-muted);
+}
+
+/* 상세 패널 내부 UI */
+[data-theme="dark"] .routing-step-card {
+  background: var(--primary-light);
+  border: 1px solid rgba(87, 211, 161, 0.25);
+}
+
+[data-theme="dark"] .routing-step-badge {
+  background: #57d3a1;
+  color: #dbeafe;
+}
+
+[data-theme="dark"] .routing-step-info-nm {
+  color: #57d3a1;
+}
+
+[data-theme="dark"] .routing-step-info-code {
+  color: #93c5fd;
+}
+
+/* 빠른 이동 버튼 그룹 (miniButton 스타일 계승) */
+[data-theme="dark"] .routing-move-btn {
+  background: #252a36;
+  border: 1px solid #3a4150;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .routing-move-btn:hover:not(:disabled) {
+  background: #303848;
+}
+
+/* 폼 요소 (기존 input/select 규칙과 동기화) */
+[data-theme="dark"] .routing-label {
+  color: var(--text-heading);
+}
+
+[data-theme="dark"] .routing-input-readonly {
+  background-color: var(--bg-subtle);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .routing-select {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+  color: var(--text-main);
+}
+
+[data-theme="dark"] .routing-select:focus {
+  border-color: #57d3a1;
+  box-shadow: 0 0 0 3px rgba(87, 211, 161, 0.15);
+}
+
+/* 삭제 버튼 (기존 miniButton.danger 스타일 계승) */
+[data-theme="dark"] .routing-delete-btn {
+  background: #451a1a;
+  border: 1px solid #7f1d1d;
+  color: #fca5a5;
+}
+
+[data-theme="dark"] .routing-delete-btn:hover:not(:disabled) {
+  background: #7f1d1d;
+  color: white;
+}

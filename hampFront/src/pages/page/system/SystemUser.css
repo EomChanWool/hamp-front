@@ -10,15 +10,11 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
   gap: 12px; 
-
   max-height: 220px;
   overflow-y: auto;
-
   padding: 16px; 
-
   border: 1px solid var(--border);
   border-radius: 10px; 
-
   background: var(--bg-subtle);
 }
 
@@ -32,10 +28,7 @@
   background: var(--bg-card); 
   cursor: pointer;
   user-select: none;
-
-  transition:
-    background .15s,
-    border-color .15s;
+  transition: background .15s, border-color .15s;
 }
 
 .authGroupItem:hover {
@@ -96,12 +89,9 @@
 .authGroupEmpty {
   padding: 18px; 
   border-radius: 8px;
-
   border: 1px dashed var(--border);
-
   color: var(--text-muted);
   font-size: 15px; 
-
   background: var(--bg-subtle);
   text-align: center;
 }
@@ -244,25 +234,109 @@
   border-radius: 4px;
 }
 
-/* 메뉴 배지 리스트 (알약 형태의 세부 메뉴 태그) */
+/* ================================
+   MENU BADGE LIST (요약 모드용 알약 형태 태그)
+================================ */
 .categoryMenuTags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
+  padding-top: 4px;
 }
 
 .menuItemTag {
   background: var(--bg-card, #fff);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 5px 10px;
-  font-size: 13px;
+  padding: 4px 8px;
+  font-size: 14px;
   color: var(--text-body);
   font-weight: 500;
   display: inline-flex;
   align-items: center;
 }
 
-.menuItemTag.dimmed {
-  opacity: 0.6;
+
+/* ================================
+   MENU PERMISSION LIST (CRUD 도트)
+================================ */
+
+/* 카드 내부에 들어간 CRUD 라벨 헤더와 소메뉴 행의 가로 폭과 간격을 완벽히 동기화 */
+.menuPermHeader,
+.menuPermRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.menuPermHeader {
+  padding: 0 4px 6px 4px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border); /* 항목 구분을 위한 깔끔한 하단선 */
+}
+
+.menuPermRow {
+  padding: 6px 4px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.menuPermRow:hover {
+  background: var(--bg-card, #fff);
+}
+
+/* 이름 영역은 남은 공간을 모두 차지하도록 설정하여 닷 위치를 오른쪽으로 밀어 고정 */
+.menuPermHeaderName,
+.menuPermName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menuPermName {
+  font-size: 13px;
+  color: var(--text-body);
+}
+
+/* 상단 라벨들과 하단 점(Dot)들의 가로 폭과 칸을 동일한 그리드로 강제 일치시킴 */
+.menuPermHeaderLabels,
+.menuPermDots {
+  display: grid;
+  grid-template-columns: repeat(5, 45px); /* 5개 칸의 너비를 동일하게 고정 */
+  justify-items: center;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.permHeaderLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.menuPermList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 4px;
+}
+
+.permDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  cursor: default;
+}
+
+.permDot--on {
+  background: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+}
+
+.permDot--off {
+  background: #e2e8f0;
 }

@@ -41,5 +41,16 @@ export interface PageResponse<T> {
   empty: boolean;
 }
 
+/** 파일업로드 공통 응답 구조 */
+export interface AttachmentResponse {
+  attachmentId: number;
+  refType: string;
+  refCode: string;
+  originalName: string;
+  contentType: string;
+  fileSize: number;
+  createdAt: string;
+}
+
 /** 공통 페이지네이션 API 최종 응답 타입 */
 export type ApiResponsePage<T> = ApiResponse<PageResponse<T>>;
