@@ -197,50 +197,13 @@
   overflow: hidden;
 }
 
-/* ── 툴바: 검색 + 변경사항 배지 ── */
-
-.permMatrixToolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-card);
-}
-
-.permSearchBox {
-  position: relative;
-  display: flex;
-  align-items: center;
-  flex: 0 1 280px;
-}
-
 .permSearchIcon {
   position: absolute;
-  left: 12px;
+  left: 30px;
   width: 16px;
   height: 16px;
   color: var(--text-muted);
   pointer-events: none;
-}
-
-.permSearchBox input {
-  width: 100%;
-  height: 42px;
-  padding: 0 34px 0 36px;
-  font-size: 15px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--bg-subtle);
-  color: var(--text-body);
-  outline: none;
-  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
-}
-
-.permSearchBox input:focus {
-  border-color: #17875f;
-  background: var(--bg-card);
 }
 
 .permSearchClear {
@@ -293,6 +256,36 @@
   border-color: rgba(224, 160, 48, 0.3);
 }
 
+/* ── [신규] 우측 상세 1단 헤더: 제목 + 뱃지(좌) / 액션 버튼(우) ── */
+
+.permDetailHeader {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+  flex-wrap: wrap;
+}
+
+.permDetailHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.permDetailTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-heading);
+  white-space: nowrap;
+}
+
 /* ── 본문: 좌측 대메뉴 탭 + 우측 서브메뉴 상세 ── */
 
 .permMatrixBody {
@@ -306,13 +299,52 @@
   flex: 0 0 var(--nav-col);
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 10px;
+  padding: 0;
   border-right: 1px solid var(--border);
   background: var(--bg-subtle);
-  max-height: min(580px, 60vh);
+}
+
+/* ── 좌측 검색창 (대메뉴 목록 위, 패널 안으로 이동) ── */
+
+.permNavSearchBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.permNavSearchBox input {
+  width: 100%;
+  height: 42px;
+  padding: 0 34px 0 36px;
+  font-size: 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-body);
+  outline: none;
+  transition: border-color 0.15s var(--ease);
+}
+
+.permNavSearchBox input:focus {
+  border-color: #17875f;
+}
+
+/* ── [신규] 좌측 대메뉴 목록 스크롤 영역 ── */
+
+.permNavList {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  max-height: min(560px, 60vh);
   overflow-y: auto;
 }
+
 
 .permMenuNavItem {
   display: flex;
@@ -676,6 +708,17 @@
     border-bottom: 1px solid var(--border);
   }
 
+   .permNavSearchBox {
+    display: none;
+  }
+
+  .permNavList {
+    flex-direction: row;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+
   .permMenuNavItem {
     flex-shrink: 0;
     width: auto;
@@ -684,7 +727,12 @@
   .permMenuNavLabel {
     white-space: nowrap;
   }
+
+  .permDetailHeader {
+    align-items: flex-start;
+  }
 }
+
 
 /* ── 다크모드 ── */
 
@@ -718,9 +766,9 @@
   background: #1e2130;
 }
 
-[data-theme="dark"] .permMatrixToolbar {
+/* [data-theme="dark"] .permMatrixToolbar {
   background: var(--bg-card);
-}
+} */
 
 [data-theme="dark"] .permSearchBox input {
   background: var(--bg-subtle);

@@ -326,25 +326,26 @@ export function SystemUserPermissionsCreatePage() {
                                 <div className="permissionBoard" style={{ padding: 0, background: "transparent" }}>
                                     <div className="permMatrixPanel" style={{ marginTop: "0" }}>
                                         <div className="permMatrixBody">
-                                            {/* 좌측 대메뉴 세로 탭 */}
                                             <nav className="permMenuNav" aria-label="대메뉴">
-                                                {menus.map((topMenu) => {
-                                                    const isActive = topMenu.menuId === activeTopMenuId;
-                                                    return (
-                                                        <button
-                                                            key={topMenu.menuId}
-                                                            type="button"
-                                                            className={`permMenuNavItem ${isActive ? "active" : ""}`}
-                                                            onClick={() => setActiveTopMenuId(topMenu.menuId)}
-                                                        >
-                                                            <span className="permMenuNavLabel">{topMenu.menuNm}</span>
-                                                            {topMenu.children && topMenu.children.length > 0 && (
-                                                                <span className="permMenuNavCount">{topMenu.children.length}</span>
-                                                            )}
-                                                            <ChevronRightIcon className="permMenuNavArrow" />
-                                                        </button>
-                                                    );
-                                                })}
+                                                <div className="permNavList">
+                                                    {menus.map((topMenu) => {
+                                                        const isActive = topMenu.menuId === activeTopMenuId;
+                                                        return (
+                                                            <button
+                                                                key={topMenu.menuId}
+                                                                type="button"
+                                                                className={`permMenuNavItem ${isActive ? "active" : ""}`}
+                                                                onClick={() => setActiveTopMenuId(topMenu.menuId)}
+                                                            >
+                                                                <span className="permMenuNavLabel">{topMenu.menuNm}</span>
+                                                                {topMenu.children && topMenu.children.length > 0 && (
+                                                                    <span className="permMenuNavCount">{topMenu.children.length}</span>
+                                                                )}
+                                                                <ChevronRightIcon className="permMenuNavArrow" />
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
                                             </nav>
 
                                             {/* 우측 서브메뉴 매트릭스 */}
