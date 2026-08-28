@@ -9,7 +9,7 @@ import type { StatusTone } from '@/types'
 
 type KpiItem = {
   label: string
-  value: string
+  value: React.ReactNode;
   tone: StatusTone
 }
 
