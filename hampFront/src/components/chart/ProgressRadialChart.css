@@ -1,0 +1,39 @@
+/* ProgressRadialChart 루트: 크기(--prc-size)만 컴포넌트에서 동적으로 주입 */
+.progressRadialChart {
+  width: var(--prc-size);
+  height: var(--prc-size);
+  position: relative;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 도넛 중앙에 겹쳐지는 텍스트 영역 */
+.progressRadialChart__labels {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 110%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+}
+
+.progressRadialChart__value {
+  font-size: var(--prc-value-font-size);
+  font-weight: 700;
+  color: var(--prc-value-color);
+  line-height: 1.2;
+}
+
+.progressRadialChart__label {
+  font-size: var(--prc-label-font-size);
+  font-weight: 500;
+  color: var(--prc-label-color);
+  margin-top: 1px;
+}

@@ -1,10 +1,10 @@
 import { useOrderChartData } from '@/hooks/useOrderChartData';
-import { OrderPerformanceDashboard } from '@pages/page/dashboard/OrderPerformanceDashboard'; 
+import { OrderPerformanceDashboard } from '@pages/page/dashboard/OrderPerformanceDashboard';
 import { useTableData } from '@/hooks/useTableData';
 import { mesScreens } from '@/data/mesScreens';
-import type { StatusTone } from '@/types';
-import { KpiGrid } from '@/components/kpi/KpiGrid';
+import { KpiGrid, type KpiItem } from '@/components/kpi/KpiGrid';
 import { ProgressRadialChart } from '@components/chart/ProgressRadialChart';
+import '@/components/kpi/KpiGrid.css';
 
 const DEF = mesScreens.orderManage;
 
@@ -12,28 +12,25 @@ export function OrderPerformancePage() {
   const { filteredRows } = useTableData(DEF.rows);
   const chartData = useOrderChartData(filteredRows);
 
-  const currentProgressPct = 76.4; 
+  const currentProgressPct = 76.4;
 
-  const orderStatusKpis: { label: string; value: React.ReactNode; tone: StatusTone }[] = [
-    { 
-      label: '', 
-      value: (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: '2px' }}>
-          {/* 차트 크기를 55로 줄여 다른 카드 높이와 완벽하게 평형을 맞춤 */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <ProgressRadialChart value={currentProgressPct} label="" size={55} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <span style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b' }}>
-              2,564 / 3,450 EA
-            </span>
-            <span style={{ fontSize: '10px', color: '#d97706', background: '#fef3c7', borderRadius: '4px', width: 'fit-content', fontWeight: 600 }}>
-              ● 8월 평균 진행중
-            </span>
+  const orderStatusKpis: KpiItem[] = [
+    {
+      // render 카드는 label을 화면에 그리지 않지만, KpiGrid에서 key로 사용하므로
+      // 다른 카드와 겹치지 않는 고유한 값을 넣어둔다.
+      label: '진행률',
+      value: null,
+      tone: 'warn',
+      render: (isDark) => (
+        <div className="customProgressKpiCard customProgressKpiCard--spread">
+          {/* 차트 크기를 55로 줄여 다른 카드 높이와 평형을 맞춤 */}
+          <ProgressRadialChart value={currentProgressPct} label="" size={55} isDark={isDark} />
+          <div className="customProgressKpiCard__text">
+            <span className="customProgressKpiCard__title">2,564 / 3,450 EA</span>
+            <span className="customProgressKpiCard__badge">● 8월 평균 진행중</span>
           </div>
         </div>
-      ), 
-      tone: 'warn' 
+      ),
     },
     { label: '총 주문수량', value: '1,850 EA', tone: 'danger' },
     { label: '총 생산수량', value: '1,414 EA', tone: 'warn' },

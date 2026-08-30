@@ -1,0 +1,49 @@
+/* render prop으로 그리는 "도넛차트 + 텍스트" 형태 KPI 카드 레이아웃 */
+.customProgressKpiCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 카드 폭을 꽉 채워서 차트-텍스트를 양 끝으로 배치하고 싶을 때 (예: 수치가 긴 경우) */
+.customProgressKpiCard--spread {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.customProgressKpiCard__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.customProgressKpiCard__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  line-height: 1.4;
+}
+
+/* 다크모드에서 수치 텍스트 색상 */
+[data-theme='dark'] .customProgressKpiCard__title {
+  color: #f8fafc;
+}
+
+.customProgressKpiCard__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #b45309;
+  background-color: #fef3c7;
+}
+
+/* 다크모드에서 배지 색상 */
+[data-theme='dark'] .customProgressKpiCard__badge {
+  color: #fcd34d;
+  background-color: rgba(245, 158, 11, 0.15);
+}
