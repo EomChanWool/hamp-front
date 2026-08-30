@@ -79,7 +79,7 @@
 
 .groupRow {
   display: grid;
-  grid-template-columns: 160px 1fr 140px;
+  grid-template-columns: 180px 1fr minmax(140px, auto);
   align-items: center;
   gap: 16px;
 }
@@ -134,6 +134,20 @@
   font-size: 13px;
 }
 
+/* 그룹 패널 로딩/에러 상태 — 목록 패널의 스피너 영역과 톤을 맞춤 */
+.groupStateBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.groupStateError {
+  color: #ef4444;
+}
+
 /* 진행률 색상 등급 (90%↑ / 50~89% / 50%↓) */
 .barHigh {
   background: #10b981;
@@ -157,7 +171,7 @@
   position: relative;
   width: 80px;
   height: 8px;
-  background: #e2e8f0;
+  background: var(--border);
   border-radius: 4px;
   overflow: hidden;
   flex-shrink: 0;
