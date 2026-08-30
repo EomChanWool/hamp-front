@@ -1,0 +1,195 @@
+/* ── 그룹별 생산 진행률 패널 ─────────────────────────────────────────────── */
+.summaryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: -15px;
+}
+
+.summaryDesc {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.legend {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legendDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.legendHigh {
+  background: #10b981;
+}
+.legendMid {
+  background: #f59e0b;
+}
+.legendLow {
+  background: #ef4444;
+}
+
+/* 세그먼트 탭 */
+.tabGroup {
+  display: flex;
+  background: var(--border);
+  padding: 3px;
+  border-radius: 8px;
+  gap: 4px;
+  margin-bottom: 20px;
+  width: fit-content;
+}
+
+.tabButton {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.tabButtonActive {
+  background: var(--bg-card, #fff);
+  color: var(--text-heading);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-weight: 600;
+}
+
+/* 그룹 행 — 이름 / 진행바 / 수량이 한 줄에 나란히 배치되는 3열 그리드 */
+.groupList {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.groupRow {
+  display: grid;
+  grid-template-columns: 160px 1fr 140px;
+  align-items: center;
+  gap: 16px;
+}
+
+.groupInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.groupName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-heading);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.groupCount {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.groupBarTrack {
+  width: 100%;
+  height: 10px;
+  background: var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.groupBarFill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.3s ease;
+}
+
+.groupNumbers {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-heading);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* 진행률 색상 등급 (90%↑ / 50~89% / 50%↓) */
+.barHigh {
+  background: #10b981;
+}
+.barMid {
+  background: #f59e0b;
+}
+.barLow {
+  background: #ef4444;
+}
+
+/* ── 수주현황 목록 테이블 내 진행률 셀 ──────────────────────────────────── */
+.progressCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.progressTrack {
+  position: relative;
+  width: 80px;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.progressFill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progressPct {
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 35px;
+  text-align: right;
+}
+
+/* 실적 미연동 배지 내부 */
+.noDataBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.noDataDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #64748b;
+  flex-shrink: 0;
+}
