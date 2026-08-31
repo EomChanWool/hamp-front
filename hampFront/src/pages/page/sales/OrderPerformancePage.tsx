@@ -4,13 +4,26 @@ import { useTableData } from '@/hooks/useTableData';
 import { mesScreens } from '@/data/mesScreens';
 import { KpiGrid, type KpiItem } from '@/components/kpi/KpiGrid';
 import { ProgressRadialChart } from '@components/chart/ProgressRadialChart';
+import { useState } from 'react';
 import '@/components/kpi/KpiGrid.css';
 
 const DEF = mesScreens.orderManage;
 
+// [추가] 상단 "월간 / 분기 / 연간" 탭 값 타입 및 목록.
+// "기간별 추이" 카드의 X축 단위(월/분기/연)를 이 값으로 결정함.
+type PeriodUnit = 'monthly' | 'quarterly' | 'yearly';
+
+const PERIOD_TABS: { key: PeriodUnit; label: string }[] = [
+  { key: 'monthly', label: '월간' },
+  { key: 'quarterly', label: '분기' },
+  { key: 'yearly', label: '연간' },
+];
+
 export function OrderPerformancePage() {
+  const [period, setPeriod] = useState<PeriodUnit>('yearly');
+
   const { filteredRows } = useTableData(DEF.rows);
-  const chartData = useOrderChartData(filteredRows);
+  const chartData = useOrderChartData(filteredRows, period);
 
   const currentProgressPct = 76.4;
 
@@ -40,6 +53,22 @@ export function OrderPerformancePage() {
   return (
     <section className="screenStack">
       <h2>수주 실적 현황</h2>
+
+      <div className="periodTabs" role="tablist" aria-label="집계 기간 선택">
+        {PERIOD_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            role="tab"
+            aria-selected={period === tab.key}
+            className={`periodTabs__item${period === tab.key ? ' periodTabs__item--active' : ''}`}
+            onClick={() => setPeriod(tab.key)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       <KpiGrid kpis={orderStatusKpis} />
       <OrderPerformanceDashboard data={chartData} />
     </section>

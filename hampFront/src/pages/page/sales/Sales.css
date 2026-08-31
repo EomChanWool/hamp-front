@@ -207,3 +207,25 @@
   background: #64748b;
   flex-shrink: 0;
 }
+
+.periodTabs {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--surface-muted);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+  .periodTabs__item {
+    padding: 6px 16px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .periodTabs__item--active {
+    background: var(--surface);
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
