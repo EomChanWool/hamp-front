@@ -37,7 +37,7 @@ export function OrderPerformancePage() {
       render: (isDark) => (
         <div className="customProgressKpiCard customProgressKpiCard--spread">
           {/* 차트 크기를 55로 줄여 다른 카드 높이와 평형을 맞춤 */}
-          <ProgressRadialChart value={currentProgressPct} label="" size={55} isDark={isDark} />
+          <ProgressRadialChart value={currentProgressPct} label="" size={110} isDark={isDark} />
           <div className="customProgressKpiCard__text">
             <span className="customProgressKpiCard__title">2,564 / 3,450 EA</span>
             <span className="customProgressKpiCard__badge">● 8월 평균 진행중</span>

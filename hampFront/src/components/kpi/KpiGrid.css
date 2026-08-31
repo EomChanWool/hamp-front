@@ -1,8 +1,11 @@
 /* render prop으로 그리는 "도넛차트 + 텍스트" 형태 KPI 카드 레이아웃 */
 .customProgressKpiCard {
+  min-height: 110px;
+  height: 100%; /* 부모 크기에 꽉 차게 설정 */
   display: flex;
   align-items: center;
   gap: 12px;
+  box-sizing: border-box; /
 }
 
 /* 카드 폭을 꽉 채워서 차트-텍스트를 양 끝으로 배치하고 싶을 때 (예: 수치가 긴 경우) */
