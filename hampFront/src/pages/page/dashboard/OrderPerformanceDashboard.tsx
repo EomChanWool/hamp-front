@@ -53,7 +53,7 @@ function TrendCard({ data }: { data: any }) {
       {/* TODO: series가 비어있을 때(rows 없음/훅 미적용) 빈 상태 UI 필요할지 검토.
           지금은 recharts가 빈 배열을 받으면 빈 차트 영역만 그림. */}
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={series} margin={{ top: 10, right: 60, left: 0, bottom: 0 }}>
+        <LineChart data={series} margin={{ top: 10, right: 80, left: 20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
           <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
           <YAxis
@@ -65,7 +65,7 @@ function TrendCard({ data }: { data: any }) {
             domain={[0, 100]}
           />
           <Tooltip formatter={(value: any) => [`${value}%`, ""]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-          <Legend verticalAlign="top" align="left" iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+          <Legend verticalAlign="top" align="left" iconType="circle" wrapperStyle={{ fontSize: 12, top: -5 }} />
           {seriesKeys.map((key, i) => (
             <Line
               key={key}
