@@ -490,8 +490,17 @@ button {
 
 .metricGrid {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 16px; 
+}
+
+/* 첫 번째 카드(인덱스 0, 차트 카드)를 제외한 나머지 카드들만 높이와 내부 정렬 맞춤 */
+.metricGrid > article:not(:first-child) {
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .metricCard,

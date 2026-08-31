@@ -10,6 +10,20 @@ import { useTableSorting } from "@/hooks/useTableSorting";
 import { BusinessPartnerApi, type BusinessPartnerOptionResponse } from "@/api/sales/BusinessPartner";
 import { SalesOrderApi, type SalesOrderStatusLineResponse, type SalesOrderStatusGroupResponse } from "@/api/sales/SalesOrder";
 import { Badge } from "@/components/common/Badge";
+import "./Sales.css";
+
+// 진행률 구간 임계값 — 로직(getProgressToneClass)과 범례 텍스트가 이 값을 함께 참조하므로
+// 기준이 바뀌면 여기 한 곳만 수정하면 됨
+const PROGRESS_HIGH_THRESHOLD = 90; // 이상: 초록
+const PROGRESS_MID_THRESHOLD = 50;  // 이상: 주황 (미만은 빨강)
+
+// 진행률 구간(90%↑ / 50~89% / 50%↓)에 따른 색상 클래스
+function getProgressToneClass(pct: number | null | undefined): "barHigh" | "barMid" | "barLow" {
+    const value = pct ?? 0;
+    if (value >= PROGRESS_HIGH_THRESHOLD) return "barHigh";
+    if (value >= PROGRESS_MID_THRESHOLD) return "barMid";
+    return "barLow";
+}
 
 export function OrderStatusPage() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -22,6 +36,10 @@ export function OrderStatusPage() {
     const [totalPages, setTotalPages] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [isReady, setIsReady] = useState(false);
+
+    // 그룹별 생산 진행률 패널 전용 로딩/에러 상태
+    const [isGroupLoading, setIsGroupLoading] = useState(false);
+    const [isGroupError, setIsGroupError] = useState(false);
 
     const [groupTab, setGroupTab] = useState<'item' | 'bp' | 'order'>('order');
 
@@ -145,6 +163,8 @@ export function OrderStatusPage() {
     // 그룹별 생산 진행률 조회 API
     const fetchStatusSummary = useCallback(async (currentGroupTab: 'item' | 'bp' | 'order') => {
         if (!isReady) return;
+        setIsGroupLoading(true);
+        setIsGroupError(false);
 
         try {
             const params: {
@@ -167,6 +187,10 @@ export function OrderStatusPage() {
             }
         } catch (error) {
             console.error('그룹별 생산 진행률 조회 실패:', error);
+            setIsGroupError(true);
+            setGroupData([]);
+        } finally {
+            setIsGroupLoading(false);
         }
     }, [isReady, queryOrderCode, queryBpCode, queryItemCode]);
 
@@ -209,7 +233,7 @@ export function OrderStatusPage() {
         setSearchParams({ page: "0" }, { replace: true });
     };
 
-    // 페이지 변경 (유지 필요)
+    // 페이지 변경
     const handlePageChange = (newPage: number) => {
         const nextParams = new URLSearchParams(searchParams);
         nextParams.set("page", String(newPage));
@@ -222,18 +246,18 @@ export function OrderStatusPage() {
             { accessorKey: 'orderCode', header: '수주코드' },
             { accessorKey: 'itemCode', header: '품목코드' },
             { accessorKey: 'itemNm', header: '품목명' },
-            { 
-                accessorKey: 'orderQty', 
+            {
+                accessorKey: 'orderQty',
                 header: '주문수량',
                 cell: ({ row }) => (row.original.orderQty ?? 0).toLocaleString()
             },
-            { 
-                accessorKey: 'orderAmount', 
+            {
+                accessorKey: 'orderAmount',
                 header: '주문금액',
                 cell: ({ row }) => (row.original.orderAmount ?? 0).toLocaleString()
             },
-            { 
-                accessorKey: 'producedQty', 
+            {
+                accessorKey: 'producedQty',
                 header: '생산량',
                 cell: ({ row }) => (row.original.producedQty ?? 0).toLocaleString()
             },
@@ -242,56 +266,36 @@ export function OrderStatusPage() {
                 header: '진행률',
                 cell: ({ row }) => {
                     const pct = row.original.progressRate;
-                    
+
                     if (pct === null || pct === undefined) {
                         return (
                             <Badge tone="muted">
-                                <span style={{ 
-                                    display: 'inline-flex', 
-                                    alignItems: 'center', 
-                                    gap: '6px' 
-                                }}>
-                                    <span style={{ 
-                                        width: '6px', 
-                                        height: '6px', 
-                                        borderRadius: '50%', 
-                                        background: '#64748b',
-                                        flexShrink: 0 
-                                    }} />
+                                <span className="noDataBadge">
+                                    <span className="noDataDot" />
                                     실적 미연동
                                 </span>
                             </Badge>
                         );
                     }
 
-                    const barColor = pct >= 90 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444';
+                    const toneClass = getProgressToneClass(pct);
                     const safePct = Math.min(Math.max(pct, 0), 100);
 
                     return (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
-                            <div style={{ 
-                                position: 'relative',
-                                width: '80px', 
-                                height: '8px', 
-                                background: '#e2e8f0', 
-                                borderRadius: '4px', 
-                                overflow: 'hidden', 
-                                flexShrink: 0 
-                            }}>
-                                <div style={{ 
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    bottom: 0,
-                                    width: `${safePct}%`, 
-                                    background: barColor, 
-                                    borderRadius: '4px',
-                                    transition: 'width 0.3s ease'
-                                }} />
+                        <div className="progressCell">
+                            <div
+                                className="progressTrack"
+                                role="progressbar"
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-valuenow={safePct}
+                            >
+                                <div
+                                    className={`progressFill ${toneClass}`}
+                                    style={{ width: `${safePct}%` }}
+                                />
                             </div>
-                            <span style={{ fontSize: '13px', fontWeight: 600, minWidth: '35px', textAlign: 'right' }}>
-                                {pct}%
-                            </span>
+                            <span className="progressPct">{pct}%</span>
                         </div>
                     );
                 },
@@ -309,75 +313,81 @@ export function OrderStatusPage() {
             />
 
             <Panel title="그룹별 생산 진행률">
-                <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                        기준을 선택하면 해당 기준으로 데이터를 합산해 진행률을 비교합니다.
+                <div className="summaryHeader">
+                    <span className="summaryDesc">
+                        기준을 선택하면 해당 기준으로 라인을 합산해 진행률을 비교합니다.
                     </span>
 
-                    <div style={{ display: 'flex', gap: '12px', fontSize: '12px' }}>
-                        <span><span style={{ color: '#10b981', fontWeight: 'bold' }}>■</span> 90% 이상</span>
-                        <span><span style={{ color: '#f59e0b', fontWeight: 'bold' }}>■</span> 50~89%</span>
-                        <span><span style={{ color: '#ef4444', fontWeight: 'bold' }}>■</span> 50% 미만</span>
+                    <div className="legend">
+                        <span className="legendItem"><span className="legendDot legendHigh" /> {PROGRESS_HIGH_THRESHOLD}% 이상</span>
+                        <span className="legendItem"><span className="legendDot legendMid" /> {PROGRESS_MID_THRESHOLD}~{PROGRESS_HIGH_THRESHOLD - 1}%</span>
+                        <span className="legendItem"><span className="legendDot legendLow" /> {PROGRESS_MID_THRESHOLD}% 미만</span>
                     </div>
                 </div>
 
-                {/* 세그먼트 버튼 스타일 적용된 탭 영역 */}
-                <div style={{ display: 'flex', background: 'var(--border)', padding: '3px', borderRadius: '8px', gap: '4px', marginBottom: '20px', width: 'fit-content' }}>
+                <div className="tabGroup" role="tablist" aria-label="그룹 집계 기준">
                     {(['item', 'bp', 'order'] as const).map((tab) => (
                         <button
                             key={tab}
                             type="button"
+                            role="tab"
+                            aria-selected={groupTab === tab}
                             onClick={() => setGroupTab(tab)}
-                            style={{
-                                padding: '8px 16px',
-                                borderRadius: '6px',
-                                border: 'none',
-                                background: groupTab === tab ? 'var(--bg-card, #fff)' : 'transparent',
-                                color: groupTab === tab ? 'var(--text-main)' : 'var(--text-muted)',
-                                boxShadow: groupTab === tab ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                                cursor: 'pointer',
-                                fontSize: '13px',
-                                fontWeight: groupTab === tab ? 600 : 500,
-                                transition: 'all 0.2s ease',
-                            }}
+                            className={`tabButton${groupTab === tab ? ' tabButtonActive' : ''}`}
                         >
-                            {tab === 'item' ? '품목별' : tab === 'bp' ? '거래처별' : '수주별'}
+                            {tab === 'item' ? '품목별' : tab === 'bp' ? '거래처별' : '수주번호별'}
                         </button>
                     ))}
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {groupData.map((item) => {
-                        const pct = item.progressRate ?? 0;
-                        const barColor = pct >= 90 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444';
-                        return (
-                            <div key={item.groupKey} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 600 }}>
-                                    <span>{item.groupLabel} <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 400 }}>({item.lineCount}건 합산)</span></span>
-                                    <span style={{ fontFamily: 'monospace' }}>
-                                        {(item.totalProducedQty ?? 0).toLocaleString()} / {(item.totalOrderQty ?? 0).toLocaleString()} ({pct}%)
-                                    </span>
-                                </div>
-                                <div style={{ width: '100%', height: '10px', background: 'var(--border)', borderRadius: '5px', overflow: 'hidden' }}>
+                {/* 그룹 행: 라벨(이름+건수) / 진행바 / 생산·주문수량 이 한 줄에 나란히 배치 */}
+                {isGroupLoading ? (
+                    <div className="groupStateBox">
+                        <Spinner />
+                    </div>
+                ) : isGroupError ? (
+                    <div className="groupStateBox groupStateError">
+                        그룹 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+                    </div>
+                ) : (
+                    <div className="groupList">
+                        {groupData.map((item) => {
+                            const pct = item.progressRate ?? 0;
+                            const toneClass = getProgressToneClass(pct);
+                            return (
+                                <div key={item.groupKey} className="groupRow">
+                                    <div className="groupInfo">
+                                        <span className="groupName">{item.groupLabel}</span>
+                                        <span className="groupCount">{item.lineCount}건 합산</span>
+                                    </div>
+
                                     <div
-                                        style={{
-                                            width: `${Math.min(pct, 100)}%`,
-                                            height: '100%',
-                                            background: barColor,
-                                            borderRadius: '5px',
-                                            transition: 'width 0.3s ease',
-                                        }}
-                                    />
+                                        className="groupBarTrack"
+                                        role="progressbar"
+                                        aria-valuemin={0}
+                                        aria-valuemax={100}
+                                        aria-valuenow={Math.min(pct, 100)}
+                                        aria-label={`${item.groupLabel} 생산 진행률`}
+                                    >
+                                        <div
+                                            className={`groupBarFill ${toneClass}`}
+                                            style={{ width: `${Math.min(pct, 100)}%` }}
+                                        />
+                                    </div>
+
+                                    <div className="groupNumbers">
+                                        {(item.totalProducedQty ?? 0).toLocaleString()} / {(item.totalOrderQty ?? 0).toLocaleString()}
+                                    </div>
                                 </div>
+                            );
+                        })}
+                        {groupData.length === 0 && (
+                            <div className="emptyState">
+                                조회된 그룹 데이터가 없습니다.
                             </div>
-                        );
-                    })}
-                    {groupData.length === 0 && (
-                        <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '13px' }}>
-                            조회된 그룹 데이터가 없습니다.
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
             </Panel>
 
             <Panel title="수주현황 목록">

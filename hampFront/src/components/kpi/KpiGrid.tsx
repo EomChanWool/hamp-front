@@ -11,6 +11,9 @@ type KpiItem = {
   label: string
   value: React.ReactNode;
   tone: StatusTone
+
+  // 기본 "아이콘 + label/value" 레이아웃 대신 카드 내부를 완전히 커스텀으로 그리고 싶을 때 사용.
+  render?: (isDark: boolean) => React.ReactNode
 }
 
 type KpiIconMeta = {
@@ -51,25 +54,35 @@ export function KpiGrid({ kpis, pulse = 0 }: Props) {
   return (
     <section className="metricGrid">
       {kpis.map((kpi, index) => {
-        const meta = kpiIconMap[kpi.label]
+        // render가 지정된 카드는 기본 아이콘/label/value 레이아웃을 쓰지 않으므로 meta 조회 및 아래 기본 렌더링 분기를 건너뛴다.
+        const meta = kpi.render ? undefined : kpiIconMap[kpi.label]
         const iconColor = meta ? (isDark ? meta.darkColor : meta.color) : undefined
         return (
           <article
             key={kpi.label}
             className={`metricCard ${kpi.tone} ${pulse % 2 === 1 && index === 0 ? 'pulse' : ''}`}
           >
-            {meta && (
-              <div className="metricIcon">
-                <meta.icon style={{ width: 18, height: 18, color: iconColor }} />
-              </div>
+            {kpi.render ? (
+              // 커스텀 렌더 카드 (예: 도넛 차트형 KPI)
+              kpi.render(isDark)
+            ) : (
+              <>
+                {meta && (
+                  <div className="metricIcon">
+                    <meta.icon style={{ width: 18, height: 18, color: iconColor }} />
+                  </div>
+                )}
+                <div className="metricValue">
+                  <span>{kpi.label}</span>
+                  <strong>{kpi.value}</strong>
+                </div>
+              </>
             )}
-            <div className="metricValue">
-              <span>{kpi.label}</span>
-              <strong>{kpi.value}</strong>
-            </div>
           </article>
         )
       })}
     </section>
   )
 }
+
+export type { KpiItem }
