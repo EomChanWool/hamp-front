@@ -45,8 +45,8 @@ export function OrderPerformancePage() {
         </div>
       ),
     },
-    { label: '총 주문수량', value: '1,850 EA', tone: 'danger' },
-    { label: '총 생산수량', value: '1,414 EA', tone: 'warn' },
+    { label: '총 주문수량', value: '3,450 EA', tone: 'danger' },
+    { label: '총 생산수량', value: '2,564 EA', tone: 'warn' },
     { label: '완료 라인', value: '1 / 4 건', tone: 'good' },
   ];
 
