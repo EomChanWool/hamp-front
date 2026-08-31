@@ -44,7 +44,7 @@
 /* [추가] 품목별 / 거래처별 pill 토글 버튼 그룹 */
 .orderPerfDashboard__toggle {
   display: inline-flex;
-  gap: 20px;
+  gap: 2px;
   padding: 3px;
   background: #f1f5f9;
   border-radius: 8px;
