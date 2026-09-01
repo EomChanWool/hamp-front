@@ -16,6 +16,10 @@ export function ProgressRadialChart({
 }: ProgressRadialChartProps) {
   // 100을 기준으로 채워진 값과 남은 값으로 분할
   const safeValue = Math.min(Math.max(value, 0), 100)
+  
+  // 소수점 둘째 자리까지 제한 (문자열 반환)
+  const formattedValue = safeValue.toFixed(2)
+
   const data = [
     { name: 'completed', value: safeValue },
     { name: 'remaining', value: 100 - safeValue },
@@ -29,7 +33,8 @@ export function ProgressRadialChart({
   const labelColor = isDark ? '#94a3b8' : '#64748b'
 
   // size에 비례해서 중앙 텍스트 폰트 크기도 함께 스케일 (작은 size에서 글자가 안 잘리도록 최소값 보장)
-  const valueFontSize = Math.max(size * 0.16, 9)
+  // 소수점 2자리가 들어가면 글자가 길어질 수 있으므로 스케일 비율을 살짝 조정하거나 그대로 유지해도 무방합니다.
+  const valueFontSize = Math.max(size * 0.15, 9)
   const labelFontSize = Math.max(size * 0.09, 8)
 
   // props에 따라 매번 달라지는 값(크기, 색상)만 CSS 변수로 전달한다.
@@ -64,7 +69,7 @@ export function ProgressRadialChart({
 
       {/* 도넛 중앙에 텍스트 고정 배치 */}
       <div className="progressRadialChart__labels">
-        <span className="progressRadialChart__value">{safeValue}%</span>
+        <span className="progressRadialChart__value">{formattedValue}%</span>
         <span className="progressRadialChart__label">{label}</span>
       </div>
     </div>
