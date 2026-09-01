@@ -45,7 +45,7 @@
 .orderPerfDashboard__toggle {
   display: inline-flex;
   gap: 2px;
-  padding: 3px;
+  padding: 5px;
   background: #f1f5f9;
   border-radius: 8px;
 }
@@ -54,7 +54,7 @@
   border: none;
   background: transparent;
   padding: 4px 12px;
-  font-size: 12px;
+  font-size: 14px;
   border-radius: 6px;
   cursor: pointer;
   color: #475569;
