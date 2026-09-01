@@ -111,6 +111,53 @@ export function OrderPerformanceDashboard({
   groupBy,
   setGroupBy,
 }: OrderPerformanceDashboardProps) {
+
+   const fallbackMockData = {
+    monthlyAmount: [
+      { name: "2026-01", value: 15000000 },
+      { name: "2026-02", value: 22000000 },
+      { name: "2026-03", value: 18000000 },
+      { name: "2026-04", value: 26000000 },
+      { name: "2026-05", value: 21000000 },
+      { name: "2026-06", value: 29000000 },
+    ],
+    monthlyProd: [
+      { name: "2026-01", value: 1200 },
+      { name: "2026-02", value: 1900 },
+      { name: "2026-03", value: 1500 },
+      { name: "2026-04", value: 2400 },
+      { name: "2026-05", value: 2000 },
+      { name: "2026-06", value: 2700 },
+    ],
+    monthlyCount: [
+      { name: "2026-01", value: 45 },
+      { name: "2026-02", value: 60 },
+      { name: "2026-03", value: 50 },
+      { name: "2026-04", value: 75 },
+      { name: "2026-05", value: 65 },
+      { name: "2026-06", value: 85 },
+    ],
+    dailyCount: [
+      { name: "01일", value: 5 },
+      { name: "02일", value: 8 },
+      { name: "03일", value: 3 },
+      { name: "04일", value: 6 },
+      { name: "05일", value: 7 },
+      { name: "06일", value: 2 },
+      { name: "07일", value: 9 },
+    ]
+  };
+
+   const safeData = {
+    ...data, // 기존 TrendCard용 데이터(trendByItem 등)는 그대로 유지
+    monthlyAmount: data?.monthlyAmount?.length ? data.monthlyAmount : fallbackMockData.monthlyAmount,
+    monthlyProd: data?.monthlyProd?.length ? data.monthlyProd : fallbackMockData.monthlyProd,
+    monthlyCount: data?.monthlyCount?.length ? data.monthlyCount : fallbackMockData.monthlyCount,
+    dailyCount: data?.dailyCount?.length ? data.dailyCount : fallbackMockData.dailyCount,
+  };
+
+
+
   const charts = [
     { key: "monthlyAmount", title: "월별 수주금액", color: "#6366f1", type: "month", chart: "area" },
     { key: "monthlyProd", title: "월별 생산예정량", color: "#10b981", type: "month", chart: "area" },
@@ -127,7 +174,7 @@ export function OrderPerformanceDashboard({
           <ResponsiveContainer width="100%" height={260}>
             {c.chart === "area" ? (
               <AreaChart
-                data={data[c.key]}
+                data={safeData[c.key as keyof typeof safeData]} 
                 margin={{ top: 10, right: 30, left: c.key === "monthlyAmount" ? -10 : 0, bottom: 0 }}
               >
                 <defs>
@@ -146,14 +193,15 @@ export function OrderPerformanceDashboard({
                   tick={{ fontSize: 10 }}
                   axisLine={false}
                   tickLine={false}
-                  tickFormatter={(value) =>
-                    c.key === "monthlyAmount" ? `${(value / 10000).toLocaleString()}만원` : value.toLocaleString()
-                  }
+                  tickFormatter={(value) => {
+                    const safeValue = value || 0;
+                    return c.key === "monthlyAmount" ? `${(safeValue / 10000).toLocaleString()}만원` : safeValue.toLocaleString()
+                  }}
                 />
 
                 <Tooltip
                   formatter={(value: any) => {
-                    const num = Number(value);
+                    const num = Number(value || 0);
                     const formattedValue =
                       c.key === "monthlyAmount" ? `${(num / 10000).toLocaleString()}만원` : num.toLocaleString();
                     const label = c.key === "monthlyAmount" ? "금액" : "수량/건수";
@@ -173,7 +221,10 @@ export function OrderPerformanceDashboard({
                 />
               </AreaChart>
             ) : (
-              <BarChart data={data[c.key]} margin={{ top: 10, right: 30, left: 0, bottom: 0 }} barCategoryGap="30%">
+              <BarChart data={safeData[c.key as keyof typeof safeData]} 
+                margin={{ top: 10, right: 30, left: 0, bottom: 0 }} 
+                barCategoryGap="30%"
+              >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
 
                 <XAxis dataKey="name" tick={{ fontSize: 9 }} interval={2} axisLine={false} tickLine={false} />
@@ -183,7 +234,7 @@ export function OrderPerformanceDashboard({
                   tick={{ fontSize: 10 }}
                   axisLine={false}
                   tickLine={false}
-                  tickFormatter={(value) => value.toLocaleString()}
+                  tickFormatter={(value) => (value || 0).toLocaleString()}
                 />
 
                 <Tooltip
