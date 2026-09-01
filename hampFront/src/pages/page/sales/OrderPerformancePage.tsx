@@ -77,26 +77,46 @@ export function OrderPerformancePage() {
   const [kpiData, setKpiData] = useState<SalesOrderPerformanceKpiResponse | null>(null);
   const [trendData, setTrendData] = useState<SalesOrderPerformanceTrendSeriesResponse[]>([]);
 
+  // 탭(period)을 빠르게 연속 전환할 때 반투명 처리로만 로딩을 표시하기 위한 플래그
+  const [isLoading, setIsLoading] = useState(false);
+
   useEffect(() => {
+    // 이전 요청이 늦게 도착해서 최신 상태를 덮어쓰는 걸 막기 위한 cancel 플래그
+    let cancelled = false;
+
     const fetchData = async () => {
+      setIsLoading(true);
       try {
-        // 1. KPI API 호출
-        const kpiRes = await SalesOrderApi.getPerformanceKpi({ period });
+        
+        const [kpiRes, trendRes] = await Promise.all([
+          SalesOrderApi.getPerformanceKpi({ period }),
+          SalesOrderApi.getPerformanceTrend({ period, groupBy }),
+        ]);
+
+        if (cancelled) return;
+
         if (kpiRes?.data) {
           setKpiData(kpiRes.data);
         }
-
-        // 2. 추이 API 호출
-        const trendRes = await SalesOrderApi.getPerformanceTrend({ period, groupBy });
         if (trendRes?.data) {
           setTrendData(trendRes.data);
         }
       } catch (error) {
-        console.error('데이터를 불러오는 중 오류가 발생했습니다:', error);
+        if (!cancelled) {
+          console.error('데이터를 불러오는 중 오류가 발생했습니다:', error);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchData();
+
+    return () => {
+      cancelled = true;
+    };
   }, [period, groupBy]);
 
   const currentProgressPct = kpiData?.progressRate ?? 0;
@@ -141,24 +161,29 @@ export function OrderPerformancePage() {
   };
 
   return (
-    <section className="screenStack">
-      <Panel title="수주실적 현황">
-        {/* 조회 단위 변경 탭 */}
-        <div className="tabGroup" role="tablist" aria-label="집계 기간 선택">
-          {PERIOD_TABS.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              role="tab"
-              aria-selected={period === tab.key}
-              className={`tabButton ${period === tab.key ? ' tabButtonActive' : ''}`}
-              onClick={() => setPeriod(tab.key)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </Panel>
+    // 전체를 반투명 처리 + 클릭 차단으로만 표시
+    <section className={`screenStack${isLoading ? ' screenStack--loading' : ''}`}>
+      <Panel
+        title="수주실적 현황"
+        extra={
+          <div className="tabGroup" role="tablist" aria-label="집계 기간 선택">
+            {PERIOD_TABS.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                role="tab"
+                aria-selected={period === tab.key}
+                className={`tabButton ${period === tab.key ? ' tabButtonActive' : ''}`}
+                onClick={() => setPeriod(tab.key)}
+                // 로딩 중 연타로 인한 중복 요청/깜빡임 방지
+                disabled={isLoading}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       <KpiGrid kpis={orderStatusKpis} />
       <OrderPerformanceDashboard
