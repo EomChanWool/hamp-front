@@ -56,7 +56,8 @@ function convertTrendToChartData(trendSeriesList: SalesOrderPerformanceTrendSeri
       if (p.periodLabel) periodSet.add(p.periodLabel);
     });
   });
-  const periods = Array.from(periodSet);
+
+  const periods = Array.from(periodSet).sort();
 
   return periods.map((periodLabel) => {
     const row: Record<string, any> = { name: periodLabel };

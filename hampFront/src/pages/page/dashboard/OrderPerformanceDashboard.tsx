@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ResponsiveContainer,
   // LineChart,
@@ -173,7 +173,7 @@ interface OrderPerformanceDashboardProps {
 //   );
 // }
 
-/** 3. 하단 X축 연도별, 각 그룹별 막대 내부 바 차트 (누적 다중 선택 인터랙션 연동) */
+/** 3. 하단 X축 연도별, 각 그룹별 막대 내부 바 차트 */
 function PerformanceBarCard({
   barData,
   groupBy,
@@ -233,6 +233,46 @@ function PerformanceBarCard({
     setVisibleGroupKeys(null);
   };
 
+  const isFiltered = visibleGroupKeys !== null && visibleGroupKeys.size < groupKeys.length;
+
+  const chartData = useMemo(() => {
+    const periodSet = new Set<string>();
+    groupList.forEach((group: any) => {
+      group.points?.forEach((pt: any) => {
+        if (pt.periodLabel) periodSet.add(pt.periodLabel);
+      });
+    });
+    const periods = Array.from(periodSet).sort();
+
+    return periods.map((periodLabel) => {
+      const row: Record<string, any> = { name: periodLabel };
+
+      groupList.forEach((group: any) => {
+        const point = group.points?.find((p: any) => p.periodLabel === periodLabel);
+        const orderQty = point ? point.totalOrderQty || 0 : 0;
+        const prodQty = point ? point.totalProducedQty || 0 : 0;
+
+        const actualProd = Math.min(prodQty, orderQty);
+        const remainingOrder = Math.max(0, orderQty - actualProd);
+
+        row[`${group.groupKey}_prod`] = actualProd;
+        row[`${group.groupKey}_remain`] = remainingOrder;
+
+        row[`${group.groupKey}_info`] = {
+          groupLabel: group.groupLabel,
+          totalOrderQty: orderQty,
+          totalProducedQty: prodQty,
+          progressRate: orderQty > 0 ? ((prodQty / orderQty) * 100).toFixed(1) : 0,
+          periodStart: point?.periodStart,
+          periodEnd: point?.periodEnd,
+        };
+      });
+
+      return row;
+    });
+  }, [barData, groupBy]);
+  // ──────────────────────────────────────────────────────────────────
+
   if (groupList.length === 0) {
     return (
       <div className="orderPerfDashboard__card orderPerfDashboard__card--wide">
@@ -246,42 +286,12 @@ function PerformanceBarCard({
     );
   }
 
-  const isFiltered = visibleGroupKeys !== null && visibleGroupKeys.size < groupKeys.length;
-
-  const periodSet = new Set<string>();
-  groupList.forEach((group: any) => {
-    group.points?.forEach((pt: any) => {
-      if (pt.periodLabel) periodSet.add(pt.periodLabel);
-    });
-  });
-  const periods = Array.from(periodSet).sort();
-
-  const chartData = periods.map((periodLabel) => {
-    const row: Record<string, any> = { name: periodLabel };
-
-    groupList.forEach((group: any) => {
-      const point = group.points?.find((p: any) => p.periodLabel === periodLabel);
-      const orderQty = point ? point.totalOrderQty || 0 : 0;
-      const prodQty = point ? point.totalProducedQty || 0 : 0;
-
-      const actualProd = Math.min(prodQty, orderQty);
-      const remainingOrder = Math.max(0, orderQty - actualProd);
-
-      row[`${group.groupKey}_prod`] = actualProd;
-      row[`${group.groupKey}_remain`] = remainingOrder;
-
-      row[`${group.groupKey}_info`] = {
-        groupLabel: group.groupLabel,
-        totalOrderQty: orderQty,
-        totalProducedQty: prodQty,
-        progressRate: orderQty > 0 ? ((prodQty / orderQty) * 100).toFixed(1) : 0,
-        periodStart: point?.periodStart,
-        periodEnd: point?.periodEnd,
-      };
-    });
-
-    return row;
-  });
+  const visibleGroupLabels = isFiltered
+    ? groupList
+        .filter((g: any) => visibleGroupKeys!.has(g.groupKey))
+        .map((g: any) => g.groupLabel)
+    : [];
+  // ──────────────────────────────────────────────────────────────────
 
   return (
     <div className="orderPerfDashboard__card orderPerfDashboard__card--wide">
@@ -300,6 +310,16 @@ function PerformanceBarCard({
           </div>
         )}
       </div>
+
+      {isFiltered && (
+        <div className="orderPerfDashboard__filterBanner">
+          <span className="orderPerfDashboard__filterBadge">필터 모드</span>
+          <span className="orderPerfDashboard__filterText">
+            {visibleGroupLabels.length}개 항목 표시 중: {visibleGroupLabels.join(", ")}
+          </span>
+        </div>
+      )}
+      {/* ────────────────────────────────────────────────────────── */}
 
       <div className="orderPerfDashboard__toggle" style={{ marginBottom: "16px" }}>
         <button
