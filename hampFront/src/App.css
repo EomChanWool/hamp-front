@@ -488,6 +488,12 @@ button {
   gap: 18px;
 }
 
+.screenStack--loading {
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
 .metricGrid {
   display: flex;
   align-items: stretch;
@@ -743,6 +749,19 @@ textarea.tableInput {
   font-size: 18px; 
   font-weight: 600;
   color: var(--text-heading);
+}
+
+.panelHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 768px) {
+  .panelHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 /* ================================
