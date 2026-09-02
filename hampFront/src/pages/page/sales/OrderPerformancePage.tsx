@@ -87,7 +87,6 @@ export function OrderPerformancePage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-
         const [kpiRes, trendRes] = await Promise.all([
           SalesOrderApi.getPerformanceKpi({ period }),
           SalesOrderApi.getPerformanceTrend({ period, groupBy }),
@@ -183,12 +182,13 @@ export function OrderPerformancePage() {
       </Panel>
 
       <KpiGrid kpis={orderStatusKpis} />
+      
       <OrderPerformanceDashboard
         data={dashboardData}
+        barData={trendData}
         groupBy={groupBy}
         setGroupBy={setGroupBy}
       />
     </section>
   );
 }
-
