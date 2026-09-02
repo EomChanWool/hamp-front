@@ -1,13 +1,11 @@
-/* OrderPerformanceDashboard.css */
-
-/* [기존] 2열 그리드. 카드 4개는 자연스럽게 2x2로 배치됨 - 변경 없음 */
+/* 2열 그리드. 카드 4개는 자연스럽게 2x2로 배치됨 */
 .orderPerfDashboard {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
 }
 
-/* [기존] 카드 기본 스타일 - 변경 없음 */
+/* 카드 기본 스타일 */
 .orderPerfDashboard__card {
   border: 1px solid #ddd;
   padding: 20px;
@@ -19,15 +17,12 @@
   margin: 0 0 10px 0;
 }
 
-/* [추가] 기간별 추이(TrendCard) 전용 - 2열 그리드 전체 너비를 차지하도록 함.
-   이 클래스가 없으면 다른 카드들처럼 절반 너비로 찌그러져서 라인이 겹쳐 보임. */
+/* 기간별 추이(TrendCard) 전용 - 2열 그리드 전체 너비를 차지하도록 함. */
 .orderPerfDashboard__card--wide {
   grid-column: 1 / -1;
 }
 
-/* [추가] 카드 제목과 토글(품목별/거래처별)을 한 줄에 배치하는 헤더 영역.
-   기존 카드들은 h4만 단독으로 쓰지만, TrendCard는 헤더에 토글이 같이 들어가서
-   별도 flex 컨테이너가 필요함. */
+/* 카드 제목과 토글(품목별/거래처별)을 한 줄에 배치하는 헤더 영역. */
 .orderPerfDashboard__header {
   display: flex;
   align-items: center;
@@ -36,12 +31,12 @@
   margin-bottom: 10px;
 }
 
-/* [추가] 헤더 안에서는 title에 margin-bottom이 필요 없으므로 0으로 덮어씀 */
+/* 헤더 안에서는 title에 margin-bottom이 필요 없으므로 0으로 덮어씀 */
 .orderPerfDashboard__header .orderPerfDashboard__title {
   margin: 0;
 }
 
-/* [추가] 품목별 / 거래처별 pill 토글 버튼 그룹 */
+/* 품목별 / 거래처별 pill 토글 버튼 그룹 */
 .orderPerfDashboard__toggle {
   display: inline-flex;
   gap: 2px;
@@ -65,6 +60,39 @@
   font-weight: 600;
   color: #0f172a;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* 범례 필터 모드 배너 (PerformanceBarCard) */
+.orderPerfDashboard__filterBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+
+/* 필터 모드 라벨 pill */
+.orderPerfDashboard__filterBadge {
+  display: inline-flex;
+  align-items: center;
+  background: #6366f1;
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+/* 현재 표시 중인 항목 라벨 텍스트 */
+.orderPerfDashboard__filterText {
+  color: #4338ca;
 }
 
 /* ================================
@@ -94,7 +122,7 @@
   color: var(--text-body) !important;
 }
 
-/* [추가] 다크모드에서 토글 배경/활성 버튼 색 대응 */
+/* 다크모드에서 토글 배경/활성 버튼 색 대응 */
 [data-theme="dark"] .orderPerfDashboard__toggle {
   background: var(--bg-card);
 }
@@ -106,4 +134,14 @@
 [data-theme="dark"] .orderPerfDashboard__toggle button.isActive {
   background: var(--border);
   color: var(--text-heading);
+}
+
+/* 다크모드 필터 배너 - 배경/보더는 투명도 있는 인디고 톤 */
+[data-theme="dark"] .orderPerfDashboard__filterBanner {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+[data-theme="dark"] .orderPerfDashboard__filterText {
+  color: var(--text-body);
 }
