@@ -119,7 +119,7 @@ function TrendCard({
           </button> */}
       </div>
 
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={360}>
         <LineChart data={series} margin={{ top: 20, right: 80, left: 20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
           <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
