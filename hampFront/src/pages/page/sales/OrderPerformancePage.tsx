@@ -87,7 +87,7 @@ export function OrderPerformancePage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        
+
         const [kpiRes, trendRes] = await Promise.all([
           SalesOrderApi.getPerformanceKpi({ period }),
           SalesOrderApi.getPerformanceTrend({ period, groupBy }),
@@ -163,27 +163,24 @@ export function OrderPerformancePage() {
   return (
     // 전체를 반투명 처리 + 클릭 차단으로만 표시
     <section className={`screenStack${isLoading ? ' screenStack--loading' : ''}`}>
-      <Panel
-        title="수주실적 현황"
-        extra={
-          <div className="tabGroup" role="tablist" aria-label="집계 기간 선택">
-            {PERIOD_TABS.map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                role="tab"
-                aria-selected={period === tab.key}
-                className={`tabButton ${period === tab.key ? ' tabButtonActive' : ''}`}
-                onClick={() => setPeriod(tab.key)}
-                // 로딩 중 연타로 인한 중복 요청/깜빡임 방지
-                disabled={isLoading}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        }
-      />
+      <Panel title="수주실적 현황">
+        <div className="orderPerfDashboard__toggle" role="tablist" aria-label="집계 기간 선택">
+          {PERIOD_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={period === tab.key}
+              className={period === tab.key ? "isActive" : ""}
+              onClick={() => setPeriod(tab.key)}
+              // 로딩 중 연타로 인한 중복 요청/깜빡임 방지
+              disabled={isLoading}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </Panel>
 
       <KpiGrid kpis={orderStatusKpis} />
       <OrderPerformanceDashboard
@@ -194,3 +191,4 @@ export function OrderPerformancePage() {
     </section>
   );
 }
+
