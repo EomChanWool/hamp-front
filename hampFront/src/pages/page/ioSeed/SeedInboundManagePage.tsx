@@ -13,7 +13,7 @@ import {
   type SeedGoodsReceiptResponse,
   type SeedGoodsReceiptCreateRequest,
   type SeedGoodsReceiptUpdateRequest,
-} from '@/api/ioSeed/SeedGoodsReceipt';
+} from '@/api/Seed/SeedGoodsReceipt';
 import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
 
 export function SeedInboundManagePage() {
