@@ -154,9 +154,12 @@ export const ItemApi = {
     return res.data;
   },
 
-  /** 품목 셀렉트 옵션 조회 */
-  getOptions: async (): Promise<ApiResponseListItemOptionResponse> => {
-    const res = await apiClient.get<ApiResponseListItemOptionResponse>('/items/options');
+ /** 품목 셀렉트 옵션 조회 */
+  getOptions: async (params?: {
+    productType?: number; // 0: 씨드, 1: 인피 (안 보내면 전체)
+    [key: string]: any;
+  }): Promise<ApiResponseListItemOptionResponse> => {
+    const res = await apiClient.get<ApiResponseListItemOptionResponse>('/items/options', { params });
     return res.data;
   },
 };
