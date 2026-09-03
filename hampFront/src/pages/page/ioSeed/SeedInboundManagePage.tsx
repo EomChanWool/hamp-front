@@ -168,14 +168,38 @@ export function SeedInboundManagePage() {
     setIsCreatingNewRow(false);
   };
 
+  // 공통 유효성 검사 함수 (입고수량 vs 양품 + 불량)
+  const validateQuantities = () => {
+    const receiptQty = Number(editFormRef.current.receiptQty) || 0;
+    const defectQty = Number(editFormRef.current.defectQty) || 0;
+    const goodQty = Number(editFormRef.current.goodQty) || 0;
+
+    if (receiptQty <= 0) {
+      window.alert('입고수량은 0보다 커야 합니다.');
+      return false;
+    }
+    if (goodQty + defectQty > receiptQty) {
+      window.alert('양품수량과 불량수량의 합이 총 입고수량을 초과할 수 없습니다.');
+      return false;
+    }
+    return true;
+  };
+
   const handleSaveCreate = async () => {
     if (isUpdating) return;
 
     const itemCode = editFormRef.current.itemCode?.trim();
     if (!itemCode) {
-      window.alert('품목코드를 선택해주세요.');
+      window.alert('품목을 선택해주세요.');
       return;
     }
+
+    if (!editFormRef.current.receivedAt) {
+      window.alert('입고일자를 입력해주세요.');
+      return;
+    }
+
+    if (!validateQuantities()) return;
 
     setIsUpdating(true);
     try {
@@ -184,7 +208,7 @@ export function SeedInboundManagePage() {
         receiptQty: Number(editFormRef.current.receiptQty) || 0,
         defectQty: Number(editFormRef.current.defectQty) || 0,
         goodQty: Number(editFormRef.current.goodQty) || 0,
-        receivedAt: editFormRef.current.receivedAt || new Date().toISOString(),
+        receivedAt: editFormRef.current.receivedAt,
       };
 
       const response = await SeedGoodsReceiptApi.create(payload);
@@ -224,6 +248,14 @@ export function SeedInboundManagePage() {
 
   const handleSaveEdit = async (receiptId: number) => {
     if (isUpdating) return;
+
+    const itemCode = editFormRef.current.itemCode?.trim();
+    if (!itemCode) {
+      window.alert('품목을 선택해주세요.');
+      return;
+    }
+
+    if (!validateQuantities()) return;
 
     setIsUpdating(true);
     try {
@@ -313,7 +345,7 @@ export function SeedInboundManagePage() {
       },
       {
         accessorKey: 'itemNm',
-        header: '품명',
+        header: '품목명',
         cell: ({ row }) => row.original.itemNm || '-',
       },
       {
@@ -390,7 +422,7 @@ export function SeedInboundManagePage() {
       },
       {
         accessorKey: 'receivedAt',
-        header: '입고일자',
+        header: '입고시간',
         cell: ({ row }) => {
           const isNewRow = row.original.receiptId === -999999;
           const isEditing = row.original.receiptId === editingReceiptId;
