@@ -13,7 +13,7 @@ import {
   type SeedGoodsReceiptResponse,
   type SeedGoodsReceiptCreateRequest,
   type SeedGoodsReceiptUpdateRequest,
-} from '@/api/Seed/SeedGoodsReceipt';
+} from '@/api/ioSeed/SeedGoodsReceipt';
 import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
 
 export function SeedInboundManagePage() {
@@ -443,14 +443,6 @@ export function SeedInboundManagePage() {
         },
       },
       {
-        accessorKey: 'createdAt',
-        header: '등록일자',
-        cell: ({ row, getValue }) => {
-          if (row.original.receiptId === -999999) return '-';
-          return formatDateTime(getValue<string>());
-        },
-      },
-      {
         id: 'actions',
         header: '관리',
         meta: { width: '150px' },
@@ -517,6 +509,9 @@ export function SeedInboundManagePage() {
         receiptQty: 0,
         defectQty: 0,
         goodQty: 0,
+        returnedQty: 0,
+        remainingQty: 0,
+        reportStatus: '',
         receivedAt: '',
         createdAt: '',
         updatedAt: '',

@@ -27,6 +27,9 @@ export interface SeedGoodsReceiptResponse {
   receiptQty: number;  
   defectQty: number;     
   goodQty: number;   
+  returnedQty: number;
+  remainingQty: number; // 신고 가능 잔여수량 (양품수량 - 누적 신고수량)
+  reportStatus: string; // 신고 진행상태 (미신고 / 부분신고 / 신고완료)
   receivedAt: string; 
   createdAt: string;
   updatedAt: string; 
