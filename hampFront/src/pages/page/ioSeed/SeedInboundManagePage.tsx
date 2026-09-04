@@ -96,7 +96,7 @@ export function SeedInboundManagePage() {
     const nextGoodQty = Math.max(receiptQty - defectQty, 0);
     editFormRef.current.goodQty = nextGoodQty;
 
-    // 💡 렌더링을 유발하지 않고 input 값을 직접 갱신하여 커서 풀림 방지
+    // 렌더링을 유발하지 않고 input 값을 직접 갱신하여 커서 풀림 방지
     if (goodQtyInputRef.current) {
       goodQtyInputRef.current.value = String(nextGoodQty);
     }
@@ -124,7 +124,7 @@ export function SeedInboundManagePage() {
   // 검색바 Ref 타입 수정 (HTMLSelectElement)
   const itemCodeRef = useRef<HTMLSelectElement>(null);
 
-  // 1. 씨드 품목 옵션 조회 (productType: 0)
+  // 1. 씨드 품목 옵션 조회
   const fetchItemOptions = useCallback(async () => {
     try {
       const res = await ItemApi.getOptions({ productType: 0 });
