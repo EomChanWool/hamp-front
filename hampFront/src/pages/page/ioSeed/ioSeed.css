@@ -1,0 +1,348 @@
+/* ==========================================================================
+   씨드입고관리 - 품목 셀 / 진행상태 배지 / 진행바 / 신고처리 모달 스타일
+   ========================================================================== */
+
+/* ---------- 품목 셀 (품목명 + 품목코드) ---------- */
+.itemCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.3;
+}
+
+.itemCell__name {
+  font-weight: 600;
+  color: #111827;
+}
+
+.itemCell__code {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* ---------- 진행상태 셀 ---------- */
+.reportStatusCell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.reportStatusCell__count {
+  font-size: 12px;
+  color: #6b7280;
+  align-self: flex-start;
+  white-space: nowrap;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.statusBadge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.statusBadge--unreported {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.statusBadge--partial {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.statusBadge--completed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.seedProgressBar {
+  width: 100%;
+  height: 6px;
+  min-height: 6px;
+  max-height: 6px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.seedProgressBar .progressFill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.seedProgressBar .progressFill--unreported {
+  background: #e5e7eb;
+}
+
+.seedProgressBar .progressFill--partial {
+  background: #57d3a1;
+}
+
+.seedProgressBar .progressFill--completed {
+  background: #22c55e;
+}
+
+/* ---------- 행 액션 버튼 공통 ---------- */
+
+.goodQtyCell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.goodQtyCell .tableInput {
+  flex: 1;
+}
+
+.goodQtyAutoBtn {
+  flex-shrink: 0;
+  padding: 5px 8px;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.goodQtyAutoBtn:hover {
+  background: #dcfce7;
+}
+
+/* ==========================================================================
+   신고처리 모달
+   ========================================================================== */
+
+.reportModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.reportModalContent {
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+}
+
+.reportModalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 24px 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.reportModalHeader h3 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.reportModalSubtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.reportModalCloseBtn {
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  line-height: 1;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.reportModalCloseBtn:hover {
+  color: #4b5563;
+}
+
+.reportModalBody {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reportSectionLabel {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.reportHistoryEmpty {
+  padding: 16px;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #9ca3af;
+  font-size: 13px;
+  text-align: center;
+}
+
+.reportHistoryTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.reportHistoryTable th {
+  text-align: left;
+  padding: 8px 10px;
+  color: #6b7280;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.reportHistoryTable td {
+  padding: 10px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #111827;
+}
+
+.reportHistoryTable tr.isEditingRow {
+  background: #eff6ff;
+}
+
+.remainingQtyBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #f9fafb;
+  font-size: 14px;
+  color: #374151;
+}
+
+.remainingQtyBox strong {
+  font-size: 15px;
+  color: #111827;
+}
+
+.reportCompleteNotice {
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 13px;
+  text-align: center;
+}
+
+.reportForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.reportFormRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.reportFormField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reportFormField label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.reportFormField input,
+.reportFormField select {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.reportFormHint {
+  margin: 0;
+  font-size: 12px;
+  color: #9ca3af;
+  line-height: 1.4;
+}
+
+.reportModalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.modalButton {
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.modalButton.secondary {
+  background: #ffffff;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.modalButton.secondary:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.modalButton.primary {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.modalButton.primary:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.modalButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .reportFormRow {
+    grid-template-columns: 1fr;
+  }
+}

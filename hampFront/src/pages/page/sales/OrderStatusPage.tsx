@@ -11,6 +11,7 @@ import { BusinessPartnerApi, type BusinessPartnerOptionResponse } from "@/api/sa
 import { SalesOrderApi, type SalesOrderStatusLineResponse, type SalesOrderStatusGroupResponse } from "@/api/sales/SalesOrder";
 import { Badge } from "@/components/common/Badge";
 import "./Sales.css";
+import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
 
 // 진행률 구간 임계값 — 로직(getProgressToneClass)과 범례 텍스트가 이 값을 함께 참조하므로
 // 기준이 바뀌면 여기 한 곳만 수정하면 됨
@@ -30,6 +31,7 @@ export function OrderStatusPage() {
 
     const [orderStatusList, setOrderStatusList] = useState<SalesOrderStatusLineResponse[]>([]);
     const [businessPartnerOptions, setBusinessPartnerOptions] = useState<BusinessPartnerOptionResponse[]>([]);
+    const [itemOptions, setItemOptions] = useState<ItemOptionResponse[]>([]);
     const [groupData, setGroupData] = useState<SalesOrderStatusGroupResponse[]>([]);
 
     const [totalElements, setTotalElements] = useState(0);
@@ -82,18 +84,22 @@ export function OrderStatusPage() {
     const itemCodeRef = useRef<HTMLInputElement>(null);
 
     // 거래처 옵션 API 호출
-    const loadBusinessPartnerOptions = useCallback(async () => {
+    const fetchOptions = useCallback(async () => {
         try {
-            const response = await BusinessPartnerApi.getOptions();
-            setBusinessPartnerOptions(response.data ?? []);
+            const [bpRes, itemRes] = await Promise.all([
+                BusinessPartnerApi.getOptions(),
+                ItemApi.getOptions(),
+            ]);
+            setBusinessPartnerOptions(bpRes.data ?? []);
+            setItemOptions(itemRes.data ?? []);
         } catch (error) {
-            console.error("거래처 옵션 목록 조회 실패:", error);
+            console.error("옵션 목록 조회 실패:", error);
         }
     }, []);
 
     useEffect(() => {
-        loadBusinessPartnerOptions();
-    }, [loadBusinessPartnerOptions]);
+        fetchOptions();
+    }, [fetchOptions]);
 
     // 검색 필드 정의
     const searchFields: SearchField[] = useMemo(() => [
@@ -116,12 +122,18 @@ export function OrderStatusPage() {
             ],
         },
         {
-            type: "input",
-            label: "품목코드",
-            ref: itemCodeRef,
-            name: "itemCode",
+            type: "select",
+            label: "품목",
+            ref: itemCodeRef as any,
+            options: [
+                { label: "전체", value: "" },
+                ...itemOptions.map((opt) => ({
+                    label: `${opt.itemCode} (${opt.itemNm ?? '-'})`,
+                    value: opt.itemCode,
+                })),
+            ],
         },
-    ], [businessPartnerOptions]);
+    ], [businessPartnerOptions, itemOptions]);
 
     // URL 값 → SearchBand 입력 폼 동기화
     useEffect(() => {
@@ -244,8 +256,16 @@ export function OrderStatusPage() {
     const columns: ColumnDef<SalesOrderStatusLineResponse>[] = useMemo(
         () => [
             { accessorKey: 'orderCode', header: '수주코드' },
-            { accessorKey: 'itemCode', header: '품목코드' },
-            { accessorKey: 'itemNm', header: '품목명' },
+            {
+                accessorKey: 'itemCode',
+                header: '품목',
+                cell: ({ row }) => (
+                    <div className="itemCell">
+                        <span className="itemCell__name">{row.original.itemNm || '-'}</span>
+                        <span className="itemCell__code">{row.original.itemCode}</span>
+                    </div>
+                ),
+            },
             {
                 accessorKey: 'orderQty',
                 header: '주문수량',
