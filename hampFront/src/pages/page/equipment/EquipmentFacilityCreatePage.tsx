@@ -26,10 +26,10 @@ export function EquipmentFacilityCreatePage() {
     const [factoryZoneOptions, setFactoryZoneOptions] = useState<FactoryZoneOptionResponse[]>([]);
     const [equipmentOptions, setEquipmentOptions] = useState<EquipmentOptionResponse[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
-    // 설비 이미지 파일 상태 및 미리보기 URL 상태
-    const [attachedFile, setAttachedFile] = useState<File | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    // 설비 이미지 다중 파일 상태 및 미리보기 URL 배열 상태
+    const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+    const [previewUrls, setPreviewUrls] = useState<string[]>([]);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -76,37 +76,41 @@ export function EquipmentFacilityCreatePage() {
         navigate(queryString ? `/equipment/facility?${queryString}` : "/equipment/facility");
     };
 
-    // 이미지 파일 처리 및 미리보기 생성 함수
-    const handleImageSelect = (file: File) => {
-        const ext = getExt(file.name);
+    // 이미지 다중 선택 및 검증 처리 함수
+    const handleImagesSelect = (incomingFiles: FileList | File[]) => {
+        const validFiles: File[] = [];
+        const newUrls: string[] = [];
 
-        if (!ALLOWED_IMAGE_EXTENSIONS.includes(ext)) {
-            alert(`이미지 파일만 업로드 가능합니다. (${file.name})\n- 허용 확장자: ${ALLOWED_IMAGE_EXTENSIONS.join(', ').toUpperCase()}`);
-            return;
+        Array.from(incomingFiles).forEach((file) => {
+            const ext = getExt(file.name);
+
+            if (!ALLOWED_IMAGE_EXTENSIONS.includes(ext)) {
+                alert(`이미지 파일만 업로드 가능합니다. (${file.name})\n- 허용 확장자: ${ALLOWED_IMAGE_EXTENSIONS.join(', ').toUpperCase()}`);
+                return;
+            }
+
+            if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+                alert(`파일 용량은 최대 ${MAX_FILE_SIZE_MB}MB를 초과할 수 없습니다. (${file.name})`);
+                return;
+            }
+
+            validFiles.push(file);
+            newUrls.push(URL.createObjectURL(file));
+        });
+
+        if (validFiles.length > 0) {
+            setAttachedFiles((prev) => [...prev, ...validFiles]);
+            setPreviewUrls((prev) => [...prev, ...newUrls]);
         }
-
-        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-            alert(`파일 용량은 최대 ${MAX_FILE_SIZE_MB}MB를 초과할 수 없습니다.`);
-            return;
-        }
-
-        // 기존 미리보기 URL 메모리 해제
-        if (previewUrl) {
-            URL.revokeObjectURL(previewUrl);
-        }
-
-        setAttachedFile(file);
-        setPreviewUrl(URL.createObjectURL(file));
 
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    const handleRemoveImage = () => {
-        if (previewUrl) {
-            URL.revokeObjectURL(previewUrl);
-        }
-        setAttachedFile(null);
-        setPreviewUrl(null);
+    // 개별 신규 파일 제거 함수
+    const handleRemoveImage = (index: number) => {
+        URL.revokeObjectURL(previewUrls[index]);
+        setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+        setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
@@ -124,7 +128,7 @@ export function EquipmentFacilityCreatePage() {
         e.preventDefault();
         setIsDragging(false);
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            handleImageSelect(e.dataTransfer.files[0]);
+            handleImagesSelect(e.dataTransfer.files);
         }
     };
 
@@ -156,16 +160,28 @@ export function EquipmentFacilityCreatePage() {
 
         setIsSubmitting(true);
         try {
-            if (attachedFile) {
-                await FacilityApi.createWithFiles(payload, [attachedFile]);
-            } else {
-                await FacilityApi.create(payload);
+            // 1단계: 순수 JSON 데이터 등록 API 먼저 호출
+            await FacilityApi.create(payload);
+
+            // 2단계: JSON 저장이 성공한 경우에만 첨부파일이 있다면 순차 업로드 (category: "IMAGE" 지정)
+            if (attachedFiles.length > 0) {
+                for (const file of attachedFiles) {
+                    try {
+                        await FacilityApi.uploadAttachment(payload.fcltCode, file, "IMAGE");
+                    } catch (fileError) {
+                        console.error(`파일 업로드 실패 (${file.name}):`, fileError);
+                        alert(`설비 데이터는 안전하게 저장되었습니다.\n하지만 일부 파일(${file.name}) 업로드에 실패했습니다.\n상세 페이지에서 재시도해주세요.`);
+                        navigate(`/equipment/facility/${payload.fcltCode}`, { replace: true });
+                        return;
+                    }
+                }
             }
 
             alert("성공적으로 등록되었습니다.");
             navigate("/equipment/facility", { replace: true });
         } catch (error) {
             console.error("설비 등록 실패:", error);
+            // 3단계: JSON 등록 실패 시 파일 업로드는 시도되지 않음
             const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
             alert(message || "설비 등록 중 오류가 발생했습니다.");
         } finally {
@@ -240,55 +256,124 @@ export function EquipmentFacilityCreatePage() {
                             </div>
                         </div>
 
-                        {/* 설비 이미지 업로드 및 미리보기 섹션 */}
+                        {/* 설비 이미지 다중 업로드 및 드래그 영역 내부 썸네일 미리보기 섹션 */}
                         <div className="createSection">
                             <h2 className="createSectionTitle">설비 이미지</h2>
                             <div className="createField" style={{ gridColumn: '1 / -1' }}>
-                                <label className="cus-input-label" style={{ marginBottom: '8px', display: 'block' }}>설비 대표 이미지 첨부</label>
-                                
-                                <div 
+                                <label className="cus-input-label" style={{ marginBottom: '8px', display: 'block' }}>설비 이미지 첨부</label>
+
+                                <div
                                     className={`file-drop-zone facility-image-drop-zone ${isDragging ? ' file-drop-zone--dragging' : ''}`}
                                     onClick={() => fileInputRef.current?.click()}
                                     onDragOver={handleDragOver}
                                     onDragLeave={handleDragLeave}
                                     onDrop={handleDrop}
+                                    style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        minHeight: '180px',
+                                        padding: '20px',
+                                        cursor: 'pointer'
+                                    }}
                                 >
-                                    {previewUrl ? (
-                                        <div className="facility-preview-wrapper" onClick={(e) => e.stopPropagation()}>
-                                            <img 
-                                                src={previewUrl} 
-                                                alt="설비 미리보기" 
-                                                className="facility-preview-img"
-                                            />
-                                            <button 
-                                                type="button" 
-                                                onClick={handleRemoveImage}
-                                                className="facility-preview-remove-btn"
-                                                title="이미지 삭제"
-                                            >
-                                                ✕
-                                            </button>
-                                            <p className="facility-preview-name">{attachedFile?.name}</p>
-                                        </div>
-                                    ) : (
-                                        <div className="facility-upload-placeholder">
+                                    {previewUrls.length === 0 ? (
+                                        <div className="facility-upload-placeholder" style={{ textAlign: 'center' }}>
                                             <Remix iconName="image-line" iconSize={2.3} color="#64748b" />
-                                            <span className="file-drop-zone__main-text">이미지 파일을 마우스로 끌어다 놓으세요.</span>
-                                            <span className="facility-upload-subtext">지원 형식: JPG, JPEG, PNG, GIF (최대 20MB)</span>
-                                            <CustomButton prefixType="ghost" iconPosition="text" onClick={() => fileInputRef.current?.click()}>
+                                            <span className="file-drop-zone__main-text" style={{ display: 'block', marginTop: '8px' }}>이미지 파일을 마우스로 끌어다 놓으세요.</span>
+                                            <span className="facility-upload-subtext" style={{ display: 'block', marginBottom: '12px', color: '#888', fontSize: '13px' }}>지원 형식: JPG, JPEG, PNG, GIF (최대 20MB, 다중 선택 가능)</span>
+                                            <CustomButton
+                                                prefixType="ghost"
+                                                iconPosition="text"
+                                                onClick={(e?: SyntheticEvent) => {
+                                                    e?.stopPropagation();
+                                                    fileInputRef.current?.click();
+                                                }}
+                                            >
                                                 이미지 선택
                                             </CustomButton>
                                         </div>
+                                    ) : (
+                                        <div style={{ width: '100%' }} onClick={(e) => e.stopPropagation()}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', width: '100%' }}>
+                                                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
+                                                    선택된 이미지 ({previewUrls.length}개) - 추가로 파일을 끌어다 놓거나, 우측 이미지 추가 버튼을 클릭하세요.
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    className="ghostButton"
+                                                    style={{ fontSize: '12px', padding: '4px 8px', height: 'auto' }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        fileInputRef.current?.click();
+                                                    }}
+                                                >
+                                                    이미지 추가
+                                                </button>
+                                            </div>
+
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                                                {previewUrls.map((url, index) => (
+                                                    <div 
+                                                        key={index} 
+                                                        className="facility-preview-wrapper" 
+                                                        style={{ width: '110px', position: 'relative' }}
+                                                    >
+                                                        <img
+                                                            src={url}
+                                                            alt={`미리보기 ${index}`}
+                                                            className="facility-preview-img"
+                                                            style={{ width: '110px', height: '110px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleRemoveImage(index);
+                                                            }}
+                                                            className="facility-preview-remove-btn"
+                                                            title="미리보기 삭제"
+                                                            style={{
+                                                                position: 'absolute',
+                                                                top: '4px',
+                                                                right: '4px',
+                                                                background: 'rgba(0,0,0,0.6)',
+                                                                color: '#fff',
+                                                                border: 'none',
+                                                                borderRadius: '50%',
+                                                                width: '22px',
+                                                                height: '22px',
+                                                                cursor: 'pointer',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                fontSize: '12px'
+                                                            }}
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                        <div 
+                                                            className="facility-preview-name"
+                                                            style={{ fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '4px', textAlign: 'center', color: '#475569' }}
+                                                        >
+                                                            {attachedFiles[index]?.name}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
                                     )}
 
-                                    <input 
+                                    <input
                                         ref={fileInputRef}
                                         type="file"
+                                        multiple
                                         accept="image/png, image/jpeg, image/jpg, image/gif"
                                         style={{ display: 'none' }}
-                                        onChange={(e) => {
-                                            if (e.target.files && e.target.files[0]) {
-                                                handleImageSelect(e.target.files[0]);
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                            if (e?.target?.files) {
+                                                handleImagesSelect(e.target.files);
                                             }
                                         }}
                                     />
@@ -306,5 +391,3 @@ export function EquipmentFacilityCreatePage() {
         </section>
     );
 }
-
-export default EquipmentFacilityCreatePage;
