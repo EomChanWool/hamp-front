@@ -1,0 +1,304 @@
+/* ==========================================
+   1. FileDropZone 스타일
+   ================================---------- */
+.file-drop-zone-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.claim-register .file-drop-zone-wrapper {
+    gap: 0;
+}
+
+.file-drop-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background-color: var(--primary-light-color, #f0f4ff);
+    border: 1px dashed var(--primary-color, #0052cc);
+    border-radius: 6px;
+    padding: 32px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.file-drop-zone.file-drop-zone--dragging {
+    border-color: var(--info-color, #1971c2);
+    background-color: #dce8ff;
+}
+
+.file-drop-zone__icon {
+    width: 52px;
+    height: 52px;
+    color: var(--primary-dark-color, #1c7ed6);
+    font-size: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-drop-zone__main-text {
+    font-size: var(--fs-base, 16px);
+    font-weight: 500;
+    color: #1a1a1a;
+}
+
+.file-drop-zone__sub-text {
+    font-size: var(--fs-sm, 14px);
+    color: var(--gray-500, #868e96);
+}
+
+.file-drop-zone__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.file-drop-zone__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    background-color: #fff;
+    border: 1px solid var(--gray-input, #ced4da);
+    font-size: var(--fs-sm, 14px);
+    font-weight: 600;
+}
+
+.file-drop-zone__item-badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    font-size: var(--fs-xs, 12px);
+    font-weight: bold;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.file-drop-zone__item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.file-drop-zone__item-name {
+    font-weight: 500;
+    color: #1a1a1a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-drop-zone__item-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--fs-xs, 12px);
+    color: #999;
+}
+
+.file-drop-zone__item-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background-color: #ccc;
+    flex-shrink: 0;
+}
+
+.file-drop-zone__item-remove {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #aaa;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.file-drop-zone__item-remove:hover {
+    color: #333;
+}
+
+.claim-register .file-drop-zone {
+    margin-bottom: 10px;
+}
+
+.claim-register textarea {
+    height: 160px;
+}
+
+
+/* ==========================================
+   2. (FileDropZone 동반 영역)
+   ================================---------- */
+.cus-input-label-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.cus-input-label {
+    font-size: var(--fs-base, 16px);
+    color: var(--gray-600, #495057);
+}
+
+.cus-input-required {
+    position: relative;
+    top: -8px;
+}
+
+.cus-input-desc {
+    font-size: var(--fs-xs, 12px);
+    color: var(--gray-500, #868e96);
+    align-self: center;
+    margin-left: 2px;
+}
+
+.title {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding-bottom: 20px;
+}
+
+.main-title {
+    font-size: var(--fs-lg, 18px);
+    font-weight: bold;
+}
+
+.sub-title {
+    font-size: var(--fs-base, 16px);
+    color: var(--gray-600, #495057);
+}
+
+/* [라벨 - 내용] 한 묶음에 대한 정렬 규격 */
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 12px 0;
+}
+
+.info-item .info-label {
+    flex-shrink: 0;
+    width: 100px;
+    color: #4a5568;
+    font-size: 14px;
+}
+
+.info-item .info-value {
+    color: #1a202c;
+    font-size: 14px;
+}
+
+.info-item .info-value strong {
+    font-size: 15px;
+    color: #000;
+}
+
+.d-flex {
+    display: flex;
+    gap: 6px;
+}
+
+/* ==========================================
+   FileDropZone & Related Components Dark Mode
+   ========================================== */
+
+[data-theme="dark"] .file-drop-zone {
+  background-color: var(--primary-light); /* 기존에 정의하신 다크모드용 그린빛 배경 (#1a3a2e) 혹은 var(--bg-subtle) */
+  border-color: #2e5c47; /* 다크모드에 어울리는 은은한 초록빛 테두리 */
+}
+
+[data-theme="dark"] .file-drop-zone.file-drop-zone--dragging {
+  border-color: #57d3a1;
+  background-color: #16382a;
+}
+
+[data-theme="dark"] .file-drop-zone__icon {
+  color: #57d3a1; /* 포인트 초록색으로 아이콘 강조 */
+}
+
+[data-theme="dark"] .file-drop-zone__main-text {
+  color: var(--text-main);
+}
+
+[data-theme="dark"] .file-drop-zone__sub-text {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .file-drop-zone__item {
+  background-color: var(--bg-card);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .file-drop-zone__item-name {
+  color: var(--text-body);
+}
+
+[data-theme="dark"] .file-drop-zone__item-name:hover {
+  color: #57d3a1;
+}
+
+[data-theme="dark"] .file-drop-zone__item-meta {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .file-drop-zone__item-dot {
+  background-color: var(--text-muted);
+}
+
+[data-theme="dark"] .file-drop-zone__item-remove {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .file-drop-zone__item-remove:hover {
+  color: #fca5a5; /* 삭제 버튼 호버 시 다크모드 위험/경고 색상 */
+}
+
+/* 라벨 및 텍스트 요소 다크모드 대응 */
+[data-theme="dark"] .cus-input-label {
+  color: var(--text-body);
+}
+
+[data-theme="dark"] .cus-input-desc {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .main-title {
+  color: var(--text-heading);
+}
+
+[data-theme="dark"] .sub-title {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .info-item .info-label {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .info-item .info-value {
+  color: var(--text-body);
+}
+
+[data-theme="dark"] .info-item .info-value strong {
+  color: var(--text-main);
+}
