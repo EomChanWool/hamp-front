@@ -1,6 +1,6 @@
 /* ==========================================
-   1. FileDropZone 스타일
-   ================================---------- */
+    1. FileDropZone 스타일
+    ================================---------- */
 .file-drop-zone-wrapper {
     display: flex;
     flex-direction: column;
@@ -145,10 +145,9 @@
     height: 160px;
 }
 
-
 /* ==========================================
-   2. (FileDropZone 동반 영역)
-   ================================---------- */
+    2. (FileDropZone 동반 영역)
+    ================================---------- */
 .cus-input-label-row {
     display: flex;
     align-items: flex-start;
@@ -189,7 +188,6 @@
     color: var(--gray-600, #495057);
 }
 
-/* [라벨 - 내용] 한 묶음에 대한 정렬 규격 */
 .info-item {
     display: flex;
     align-items: center;
@@ -220,85 +218,142 @@
 }
 
 /* ==========================================
-   FileDropZone & Related Components Dark Mode
-   ========================================== */
+    이미지 업로드 및 미리보기 전용 클래스
+    ========================================== */
+.facility-image-drop-zone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    background: #f8fafc;
+}
 
+.facility-preview-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.facility-preview-img {
+    max-width: 100%;
+    max-height: 200px;
+    object-fit: contain;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+.facility-preview-remove-btn {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.facility-preview-name {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.facility-upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.facility-upload-subtext {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* ==========================================
+    Dark Mode 스타일
+    ========================================== */
 [data-theme="dark"] .file-drop-zone {
-  background-color: var(--primary-light); /* 기존에 정의하신 다크모드용 그린빛 배경 (#1a3a2e) 혹은 var(--bg-subtle) */
-  border-color: #2e5c47; /* 다크모드에 어울리는 은은한 초록빛 테두리 */
+    background-color: var(--primary-light);
+    border-color: #2e5c47;
 }
 
 [data-theme="dark"] .file-drop-zone.file-drop-zone--dragging {
-  border-color: #57d3a1;
-  background-color: #16382a;
+    border-color: #57d3a1;
+    background-color: #16382a;
 }
 
 [data-theme="dark"] .file-drop-zone__icon {
-  color: #57d3a1; /* 포인트 초록색으로 아이콘 강조 */
+    color: #57d3a1;
 }
 
 [data-theme="dark"] .file-drop-zone__main-text {
-  color: var(--text-main);
+    color: var(--text-main);
 }
 
 [data-theme="dark"] .file-drop-zone__sub-text {
-  color: var(--text-muted);
+    color: var(--text-muted);
 }
 
 [data-theme="dark"] .file-drop-zone__item {
-  background-color: var(--bg-card);
-  border-color: var(--border);
+    background-color: var(--bg-card);
+    border-color: var(--border);
 }
 
 [data-theme="dark"] .file-drop-zone__item-name {
-  color: var(--text-body);
+    color: var(--text-body);
 }
 
 [data-theme="dark"] .file-drop-zone__item-name:hover {
-  color: #57d3a1;
+    color: #57d3a1;
 }
 
 [data-theme="dark"] .file-drop-zone__item-meta {
-  color: var(--text-muted);
+    color: var(--text-muted);
 }
 
 [data-theme="dark"] .file-drop-zone__item-dot {
-  background-color: var(--text-muted);
+    background-color: var(--text-muted);
 }
 
 [data-theme="dark"] .file-drop-zone__item-remove {
-  color: var(--text-muted);
+    color: var(--text-muted);
 }
 
 [data-theme="dark"] .file-drop-zone__item-remove:hover {
-  color: #fca5a5; /* 삭제 버튼 호버 시 다크모드 위험/경고 색상 */
+    color: #fca5a5;
 }
 
-/* 라벨 및 텍스트 요소 다크모드 대응 */
 [data-theme="dark"] .cus-input-label {
-  color: var(--text-body);
+    color: var(--text-body);
 }
 
 [data-theme="dark"] .cus-input-desc {
-  color: var(--text-muted);
+    color: var(--text-muted);
 }
 
 [data-theme="dark"] .main-title {
-  color: var(--text-heading);
+    color: var(--text-heading);
 }
 
 [data-theme="dark"] .sub-title {
-  color: var(--text-muted);
+    color: var(--text-muted);
 }
 
 [data-theme="dark"] .info-item .info-label {
-  color: var(--text-muted);
+    color: var(--text-muted);
 }
 
 [data-theme="dark"] .info-item .info-value {
-  color: var(--text-body);
+    color: var(--text-body);
 }
 
 [data-theme="dark"] .info-item .info-value strong {
-  color: var(--text-main);
+    color: var(--text-main);
 }

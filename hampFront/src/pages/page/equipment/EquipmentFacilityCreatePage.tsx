@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useState, type SyntheticEvent, useRef, type DragEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import type {
@@ -10,7 +10,14 @@ import type { EquipmentOptionResponse } from "@/api/master/Equipment";
 import { EquipmentApi } from "@/api/master/Equipment";
 import type { FactoryZoneOptionResponse } from "@/api/master/FactoryZone";
 import { FactoryZoneApi } from "@/api/master/FactoryZone";
-import FileDropZone from "@/components/common/FileDropZone";
+import Remix from '@components/common/Remix';
+import CustomButton from '@/components/button/CustomButton';
+
+// 허용된 이미지 확장자 목록
+const ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif'];
+const MAX_FILE_SIZE_MB = 20;
+
+const getExt = (name: string) => name.split('.').pop()?.toLowerCase() ?? '';
 
 export function EquipmentFacilityCreatePage() {
     const navigate = useNavigate();
@@ -20,7 +27,11 @@ export function EquipmentFacilityCreatePage() {
     const [equipmentOptions, setEquipmentOptions] = useState<EquipmentOptionResponse[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
-    const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+    // 설비 이미지 파일 상태 및 미리보기 URL 상태
+    const [attachedFile, setAttachedFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const fetchOptions = useCallback(async () => {
         try {
@@ -65,6 +76,58 @@ export function EquipmentFacilityCreatePage() {
         navigate(queryString ? `/equipment/facility?${queryString}` : "/equipment/facility");
     };
 
+    // 이미지 파일 처리 및 미리보기 생성 함수
+    const handleImageSelect = (file: File) => {
+        const ext = getExt(file.name);
+
+        if (!ALLOWED_IMAGE_EXTENSIONS.includes(ext)) {
+            alert(`이미지 파일만 업로드 가능합니다. (${file.name})\n- 허용 확장자: ${ALLOWED_IMAGE_EXTENSIONS.join(', ').toUpperCase()}`);
+            return;
+        }
+
+        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+            alert(`파일 용량은 최대 ${MAX_FILE_SIZE_MB}MB를 초과할 수 없습니다.`);
+            return;
+        }
+
+        // 기존 미리보기 URL 메모리 해제
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+        }
+
+        setAttachedFile(file);
+        setPreviewUrl(URL.createObjectURL(file));
+
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const handleRemoveImage = () => {
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+        }
+        setAttachedFile(null);
+        setPreviewUrl(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+        if ((e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) return;
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleImageSelect(e.dataTransfer.files[0]);
+        }
+    };
+
     const validateForm = (): boolean => {
         const trimmedCode = form.fcltCode.trim();
         if (!trimmedCode) {
@@ -93,9 +156,8 @@ export function EquipmentFacilityCreatePage() {
 
         setIsSubmitting(true);
         try {
-            // 파일이 존재하면 createWithFiles, 없으면 일반 create 호출
-            if (attachedFiles.length > 0) {
-                await FacilityApi.createWithFiles(payload, attachedFiles);
+            if (attachedFile) {
+                await FacilityApi.createWithFiles(payload, [attachedFile]);
             } else {
                 await FacilityApi.create(payload);
             }
@@ -178,14 +240,59 @@ export function EquipmentFacilityCreatePage() {
                             </div>
                         </div>
 
-                        {/* 첨부파일 업로드 섹션 추가 */}
+                        {/* 설비 이미지 업로드 및 미리보기 섹션 */}
                         <div className="createSection">
-                            <h2 className="createSectionTitle">첨부파일</h2>
+                            <h2 className="createSectionTitle">설비 이미지</h2>
                             <div className="createField" style={{ gridColumn: '1 / -1' }}>
-                                <FileDropZone 
-                                    label="관련 문서 및 이미지 첨부"
-                                    onFilesChange={(files) => setAttachedFiles(files)}
-                                />
+                                <label className="cus-input-label" style={{ marginBottom: '8px', display: 'block' }}>설비 대표 이미지 첨부</label>
+                                
+                                <div 
+                                    className={`file-drop-zone facility-image-drop-zone ${isDragging ? ' file-drop-zone--dragging' : ''}`}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    onDragOver={handleDragOver}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={handleDrop}
+                                >
+                                    {previewUrl ? (
+                                        <div className="facility-preview-wrapper" onClick={(e) => e.stopPropagation()}>
+                                            <img 
+                                                src={previewUrl} 
+                                                alt="설비 미리보기" 
+                                                className="facility-preview-img"
+                                            />
+                                            <button 
+                                                type="button" 
+                                                onClick={handleRemoveImage}
+                                                className="facility-preview-remove-btn"
+                                                title="이미지 삭제"
+                                            >
+                                                ✕
+                                            </button>
+                                            <p className="facility-preview-name">{attachedFile?.name}</p>
+                                        </div>
+                                    ) : (
+                                        <div className="facility-upload-placeholder">
+                                            <Remix iconName="image-line" iconSize={2.3} color="#64748b" />
+                                            <span className="file-drop-zone__main-text">이미지 파일을 마우스로 끌어다 놓으세요.</span>
+                                            <span className="facility-upload-subtext">지원 형식: JPG, JPEG, PNG, GIF (최대 20MB)</span>
+                                            <CustomButton prefixType="ghost" iconPosition="text" onClick={() => fileInputRef.current?.click()}>
+                                                이미지 선택
+                                            </CustomButton>
+                                        </div>
+                                    )}
+
+                                    <input 
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/png, image/jpeg, image/jpg, image/gif"
+                                        style={{ display: 'none' }}
+                                        onChange={(e) => {
+                                            if (e.target.files && e.target.files[0]) {
+                                                handleImageSelect(e.target.files[0]);
+                                            }
+                                        }}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -199,3 +306,5 @@ export function EquipmentFacilityCreatePage() {
         </section>
     );
 }
+
+export default EquipmentFacilityCreatePage;
