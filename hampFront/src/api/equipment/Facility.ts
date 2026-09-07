@@ -1,5 +1,6 @@
 import { apiClient } from '@/api/apiClient';
-import type { ApiResponse, ApiResponsePage, AttachmentResponse, PageResponse } from '@/api/Common';
+import type { AttachmentResponse } from '@/api/Attachment'
+import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
 /** 종류 (0: 정지, 1: 작동, 2: 고장) */
 export type StatusType = 0 | 1 | 2;
@@ -49,7 +50,7 @@ export interface FacilityResponse {
 }
 
 /** 설비 상세 정보 응답 */
-export interface FacilityDetailRespons {
+export interface FacilityDetailResponse {
     fcltCode: string;
     eqCode: string;
     eqNm: string;
@@ -71,7 +72,7 @@ export interface FacilityDetailRespons {
 export type ApiResponseFacilityResponse = ApiResponse<FacilityResponse>;
 
 /** 설비 상세 조회 API 최종 응답 타입 */
-export type ApiResponseFacilityDetailResponse = ApiResponse<FacilityDetailRespons>;
+export type ApiResponseFacilityDetailResponse = ApiResponse<FacilityDetailResponse>;
 
 /** 설비 목록 페이징 데이터 타입 */
 export type PageFacilityResponse = PageResponse<FacilityResponse>;
@@ -100,21 +101,52 @@ export const FacilityApi = {
     return res.data;
   },
 
-  /** 설비 등록 */
+  /** 설비 등록 (JSON만) */
   create: async (data: FacilityCreateRequest): Promise<ApiResponseFacilityResponse> => {
     const res = await apiClient.post('/facilities', data)
     return res.data;
   },
 
-  /** 설비 수정 */
-  update: async (fcltCode: string, data: FacilityUpdateRequest): Promise<ApiResponseFacilityResponse> => {
-    const res = await apiClient.put(`/facilities/${fcltCode}`, data)
+  /** 설비 등록 (파일 포함, multipart/form-data) */
+  createWithFiles: async (data: FacilityCreateRequest, files: File[]): Promise<ApiResponseFacilityResponse> => {
+    const formData = new FormData();
+    formData.append('request', new Blob([JSON.stringify(data)], { type: 'application/json' }));
+    files.forEach((file) => formData.append('files', file));
+
+    const res = await apiClient.post('/facilities', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  },
+
+  /** 설비 정보 수정 (파일 포함, multipart/form-data) */
+  update: async (
+    fcltCode: string, 
+    data: FacilityUpdateRequest, 
+    files?: File[]
+  ): Promise<ApiResponseFacilityResponse> => {
+    const formData = new FormData();
+    formData.append('request', new Blob([JSON.stringify(data)], { type: 'application/json' }));
+    
+    if (files && files.length > 0) {
+      files.forEach((file) => formData.append('files', file));
+    }
+
+    const res = await apiClient.put(`/facilities/${fcltCode}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return res.data;
   },
 
   /** 설비 삭제 */
   delete: async (fcltCode: string): Promise<ApiResponse<string>> => {
     const res = await apiClient.delete(`/facilities/${fcltCode}`)
+    return res.data;
+  },
+
+  /** 설비 첨부파일 개별 삭제 */
+  deleteAttachment: async (fcltCode: string, attachmentId: number): Promise<ApiResponse<string>> => {
+    const res = await apiClient.delete(`/facilities/${fcltCode}/attachments/${attachmentId}`);
     return res.data;
   }
 };
