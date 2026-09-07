@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { formatDateTime } from "@/utils/common";
 import axios from "axios";
 import type {
-  FacilityDetailRespons,
+  FacilityDetailResponse,
   FacilityUpdateRequest,
   StatusType,
 } from "@/api/equipment/Facility";
@@ -12,29 +12,37 @@ import { EquipmentApi } from "@/api/master/Equipment";
 import { FactoryZoneApi } from "@/api/master/FactoryZone";
 import Spinner from "@/components/common/Spinner";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
+import FileDropZone, { EXT_META } from "@/components/common/FileDropZone";
+import Remix from "@/components/common/Remix";
+import { apiClient } from "@/api/apiClient";
+
+const getExt = (name: string) => name.split('.').pop()?.toLowerCase() ?? '';
 
 export function EquipmentFacilityDetailPage() {
   const { fcltCode } = useParams<{ fcltCode: string }>();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [facility, setFacility] = useState<FacilityDetailRespons | null>(null);
+  const [facility, setFacility] = useState<FacilityDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
-  // DetailLayout은 문자열 폼 상태를 기대하므로, currentStatus/useYn도 문자열로 통일해서 관리
   const [form, setForm] = useState<Record<string, string>>({});
 
   // 옵션 데이터 상태
   const [equipmentOptions, setEquipmentOptions] = useState<any[]>([]);
   const [factoryZoneOptions, setFactoryZoneOptions] = useState<any[]>([]);
 
+  // 첨부파일 관련 상태
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [existingAttachments, setExistingAttachments] = useState<any[]>([]);
+
   const isBusy = isUpdating || isDeleting;
 
-  // 섹션 정의: 장비/공장 정보 / 설비 정보로 그룹핑
-  const sections: DetailSection<FacilityDetailRespons>[] = [
+  // 섹션 정의
+  const sections: DetailSection<FacilityDetailResponse>[] = [
     {
       title: "설비 정보",
       fields: [
@@ -43,6 +51,7 @@ export function EquipmentFacilityDetailPage() {
           label: "현재상태",
           key: "currentStatus",
           editable: true,
+          fullWidth: true,
           renderEditor: (value, onChange, disabled) => (
             <select
               className="tableInput"
@@ -103,7 +112,7 @@ export function EquipmentFacilityDetailPage() {
         { label: "장비유형", key: "eqType", editable: false },
       ],
     },
-     {
+    {
       title: "공장 정보",
       fields: [
         {
@@ -132,7 +141,6 @@ export function EquipmentFacilityDetailPage() {
     },
   ];
 
-  // 옵션 목록 조회 함수
   const fetchOptions = async () => {
     try {
       const [eqRes, facRes] = await Promise.all([
@@ -146,7 +154,6 @@ export function EquipmentFacilityDetailPage() {
     }
   };
 
-  // 상세 데이터 조회 함수
   const fetchFacilityDetail = async () => {
     if (!fcltCode) return;
     setIsLoading(true);
@@ -170,6 +177,7 @@ export function EquipmentFacilityDetailPage() {
           useYn: fcltData.useYn ? "true" : "false",
           createdAt: formatDateTime(fcltData.createdAt),
         });
+        setExistingAttachments(fcltData.attachments ?? []);
       }
     } catch (error) {
       console.error("설비 상세 조회 실패:", error);
@@ -180,7 +188,6 @@ export function EquipmentFacilityDetailPage() {
     }
   };
 
-  // 상세 데이터 및 옵션 최초 조회
   useEffect(() => {
     if (fcltCode) {
       fetchFacilityDetail();
@@ -188,7 +195,6 @@ export function EquipmentFacilityDetailPage() {
     }
   }, [fcltCode]);
 
-  // 수정 모드 취소 시 롤백
   useEffect(() => {
     if (facility && !isEditing) {
       setForm({
@@ -204,10 +210,85 @@ export function EquipmentFacilityDetailPage() {
         useYn: facility.useYn ? "true" : "false",
         createdAt: formatDateTime(facility.createdAt),
       });
+      setNewFiles([]);
     }
   }, [isEditing, facility]);
 
-  // 저장 처리 핸들러
+  // 개별 첨부파일 삭제 핸들러
+  const handleDeleteAttachment = async (attachmentId: number) => {
+    if (!window.confirm("이 첨부파일은 X를 누르는 즉시 삭제되며, 수정 취소 시 복구되지 않습니다. 정말 삭제하시겠습니까?")) return;
+    if (!fcltCode) return;
+
+    try {
+      await FacilityApi.deleteAttachment(fcltCode, attachmentId);
+
+      // 성공 시 화면 상태에서도 해당 항목 제거 (attachmentId 기준)
+      setExistingAttachments((prev) => prev.filter((file) => file.attachmentId !== attachmentId));
+      alert("첨부파일이 삭제되었습니다.");
+    } catch (error) {
+      console.error("첨부파일 삭제 실패:", error);
+      alert("첨부파일 삭제 중 오류가 발생했습니다.");
+    }
+  };
+
+  // 수정된 파일 다운로드 핸들러 (contentType과 확장자 보장)
+  const handleDownloadAttachment = async (attachmentId: number) => {
+    try {
+      // 1. 기존에 이미 불러온 existingAttachments 목록에서 현재 파일의 정보를 찾습니다.
+      const targetFile = existingAttachments.find(f => f.attachmentId === attachmentId);
+      const originalFileName = targetFile?.originalName || 'downloaded_file';
+      const contentType = targetFile?.contentType || 'application/octet-stream';
+
+      // 2. apiClient를 사용하여 파일 다운로드 요청
+      const response = await apiClient.get(`/attachments/${attachmentId}/download`, {
+        responseType: 'blob', // 중요: 바이너리 파일 형태로 응답 수신
+      });
+
+      // 3. 서버 응답 헤더(Content-Disposition)에서 파일명이 내려온다면 그것을 우선 사용
+      let fileName = originalFileName;
+      const disposition = response.headers['content-disposition'];
+      if (disposition && disposition.includes('filename=')) {
+        const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (match && match[1]) {
+          fileName = decodeURIComponent(match[1].replace(/['"]/g, ''));
+        }
+      }
+
+      // 4. Blob을 생성할 때 서버가 준 정확한 contentType을 지정해줍니다.
+      const blob = new Blob([response.data], { type: contentType });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName); // 원본 파일명 및 확장자(.png 등) 적용
+      document.body.appendChild(link);
+      link.click();
+
+      // 5. 사용 후 정리
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("파일 다운로드 실패:", error);
+
+      // 에러 응답이 Blob 형태로 내려올 경우 에러 메시지 파싱
+      if (error instanceof Error && 'response' in error) {
+        const errRes = (error as any).response;
+        if (errRes?.data instanceof Blob) {
+          errRes.data.text().then((text: string) => {
+            try {
+              const json = JSON.parse(text);
+              alert(json.message || "파일 다운로드에 실패했습니다.");
+            } catch {
+              alert("파일 다운로드에 실패했습니다.");
+            }
+          });
+          return;
+        }
+      }
+      alert("파일 다운로드 중 오류가 발생했습니다.");
+    }
+  };
+
+  // 저장 핸들러
   const handleSave = async () => {
     if (!facility || isUpdating) return;
 
@@ -222,13 +303,15 @@ export function EquipmentFacilityDetailPage() {
         useYn: form.useYn === "true",
       };
 
-      const response = await FacilityApi.update(facility.fcltCode, updatePayload);
+      const response = await FacilityApi.update(
+        facility.fcltCode,
+        updatePayload,
+        newFiles.length > 0 ? newFiles : undefined
+      );
 
       alert(response.message || "수정되었습니다.");
-
-      // 수정 직후 서버에서 최신 데이터를 다시 조회하여 화면에 즉시 동기화
       await fetchFacilityDetail();
-
+      setNewFiles([]);
       setIsEditing(false);
     } catch (err) {
       console.error("설비 수정 실패:", err);
@@ -239,7 +322,6 @@ export function EquipmentFacilityDetailPage() {
     }
   };
 
-  // 설비 삭제 처리
   const handleDelete = async () => {
     if (!facility || isDeleting) return;
 
@@ -346,7 +428,80 @@ export function EquipmentFacilityDetailPage() {
             </>
           )
         }
-      />
+      >
+        <div className="detailSection detailField--full">
+          <h3 className="detailSectionTitle">첨부파일</h3>
+          <div className="createField" style={{ gridColumn: '1 / -1' }}>
+
+            {/* 1. 이미 등록되어 있는 기존 첨부파일 목록 */}
+            {existingAttachments.length > 0 && (
+              <div className="mb-4">
+                <ul className="file-drop-zone__list" style={{ marginTop: 0 }}>
+                  {existingAttachments.map((file) => {
+                    const fileId = file.attachmentId;
+                    const fileName = file.originalName ?? "첨부파일";
+                    const ext = getExt(fileName);
+                    const meta = EXT_META[ext] ?? { icon: 'file-line', color: '#888' };
+
+                    return (
+                      <li key={fileId} className="file-drop-zone__item">
+                        {/* 확장자 뱃지 */}
+                        <span className="file-drop-zone__item-badge" style={{ backgroundColor: meta.color }}>
+                          {ext || '기타'}
+                        </span>
+
+                        {/* 파일 정보 영역 (클릭 시 다운로드) */}
+                        <div className="file-drop-zone__item-info">
+                          <button
+                            type="button"
+                            className="file-drop-zone__item-name"
+                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
+                            onClick={() => handleDownloadAttachment(fileId)}
+                          >
+                            {fileName}
+                          </button>
+                          <span className="file-drop-zone__item-meta">
+                            등록된 첨부파일
+                            <span className="file-drop-zone__item-dot" />
+                            {ext.toUpperCase()}
+                          </span>
+                        </div>
+
+                        {/* 수정 모드일 때만 삭제 버튼 노출 */}
+                        {isEditing && (
+                          <button
+                            type="button"
+                            className="file-drop-zone__item-remove"
+                            onClick={() => handleDeleteAttachment(fileId)}
+                            title="삭제"
+                          >
+                            <Remix iconName="close-line" />
+                          </button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
+            {/* 기존 파일도 없고 수정 모드가 아닐 때의 안내 문구 */}
+            {existingAttachments.length === 0 && !isEditing && (
+              <p className="text-gray-500 text-sm">등록된 첨부파일이 없습니다.</p>
+            )}
+
+            {/* 2. 수정 모드일 때만 FileDropZone 컴포넌트 노출 */}
+            {isEditing && (
+              <div className="mt-2">
+                <FileDropZone
+                  label="관련 문서 및 이미지 추가 첨부"
+                  onFilesChange={(files) => setNewFiles(files)}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </DetailLayout>
     </section>
   );
 }
