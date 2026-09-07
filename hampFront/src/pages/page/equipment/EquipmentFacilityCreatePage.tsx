@@ -10,6 +10,7 @@ import type { EquipmentOptionResponse } from "@/api/master/Equipment";
 import { EquipmentApi } from "@/api/master/Equipment";
 import type { FactoryZoneOptionResponse } from "@/api/master/FactoryZone";
 import { FactoryZoneApi } from "@/api/master/FactoryZone";
+import FileDropZone from "@/components/common/FileDropZone";
 
 export function EquipmentFacilityCreatePage() {
     const navigate = useNavigate();
@@ -18,6 +19,8 @@ export function EquipmentFacilityCreatePage() {
     const [factoryZoneOptions, setFactoryZoneOptions] = useState<FactoryZoneOptionResponse[]>([]);
     const [equipmentOptions, setEquipmentOptions] = useState<EquipmentOptionResponse[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
 
     const fetchOptions = useCallback(async () => {
         try {
@@ -90,7 +93,13 @@ export function EquipmentFacilityCreatePage() {
 
         setIsSubmitting(true);
         try {
-            await FacilityApi.create(payload);
+            // 파일이 존재하면 createWithFiles, 없으면 일반 create 호출
+            if (attachedFiles.length > 0) {
+                await FacilityApi.createWithFiles(payload, attachedFiles);
+            } else {
+                await FacilityApi.create(payload);
+            }
+
             alert("성공적으로 등록되었습니다.");
             navigate("/equipment/facility", { replace: true });
         } catch (error) {
@@ -168,6 +177,17 @@ export function EquipmentFacilityCreatePage() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* 첨부파일 업로드 섹션 추가 */}
+                        <div className="createSection">
+                            <h2 className="createSectionTitle">첨부파일</h2>
+                            <div className="createField" style={{ gridColumn: '1 / -1' }}>
+                                <FileDropZone 
+                                    label="관련 문서 및 이미지 첨부"
+                                    onFilesChange={(files) => setAttachedFiles(files)}
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <div className="createFooter">
@@ -179,6 +199,3 @@ export function EquipmentFacilityCreatePage() {
         </section>
     );
 }
-
-
-
