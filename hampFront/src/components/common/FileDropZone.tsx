@@ -21,6 +21,8 @@ interface FileDropZoneProps {
     /** false이면 내부 파일 목록을 숨김. 부모가 파일 목록을 직접 관리할 때 사용 */
     showFileList?: boolean;
     className?: string;
+    /** 이미지 전용 화면 등에서는 allowedExtensions={['jpg','jpeg','png','gif']} */
+    allowedExtensions?: string[];
 }
 
 export const EXT_META: Record<string, { icon: string; color: string }> = {
@@ -42,8 +44,8 @@ export const EXT_META: Record<string, { icon: string; color: string }> = {
     txt: { icon: 'file-text-line', color: '#555555' },
 };
 
-// 허용된 확장자 목록 (소문자)
-const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'hwp', 'hwpx', 'jpg', 'jpeg', 'png', 'gif', 'zip', 'txt'];
+// 기본 허용 확장자 목록 (소문자). allowedExtensions prop을 넘기지 않았을 때의 기본값으로 쓰인다.
+const DEFAULT_ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'hwp', 'hwpx', 'jpg', 'jpeg', 'png', 'gif', 'zip', 'txt'];
 const MAX_FILE_SIZE_MB = 20;
 
 const getExt = (name: string) => name.split('.').pop()?.toLowerCase() ?? '';
@@ -53,6 +55,7 @@ const formatBytes = (bytes: number) => {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
+// 신규 첨부 파일에 붙일 고유 id 카운터 (컴포넌트 인스턴스 간 공유되는 모듈 스코프 변수)
 let uid = 0;
 
 const FileDropZone = ({
@@ -66,12 +69,14 @@ const FileDropZone = ({
     onFilesChange,
     showFileList = true,
     className = '',
+    allowedExtensions = DEFAULT_ALLOWED_EXTENSIONS,
 }: FileDropZoneProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 
     // ── 파일 검증 및 추가 로직 ──
+    // 드래그앤드롭, 파일 선택 input 두 경로 모두 이 함수를 통해서만 파일을 추가한다.
     const handleFiles = (fileList: FileList | null) => {
         if (!fileList || fileList.length === 0) return;
 
@@ -81,9 +86,9 @@ const FileDropZone = ({
         for (const file of incomingArray) {
             const ext = getExt(file.name);
 
-            // 1. 확장자 검증
-            if (!ALLOWED_EXTENSIONS.includes(ext)) {
-                alert(`허용되지 않는 파일 형식입니다. (${file.name})\n- 허용 확장자: ${ALLOWED_EXTENSIONS.join(', ')}`);
+            // 1. 확장자 검증 (allowedExtensions prop 기준. 기본값은 문서/이미지/압축 등 전체)
+            if (!allowedExtensions.includes(ext)) {
+                alert(`허용되지 않는 파일 형식입니다. (${file.name})\n- 허용 확장자: ${allowedExtensions.join(', ')}`);
                 continue;
             }
 
@@ -100,10 +105,11 @@ const FileDropZone = ({
             const updated = [...attachedFiles, ...validFiles];
             setAttachedFiles(updated);
 
-            // 부모 컴포넌트에 순수 File 객체 배열만 전달
+            // 부모 컴포넌트에 순수 File 객체 배열만 전달 (지금까지 누적된 전체 목록)
             onFilesChange?.(updated.map(item => item.file));
         }
 
+        // 같은 파일을 연속으로 다시 선택해도 change 이벤트가 발생하도록 값 초기화
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
@@ -120,6 +126,7 @@ const FileDropZone = ({
     };
 
     const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+        // 드롭존 내부의 자식 엘리먼트로 마우스가 이동한 경우까지 dragLeave로 처리되지 않도록 방지
         if ((e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) return;
         setIsDragging(false);
     };
@@ -173,6 +180,8 @@ const FileDropZone = ({
                 />
             </div>
 
+            {/* showFileList=false인 경우(예: ImageGallery 빈 상태) 이 목록은 렌더링하지 않는다.
+                이때도 onFilesChange는 그대로 호출되므로, 부모가 파일 목록을 직접 그려주면 된다. */}
             {showFileList && attachedFiles.length > 0 && (
                 <ul className="file-drop-zone__list">
                     {attachedFiles.map(({ file, id }) => {
