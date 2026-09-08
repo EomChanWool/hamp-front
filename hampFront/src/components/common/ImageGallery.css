@@ -1,0 +1,198 @@
+/* ==========================================
+    ImageGallery 스타일
+    (빈 상태일 때는 FileDropZone.css를 그대로 사용하므로,
+     여기에는 "이미지 1장 이상" 상태의 캐러셀 UI만 정의한다)
+    ========================================== */
+
+.image-gallery {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ── 헤더: 제목 + "n장" 카운트 ── */
+.image-gallery__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.image-gallery__title {
+    font-size: var(--fs-base, 16px);
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.image-gallery__count {
+    font-size: var(--fs-xs, 12px);
+    color: var(--gray-500, #868e96);
+}
+
+/* ── 큰 미리보기 영역 ── */
+.image-gallery__preview {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background-color: #0f0f10;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer; /* 확대 가능하도록 커서 추가 */
+}
+
+.image-gallery__preview:focus-visible {
+    outline: 2px solid var(--primary-color, #0052cc);
+    outline-offset: 2px;
+}
+
+.image-gallery__preview-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* 평소에는 숨겨져 있는 돋보기 오버레이 */
+.image-gallery__preview-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4); /* 반투명 검은색 배경 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* 미리보기에 마우스 호버 시 오버레이 등장 */
+.image-gallery__preview:hover .image-gallery__preview-overlay {
+    opacity: 1;
+}
+
+.image-gallery__preview-index {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    color: #fff;
+    font-size: var(--fs-sm, 14px);
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.image-gallery__preview-name {
+    position: absolute;
+    left: 14px;
+    bottom: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #fff;
+    font-size: var(--fs-sm, 14px);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+    max-width: calc(100% - 28px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── 하단 썸네일 스트립 ── */
+.image-gallery__thumbnails {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.image-gallery__thumb {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    padding: 0;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    overflow: hidden;
+    cursor: pointer;
+    background: none;
+    flex-shrink: 0;
+}
+
+.image-gallery__thumb:focus-visible {
+    outline: 2px solid var(--primary-color, #0052cc);
+    outline-offset: 2px;
+}
+
+.image-gallery__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.image-gallery__thumb--active {
+    border-color: var(--primary-color, #0052cc);
+}
+
+.image-gallery__thumb-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 18px;
+    height: 18px;
+    border: none;
+    padding: 0;
+    font: inherit;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.image-gallery__thumb-remove:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 1px;
+}
+
+/* "이미지 추가" 버튼: 썸네일과 같은 크기의 점선 박스 */
+.image-gallery__thumb--add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed var(--gray-input, #ced4da);
+    color: var(--gray-500, #868e96);
+    background-color: #f8fafc;
+    cursor: pointer;
+}
+
+.image-gallery__thumb--add:hover {
+    border-color: var(--primary-color, #0052cc);
+    color: var(--primary-color, #0052cc);
+}
+
+.image-gallery__thumb--add:focus-within {
+    outline: 2px solid var(--primary-color, #0052cc);
+    outline-offset: 2px;
+}
+
+/* ==========================================
+    Dark Mode
+    ========================================== */
+[data-theme="dark"] .image-gallery__title {
+    color: var(--text-main);
+}
+
+[data-theme="dark"] .image-gallery__count {
+    color: var(--text-muted);
+}
+
+[data-theme="dark"] .image-gallery__thumb--add {
+    background-color: var(--bg-card);
+    border-color: var(--border);
+    color: var(--text-muted);
+}

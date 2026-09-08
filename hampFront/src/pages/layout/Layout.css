@@ -817,16 +817,72 @@
   padding: 14px 18px; 
 }
 
-/* 뱃지형 값 */
+/* ================================
+   DETAIL BADGE (상세 화면 전용 뱃지)
+================================ */
+
 .detailCard .detailBadge {
-  font-size: 16px; 
-  font-weight: 600;
-  color: var(--dl-accent-ink);
-  background: var(--dl-accent-soft);
-  padding: 10px 16px; 
-  border-radius: 10px;
-  display: inline-block;
+  font-size: 18px; 
+  font-weight: 700;
+  padding: 8px 16px; 
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   width: fit-content;
+}
+
+/* 1: 작동 (성공/정상) */
+.detailCard .detailBadge.success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+/* 0: 정지 (위험/중단) */
+.detailCard .detailBadge.danger {
+  background: #fde8e8;
+  color: #991b1b;
+}
+
+/* 2: 고장 (경고) */
+.detailCard .detailBadge.warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* 사용 / 기본 */
+.detailCard .detailBadge.good {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+/* 미사용 / 기본 */
+.detailCard .detailBadge.muted {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* 상태를 나타내는 뱃지(작동, 정지, 고장) 앞에만 자동으로 작은 점(dot) 추가 */
+.detailCard .detailBadge.success::before,
+.detailCard .detailBadge.danger::before,
+.detailCard .detailBadge.warn::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+  margin-right: 6px;
+}
+
+/* 뱃지가 들어있는 필드의 네모난 인풋창 박스(배경/테두리) 제거 */
+.detailCard .detailField:has(.detailBadge),
+.detailCard .detailValue:has(.detailBadge) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 4px 0 !important;
+  min-height: auto !important;
 }
 
 /* 입력 필드 (edit 모드) */

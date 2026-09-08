@@ -15,7 +15,7 @@ import {
   type SeedGoodsReceiptUpdateRequest,
 } from '@/api/ioSeed/SeedGoodsReceipt';
 import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
-import { ReportModal } from '@/components/common/ReportModal';
+import { ReportModal } from '@/components/modal/ReportModal';
 import '@/pages/page/ioSeed/ioSeed.css';
 
 // 백엔드 reportStatus 값: '미신고' / '부분신고' / '신고완료'

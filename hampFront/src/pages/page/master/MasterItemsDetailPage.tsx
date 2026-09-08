@@ -16,7 +16,7 @@ import {
 } from "@/api/master/Item";
 import { OperationApi } from "@/api/master/Operation";
 import Spinner from "@/components/common/Spinner";
-import { OperationSelectModal } from "@/components/common/OperationSelectModal";
+import { OperationSelectModal } from "@/components/modal/OperationSelectModal";
 import { useItemRoutings } from "@/hooks/useItemRoutings";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
 import "./MasterItem.css";

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Panel } from '@components/card/Panel'
-import { RowDetailModal } from '@components/common/RowDetailModal'
+import { RowDetailModal } from '@/components/modal/RowDetailModal'
 import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
