@@ -226,6 +226,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
             {
                 accessorKey: 'returnQty',
                 header: '신고(반납)수량',
+                enableSorting: false,
                 cell: ({ row }) => {
                     const item = row.original;
                     const isEditing = editingReturnId === item.returnId;
@@ -250,6 +251,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
             {
                 accessorKey: 'reportDate',
                 header: '신고일자',
+                enableSorting: false,
                 cell: ({ row }) => {
                     const item = row.original;
                     const isEditing = editingReturnId === item.returnId;
@@ -274,6 +276,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
             {
                 accessorKey: 'returnDueDate',
                 header: '반납예정일',
+                enableSorting: false,
                 cell: ({ row }) => {
                     const item = row.original;
                     const isEditing = editingReturnId === item.returnId;
@@ -298,6 +301,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
             {
                 accessorKey: 'processStatus',
                 header: '처리상태',
+                enableSorting: false,
                 cell: ({ row }) => {
                     const item = row.original;
                     const isEditing = editingReturnId === item.returnId;
