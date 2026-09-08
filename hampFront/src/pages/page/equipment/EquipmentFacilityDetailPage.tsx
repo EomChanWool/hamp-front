@@ -43,6 +43,9 @@ export function EquipmentFacilityDetailPage() {
   // 기존 첨부파일을 <img>에 바로 쓸 수 있는 Blob URL로 변환한 상태 (key: attachmentId)
   const [existingImageUrls, setExistingImageUrls] = useState<Record<number, string>>({});
 
+  // 사용자가 수정 모드에서 삭제하기로 예약한 첨부파일 ID 목록 (최종 저장 시 서버에 반영)
+  const [deletedAttachmentIds, setDeletedAttachmentIds] = useState<number[]>([]);
+
   const isBusy = isUpdating || isDeleting;
 
   // 섹션 정의
@@ -71,11 +74,11 @@ export function EquipmentFacilityDetailPage() {
           renderValue: (value) => {
             const statusNum = Number(value) as StatusType;
             const label = STATUS_TYPE_LABEL[statusNum] ?? "-";
-            
+
             // 0: 정지(danger), 1: 작동(success), 2: 고장(warn)
             let badgeClass = "detailBadge success";
-            if (statusNum === 0) badgeClass = "detailBadge danger"; 
-            if (statusNum === 2) badgeClass = "detailBadge warn";  
+            if (statusNum === 0) badgeClass = "detailBadge danger";
+            if (statusNum === 2) badgeClass = "detailBadge warn";
 
             return (
               <span className={badgeClass}>
@@ -289,32 +292,23 @@ export function EquipmentFacilityDetailPage() {
   const gallery = useImageGallery({
     initialExisting: initialExistingForGallery,
     onRemoveExisting: async (attachmentId) => {
-      if (!window.confirm("이 첨부파일은 삭제 버튼을 누르는 즉시 삭제되며, 수정 취소 시 복구되지 않습니다. 정말 삭제하시겠습니까?")) {
-        throw new Error("cancelled");
-      }
-      if (!fcltCode) return;
+      // 즉시 서버 API를 호출하지 않고, 삭제 대기열(State)에 ID만 추가
+      setDeletedAttachmentIds((prev) => [...prev, attachmentId]);
 
-      try {
-        await FacilityApi.deleteAttachment(fcltCode, attachmentId);
-      } catch (error) {
-        console.error("첨부파일 삭제 실패:", error);
-        alert("첨부파일 삭제 중 오류가 발생했습니다.");
-        throw error;
-      }
-
+      // 화면상 미리보기 URL 및 기존 첨부파일 목록에서 즉시 제거
       setExistingImageUrls((prev) => {
         const { [attachmentId]: removedUrl, ...rest } = prev;
         if (removedUrl) URL.revokeObjectURL(removedUrl);
         return rest;
       });
       setExistingAttachments((prev) => prev.filter((f) => f.attachmentId !== attachmentId));
-
-      alert("첨부파일이 삭제되었습니다.");
     },
   });
 
   const handleCancelEdit = () => {
     gallery.resetNew();
+    // 수정 취소 시 삭제 예약된 목록도 원복하기 위해 데이터를 다시 불러옴
+    fetchFacilityDetail();
     setIsEditing(false);
   };
 
@@ -332,8 +326,17 @@ export function EquipmentFacilityDetailPage() {
         useYn: form.useYn === "true",
       };
 
+      // 1. 설비 정보 업데이트 요청
       const response = await FacilityApi.update(facility.fcltCode, updatePayload);
 
+      // 2. 사용자가 삭제하기로 예약한 첨부파일들이 있다면 최종 저장 시점에 일괄 서버 삭제 요청
+      if (deletedAttachmentIds.length > 0) {
+        await Promise.allSettled(
+          deletedAttachmentIds.map((id) => FacilityApi.deleteAttachment(facility.fcltCode, id))
+        );
+      }
+
+      // 3. 새로 추가된 이미지 파일들 업로드
       if (gallery.newFiles.length > 0) {
         const results = await Promise.allSettled(
           gallery.newFiles.map((file) => FacilityApi.uploadAttachment(facility.fcltCode, file, "IMAGE"))
@@ -354,9 +357,11 @@ export function EquipmentFacilityDetailPage() {
       }
 
       alert(response.message || "수정되었습니다.");
+
       await fetchFacilityDetail();
 
       gallery.resetNew();
+      setDeletedAttachmentIds([]);
       setIsEditing(false);
     } catch (err) {
       console.error("설비 수정 실패:", err);
