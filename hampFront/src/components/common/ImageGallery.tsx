@@ -36,7 +36,8 @@ const ImageGallery = ({
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      onFilesSelected(e.target.files);
+      const filesArray = Array.from(e.target.files);
+      onFilesSelected(filesArray);
     }
     e.target.value = ''; // 같은 파일을 다시 선택해도 change 이벤트가 발생하도록 초기화
   };
