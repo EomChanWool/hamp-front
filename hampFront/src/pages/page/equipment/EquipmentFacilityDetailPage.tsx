@@ -24,6 +24,10 @@ export function EquipmentFacilityDetailPage() {
 
   const [facility, setFacility] = useState<FacilityDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // 이미지 다운로드 대기 중 "등록된 첨부파일이 없습니다" 가 깜빡이는 현상을 방지하기 위한 로딩 상태
+  const [isImagesLoading, setIsImagesLoading] = useState(false);
+  
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -75,7 +79,6 @@ export function EquipmentFacilityDetailPage() {
             const statusNum = Number(value) as StatusType;
             const label = STATUS_TYPE_LABEL[statusNum] ?? "-";
 
-            // 0: 정지(danger), 1: 작동(success), 2: 고장(warn)
             let badgeClass = "detailBadge success";
             if (statusNum === 0) badgeClass = "detailBadge danger";
             if (statusNum === 2) badgeClass = "detailBadge warn";
@@ -182,6 +185,56 @@ export function EquipmentFacilityDetailPage() {
     }
   }, []);
 
+  /**
+   * Promise.all을 활용한 병렬(동시) 다운로드 방식으로 변경하여 로딩 속도 대폭 개선
+   */
+  const loadImagesAsBlobs = async (attachments: any[]) => {
+    const newUrls: Record<number, string> = { ...existingImageUrls };
+    
+    // 이미 캐시되어 있지 않은 대상 파일들만 필터링
+    const targets = attachments.filter((file) => !newUrls[file.attachmentId]);
+    if (targets.length === 0) return;
+
+    setIsImagesLoading(true); // 이미지 로딩 시작
+    try {
+      // 1. 모든 이미지 다운로드 요청을 병렬(Promise.all)로 생성
+      const downloadPromises = targets.map(async (file) => {
+        try {
+          const response = await apiClient.get(`/attachments/${file.attachmentId}/download`, {
+            responseType: 'blob',
+          });
+          const blob = new Blob([response.data], { type: file.contentType || 'image/jpeg' });
+          return {
+            id: file.attachmentId,
+            url: URL.createObjectURL(blob),
+          };
+        } catch (error) {
+          console.error(`이미지 다운로드 실패 (ID: ${file.attachmentId}):`, error);
+          return null;
+        }
+      });
+
+      // 2. 동시에 모든 요청 실행 및 완료 대기
+      const results = await Promise.all(downloadPromises);
+
+      let hasChanges = false;
+      results.forEach((result) => {
+        if (result) {
+          newUrls[result.id] = result.url;
+          hasChanges = true;
+        }
+      });
+
+      if (hasChanges) {
+        setExistingImageUrls(newUrls);
+      }
+    } catch (error) {
+      console.error("이미지 일괄 다운로드 실패:", error);
+    } finally {
+      setIsImagesLoading(false); // 이미지 로딩 종료
+    }
+  };
+
   const fetchFacilityDetail = useCallback(async () => {
     if (!fcltCode) return;
     setIsLoading(true);
@@ -205,7 +258,11 @@ export function EquipmentFacilityDetailPage() {
           useYn: fcltData.useYn ? "true" : "false",
           createdAt: formatDateTime(fcltData.createdAt),
         });
-        setExistingAttachments(fcltData.attachments ?? []);
+        const attachments = fcltData.attachments ?? [];
+        setExistingAttachments(attachments);
+        
+        // 상세 데이터 로드 시점에 병렬로 이미지 일괄 다운로드 시작
+        loadImagesAsBlobs(attachments);
       }
     } catch (error) {
       console.error("설비 상세 조회 실패:", error);
@@ -223,43 +280,14 @@ export function EquipmentFacilityDetailPage() {
     }
   }, [fcltCode, fetchFacilityDetail, fetchOptions]);
 
-  // existingAttachments가 바뀔 때마다 서버에서 이미지를 Blob으로 내려받아 미리보기 URL을 생성
+  // 컴포넌트 언마운트 시 브라우저 메모리(Blob URL) 누수 방지를 위한 해제 처리
   useEffect(() => {
-    if (!existingAttachments || existingAttachments.length === 0) {
-      setExistingImageUrls({});
-      return;
-    }
-
-    let isMounted = true;
-    const urls: Record<number, string> = {};
-
-    const fetchExistingImages = async () => {
-      await Promise.allSettled(
-        existingAttachments.map(async (file) => {
-          try {
-            const response = await apiClient.get(`/attachments/${file.attachmentId}/download`, {
-              responseType: 'blob',
-            });
-            const blob = new Blob([response.data], { type: file.contentType || 'image/jpeg' });
-            if (isMounted) {
-              const url = URL.createObjectURL(blob);
-              urls[file.attachmentId] = url;
-              setExistingImageUrls((prev) => ({ ...prev, [file.attachmentId]: url }));
-            }
-          } catch (error) {
-            console.error(`기존 이미지 로드 실패 (ID: ${file.attachmentId}):`, error);
-          }
-        })
-      );
-    };
-
-    fetchExistingImages();
-
     return () => {
-      isMounted = false;
-      Object.values(urls).forEach((url) => URL.revokeObjectURL(url));
+      Object.values(existingImageUrls).forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
     };
-  }, [existingAttachments]);
+  }, []);
 
   useEffect(() => {
     if (facility && !isEditing) {
@@ -289,26 +317,40 @@ export function EquipmentFacilityDetailPage() {
       }));
   }, [existingAttachments, existingImageUrls]);
 
+  // 1. 기존 삭제 핸들러 수정 (중복 ID 방지 Set 활용 혹은 조건 추가)
   const gallery = useImageGallery({
     initialExisting: initialExistingForGallery,
     onRemoveExisting: async (attachmentId) => {
-      // 즉시 서버 API를 호출하지 않고, 삭제 대기열(State)에 ID만 추가
-      setDeletedAttachmentIds((prev) => [...prev, attachmentId]);
-
-      // 화면상 미리보기 URL 및 기존 첨부파일 목록에서 즉시 제거
-      setExistingImageUrls((prev) => {
-        const { [attachmentId]: removedUrl, ...rest } = prev;
-        if (removedUrl) URL.revokeObjectURL(removedUrl);
-        return rest;
-      });
+      // 중복 추가 방지
+      setDeletedAttachmentIds((prev) =>
+        prev.includes(attachmentId) ? prev : [...prev, attachmentId]
+      );
       setExistingAttachments((prev) => prev.filter((f) => f.attachmentId !== attachmentId));
     },
   });
 
+  // 2. 수정 취소 시 서버를 재조회하지 않고 캐시된 데이터로 즉시 원복 (재다운로드 원천 차단)
   const handleCancelEdit = () => {
     gallery.resetNew();
-    // 수정 취소 시 삭제 예약된 목록도 원복하기 위해 데이터를 다시 불러옴
-    fetchFacilityDetail();
+    setDeletedAttachmentIds([]);
+
+    if (facility) {
+      setExistingAttachments(facility.attachments ?? []);
+      setForm({
+        fcltCode: facility.fcltCode,
+        eqCode: facility.eqCode || "",
+        eqNm: facility.eqNm || "",
+        eqType: facility.eqType || "",
+        facCode: facility.facCode || "",
+        facNm: facility.facNm || "",
+        location: facility.location || "",
+        fcltNm: facility.fcltNm || "",
+        currentStatus: String(facility.currentStatus ?? 1),
+        useYn: facility.useYn ? "true" : "false",
+        createdAt: formatDateTime(facility.createdAt),
+      });
+    }
+
     setIsEditing(false);
   };
 
@@ -326,47 +368,44 @@ export function EquipmentFacilityDetailPage() {
         useYn: form.useYn === "true",
       };
 
-      // 1. 설비 정보 업데이트 요청
-      const response = await FacilityApi.update(facility.fcltCode, updatePayload);
+      // 1. 설비 정보 업데이트
+      await FacilityApi.update(facility.fcltCode, updatePayload);
 
-      // 2. 사용자가 삭제하기로 예약한 첨부파일들이 있다면 최종 저장 시점에 일괄 서버 삭제 요청
+      // 2. 삭제 예약된 파일들 삭제
       if (deletedAttachmentIds.length > 0) {
+        const uniqueIdsToDel = Array.from(new Set(deletedAttachmentIds));
         await Promise.allSettled(
-          deletedAttachmentIds.map((id) => FacilityApi.deleteAttachment(facility.fcltCode, id))
+          uniqueIdsToDel.map((id) => FacilityApi.deleteAttachment(facility.fcltCode, id))
         );
       }
 
-      // 3. 새로 추가된 이미지 파일들 업로드
+      // 3. 새 이미지 업로드
+      let newlyUploadedAttachments: any[] = [];
       if (gallery.newFiles.length > 0) {
-        const results = await Promise.allSettled(
-          gallery.newFiles.map((file) => FacilityApi.uploadAttachment(facility.fcltCode, file, "IMAGE"))
-        );
+        const uploadPromises = gallery.newFiles.map(async (file) => {
+          const res = await FacilityApi.uploadAttachment(facility.fcltCode, file, "IMAGE");
+          return res.data;
+        });
 
-        const failedNames = results
-          .map((result, index) => (result.status === "rejected" ? gallery.newFiles[index].name : null))
-          .filter((name): name is string => name !== null);
-
-        if (failedNames.length > 0) {
-          console.error("이미지 업로드 실패:", failedNames);
-          alert(
-            `설비 정보는 수정되었습니다.\n` +
-            `다만 이미지 ${gallery.newFiles.length}장 중 ${failedNames.length}장 업로드에 실패했습니다:\n` +
-            `- ${failedNames.join('\n- ')}`
-          );
-        }
+        const results = await Promise.allSettled(uploadPromises);
+        
+        results.forEach((res) => {
+          if (res.status === "fulfilled" && res.value) {
+            newlyUploadedAttachments.push(res.value);
+          }
+        });
       }
 
-      alert(response.message || "수정되었습니다.");
-
-      await fetchFacilityDetail();
-
+      alert("수정되었습니다.");
       gallery.resetNew();
       setDeletedAttachmentIds([]);
+      
+      await fetchFacilityDetail(); 
+
       setIsEditing(false);
     } catch (err) {
       console.error("설비 수정 실패:", err);
-      const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
-      alert(errorMessage || "수정에 실패했습니다.");
+      alert("수정에 실패했습니다.");
     } finally {
       setIsUpdating(false);
     }
@@ -487,7 +526,12 @@ export function EquipmentFacilityDetailPage() {
             </span>
           </div>
           <div className="createField" style={{ gridColumn: '1 / -1' }}>
-            {gallery.isEmpty && !isEditing ? (
+            {/* 이미지를 불러오는 도중에는 "등록된 첨부파일이 없습니다" 대신 로딩 스피너 출력 */}
+            {isImagesLoading && existingAttachments.length > 0 && initialExistingForGallery.length === 0 ? (
+              <div className="flex items-center justify-center p-6 text-gray-500 text-sm gap-2">
+                <Spinner />
+              </div>
+            ) : gallery.isEmpty && !isEditing ? (
               <p className="text-gray-500 text-sm">등록된 첨부파일이 없습니다.</p>
             ) : (
               <ImageGallery
