@@ -15,6 +15,7 @@ import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
 import { apiClient } from "@/api/apiClient";
 import { useImageGallery } from "@/hooks/useImageGallery";
 import ImageGallery from "@components/common/ImageGallery";
+import ImageModal from "@components/modal/ImageModal";
 
 export function EquipmentFacilityDetailPage() {
   const { fcltCode } = useParams<{ fcltCode: string }>();
@@ -28,6 +29,9 @@ export function EquipmentFacilityDetailPage() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
+
+  // 전체 화면 이미지 확대 모달 열림/닫힘 상태 관리
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 옵션 데이터 상태
   const [equipmentOptions, setEquipmentOptions] = useState<any[]>([]);
@@ -64,7 +68,21 @@ export function EquipmentFacilityDetailPage() {
               <option value="2">고장</option>
             </select>
           ),
-          renderValue: (value) => STATUS_TYPE_LABEL[Number(value) as StatusType] ?? "-",
+          renderValue: (value) => {
+            const statusNum = Number(value) as StatusType;
+            const label = STATUS_TYPE_LABEL[statusNum] ?? "-";
+            
+            // 0: 정지(danger), 1: 작동(success), 2: 고장(warn)
+            let badgeClass = "detailBadge success";
+            if (statusNum === 0) badgeClass = "detailBadge danger"; 
+            if (statusNum === 2) badgeClass = "detailBadge warn";  
+
+            return (
+              <span className={badgeClass}>
+                {label}
+              </span>
+            );
+          },
         },
         {
           label: "사용여부",
@@ -81,7 +99,14 @@ export function EquipmentFacilityDetailPage() {
               <option value="false">미사용</option>
             </select>
           ),
-          renderValue: (value) => (value === "true" ? "사용" : "미사용"),
+          renderValue: (value) => {
+            const isUsed = value === "true";
+            return (
+              <span className={`detailBadge ${isUsed ? "good" : "muted"}`}>
+                {isUsed ? "사용" : "미사용"}
+              </span>
+            );
+          },
         },
       ],
     },
@@ -196,7 +221,6 @@ export function EquipmentFacilityDetailPage() {
   }, [fcltCode, fetchFacilityDetail, fetchOptions]);
 
   // existingAttachments가 바뀔 때마다 서버에서 이미지를 Blob으로 내려받아 미리보기 URL을 생성
-  // Promise.allSettled로 병렬 요청하며, 완료되는 대로 하나씩 갱신
   useEffect(() => {
     if (!existingAttachments || existingAttachments.length === 0) {
       setExistingImageUrls({});
@@ -230,7 +254,6 @@ export function EquipmentFacilityDetailPage() {
 
     return () => {
       isMounted = false;
-      // 컴포넌트 언마운트 또는 데이터 갱신 시 기존 메모리 해제
       Object.values(urls).forEach((url) => URL.revokeObjectURL(url));
     };
   }, [existingAttachments]);
@@ -253,22 +276,18 @@ export function EquipmentFacilityDetailPage() {
     }
   }, [isEditing, facility]);
 
-  const initialExistingForGallery = useMemo(
-    () =>
-      existingAttachments
-        .filter((a) => existingImageUrls[a.attachmentId])
-        .map((a) => ({
-          attachmentId: a.attachmentId,
-          url: existingImageUrls[a.attachmentId],
-          name: a.originalName ?? "첨부이미지",
-        })),
-    [existingAttachments, existingImageUrls]
-  );
+  const initialExistingForGallery = useMemo(() => {
+    return existingAttachments
+      .filter((a) => existingImageUrls[a.attachmentId])
+      .map((a) => ({
+        attachmentId: a.attachmentId,
+        url: existingImageUrls[a.attachmentId],
+        name: a.originalName ?? "첨부이미지",
+      }));
+  }, [existingAttachments, existingImageUrls]);
 
-  // 설비 이미지 상태(기존 첨부 + 신규 선택 파일)는 useImageGallery 훅 하나로 관리
   const gallery = useImageGallery({
     initialExisting: initialExistingForGallery,
-    // 기존 첨부 삭제: 확인창 → 서버 삭제 API → 성공 시에만 원본 목록/URL 맵 정리.
     onRemoveExisting: async (attachmentId) => {
       if (!window.confirm("이 첨부파일은 삭제 버튼을 누르는 즉시 삭제되며, 수정 취소 시 복구되지 않습니다. 정말 삭제하시겠습니까?")) {
         throw new Error("cancelled");
@@ -294,13 +313,11 @@ export function EquipmentFacilityDetailPage() {
     },
   });
 
-  // 수정 취소 시 신규로 골라뒀던 이미지만 초기화한다 (기존 첨부는 그대로 유지)
   const handleCancelEdit = () => {
     gallery.resetNew();
     setIsEditing(false);
   };
 
-  // 저장 핸들러
   const handleSave = async () => {
     if (!facility || isUpdating) return;
 
@@ -315,10 +332,8 @@ export function EquipmentFacilityDetailPage() {
         useYn: form.useYn === "true",
       };
 
-      // 1단계: 설비 메타데이터 수정 API 먼저 호출
       const response = await FacilityApi.update(facility.fcltCode, updatePayload);
 
-      // 2단계: 신규 추가된 첨부파일이 있다면 병렬 업로드하고, 실패한 파일만 모아서 한 번에 안내한다.
       if (gallery.newFiles.length > 0) {
         const results = await Promise.allSettled(
           gallery.newFiles.map((file) => FacilityApi.uploadAttachment(facility.fcltCode, file, "IMAGE"))
@@ -479,11 +494,20 @@ export function EquipmentFacilityDetailPage() {
                 editable={isEditing}
                 title="설비 이미지"
                 showHeader={false}
+                onPreviewClick={() => setIsModalOpen(true)}
               />
             )}
           </div>
         </div>
       </DetailLayout>
+
+      {isModalOpen && (
+        <ImageModal
+          images={gallery.images}
+          initialIndex={gallery.activeIndex}
+          onClose={() => setIsModalOpen(false)}
+        />
+      )}
     </section>
   );
 }

@@ -12,6 +12,7 @@ import type { FactoryZoneOptionResponse } from "@/api/master/FactoryZone";
 import { FactoryZoneApi } from "@/api/master/FactoryZone";
 import { useImageGallery } from "@/hooks/useImageGallery";
 import ImageGallery from "@components/common/ImageGallery";
+import ImageModal from "@components/modal/ImageModal"; 
 
 export function EquipmentFacilityCreatePage() {
     const navigate = useNavigate();
@@ -20,6 +21,9 @@ export function EquipmentFacilityCreatePage() {
     const [factoryZoneOptions, setFactoryZoneOptions] = useState<FactoryZoneOptionResponse[]>([]);
     const [equipmentOptions, setEquipmentOptions] = useState<EquipmentOptionResponse[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // 전체 화면 이미지 확대 모달 열림/닫힘 상태 관리
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     // 설비 이미지 상태 및 조작 로직은 useImageGallery 훅 하나로 관리한다.
     const gallery = useImageGallery();
@@ -217,6 +221,7 @@ export function EquipmentFacilityCreatePage() {
                                     onRemove={gallery.removeAt}
                                     title="설비 이미지"
                                     showHeader={false}
+                                    onPreviewClick={() => setIsModalOpen(true)}
                                 />
                             </div>
                         </div>
@@ -228,6 +233,14 @@ export function EquipmentFacilityCreatePage() {
                     </div>
                 </form>
             </div>
+
+            {isModalOpen && (
+                <ImageModal
+                    images={gallery.images}
+                    initialIndex={gallery.activeIndex}
+                    onClose={() => setIsModalOpen(false)}
+                />
+            )}
         </section>
     );
 }

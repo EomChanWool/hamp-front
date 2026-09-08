@@ -1,7 +1,7 @@
 import { useState, useEffect, type KeyboardEvent } from 'react';
 import Remix from '@components/common/Remix';
 import type { GalleryImage } from '@/hooks/useImageGallery';
-import '@components/common/ImageModal.css';
+import '@components/modal/ImageModal.css';
 
 interface ImageModalProps {
   images: GalleryImage[];
