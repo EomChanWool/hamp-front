@@ -291,6 +291,8 @@
   border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 13px;
+  background-color: #ffffff;
+  color: #111827;
 }
 
 .reportFormHint {
@@ -345,4 +347,102 @@
   .reportFormRow {
     grid-template-columns: 1fr;
   }
+}
+
+
+/* ==========================================================================
+   DARK MODE FOR REPORT MODAL
+   ========================================================================== */
+
+[data-theme="dark"] .reportModalContent {
+  background: #1e222b;
+  color: #f3f4f6;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .reportModalHeader {
+  border-bottom-color: #2a303c;
+}
+
+[data-theme="dark"] .reportModalHeader h3 {
+  color: #f9fafb;
+}
+
+[data-theme="dark"] .reportModalSubtitle {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .reportModalCloseBtn {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .reportModalCloseBtn:hover {
+  color: #f3f4f6;
+}
+
+[data-theme="dark"] .reportSectionLabel {
+  color: #f9fafb;
+}
+
+[data-theme="dark"] .reportHistoryEmpty {
+  background: #252b36;
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .reportHistoryTable th {
+  color: #9ca3af;
+  border-bottom-color: #2a303c;
+}
+
+[data-theme="dark"] .reportHistoryTable td {
+  border-bottom-color: #2a303c;
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .reportHistoryTable tr.isEditingRow {
+  background: rgba(30, 58, 138, 0.4);
+}
+
+[data-theme="dark"] .remainingQtyBox {
+  background: #252b36;
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .remainingQtyBox strong {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .reportCompleteNotice {
+  background: rgba(21, 128, 61, 0.2);
+  color: #4ade80;
+}
+
+[data-theme="dark"] .reportFormField label {
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .reportFormField input,
+[data-theme="dark"] .reportFormField select {
+  background-color: #252b36;
+  border-color: #374151;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .reportFormHint {
+  color: #6b7280;
+}
+
+[data-theme="dark"] .reportModalFooter {
+  border-top-color: #2a303c;
+}
+
+[data-theme="dark"] .modalButton.secondary {
+  background: #252b36;
+  border-color: #374151;
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .modalButton.secondary:hover:not(:disabled) {
+  background: #323846;
+  color: #ffffff;
 }
