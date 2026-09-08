@@ -124,60 +124,62 @@ const ImageGallery = ({
             </span>
           </div>
 
-          <div className="image-gallery__thumbnails">
-            {images.map((img, index) => (
-              <div
-                key={img.key}
-                role="button"
-                tabIndex={0}
-                className={`image-gallery__thumb${index === activeIndex ? ' image-gallery__thumb--active' : ''}`}
-                onClick={() => onActiveIndexChange(index)}
-                onKeyDown={(e) => handleThumbKeyDown(e, index)}
-                aria-label={`${index + 1}번째 이미지 보기: ${img.name}`}
-                aria-current={index === activeIndex}
-              >
-                <img src={img.url} alt="" />
-                {editable && (
-                  <button
-                    type="button"
-                    className="image-gallery__thumb-remove"
-                    aria-label={`${img.name} 삭제`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemove(img.key);
-                    }}
-                  >
-                    <Remix iconName="close-line" iconSize={0.8} />
-                  </button>
-                )}
-              </div>
-            ))}
-            
-            {editable && (
-              <label
-                className="image-gallery__thumb image-gallery__thumb--add"
-                aria-label="이미지 추가"
-                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    // 라벨 키보드 접근성 시뮬레이션
-                    const input = e.currentTarget.querySelector('input');
-                    input?.click();
-                  }
-                }}
-              >
-                <Remix iconName="add-line" iconSize={1.4} />
-                <input
-                  type="file"
-                  multiple
-                  accept={accept}
-                  style={{ display: 'none' }}
-                  onChange={handleInputChange}
-                />
-              </label>
-            )}
-          </div>
+          {/* 수정 모드이거나 이미지가 2장 이상일 때만 하단 썸네일(또는 추가 버튼) 표시 */}
+          {(editable || images.length > 1) && (
+            <div className="image-gallery__thumbnails">
+              {images.map((img, index) => (
+                <div
+                  key={img.key}
+                  role="button"
+                  tabIndex={0}
+                  className={`image-gallery__thumb${index === activeIndex ? ' image-gallery__thumb--active' : ''}`}
+                  onClick={() => onActiveIndexChange(index)}
+                  onKeyDown={(e) => handleThumbKeyDown(e, index)}
+                  aria-label={`${index + 1}번째 이미지 보기: ${img.name}`}
+                  aria-current={index === activeIndex}
+                >
+                  <img src={img.url} alt="" />
+                  {editable && (
+                    <button
+                      type="button"
+                      className="image-gallery__thumb-remove"
+                      aria-label={`${img.name} 삭제`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemove(img.key);
+                      }}
+                    >
+                      <Remix iconName="close-line" iconSize={0.8} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              
+              {editable && (
+                <label
+                  className="image-gallery__thumb image-gallery__thumb--add"
+                  aria-label="이미지 추가"
+                  style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      const input = e.currentTarget.querySelector('input');
+                      input?.click();
+                    }
+                  }}
+                >
+                  <Remix iconName="add-line" iconSize={1.4} />
+                  <input
+                    type="file"
+                    multiple
+                    accept={accept}
+                    style={{ display: 'none' }}
+                    onChange={handleInputChange}
+                  />
+                </label>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>
