@@ -460,7 +460,12 @@ export function EquipmentFacilityDetailPage() {
         }
       >
         <div className="detailSection detailField--full">
-          <h3 className="detailSectionTitle">설비 이미지</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <h2 className="createSectionTitle" style={{ margin: 0 }}>설비 이미지</h2>
+            <span className="image-gallery__count" style={{ fontSize: '0.9rem', color: '#666', fontWeight: 500 }}>
+              {gallery.images.length}장
+            </span>
+          </div>
           <div className="createField" style={{ gridColumn: '1 / -1' }}>
             {gallery.isEmpty && !isEditing ? (
               <p className="text-gray-500 text-sm">등록된 첨부파일이 없습니다.</p>
@@ -473,6 +478,7 @@ export function EquipmentFacilityDetailPage() {
                 onRemove={gallery.removeAt}
                 editable={isEditing}
                 title="설비 이미지"
+                showHeader={false}
               />
             )}
           </div>

@@ -18,6 +18,8 @@ interface ImageGalleryProps {
   title?: string;
   /** 허용 확장자 (빈 상태 드롭존의 안내 문구 및 input accept에 반영) */
   allowedExtensions?: string[];
+  /** 내부 헤더(제목 및 개수) 표시 여부 (기본: true) */
+  showHeader?: boolean;
 }
 
 const DEFAULT_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif'];
@@ -31,6 +33,7 @@ const ImageGallery = ({
   editable = true,
   title = '이미지',
   allowedExtensions = DEFAULT_EXTENSIONS,
+  showHeader = true,
 }: ImageGalleryProps) => {
   const accept = allowedExtensions.map((ext) => `.${ext}`).join(',');
 
@@ -64,10 +67,12 @@ const ImageGallery = ({
 
   return (
     <div className="image-gallery">
-      <div className="image-gallery__header">
-        <span className="image-gallery__title">{title}</span>
-        <span className="image-gallery__count">{images.length}장</span>
-      </div>
+      {showHeader && (
+        <div className="image-gallery__header">
+          <span className="image-gallery__title">{title}</span>
+          <span className="image-gallery__count">{images.length}장</span>
+        </div>
+      )}
 
       {/* 이미지가 없을 때: FileDropZone 표시 */}
       {images.length === 0 ? (
