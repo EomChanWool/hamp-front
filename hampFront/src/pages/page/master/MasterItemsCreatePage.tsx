@@ -12,7 +12,7 @@ import {
   ItemApi,
 } from "@/api/master/Item";
 import { OperationApi } from "@/api/master/Operation";
-import { OperationSelectModal } from "@components/common/OperationSelectModal";
+import { OperationSelectModal } from "@/components/modal/OperationSelectModal";
 import { useItemRoutings } from "@/hooks/useItemRoutings";
 import './MasterItem.css';
 import { Badge } from "@/components/common/Badge";

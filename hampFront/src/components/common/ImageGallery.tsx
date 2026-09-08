@@ -20,6 +20,8 @@ interface ImageGalleryProps {
   allowedExtensions?: string[];
   /** 내부 헤더(제목 및 개수) 표시 여부 (기본: true) */
   showHeader?: boolean;
+  /** 큰 미리보기 클릭 시 호출 (확대 모달 열기 등) */
+  onPreviewClick?: () => void;
 }
 
 const DEFAULT_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif'];
@@ -34,6 +36,7 @@ const ImageGallery = ({
   title = '이미지',
   allowedExtensions = DEFAULT_EXTENSIONS,
   showHeader = true,
+  onPreviewClick,
 }: ImageGalleryProps) => {
   const accept = allowedExtensions.map((ext) => `.${ext}`).join(',');
 
@@ -55,6 +58,11 @@ const ImageGallery = ({
     } else if (e.key === 'ArrowRight') {
       e.preventDefault();
       goNext();
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      if (onPreviewClick) {
+        e.preventDefault();
+        onPreviewClick();
+      }
     }
   };
 
@@ -91,8 +99,9 @@ const ImageGallery = ({
           <div
             className="image-gallery__preview"
             tabIndex={0}
-            role="group"
-            aria-label={`${title} 미리보기, 좌우 화살표 키로 이동 가능`}
+            role="button"
+            aria-label={`${title} 미리보기, 좌우 화살표 키로 이동 가능, 클릭시 확대`}
+            onClick={onPreviewClick}
             onKeyDown={handlePreviewKeyDown}
           >
             <img
@@ -100,6 +109,12 @@ const ImageGallery = ({
               alt={images[activeIndex]?.name ?? ''}
               className="image-gallery__preview-img"
             />
+            
+            {/* 호버 시 나타나는 돋보기 아이콘 오버레이 */}
+            <div className="image-gallery__preview-overlay">
+              <Remix iconName="zoom-in-line" iconSize={1.8} />
+            </div>
+
             <span className="image-gallery__preview-index" aria-live="polite">
               {activeIndex + 1} / {images.length}
             </span>
