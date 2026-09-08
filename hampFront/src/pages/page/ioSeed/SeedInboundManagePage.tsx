@@ -421,7 +421,7 @@ export function SeedInboundManagePage() {
                 )}
                 {itemOptions.map((opt) => (
                   <option key={opt.itemCode} value={opt.itemCode}>
-                    {opt.itemCode} · {opt.itemNm ?? '-'}
+                    {opt.itemNm ?? '-'} ({opt.itemCode})
                   </option>
                 ))}
               </select>
