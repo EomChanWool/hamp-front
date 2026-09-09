@@ -92,7 +92,6 @@ export function MasterItemsDetailPage() {
               disabled={disabled}
               onChange={(e) => handleFieldChange("productType", e.target.value)}
             >
-              <option value="">선택</option>
               <option value="0">{PRODUCT_TYPE_LABEL[0]}</option>
               <option value="1">{PRODUCT_TYPE_LABEL[1]}</option>
             </select>
@@ -111,7 +110,6 @@ export function MasterItemsDetailPage() {
               disabled={disabled}
               onChange={(e) => handleFieldChange("category", e.target.value)}
             >
-              <option value="">선택</option>
               <option value="0">{CATEGORY_LABEL[0]}</option>
               <option value="1">{CATEGORY_LABEL[1]}</option>
               <option value="2">{CATEGORY_LABEL[2]}</option>
