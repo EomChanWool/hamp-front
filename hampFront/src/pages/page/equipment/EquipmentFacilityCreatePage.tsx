@@ -10,6 +10,7 @@ import type { EquipmentOptionResponse } from "@/api/master/Equipment";
 import { EquipmentApi } from "@/api/master/Equipment";
 import type { FactoryZoneOptionResponse } from "@/api/master/FactoryZone";
 import { FactoryZoneApi } from "@/api/master/FactoryZone";
+import { AttachmentApi } from "@/api/Attachment";
 import { useImageGallery } from "@/hooks/useImageGallery";
 import ImageGallery from "@components/common/ImageGallery";
 import ImageModal from "@components/modal/ImageModal"; 
@@ -102,10 +103,10 @@ export function EquipmentFacilityCreatePage() {
             // 1단계: 순수 JSON 데이터 등록 API 먼저 호출
             await FacilityApi.create(payload);
 
-            // 2단계: JSON 저장이 성공한 경우에만 첨부파일이 있다면 업로드한다.
+            // 2단계: JSON 저장이 성공한 경우에만 첨부파일이 있다면 공용 AttachmentApi.upload를 호출
             if (gallery.newFiles.length > 0) {
                 const results = await Promise.allSettled(
-                    gallery.newFiles.map((file) => FacilityApi.uploadAttachment(payload.fcltCode, file, "IMAGE"))
+                    gallery.newFiles.map((file) => AttachmentApi.upload(file, payload.fcltCode, "IMAGE"))
                 );
 
                 const failedNames = results
@@ -204,7 +205,7 @@ export function EquipmentFacilityCreatePage() {
                             </div>
                         </div>
 
-                        {/* 설비 이미지: ImageGallery 하나로 대체. 이미지가 없으면 드롭존, 있으면 캐러셀이 자동으로 표시된다. */}
+                        {/* 설비 이미지: ImageGallery 하나로 대체. 이미지가 없으면 드롭존, 있으면 캐러셀이 자동으로 표시 */}
                         <div className="createSection">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                                 <h2 className="createSectionTitle" style={{ margin: 0 }}>설비 이미지</h2>
