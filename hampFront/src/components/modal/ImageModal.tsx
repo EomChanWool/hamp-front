@@ -43,10 +43,10 @@ export default function ImageModal({ images, initialIndex, onClose }: ImageModal
     e.preventDefault();
     const zoomIntensity = 0.15;
     let newScale = e.deltaY < 0 ? scale * (1 + zoomIntensity) : scale * (1 - zoomIntensity);
-    
+
     // 최소 1배, 최대 5배 제한
     newScale = Math.max(1, Math.min(newScale, 5));
-    
+
     if (newScale === 1) {
       setPosition({ x: 0, y: 0 });
     }
@@ -114,24 +114,24 @@ export default function ImageModal({ images, initialIndex, onClose }: ImageModal
           </span>
           {/* 줌 제어 버튼 추가 그룹 */}
           <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => setScale((s) => Math.min(s + 0.5, 5))}
               style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '14px', padding: '2px 6px' }}
               title="확대"
             >
               +
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={resetZoom}
               style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '12px', padding: '2px 6px' }}
-              title="초기화"
+              title="1:1 비율로 초기화"
             >
-              1:1
+              {Math.round(scale * 100)}%
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => setScale((s) => Math.max(s - 0.5, 1))}
               style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '14px', padding: '2px 6px' }}
               title="축소"
@@ -154,8 +154,8 @@ export default function ImageModal({ images, initialIndex, onClose }: ImageModal
       )}
 
       {/* 중앙 메인 이미지 (마우스 휠, 드래그, 더블클릭 인터랙션 적용) */}
-      <div 
-        className="image-modal__content" 
+      <div
+        className="image-modal__content"
         onClick={(e) => e.stopPropagation()}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
@@ -164,9 +164,9 @@ export default function ImageModal({ images, initialIndex, onClose }: ImageModal
         onMouseLeave={handleMouseUp}
         style={{ cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default', overflow: 'hidden' }}
       >
-        <img 
-          src={currentImage.url} 
-          alt={currentImage.name} 
+        <img
+          src={currentImage.url}
+          alt={currentImage.name}
           className="image-modal__img"
           onDoubleClick={handleDoubleClick}
           style={{
