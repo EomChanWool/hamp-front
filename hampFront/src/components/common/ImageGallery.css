@@ -14,17 +14,21 @@
 .image-gallery__header {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    width: 100%;
+    padding-bottom: 18px;           
+    border-bottom: 1px solid var(--border, #e5e8eb);
+    margin-bottom: 12px;            
 }
 
 .image-gallery__title {
-    font-size: var(--fs-base, 16px);
-    font-weight: 600;
+    font-size: var(--fs-base, 20px);
+    font-weight: 700;
     color: #1a1a1a;
 }
 
 .image-gallery__count {
-    font-size: var(--fs-xs, 12px);
+    font-size: var(--fs-xs, 15px);
     color: var(--gray-500, #868e96);
 }
 

@@ -207,12 +207,6 @@ export function EquipmentFacilityCreatePage() {
 
                         {/* 설비 이미지: ImageGallery 하나로 대체. 이미지가 없으면 드롭존, 있으면 캐러셀이 자동으로 표시 */}
                         <div className="createSection">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                <h2 className="createSectionTitle" style={{ margin: 0 }}>설비 이미지</h2>
-                                <span className="image-gallery__count" style={{ fontSize: '0.9rem', color: '#666', fontWeight: 500 }}>
-                                    {gallery.images.length}장
-                                </span>
-                            </div>
                             <div className="createField" style={{ gridColumn: '1 / -1' }}>
                                 <ImageGallery
                                     images={gallery.images}
@@ -221,7 +215,7 @@ export function EquipmentFacilityCreatePage() {
                                     onFilesSelected={gallery.addFiles}
                                     onRemove={gallery.removeAt}
                                     title="설비 이미지"
-                                    showHeader={false}
+                                    showHeader={true}
                                     onPreviewClick={() => setIsModalOpen(true)}
                                 />
                             </div>
