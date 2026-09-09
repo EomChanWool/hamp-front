@@ -1,6 +1,6 @@
 import { apiClient } from '@/api/apiClient';
-import type { ApiResponseAttachmentResponse, AttachmentResponse } from '@/api/Attachment'
 import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
+import type { AttachmentResponse } from '@/api/Attachment'; // 상세 응답에서 사용된다면 유지
 
 /** 종류 (0: 정지, 1: 작동, 2: 고장) */
 export type StatusType = 0 | 1 | 2;
@@ -101,13 +101,13 @@ export const FacilityApi = {
     return res.data;
   },
 
-  /** 설비 등록 (순수 JSON) */
+  /** 설비 등록 */
   create: async (data: FacilityCreateRequest): Promise<ApiResponseFacilityResponse> => {
     const res = await apiClient.post('/facilities', data);
     return res.data;
   },
 
-  /** 설비 정보 수정 (순수 JSON) */
+  /** 설비 정보 수정 */
   update: async (fcltCode: string, data: FacilityUpdateRequest): Promise<ApiResponseFacilityResponse> => {
     const res = await apiClient.put(`/facilities/${fcltCode}`, data);
     return res.data;
@@ -118,29 +118,4 @@ export const FacilityApi = {
     const res = await apiClient.delete(`/facilities/${fcltCode}`);
     return res.data;
   },
-
-  /** 설비 첨부파일 개별 업로드 (단건 + category 쿼리 지원) */
-  uploadAttachment: async (
-    fcltCode: string, 
-    file: File, 
-    category?: string | null
-  ): Promise<ApiResponseAttachmentResponse> => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const config: { params?: { category?: string } } = {};
-
-    if (category) {
-      config.params = { category };
-    }
-
-    const res = await apiClient.post(`/facilities/${fcltCode}/attachments`, formData, config);
-    return res.data;
-  },
-
-  /** 설비 첨부파일 개별 삭제 */
-  deleteAttachment: async (fcltCode: string, attachmentId: number): Promise<ApiResponse<string>> => {
-    const res = await apiClient.delete(`/facilities/${fcltCode}/attachments/${attachmentId}`);
-    return res.data;
-  }
 };
