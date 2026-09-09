@@ -10,6 +10,7 @@ import type {
 import { FacilityApi, STATUS_TYPE_LABEL } from "@/api/equipment/Facility";
 import { EquipmentApi } from "@/api/master/Equipment";
 import { FactoryZoneApi } from "@/api/master/FactoryZone";
+import { AttachmentApi } from "@/api/Attachment";
 import Spinner from "@/components/common/Spinner";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
 import { apiClient } from "@/api/apiClient";
@@ -24,10 +25,10 @@ export function EquipmentFacilityDetailPage() {
 
   const [facility, setFacility] = useState<FacilityDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // 이미지 다운로드 대기 중 "등록된 첨부파일이 없습니다" 가 깜빡이는 현상을 방지하기 위한 로딩 상태
   const [isImagesLoading, setIsImagesLoading] = useState(false);
-  
+
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -190,7 +191,7 @@ export function EquipmentFacilityDetailPage() {
    */
   const loadImagesAsBlobs = async (attachments: any[]) => {
     const newUrls: Record<number, string> = { ...existingImageUrls };
-    
+
     // 이미 캐시되어 있지 않은 대상 파일들만 필터링
     const targets = attachments.filter((file) => !newUrls[file.attachmentId]);
     if (targets.length === 0) return;
@@ -260,7 +261,7 @@ export function EquipmentFacilityDetailPage() {
         });
         const attachments = fcltData.attachments ?? [];
         setExistingAttachments(attachments);
-        
+
         // 상세 데이터 로드 시점에 병렬로 이미지 일괄 다운로드 시작
         loadImagesAsBlobs(attachments);
       }
@@ -371,11 +372,11 @@ export function EquipmentFacilityDetailPage() {
       // 1. 설비 정보 업데이트
       await FacilityApi.update(facility.fcltCode, updatePayload);
 
-      // 2. 삭제 예약된 파일들 삭제
+      // 2. 삭제 예약된 파일들 삭제 
       if (deletedAttachmentIds.length > 0) {
         const uniqueIdsToDel = Array.from(new Set(deletedAttachmentIds));
         await Promise.allSettled(
-          uniqueIdsToDel.map((id) => FacilityApi.deleteAttachment(facility.fcltCode, id))
+          uniqueIdsToDel.map((id) => AttachmentApi.delete(id, facility.fcltCode))
         );
       }
 
@@ -383,12 +384,12 @@ export function EquipmentFacilityDetailPage() {
       let newlyUploadedAttachments: any[] = [];
       if (gallery.newFiles.length > 0) {
         const uploadPromises = gallery.newFiles.map(async (file) => {
-          const res = await FacilityApi.uploadAttachment(facility.fcltCode, file, "IMAGE");
+          const res = await AttachmentApi.upload(file, facility.fcltCode, "IMAGE");
           return res.data;
         });
 
         const results = await Promise.allSettled(uploadPromises);
-        
+
         results.forEach((res) => {
           if (res.status === "fulfilled" && res.value) {
             newlyUploadedAttachments.push(res.value);
@@ -399,8 +400,8 @@ export function EquipmentFacilityDetailPage() {
       alert("수정되었습니다.");
       gallery.resetNew();
       setDeletedAttachmentIds([]);
-      
-      await fetchFacilityDetail(); 
+
+      await fetchFacilityDetail();
 
       setIsEditing(false);
     } catch (err) {
@@ -524,6 +525,7 @@ export function EquipmentFacilityDetailPage() {
             <span className="image-gallery__count" style={{ fontSize: '0.9rem', color: '#666', fontWeight: 500 }}>
               {gallery.images.length}장
             </span>
+
           </div>
           <div className="createField" style={{ gridColumn: '1 / -1' }}>
             {/* 이미지를 불러오는 도중에는 "등록된 첨부파일이 없습니다" 대신 로딩 스피너 출력 */}
