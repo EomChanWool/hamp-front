@@ -520,13 +520,6 @@ export function EquipmentFacilityDetailPage() {
         }
       >
         <div className="detailSection detailField--full">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h2 className="createSectionTitle" style={{ margin: 0 }}>설비 이미지</h2>
-            <span className="image-gallery__count" style={{ fontSize: '0.9rem', color: '#666', fontWeight: 500 }}>
-              {gallery.images.length}장
-            </span>
-
-          </div>
           <div className="createField" style={{ gridColumn: '1 / -1' }}>
             {/* 이미지를 불러오는 도중에는 "등록된 첨부파일이 없습니다" 대신 로딩 스피너 출력 */}
             {isImagesLoading && existingAttachments.length > 0 && initialExistingForGallery.length === 0 ? (
@@ -544,7 +537,7 @@ export function EquipmentFacilityDetailPage() {
                 onRemove={gallery.removeAt}
                 editable={isEditing}
                 title="설비 이미지"
-                showHeader={false}
+                showHeader={true}
                 onPreviewClick={() => setIsModalOpen(true)}
               />
             )}
