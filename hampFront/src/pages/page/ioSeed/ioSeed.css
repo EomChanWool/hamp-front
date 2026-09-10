@@ -591,6 +591,23 @@
     color: #ffffff;
 }
 
+[data-theme="dark"] .seedProgressBar {
+    background: #374151;
+}
+
+[data-theme="dark"] .seedProgressBar .progressFill--unreported {
+    background: #374151;
+}
+
+[data-theme="dark"] .progressBarTrack {
+    background: #374151;
+}
+
+[data-theme="dark"] .progressBarFill {
+    background: #10b981; 
+}
+
+
 [data-theme="dark"] .progressBarTrack {
     background: #374151;
 }
