@@ -24,8 +24,8 @@ type SectionField = {
   label: string;
   key: string;
   editable?: boolean;
-  renderEditor?: (value: string, onChange: (val: string) => void, disabled: boolean) => ReactNode;
-  renderValue?: (value: string) => ReactNode;
+  renderEditor?: (value: any, onChange: (val: any) => void, disabled: boolean) => ReactNode;
+  renderValue?: (value: any) => ReactNode;
 };
 
 type SectionDef = {
@@ -46,7 +46,8 @@ export function EquipmentFacilityDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState<Record<string, string>>({});
+  // form 상태에서 담당자들을 배열(managerUserIds)로 관리하도록 변경
+  const [form, setForm] = useState<Record<string, any>>({});
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -184,12 +185,10 @@ export function EquipmentFacilityDetailPage() {
 
       if (fcltData) {
         setFacility(fcltData);
-        const firstManagerUserId = fcltData.managers && fcltData.managers.length > 0
-          ? fcltData.managers[0].userId
-          : "";
-        const firstManagerUserNm = fcltData.managers && fcltData.managers.length > 0
-          ? (fcltData.managers[0].userNm || fcltData.managers[0].userId)
-          : "";
+        // 등록된 여러 담당자 ID 목록 추출
+        const managerUserIds = fcltData.managers && fcltData.managers.length > 0
+          ? fcltData.managers.map((m: any) => m.userId)
+          : [];
 
         setForm({
           fcltCode: fcltData.fcltCode,
@@ -202,8 +201,7 @@ export function EquipmentFacilityDetailPage() {
           fcltNm: fcltData.fcltNm || "",
           currentStatus: String(fcltData.currentStatus ?? 1),
           useYn: fcltData.useYn ? "true" : "false",
-          managerUserId: firstManagerUserId,
-          managerUserNm: firstManagerUserNm,
+          managerUserIds: managerUserIds,
           createdAt: formatDateTime(fcltData.createdAt),
         });
         const attachments = fcltData.attachments ?? [];
@@ -236,12 +234,9 @@ export function EquipmentFacilityDetailPage() {
 
   useEffect(() => {
     if (facility && !isEditing) {
-      const firstManagerUserId = facility.managers && facility.managers.length > 0
-        ? facility.managers[0].userId
-        : "";
-      const firstManagerUserNm = facility.managers && facility.managers.length > 0
-        ? (facility.managers[0].userNm || facility.managers[0].userId)
-        : "";
+      const managerUserIds = facility.managers && facility.managers.length > 0
+        ? facility.managers.map((m: any) => m.userId)
+        : [];
 
       setForm({
         fcltCode: facility.fcltCode,
@@ -254,8 +249,7 @@ export function EquipmentFacilityDetailPage() {
         fcltNm: facility.fcltNm || "",
         currentStatus: String(facility.currentStatus ?? 1),
         useYn: facility.useYn ? "true" : "false",
-        managerUserId: firstManagerUserId,
-        managerUserNm: firstManagerUserNm,
+        managerUserIds: managerUserIds,
         createdAt: formatDateTime(facility.createdAt),
       });
     }
@@ -287,12 +281,9 @@ export function EquipmentFacilityDetailPage() {
 
     if (facility) {
       setExistingAttachments(facility.attachments ?? []);
-      const firstManagerUserId = facility.managers && facility.managers.length > 0
-        ? facility.managers[0].userId
-        : "";
-      const firstManagerUserNm = facility.managers && facility.managers.length > 0
-        ? (facility.managers[0].userNm || facility.managers[0].userId)
-        : "";
+      const managerUserIds = facility.managers && facility.managers.length > 0
+        ? facility.managers.map((m: any) => m.userId)
+        : [];
 
       setForm({
         fcltCode: facility.fcltCode,
@@ -305,8 +296,7 @@ export function EquipmentFacilityDetailPage() {
         fcltNm: facility.fcltNm || "",
         currentStatus: String(facility.currentStatus ?? 1),
         useYn: facility.useYn ? "true" : "false",
-        managerUserId: firstManagerUserId,
-        managerUserNm: firstManagerUserNm,
+        managerUserIds: managerUserIds,
         createdAt: formatDateTime(facility.createdAt),
       });
     }
@@ -319,9 +309,8 @@ export function EquipmentFacilityDetailPage() {
 
     setIsUpdating(true);
     try {
-      const managers = form.managerUserId
-        ? [{ userId: form.managerUserId }]
-        : [];
+      // 복수 선택된 담당자 ID들을 배열 형태로 페이로드 구성
+      const managers = (form.managerUserIds || []).map((userId: string) => ({ userId }));
 
       const updatePayload: FacilityUpdateRequest = {
         eqCode: form.eqCode?.trim() ? form.eqCode.trim() : null,
@@ -387,7 +376,7 @@ export function EquipmentFacilityDetailPage() {
     }
   };
 
-  const setFormField = (key: string, value: string) => {
+  const setFormField = (key: string, value: any) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -445,11 +434,16 @@ export function EquipmentFacilityDetailPage() {
   const isImagesStillLoading =
     isImagesLoading && existingAttachments.length > 0 && initialExistingForGallery.length === 0;
 
-  // 현재 선택된 담당자 이름 찾기 (조회 모드용)
-  const selectedUserObj = userOptions.find((u) => u.userId === form.managerUserId);
-  const displayManagerName = selectedUserObj
-    ? `${selectedUserObj.userNm} (${selectedUserObj.userId})`
-    : (form.managerUserNm || "-");
+  // 선택된 다중 담당자 이름들을 조합하여 표시 (조회 모드용)
+  const currentManagerUserIds: string[] = form.managerUserIds || [];
+  const displayManagerNames = currentManagerUserIds.length > 0
+    ? currentManagerUserIds
+        .map((id) => {
+          const userObj = userOptions.find((u) => u.userId === id);
+          return userObj ? `${userObj.userNm} (${userObj.userId})` : id;
+        })
+        .join(", ")
+    : "-";
 
   return (
     <section className="screenStack">
@@ -544,18 +538,22 @@ export function EquipmentFacilityDetailPage() {
                 </div>
               </div>
 
-              {/* 상단 기본정보 영역에 담당자 추가 */}
+              {/* 담당자 다중 선택 영역 수정 */}
               <div className="facilityQuickItem">
                 <span className="facilityQuickLabel">담당자</span>
                 <div className="facilityQuickValue">
                   {isEditing ? (
                     <select
                       className="tableInput"
-                      value={form.managerUserId}
+                      multiple
+                      style={{ height: "90px" }}
+                      value={currentManagerUserIds}
                       disabled={isBusy}
-                      onChange={(e) => setFormField("managerUserId", e.target.value)}
+                      onChange={(e) => {
+                        const selectedOptions = Array.from(e.target.selectedOptions, (option) => option.value);
+                        setFormField("managerUserIds", selectedOptions);
+                      }}
                     >
-                      <option value="">담당자를 선택해주세요</option>
                       {userOptions.map((user) => (
                         <option key={user.userId} value={user.userId}>
                           {user.userNm} ({user.userId})
@@ -563,7 +561,7 @@ export function EquipmentFacilityDetailPage() {
                       ))}
                     </select>
                   ) : (
-                    <span>{displayManagerName}</span>
+                    <span>{displayManagerNames}</span>
                   )}
                 </div>
               </div>

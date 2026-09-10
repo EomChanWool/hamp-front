@@ -52,7 +52,7 @@ export function EquipmentFacilityCreatePage() {
         fetchOptions();
     }, [fetchOptions]);
 
-    // 폼 상태 관리
+    // 폼 상태 관리 (managerUserId -> managerUserIds 배열 형태로 변경)
     const [form, setForm] = useState<{
         fcltCode: string;
         eqCode: string;
@@ -60,7 +60,7 @@ export function EquipmentFacilityCreatePage() {
         fcltNm: string;
         currentStatus: StatusType | "";
         useYn: boolean;
-        managerUserId: string;
+        managerUserIds: string[];
     }>({
         fcltCode: "",
         eqCode: "",
@@ -68,7 +68,7 @@ export function EquipmentFacilityCreatePage() {
         fcltNm: "",
         currentStatus: 1,
         useYn: true,
-        managerUserId: "",
+        managerUserIds: [],
     });
 
     const handleChange = (key: string, value: any) => {
@@ -97,9 +97,7 @@ export function EquipmentFacilityCreatePage() {
         e.preventDefault();
         if (!validateForm()) return;
 
-        const managers = form.managerUserId 
-            ? [{ userId: form.managerUserId }] 
-            : [];
+        const managers = form.managerUserIds.map((userId) => ({ userId }));
 
         const payload: FacilityCreateRequest = {
             fcltCode: form.fcltCode.trim(),
@@ -225,16 +223,20 @@ export function EquipmentFacilityCreatePage() {
                                     </select>
                                 </div>
 
-                                {/* 담당자 선택 필드 상단으로 이동 */}
+                                {/* 담당자 다중 선택 필드 */}
                                 <div className="createField">
-                                    <label>담당자</label>
+                                    <label>담당자 (다중 선택)</label>
                                     <select
+                                        multiple
                                         className="tableInput"
-                                        value={form.managerUserId}
+                                        style={{ height: "90px" }}
+                                        value={form.managerUserIds}
                                         disabled={isSubmitting}
-                                        onChange={(e) => handleChange("managerUserId", e.target.value)}
+                                        onChange={(e) => {
+                                            const selectedOptions = Array.from(e.target.selectedOptions, (option) => option.value);
+                                            handleChange("managerUserIds", selectedOptions);
+                                        }}
                                     >
-                                        <option value="">담당자를 선택해주세요</option>
                                         {userOptions.map((user) => (
                                             <option key={user.userId} value={user.userId}>
                                                 {user.userNm} ({user.userId})
