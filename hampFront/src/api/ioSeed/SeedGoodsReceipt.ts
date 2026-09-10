@@ -24,6 +24,7 @@ export interface SeedGoodsReceiptResponse {
   receiptId: number;
   itemCode: string;
   itemNm: string;
+  unit: string;
   receiptQty: number;  
   defectQty: number;     
   goodQty: number;   
@@ -42,7 +43,7 @@ export interface SeedGoodsReceiptReturnCreateRequest {
   returnQty: number;
   reportDate: string;
   returnDueDate: string;
-  processStatus: string;
+  processStatus: number;
 }
 
 /** 씨드 입고 신고처리 수정 요청 */
@@ -50,7 +51,7 @@ export interface SeedGoodsReceiptReturnUpdateRequest {
   returnQty: number;
   reportDate: string;
   returnDueDate: string;
-  processStatus: string;
+  processStatus: number;
 }
 
 /** 씨드 입고 신고처리 응답 아이템 */
@@ -60,7 +61,7 @@ export interface SeedGoodsReceiptReturnResponse {
   returnQty: number;
   reportDate: string;
   returnDueDate: string;
-  processStatus: string;
+  processStatus: number;
   createdAt: string;
   updatedAt: string;
 }

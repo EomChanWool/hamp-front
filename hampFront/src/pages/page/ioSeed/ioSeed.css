@@ -55,13 +55,13 @@
 }
 
 .statusBadge--unreported {
-    background: #fef3c7;
-    color: #b45309;
+    background: #f1f5f9;
+    color: #475569;
 }
 
 .statusBadge--partial {
-    background: #dbeafe;
-    color: #1d4ed8;
+    background: #fef3c7;
+    color: #b45309;
 }
 
 .statusBadge--completed {
@@ -92,11 +92,11 @@
 }
 
 .seedProgressBar .progressFill--partial {
-    background: #57d3a1;
+    background: #f59e0b;
 }
 
 .seedProgressBar .progressFill--completed {
-    background: #22c55e;
+    background: #57d3a1;
 }
 
 /* ---------- 행 액션 버튼 공통 ---------- */
@@ -344,7 +344,7 @@
 }
 
 .setMaxBtn:hover {
-    background:  #bbf7d0;
+    background: #bbf7d0;
 }
 
 .reportFormInput {
@@ -590,6 +590,23 @@
 [data-theme="dark"] .remainingQtyValueArea {
     color: #ffffff;
 }
+
+[data-theme="dark"] .seedProgressBar {
+    background: #374151;
+}
+
+[data-theme="dark"] .seedProgressBar .progressFill--unreported {
+    background: #374151;
+}
+
+[data-theme="dark"] .progressBarTrack {
+    background: #374151;
+}
+
+[data-theme="dark"] .progressBarFill {
+    background: #10b981; 
+}
+
 
 [data-theme="dark"] .progressBarTrack {
     background: #374151;

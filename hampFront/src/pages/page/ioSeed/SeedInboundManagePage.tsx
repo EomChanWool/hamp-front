@@ -42,8 +42,13 @@ export function SeedInboundManagePage() {
 
   const [refreshKey, setRefreshKey] = useState(0);
   const [page, setPage] = useState(0);
+  
+  // 검색 필드 상태에 reportProgress(진행상태) 추가
   const [searchFilters, setSearchFilters] = useState({
     itemCode: '',
+    receivedAtFrom: '',
+    receivedAtTo: '',
+    reportProgress: '', // 0: 미신고, 1: 부분신고, 2: 신고완료
   });
 
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -121,8 +126,11 @@ export function SeedInboundManagePage() {
     }
   };
 
-  // 검색바 Ref 타입 수정 (HTMLSelectElement)
+  // 검색바 Ref 선언 (품목코드 select용, 입고일자 start/end용, 진행상태 select용)
   const itemCodeRef = useRef<HTMLSelectElement>(null);
+  const receivedAtStartRef = useRef<HTMLInputElement>(null);
+  const receivedAtEndRef = useRef<HTMLInputElement>(null);
+  const reportProgressRef = useRef<HTMLSelectElement>(null);
 
   // 1. 씨드 품목 옵션 조회
   const fetchItemOptions = useCallback(async () => {
@@ -138,7 +146,7 @@ export function SeedInboundManagePage() {
     fetchItemOptions();
   }, [fetchItemOptions]);
 
-  // 검색 필드 정의 (select 타입 적용 및 옵션 매핑)
+  // 검색 필드 정의
   const searchFields: SearchField[] = useMemo(
     () => [
       {
@@ -154,6 +162,25 @@ export function SeedInboundManagePage() {
           })),
         ],
       },
+      {
+        type: 'date',
+        label: '입고일자',
+        startRef: receivedAtStartRef,
+        endRef: receivedAtEndRef,
+        name: 'receivedAt',
+      },
+      {
+        type: 'select',
+        label: '진행상태',
+        ref: reportProgressRef,
+        name: 'reportProgress',
+        options: [
+          { label: '전체', value: '' },
+          { label: '미신고', value: '0' },
+          { label: '부분신고', value: '1' },
+          { label: '신고완료', value: '2' },
+        ],
+      },
     ],
     [itemOptions]
   );
@@ -167,6 +194,10 @@ export function SeedInboundManagePage() {
         size: 10,
       };
       if (searchFilters.itemCode) params.itemCode = searchFilters.itemCode;
+      if (searchFilters.receivedAtFrom) params.receivedAtFrom = searchFilters.receivedAtFrom;
+      if (searchFilters.receivedAtTo) params.receivedAtTo = searchFilters.receivedAtTo;
+      if (searchFilters.reportProgress !== '') params.reportProgress = searchFilters.reportProgress;
+
       if (sortParams.length > 0) {
         params.sort = sortParams;
       }
@@ -193,6 +224,9 @@ export function SeedInboundManagePage() {
     setPage(0);
     setSearchFilters({
       itemCode: itemCodeRef.current?.value.trim() || '',
+      receivedAtFrom: receivedAtStartRef.current?.value || '',
+      receivedAtTo: receivedAtEndRef.current?.value || '',
+      reportProgress: reportProgressRef.current?.value || '',
     });
     setEditingReceiptId(null);
     setIsCreatingNewRow(false);
@@ -200,8 +234,17 @@ export function SeedInboundManagePage() {
 
   const handleReset = () => {
     if (itemCodeRef.current) itemCodeRef.current.value = '';
+    if (receivedAtStartRef.current) receivedAtStartRef.current.value = '';
+    if (receivedAtEndRef.current) receivedAtEndRef.current.value = '';
+    if (reportProgressRef.current) reportProgressRef.current.value = ''; 
+
     setPage(0);
-    setSearchFilters({ itemCode: '' });
+    setSearchFilters({
+      itemCode: '',
+      receivedAtFrom: '',
+      receivedAtTo: '',
+      reportProgress: '',
+    });
     setSorting([]);
     setEditingReceiptId(null);
     setIsCreatingNewRow(false);
@@ -287,8 +330,9 @@ export function SeedInboundManagePage() {
       setIsCreatingNewRow(false);
 
       if (itemCodeRef.current) itemCodeRef.current.value = '';
+      if (reportProgressRef.current) reportProgressRef.current.value = '';
       setPage(0);
-      setSearchFilters({ itemCode: '' });
+      setSearchFilters({ itemCode: '', receivedAtFrom: '', receivedAtTo: '', reportProgress: '' });
       setSorting([]);
       setRefreshKey((prev) => prev + 1);
     } catch (err) {
@@ -439,7 +483,7 @@ export function SeedInboundManagePage() {
       {
         accessorKey: 'receiptQty',
         header: '입고수량',
-        meta: { width: '100px' },
+        meta: { width: '120px' },
         cell: ({ row }) => {
           const isNewRow = row.original.receiptId === -999999;
           const isEditing = row.original.receiptId === editingReceiptId;
@@ -459,13 +503,16 @@ export function SeedInboundManagePage() {
               />
             );
           }
-          return (row.original.receiptQty ?? 0).toLocaleString();
+          // 수량 뒤에 단위(unit) 표출 (unit이 존재할 경우 공백 후 출력, 없으면 빈 문자열)
+          const qtyVal = (row.original.receiptQty ?? 0).toLocaleString();
+          const unitVal = row.original.unit ? ` ${row.original.unit}` : '';
+          return `${qtyVal}${unitVal}`;
         },
       },
       {
         accessorKey: 'defectQty',
         header: '불량수량',
-        meta: { width: '100px' },
+        meta: { width: '120px' },
         cell: ({ row }) => {
           const isNewRow = row.original.receiptId === -999999;
           const isEditing = row.original.receiptId === editingReceiptId;
@@ -485,13 +532,16 @@ export function SeedInboundManagePage() {
               />
             );
           }
-          return (row.original.defectQty ?? 0).toLocaleString();
+          // 불량수량 단위(unit) 표출 반영
+          const qtyVal = (row.original.defectQty ?? 0).toLocaleString();
+          const unitVal = row.original.unit ? ` ${row.original.unit}` : '';
+          return `${qtyVal}${unitVal}`;
         },
       },
       {
         accessorKey: 'goodQty',
         header: '양품수량',
-        meta: { width: '150px' },
+        meta: { width: '170px' },
         cell: ({ row }) => {
           const isNewRow = row.original.receiptId === -999999;
           const isEditing = row.original.receiptId === editingReceiptId;
@@ -523,7 +573,10 @@ export function SeedInboundManagePage() {
               </div>
             );
           }
-          return (row.original.goodQty ?? 0).toLocaleString();
+          // 양품수량 단위(unit) 표출 반영
+          const qtyVal = (row.original.goodQty ?? 0).toLocaleString();
+          const unitVal = row.original.unit ? ` ${row.original.unit}` : '';
+          return `${qtyVal}${unitVal}`;
         },
       },
       {
@@ -562,6 +615,9 @@ export function SeedInboundManagePage() {
           const returnedQty = Math.max(goodQty - remainingQty, 0);
           const meta = REPORT_STATUS_META[row.original.reportStatus] ?? DEFAULT_STATUS_META;
           const percent = goodQty > 0 ? Math.min((returnedQty / goodQty) * 100, 100) : 0;
+          
+          // 진행상태 하단 신고 카운트에서도 단위(unit) 표출 반영
+          const unitVal = row.original.unit ? ` ${row.original.unit}` : '';
 
           return (
             <div className="reportStatusCell">
@@ -573,7 +629,7 @@ export function SeedInboundManagePage() {
                 <div className={`seedProgressFill ${meta.barClass}`} style={{ width: `${percent}%` }} />
               </div>
               <span className="reportStatusCell__count">
-                {returnedQty.toLocaleString()} / {goodQty.toLocaleString()} 신고
+                {returnedQty.toLocaleString()}{unitVal} / {goodQty.toLocaleString()}{unitVal} 신고
               </span>
             </div>
           );
@@ -654,6 +710,7 @@ export function SeedInboundManagePage() {
         receiptId: -999999,
         itemCode: '',
         itemNm: '',
+        unit: '',
         receiptQty: 0,
         defectQty: 0,
         goodQty: 0,

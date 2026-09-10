@@ -17,9 +17,12 @@ interface ReportModalProps {
     onClose: () => void;
     onChanged: () => void;
 }
+const PROCESS_STATUS_MAP = {
+    0: '신고대기',
+    1: '신고완료',
+} as const;
 
-const PROCESS_STATUS_OPTIONS = ['신고완료', '반납예정', '반납완료'] as const;
-type ProcessStatus = (typeof PROCESS_STATUS_OPTIONS)[number];
+type ProcessStatusNumber = 0 | 1;
 
 export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
     const [returns, setReturns] = useState<SeedGoodsReceiptReturnResponse[]>([]);
@@ -34,21 +37,22 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
         returnQty: number | '';
         reportDate: string;
         returnDueDate: string;
-        processStatus: ProcessStatus;
+        processStatus: ProcessStatusNumber;
     }>({
         returnQty: '',
         reportDate: '',
         returnDueDate: '',
-        processStatus: '신고완료',
+        processStatus: 0, // 기본값 신고대기(0)
     });
 
     // --- 2. 하단 신규 등록 모드 상태 ---
     const [newReturnQtyInput, setNewReturnQtyInput] = useState<number | ''>('');
     const [newReportDateInput, setNewReportDateInput] = useState<string>('');
     const [newReturnDueDateInput, setNewReturnDueDateInput] = useState<string>('');
-    const [newProcessStatusInput, setNewProcessStatusInput] = useState<ProcessStatus>('신고완료');
+    const [newProcessStatusInput, setNewProcessStatusInput] = useState<ProcessStatusNumber>(0); // 기본값 신고대기(0)
 
     const goodQty = receipt.goodQty ?? 0;
+    const unitText = receipt.unit ?? ''; // API로 받아온 단위 연동
 
     // 총 신고된 수량 합계
     const reportedTotal = returns.reduce((sum, r) => sum + (r.returnQty ?? 0), 0);
@@ -94,7 +98,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
             returnQty: item.returnQty ?? '',
             reportDate: item.reportDate ?? '',
             returnDueDate: item.returnDueDate ?? '',
-            processStatus: (item.processStatus as ProcessStatus) ?? '신고완료',
+            processStatus: (item.processStatus as ProcessStatusNumber) ?? 1,
         };
     };
 
@@ -107,7 +111,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
 
         const qty = Number(editFormRef.current.returnQty) || 0;
         if (qty <= 0) {
-            window.alert('신고(반납) 수량을 입력해주세요.');
+            window.alert('신고 수량을 입력해주세요.');
             return;
         }
 
@@ -118,7 +122,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
         const maxAllowedQty = goodQty - otherRowsTotal;
 
         if (qty > maxAllowedQty) {
-            window.alert(`수정 가능한 최대 수량(${maxAllowedQty}개)을 초과할 수 없습니다.`);
+            window.alert(`수정 가능한 최대 수량(${maxAllowedQty}${unitText})을 초과할 수 없습니다.`);
             return;
         }
 
@@ -180,7 +184,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
         const currentRemaining = Math.max(goodQty - reportedTotal, 0);
         const qty = Number(newReturnQtyInput) || 0;
         if (qty <= 0) {
-            window.alert('신고(반납) 수량을 입력해주세요.');
+            window.alert('신고 수량을 입력해주세요.');
             return;
         }
         if (qty > currentRemaining) {
@@ -220,7 +224,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
         () => [
             {
                 accessorKey: 'returnQty',
-                header: '신고수량',
+                header: '신고 수량',
                 enableSorting: false,
                 cell: ({ row }) => {
                     const item = row.original;
@@ -237,7 +241,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                             />
                         );
                     }
-                    return (item.returnQty ?? 0).toLocaleString();
+                    return `${(item.returnQty ?? 0).toLocaleString()}${unitText ? ` ${unitText}` : ''}`;
                 },
             },
             {
@@ -264,7 +268,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
             },
             {
                 accessorKey: 'returnDueDate',
-                header: '반납예정일',
+                header: '처리예정일',
                 enableSorting: false,
                 cell: ({ row }) => {
                     const item = row.original;
@@ -297,18 +301,15 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                                 className="modalTableSelect"
                                 defaultValue={editFormRef.current.processStatus}
                                 onChange={(e) => {
-                                    editFormRef.current.processStatus = e.target.value as ProcessStatus;
+                                    editFormRef.current.processStatus = Number(e.target.value) as ProcessStatusNumber;
                                 }}
                             >
-                                {PROCESS_STATUS_OPTIONS.map((status) => (
-                                    <option key={status} value={status}>
-                                        {status}
-                                    </option>
-                                ))}
+                                <option value={0}>신고대기</option>
+                                <option value={1}>신고완료</option>
                             </select>
                         );
                     }
-                    return item.processStatus;
+                    return PROCESS_STATUS_MAP[item.processStatus as ProcessStatusNumber] ?? (item.processStatus === 0 ? '신고대기' : '신고완료');
                 },
             },
             {
@@ -365,7 +366,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                 },
             },
         ],
-        [editingReturnId, isSaving, isDeletingId]
+        [editingReturnId, isSaving, isDeletingId, unitText]
     );
 
     const percentage = goodQty > 0 ? Math.round((reportedTotal / goodQty) * 100) : 0;
@@ -374,7 +375,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
         <div className="reportModalOverlay" onClick={onClose}>
             <div className="reportModalContent customModalSize" onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
                 
-                {/* 모달 전체 스피너 오버레이 (isLoading 또는 isSaving 시 작동) */}
+                {/* 모달 전체 스피너 오버레이 */}
                 {(isLoading || isSaving) && (
                     <div style={{
                         position: 'absolute',
@@ -396,10 +397,9 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                 {/* 상단 헤더 */}
                 <div className="reportModalHeader">
                     <div>
-                        <h3>신고(반납) 처리 및 이력 관리<span className="badge"> 입고 #{receipt.receiptId}</span></h3>
+                        <h3>신고 처리 및 이력 관리<span className="badge"> 입고 #{receipt.receiptId}</span></h3>
                         <p className="reportModalSubtitle">
-                            품목: {receipt.itemNm} ({receipt.itemCode}) · 총 양품 수량: {goodQty.toLocaleString()}
-                           
+                            품목: {receipt.itemNm} ({receipt.itemCode}) · 총 양품 수량: {goodQty.toLocaleString()}{unitText ? ` ${unitText}` : ''}
                         </p>
                     </div>
                     <button type="button" className="reportModalCloseBtn" onClick={onClose} aria-label="닫기">
@@ -423,7 +423,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                             </div>
                             <div className="remainingQtyValueArea">
                                 {Math.max(goodQty - reportedTotal, 0).toLocaleString()} 
-                                <span className="remainingQtyTotal"> / {goodQty.toLocaleString()} 건</span>
+                                <span className="remainingQtyTotal"> / {goodQty.toLocaleString()}{unitText ? ` ${unitText}` : ''}</span>
                             </div>
                             {/* 프로그레스 바 */}
                             <div className="progressBarTrack">
@@ -437,20 +437,20 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                                 <div className="completeNoticeIcon">✅</div>
                                 <h4 className="completeNoticeTitle">모든 신고 처리가 완료되었습니다</h4>
                                 <p className="completeNoticeDesc">
-                                    입고된 양품 {goodQty}건에 대한 반납 및 신고 내역이 모두 등록되었습니다.<br />
+                                    입고된 양품 {goodQty.toLocaleString()}{unitText ? ` ${unitText}` : ''}에 대한 신고 내역이 모두 등록되었습니다.<br />
                                     수정이나 삭제는 우측 이력 목록에서 가능합니다.
                                 </p>
                             </div>
                         ) : (
                             <div className="reportForm">
                                 <div className="reportFormHeader">
-                                    <label className="reportFormLabel">이번 신고(반납) 수량 *</label>
+                                    <label className="reportFormLabel">이번 신고 수량 *</label>
                                     <button 
                                         type="button" 
                                         className="setMaxBtn"
                                         onClick={() => setNewReturnQtyInput(Math.max(goodQty - reportedTotal, 0))}
                                     >
-                                       잔여 전체 ({Math.max(goodQty - reportedTotal, 0)})
+                                        잔여 전체 ({Math.max(goodQty - reportedTotal, 0)})
                                     </button>
                                 </div>
                                 <input
@@ -465,7 +465,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                                     }}
                                 />
                                 <p className="reportFormHelper">
-                                    잔여수량({Math.max(goodQty - reportedTotal, 0)})을 초과하여 등록할 수 없습니다.
+                                    잔여수량({Math.max(goodQty - reportedTotal, 0).toLocaleString()}{unitText ? ` ${unitText}` : ''})을 초과하여 등록할 수 없습니다.
                                 </p>
 
                                 <div>
@@ -474,14 +474,11 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                                         className="reportFormSelect"
                                         value={newProcessStatusInput}
                                         onChange={(e) => {
-                                            setNewProcessStatusInput(e.target.value as ProcessStatus);
+                                            setNewProcessStatusInput(Number(e.target.value) as ProcessStatusNumber);
                                         }}
                                     >
-                                        {PROCESS_STATUS_OPTIONS.map((status) => (
-                                            <option key={status} value={status}>
-                                                {status}
-                                            </option>
-                                        ))}
+                                        <option value={0}>신고대기</option>
+                                        <option value={1}>신고완료</option>
                                     </select>
                                 </div>
 
@@ -496,7 +493,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                                         />
                                     </div>
                                     <div className="reportFormDateItem">
-                                        <label className="reportFormSubLabel">반납예정일</label>
+                                        <label className="reportFormSubLabel">처리예정일</label>
                                         <input
                                             type="date"
                                             className="reportFormInput"
