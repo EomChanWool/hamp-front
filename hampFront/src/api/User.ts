@@ -48,6 +48,12 @@ export interface UserDetailResponse {
   authGroups: AuthGroupDetailResponse[];
 }
 
+/** 회원 옵션 조회 응답 */
+export interface UserOptionResponse {
+  userId: string;
+  userNm: string;
+}
+
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 회원 단건 조회/등록/수정 API 최종 응답 타입 */
@@ -61,6 +67,9 @@ export type ApiResponsePageUserResponse = ApiResponsePage<UserResponse>;
 
 /** 회원 상세 조회 API 최종 응답 타입 */
 export type ApiResponseUserDetailResponse = ApiResponse<UserDetailResponse>;
+
+/** 회원 옵션 목록 API 최종 응답 타입 */
+export type ApiResponseListUserOptionResponse = ApiResponse<UserOptionResponse[]>;
 
 // ── 회원 관리 API 함수 ────────────────────────────────────────────────────────
 
@@ -99,4 +108,10 @@ export const UserApi = {
     const res = await apiClient.delete<ApiResponse<string>>(`/users/${userId}`);
     return res.data;
   },
+
+  /** 회원 셀렉트 옵션 조회 */
+    getOptions: async (): Promise<ApiResponseListUserOptionResponse> => {
+      const res = await apiClient.get<ApiResponseListUserOptionResponse>('/users/options');
+      return res.data;
+    },
 };

@@ -1,6 +1,7 @@
 import { apiClient } from '@/api/apiClient';
 import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
-import type { AttachmentResponse } from '@/api/Attachment'; // 상세 응답에서 사용된다면 유지
+import type { AttachmentResponse } from '@/api/Attachment';
+import type { ManagerAssignRequest, ManagerAssignResponse } from '../Manager';
 
 /** 종류 (0: 정지, 1: 작동, 2: 고장) */
 export type StatusType = 0 | 1 | 2;
@@ -26,6 +27,7 @@ export interface FacilityCreateRequest {
     fcltNm?: string | null;
     currentStatus?: StatusType | null;
     useYn?: boolean | null;
+    managers: ManagerAssignRequest[];
 }
 
 /** 설비 정보 수정 요청 */
@@ -35,6 +37,7 @@ export interface FacilityUpdateRequest {
     fcltNm?: string | null;
     currentStatus?: StatusType | null;
     useYn?: boolean | null;
+    managers: ManagerAssignRequest[];
 }
 
 /** 설비 정보 응답 */
@@ -64,6 +67,7 @@ export interface FacilityDetailResponse {
     createdAt: string;
     updatedAt: string;
     attachments: AttachmentResponse[];
+    managers: ManagerAssignResponse[];
 }
 
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
