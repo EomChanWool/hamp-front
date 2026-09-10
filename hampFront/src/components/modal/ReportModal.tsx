@@ -220,7 +220,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
         () => [
             {
                 accessorKey: 'returnQty',
-                header: '신고수량',
+                header: '신고(반납) 수량',
                 enableSorting: false,
                 cell: ({ row }) => {
                     const item = row.original;
