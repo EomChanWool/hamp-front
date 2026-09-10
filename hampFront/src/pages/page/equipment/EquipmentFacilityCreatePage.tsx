@@ -13,7 +13,9 @@ import { FactoryZoneApi } from "@/api/master/FactoryZone";
 import { AttachmentApi } from "@/api/Attachment";
 import { useImageGallery } from "@/hooks/useImageGallery";
 import ImageGallery from "@components/common/ImageGallery";
-import ImageModal from "@components/modal/ImageModal"; 
+import ImageModal from "@components/modal/ImageModal";
+import "@/pages/layout/Layout.css";
+
 
 export function EquipmentFacilityCreatePage() {
     const navigate = useNavigate();
@@ -140,30 +142,63 @@ export function EquipmentFacilityCreatePage() {
 
     return (
         <section className="screenStack">
-            <div className="createCard">
-                <div className="createHeader">
-                    <h1 className="createTitle">신규 설비 등록</h1>
-                    <span className="createMeta">* 표시는 필수 입력 항목입니다</span>
-                </div>
+            <form onSubmit={handleSubmit}>
+                {/* 01. 설비 사진 및 기본 정보 — 좌측 이미지 업로드 + 우측 기본 정보 입력.
+                    이 화면에서만 쓰는 레이아웃이라 컴포넌트로 빼지 않고 바로 그린다 */}
+                <div className="facilityHeaderCard">
+                    <h2 className="createSectionTitle">설비 사진 및 기본 정보</h2>
+                    <div className="facilityHeaderTop">
+                        {/* 좌측: 이미지 업로드 영역 — 파일 선택/검증/삭제는 그대로 ImageGallery에 위임 */}
+                        <div className="facilityImageCol">
+                            <ImageGallery
+                                images={gallery.images}
+                                activeIndex={gallery.activeIndex}
+                                onActiveIndexChange={gallery.setActiveIndex}
+                                onFilesSelected={gallery.addFiles}
+                                onRemove={gallery.removeAt}
+                                title="설비 이미지"
+                                showHeader={false}
+                                onPreviewClick={() => setIsModalOpen(true)}
+                            />
+                        </div>
 
-                <form onSubmit={handleSubmit}>
-                    <div className="createBody">
-                        <div className="createSection">
-                            <h2 className="createSectionTitle">설비정보</h2>
-                            <div className="createGrid2Cols">
+                        {/* 우측: 기본 정보 입력 */}
+                        <div className="facilityCreateFieldsCol">
+                            <div className="facilityCreateFieldGrid">
                                 <div className="createField">
-                                    <label className="requiredLabel">설비코드 <span className="required">*</span></label>
-                                    <input className="tableInput" value={form.fcltCode} disabled={isSubmitting} onChange={(e) => handleChange("fcltCode", e.target.value)} placeholder="예: FCLT001" maxLength={30} />
+                                    <label className="requiredLabel">
+                                        설비코드 <span className="required">*</span>
+                                    </label>
+                                    <input
+                                        className="tableInput"
+                                        value={form.fcltCode}
+                                        disabled={isSubmitting}
+                                        onChange={(e) => handleChange("fcltCode", e.target.value)}
+                                        placeholder="예: FCLT001"
+                                        maxLength={30}
+                                    />
                                 </div>
 
                                 <div className="createField">
                                     <label>설비명</label>
-                                    <input className="tableInput" value={form.fcltNm} disabled={isSubmitting} onChange={(e) => handleChange("fcltNm", e.target.value)} maxLength={100} />
+                                    <input
+                                        className="tableInput"
+                                        value={form.fcltNm}
+                                        disabled={isSubmitting}
+                                        onChange={(e) => handleChange("fcltNm", e.target.value)}
+                                        maxLength={100}
+                                        placeholder="예) HEMP 추출기"
+                                    />
                                 </div>
 
                                 <div className="createField">
                                     <label>현재상태</label>
-                                    <select className="tableInput" value={form.currentStatus} disabled={isSubmitting} onChange={(e) => handleChange("currentStatus", e.target.value)}>
+                                    <select
+                                        className="tableInput"
+                                        value={form.currentStatus}
+                                        disabled={isSubmitting}
+                                        onChange={(e) => handleChange("currentStatus", e.target.value)}
+                                    >
                                         <option value="0">정지</option>
                                         <option value="1">작동</option>
                                         <option value="2">고장</option>
@@ -172,62 +207,74 @@ export function EquipmentFacilityCreatePage() {
 
                                 <div className="createField">
                                     <label>사용여부</label>
-                                    <select className="tableInput" value={form.useYn ? "true" : "false"} disabled={isSubmitting} onChange={(e) => handleChange("useYn", e.target.value === "true")}>
+                                    <select
+                                        className="tableInput"
+                                        value={form.useYn ? "true" : "false"}
+                                        disabled={isSubmitting}
+                                        onChange={(e) => handleChange("useYn", e.target.value === "true")}
+                                    >
                                         <option value="true">사용</option>
                                         <option value="false">미사용</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
+                {/* 02. 장비/공장 정보 — 기존 createSection 방식 그대로 유지 */}
+                <div className="createCard">
+                    <div className="createBody">
                         <div className="createSection">
                             <h2 className="createSectionTitle">장비/공장 정보</h2>
                             <div className="createGrid2Cols">
                                 <div className="createField">
                                     <label>장비코드</label>
-                                    <select className="tableInput" value={form.eqCode} disabled={isSubmitting} onChange={(e) => handleChange("eqCode", e.target.value)}>
+                                    <select
+                                        className="tableInput"
+                                        value={form.eqCode}
+                                        disabled={isSubmitting}
+                                        onChange={(e) => handleChange("eqCode", e.target.value)}
+                                    >
                                         <option value="">장비를 선택해주세요</option>
                                         {equipmentOptions.map((option) => (
-                                            <option key={option.eqCode} value={option.eqCode}>{option.eqCode} ({option.eqNm})</option>
+                                            <option key={option.eqCode} value={option.eqCode}>
+                                                {option.eqCode} ({option.eqNm})
+                                            </option>
                                         ))}
                                     </select>
                                 </div>
 
                                 <div className="createField">
                                     <label>공장코드</label>
-                                    <select className="tableInput" value={form.facCode} disabled={isSubmitting} onChange={(e) => handleChange("facCode", e.target.value)}>
+                                    <select
+                                        className="tableInput"
+                                        value={form.facCode}
+                                        disabled={isSubmitting}
+                                        onChange={(e) => handleChange("facCode", e.target.value)}
+                                    >
                                         <option value="">공장을 선택해주세요</option>
                                         {factoryZoneOptions.map((option) => (
-                                            <option key={option.facCode} value={option.facCode}>{option.facCode} ({option.facNm})</option>
+                                            <option key={option.facCode} value={option.facCode}>
+                                                {option.facCode} ({option.facNm})
+                                            </option>
                                         ))}
                                     </select>
                                 </div>
                             </div>
                         </div>
-
-                        {/* 설비 이미지: ImageGallery 하나로 대체. 이미지가 없으면 드롭존, 있으면 캐러셀이 자동으로 표시 */}
-                        <div className="createSection">
-                            <div className="createField" style={{ gridColumn: '1 / -1' }}>
-                                <ImageGallery
-                                    images={gallery.images}
-                                    activeIndex={gallery.activeIndex}
-                                    onActiveIndexChange={gallery.setActiveIndex}
-                                    onFilesSelected={gallery.addFiles}
-                                    onRemove={gallery.removeAt}
-                                    title="설비 이미지"
-                                    showHeader={true}
-                                    onPreviewClick={() => setIsModalOpen(true)}
-                                />
-                            </div>
-                        </div>
                     </div>
 
                     <div className="createFooter">
-                        <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>취소</button>
-                        <button type="submit" className="primaryButton" disabled={isSubmitting}>{isSubmitting ? "등록 중..." : "등록"}</button>
+                        <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
+                            취소
+                        </button>
+                        <button type="submit" className="primaryButton" disabled={isSubmitting}>
+                            {isSubmitting ? "등록 중..." : "등록"}
+                        </button>
                     </div>
-                </form>
-            </div>
+                </div>
+            </form>
 
             {isModalOpen && (
                 <ImageModal
