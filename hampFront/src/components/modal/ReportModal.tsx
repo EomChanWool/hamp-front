@@ -52,6 +52,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
     const [newProcessStatusInput, setNewProcessStatusInput] = useState<ProcessStatusNumber>(0); // 기본값 신고대기(0)
 
     const goodQty = receipt.goodQty ?? 0;
+    const unitText = receipt.unit ?? ''; // API로 받아온 단위 연동
 
     // 총 신고된 수량 합계
     const reportedTotal = returns.reduce((sum, r) => sum + (r.returnQty ?? 0), 0);
@@ -121,7 +122,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
         const maxAllowedQty = goodQty - otherRowsTotal;
 
         if (qty > maxAllowedQty) {
-            window.alert(`수정 가능한 최대 수량(${maxAllowedQty}개)을 초과할 수 없습니다.`);
+            window.alert(`수정 가능한 최대 수량(${maxAllowedQty}${unitText})을 초과할 수 없습니다.`);
             return;
         }
 
@@ -240,7 +241,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                             />
                         );
                     }
-                    return (item.returnQty ?? 0).toLocaleString();
+                    return `${(item.returnQty ?? 0).toLocaleString()}${unitText ? ` ${unitText}` : ''}`;
                 },
             },
             {
@@ -365,7 +366,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                 },
             },
         ],
-        [editingReturnId, isSaving, isDeletingId]
+        [editingReturnId, isSaving, isDeletingId, unitText]
     );
 
     const percentage = goodQty > 0 ? Math.round((reportedTotal / goodQty) * 100) : 0;
@@ -398,7 +399,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                     <div>
                         <h3>신고 처리 및 이력 관리<span className="badge"> 입고 #{receipt.receiptId}</span></h3>
                         <p className="reportModalSubtitle">
-                            품목: {receipt.itemNm} ({receipt.itemCode}) · 총 양품 수량: {goodQty.toLocaleString()}
+                            품목: {receipt.itemNm} ({receipt.itemCode}) · 총 양품 수량: {goodQty.toLocaleString()}{unitText ? ` ${unitText}` : ''}
                         </p>
                     </div>
                     <button type="button" className="reportModalCloseBtn" onClick={onClose} aria-label="닫기">
@@ -422,7 +423,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                             </div>
                             <div className="remainingQtyValueArea">
                                 {Math.max(goodQty - reportedTotal, 0).toLocaleString()} 
-                                <span className="remainingQtyTotal"> / {goodQty.toLocaleString()} 건</span>
+                                <span className="remainingQtyTotal"> / {goodQty.toLocaleString()}{unitText ? ` ${unitText}` : ''}</span>
                             </div>
                             {/* 프로그레스 바 */}
                             <div className="progressBarTrack">
@@ -436,7 +437,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                                 <div className="completeNoticeIcon">✅</div>
                                 <h4 className="completeNoticeTitle">모든 신고 처리가 완료되었습니다</h4>
                                 <p className="completeNoticeDesc">
-                                    입고된 양품 {goodQty}건에 대한 신고 내역이 모두 등록되었습니다.<br />
+                                    입고된 양품 {goodQty.toLocaleString()}{unitText ? ` ${unitText}` : ''}에 대한 신고 내역이 모두 등록되었습니다.<br />
                                     수정이나 삭제는 우측 이력 목록에서 가능합니다.
                                 </p>
                             </div>
@@ -464,7 +465,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                                     }}
                                 />
                                 <p className="reportFormHelper">
-                                    잔여수량({Math.max(goodQty - reportedTotal, 0)})을 초과하여 등록할 수 없습니다.
+                                    잔여수량({Math.max(goodQty - reportedTotal, 0).toLocaleString()}{unitText ? ` ${unitText}` : ''})을 초과하여 등록할 수 없습니다.
                                 </p>
 
                                 <div>
