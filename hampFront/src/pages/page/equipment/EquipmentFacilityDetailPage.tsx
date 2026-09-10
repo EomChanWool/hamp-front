@@ -10,6 +10,8 @@ import type {
 import { FacilityApi, STATUS_TYPE_LABEL } from "@/api/equipment/Facility";
 import { EquipmentApi } from "@/api/master/Equipment";
 import { FactoryZoneApi } from "@/api/master/FactoryZone";
+import type { UserOptionResponse } from "@/api/User";
+import { UserApi } from "@/api/User";
 import { AttachmentApi } from "@/api/Attachment";
 import Spinner from "@/components/common/Spinner";
 import { apiClient } from "@/api/apiClient";
@@ -50,6 +52,7 @@ export function EquipmentFacilityDetailPage() {
 
   const [equipmentOptions, setEquipmentOptions] = useState<any[]>([]);
   const [factoryZoneOptions, setFactoryZoneOptions] = useState<any[]>([]);
+  const [userOptions, setUserOptions] = useState<UserOptionResponse[]>([]);
 
   const [existingAttachments, setExistingAttachments] = useState<any[]>([]);
   const [existingImageUrls, setExistingImageUrls] = useState<Record<number, string>>({});
@@ -116,12 +119,14 @@ export function EquipmentFacilityDetailPage() {
 
   const fetchOptions = useCallback(async () => {
     try {
-      const [eqRes, facRes] = await Promise.all([
+      const [eqRes, facRes, userRes] = await Promise.all([
         EquipmentApi.getOptions(),
         FactoryZoneApi.getOptions(),
+        UserApi.getOptions(),
       ]);
       setEquipmentOptions(eqRes.data ?? []);
       setFactoryZoneOptions(facRes.data ?? []);
+      setUserOptions(userRes.data ?? []);
     } catch (error) {
       console.error("옵션 목록 조회 실패:", error);
     }
@@ -179,6 +184,13 @@ export function EquipmentFacilityDetailPage() {
 
       if (fcltData) {
         setFacility(fcltData);
+        const firstManagerUserId = fcltData.managers && fcltData.managers.length > 0
+          ? fcltData.managers[0].userId
+          : "";
+        const firstManagerUserNm = fcltData.managers && fcltData.managers.length > 0
+          ? (fcltData.managers[0].userNm || fcltData.managers[0].userId)
+          : "";
+
         setForm({
           fcltCode: fcltData.fcltCode,
           eqCode: fcltData.eqCode || "",
@@ -190,6 +202,8 @@ export function EquipmentFacilityDetailPage() {
           fcltNm: fcltData.fcltNm || "",
           currentStatus: String(fcltData.currentStatus ?? 1),
           useYn: fcltData.useYn ? "true" : "false",
+          managerUserId: firstManagerUserId,
+          managerUserNm: firstManagerUserNm,
           createdAt: formatDateTime(fcltData.createdAt),
         });
         const attachments = fcltData.attachments ?? [];
@@ -222,6 +236,13 @@ export function EquipmentFacilityDetailPage() {
 
   useEffect(() => {
     if (facility && !isEditing) {
+      const firstManagerUserId = facility.managers && facility.managers.length > 0
+        ? facility.managers[0].userId
+        : "";
+      const firstManagerUserNm = facility.managers && facility.managers.length > 0
+        ? (facility.managers[0].userNm || facility.managers[0].userId)
+        : "";
+
       setForm({
         fcltCode: facility.fcltCode,
         eqCode: facility.eqCode || "",
@@ -233,6 +254,8 @@ export function EquipmentFacilityDetailPage() {
         fcltNm: facility.fcltNm || "",
         currentStatus: String(facility.currentStatus ?? 1),
         useYn: facility.useYn ? "true" : "false",
+        managerUserId: firstManagerUserId,
+        managerUserNm: firstManagerUserNm,
         createdAt: formatDateTime(facility.createdAt),
       });
     }
@@ -264,6 +287,13 @@ export function EquipmentFacilityDetailPage() {
 
     if (facility) {
       setExistingAttachments(facility.attachments ?? []);
+      const firstManagerUserId = facility.managers && facility.managers.length > 0
+        ? facility.managers[0].userId
+        : "";
+      const firstManagerUserNm = facility.managers && facility.managers.length > 0
+        ? (facility.managers[0].userNm || facility.managers[0].userId)
+        : "";
+
       setForm({
         fcltCode: facility.fcltCode,
         eqCode: facility.eqCode || "",
@@ -275,6 +305,8 @@ export function EquipmentFacilityDetailPage() {
         fcltNm: facility.fcltNm || "",
         currentStatus: String(facility.currentStatus ?? 1),
         useYn: facility.useYn ? "true" : "false",
+        managerUserId: firstManagerUserId,
+        managerUserNm: firstManagerUserNm,
         createdAt: formatDateTime(facility.createdAt),
       });
     }
@@ -287,6 +319,10 @@ export function EquipmentFacilityDetailPage() {
 
     setIsUpdating(true);
     try {
+      const managers = form.managerUserId
+        ? [{ userId: form.managerUserId }]
+        : [];
+
       const updatePayload: FacilityUpdateRequest = {
         eqCode: form.eqCode?.trim() ? form.eqCode.trim() : null,
         facCode: form.facCode?.trim() ? form.facCode.trim() : null,
@@ -294,6 +330,7 @@ export function EquipmentFacilityDetailPage() {
         currentStatus:
           form.currentStatus === "" ? null : (Number(form.currentStatus) as StatusType),
         useYn: form.useYn === "true",
+        managers: managers,
       };
 
       await FacilityApi.update(facility.fcltCode, updatePayload);
@@ -408,6 +445,12 @@ export function EquipmentFacilityDetailPage() {
   const isImagesStillLoading =
     isImagesLoading && existingAttachments.length > 0 && initialExistingForGallery.length === 0;
 
+  // 현재 선택된 담당자 이름 찾기 (조회 모드용)
+  const selectedUserObj = userOptions.find((u) => u.userId === form.managerUserId);
+  const displayManagerName = selectedUserObj
+    ? `${selectedUserObj.userNm} (${selectedUserObj.userId})`
+    : (form.managerUserNm || "-");
+
   return (
     <section className="screenStack">
       {/* 상단 헤더 영역: 좌측 이미지 + 우측 핵심 정보 */}
@@ -501,6 +544,29 @@ export function EquipmentFacilityDetailPage() {
                 </div>
               </div>
 
+              {/* 상단 기본정보 영역에 담당자 추가 */}
+              <div className="facilityQuickItem">
+                <span className="facilityQuickLabel">담당자</span>
+                <div className="facilityQuickValue">
+                  {isEditing ? (
+                    <select
+                      className="tableInput"
+                      value={form.managerUserId}
+                      disabled={isBusy}
+                      onChange={(e) => setFormField("managerUserId", e.target.value)}
+                    >
+                      <option value="">담당자를 선택해주세요</option>
+                      {userOptions.map((user) => (
+                        <option key={user.userId} value={user.userId}>
+                          {user.userNm} ({user.userId})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span>{displayManagerName}</span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -517,13 +583,13 @@ export function EquipmentFacilityDetailPage() {
           ))}
         </div>
 
-        {/* 푸터 영역: 전역 공통 버튼 클래스(ghostButton, primaryButton) 적용 */}
+        {/* 푸터 영역 */}
         <div className="detailFooter">
           <div>
             {isEditing && (
               <button
                 type="button"
-                className="ghostButton text-red-600 hover:bg-red-50"
+                className="btnDanger"
                 onClick={handleDelete}
                 disabled={isBusy}
               >

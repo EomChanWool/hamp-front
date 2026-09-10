@@ -10,12 +10,13 @@ import type { EquipmentOptionResponse } from "@/api/master/Equipment";
 import { EquipmentApi } from "@/api/master/Equipment";
 import type { FactoryZoneOptionResponse } from "@/api/master/FactoryZone";
 import { FactoryZoneApi } from "@/api/master/FactoryZone";
+import type { UserOptionResponse } from "@/api/User";
+import { UserApi } from "@/api/User";
 import { AttachmentApi } from "@/api/Attachment";
 import { useImageGallery } from "@/hooks/useImageGallery";
 import ImageGallery from "@components/common/ImageGallery";
 import ImageModal from "@components/modal/ImageModal";
 import "@/pages/layout/Layout.css";
-
 
 export function EquipmentFacilityCreatePage() {
     const navigate = useNavigate();
@@ -23,6 +24,7 @@ export function EquipmentFacilityCreatePage() {
 
     const [factoryZoneOptions, setFactoryZoneOptions] = useState<FactoryZoneOptionResponse[]>([]);
     const [equipmentOptions, setEquipmentOptions] = useState<EquipmentOptionResponse[]>([]);
+    const [userOptions, setUserOptions] = useState<UserOptionResponse[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // 전체 화면 이미지 확대 모달 열림/닫힘 상태 관리
@@ -33,12 +35,14 @@ export function EquipmentFacilityCreatePage() {
 
     const fetchOptions = useCallback(async () => {
         try {
-            const [eqRes, facRes] = await Promise.all([
+            const [eqRes, facRes, userRes] = await Promise.all([
                 EquipmentApi.getOptions(),
-                FactoryZoneApi.getOptions()
+                FactoryZoneApi.getOptions(),
+                UserApi.getOptions()
             ]);
             setEquipmentOptions(eqRes.data ?? []);
             setFactoryZoneOptions(facRes.data ?? []);
+            setUserOptions(userRes.data ?? []);
         } catch (error) {
             console.error("옵션 목록 조회 실패:", error);
         }
@@ -56,6 +60,7 @@ export function EquipmentFacilityCreatePage() {
         fcltNm: string;
         currentStatus: StatusType | "";
         useYn: boolean;
+        managerUserId: string;
     }>({
         fcltCode: "",
         eqCode: "",
@@ -63,6 +68,7 @@ export function EquipmentFacilityCreatePage() {
         fcltNm: "",
         currentStatus: 1,
         useYn: true,
+        managerUserId: "",
     });
 
     const handleChange = (key: string, value: any) => {
@@ -91,6 +97,10 @@ export function EquipmentFacilityCreatePage() {
         e.preventDefault();
         if (!validateForm()) return;
 
+        const managers = form.managerUserId 
+            ? [{ userId: form.managerUserId }] 
+            : [];
+
         const payload: FacilityCreateRequest = {
             fcltCode: form.fcltCode.trim(),
             eqCode: form.eqCode.trim() || null,
@@ -98,6 +108,7 @@ export function EquipmentFacilityCreatePage() {
             fcltNm: form.fcltNm.trim() || null,
             currentStatus: form.currentStatus === "" ? null : Number(form.currentStatus) as StatusType,
             useYn: form.useYn,
+            managers: managers,
         };
 
         setIsSubmitting(true);
@@ -132,7 +143,6 @@ export function EquipmentFacilityCreatePage() {
             navigate("/equipment/facility", { replace: true });
         } catch (error) {
             console.error("설비 등록 실패:", error);
-            // 3단계: JSON 등록 실패 시 파일 업로드는 시도되지 않음
             const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
             alert(message || "설비 등록 중 오류가 발생했습니다.");
         } finally {
@@ -143,12 +153,10 @@ export function EquipmentFacilityCreatePage() {
     return (
         <section className="screenStack">
             <form onSubmit={handleSubmit}>
-                {/* 01. 설비 사진 및 기본 정보 — 좌측 이미지 업로드 + 우측 기본 정보 입력.
-                    이 화면에서만 쓰는 레이아웃이라 컴포넌트로 빼지 않고 바로 그린다 */}
+                {/* 01. 설비 사진 및 기본 정보 (담당자 포함) */}
                 <div className="facilityHeaderCard">
                     <h2 className="createSectionTitle">설비 사진 및 기본 정보</h2>
                     <div className="facilityHeaderTop">
-                        {/* 좌측: 이미지 업로드 영역 — 파일 선택/검증/삭제는 그대로 ImageGallery에 위임 */}
                         <div className="facilityImageCol">
                             <ImageGallery
                                 images={gallery.images}
@@ -162,7 +170,6 @@ export function EquipmentFacilityCreatePage() {
                             />
                         </div>
 
-                        {/* 우측: 기본 정보 입력 */}
                         <div className="facilityCreateFieldsCol">
                             <div className="facilityCreateFieldGrid">
                                 <div className="createField">
@@ -217,12 +224,30 @@ export function EquipmentFacilityCreatePage() {
                                         <option value="false">미사용</option>
                                     </select>
                                 </div>
+
+                                {/* 담당자 선택 필드 상단으로 이동 */}
+                                <div className="createField">
+                                    <label>담당자</label>
+                                    <select
+                                        className="tableInput"
+                                        value={form.managerUserId}
+                                        disabled={isSubmitting}
+                                        onChange={(e) => handleChange("managerUserId", e.target.value)}
+                                    >
+                                        <option value="">담당자를 선택해주세요</option>
+                                        {userOptions.map((user) => (
+                                            <option key={user.userId} value={user.userId}>
+                                                {user.userNm} ({user.userId})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* 02. 장비/공장 정보 — 기존 createSection 방식 그대로 유지 */}
+                {/* 02. 장비/공장 정보 */}
                 <div className="createCard">
                     <div className="createBody">
                         <div className="createSection">
