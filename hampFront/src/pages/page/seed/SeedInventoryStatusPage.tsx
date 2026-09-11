@@ -25,13 +25,20 @@ export function SeedInventoryStatusPage() {
   const [apiTrendData, setApiTrendData] = useState<ItemStockTrendResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
 
-  // 1. 초기 데이터 및 요약 정보 조회 API 호출 (productType: 0 씨드 조건 반영)
+  // 1. 탭(activeTab)이 변경될 때마다 품목 리스트와 요약 정보 조회 API 호출
   useEffect(() => {
-    const fetchInitialData = async () => {
+    const fetchListAndSummary = async () => {
       try {
         setLoading(true)
+
+        // 탭에 따라 category 파라미터 매핑 (전체: undefined, 원료: 0, 반제품: 1, 완제품: 2)
+        const categoryParam = 
+          activeTab === '원료' ? 0 : 
+          activeTab === '반제품' ? 1 : 
+          activeTab === '완제품' ? 2 : undefined
+
         const [listRes, summaryRes] = await Promise.all([
-          ItemStockApi.getList({ productType: 0 }),
+          ItemStockApi.getList(categoryParam !== undefined ? { category: categoryParam } : undefined),
           ItemStockApi.getSummary(),
         ])
 
@@ -62,17 +69,15 @@ export function SeedInventoryStatusPage() {
       }
     }
 
-    fetchInitialData()
-  }, [])
+    fetchListAndSummary()
+  }, [activeTab])
 
-  // 2. 선택된 품목이 변경될 때마다 추이 데이터 API 호출
-  const displayedItems = useMemo(() => {
-    if (activeTab === '전체') return items
-    return items.filter((item) => item.category === activeTab)
-  }, [items, activeTab])
+  // 품목 목록
+  const displayedItems = items
 
   const selectedItem = displayedItems[selectedIndex] || displayedItems[0] || items[0]
 
+  // 2. 선택된 품목 또는 추이 탭이 변경될 때마다 추이 데이터 API 호출
   useEffect(() => {
     if (!selectedItem) return
 

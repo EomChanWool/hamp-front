@@ -416,13 +416,18 @@ export function SeedInventoryManagePage() {
                         );
                     }
                     if (isNew || isEditing) return '-';
-                    return row.original.increaseQty > 0 ? `+${row.original.increaseQty.toLocaleString()}` : '-';
+                    
+                    return row.original.increaseQty > 0 ? (
+                        <span style={{ color: '#dc2626', fontWeight: 500 }}>
+                            +{row.original.increaseQty.toLocaleString()}
+                        </span>
+                    ) : '-';
                 },
             },
             {
                 accessorKey: 'decreaseQty',
                 header: '감소수량',
-                meta: { width: '110px' },
+                meta: { width: '150px' },
                 cell: ({ row }) => {
                     const isNew = row.original.sthiId === -999999;
                     const isEditing = row.original.sthiId === editingId;
@@ -442,7 +447,12 @@ export function SeedInventoryManagePage() {
                         );
                     }
                     if (isNew || isEditing) return '-';
-                    return row.original.decreaseQty > 0 ? `-${row.original.decreaseQty.toLocaleString()}` : '-';
+                    
+                    return row.original.decreaseQty > 0 ? (
+                        <span style={{ color: '#2563eb', fontWeight: 500 }}>
+                            -{row.original.decreaseQty.toLocaleString()}
+                        </span>
+                    ) : '-';
                 },
             },
             {
