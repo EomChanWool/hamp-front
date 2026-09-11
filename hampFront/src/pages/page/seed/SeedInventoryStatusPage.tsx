@@ -37,9 +37,14 @@ export function SeedInventoryStatusPage() {
           activeTab === '반제품' ? 1 : 
           activeTab === '완제품' ? 2 : undefined
 
+        const listParams: Record<string, any> = { productType: 0 }
+        if (categoryParam !== undefined) {
+          listParams.category = categoryParam
+        }
+
         const [listRes, summaryRes] = await Promise.all([
-          ItemStockApi.getList(categoryParam !== undefined ? { category: categoryParam } : undefined),
-          ItemStockApi.getSummary(),
+          ItemStockApi.getList(listParams),
+          ItemStockApi.getSummary({ productType: 0 }),
         ])
 
         if (listRes && listRes.data) {
@@ -57,13 +62,19 @@ export function SeedInventoryStatusPage() {
             }
           })
           setItems(mappedItems)
+        } else {
+          setItems([])
         }
+
+        // 탭을 바꿀 때마다 선택된 품목 인덱스를 0으로 초기화
+        setSelectedIndex(0)
 
         if (summaryRes && summaryRes.data) {
           setSummaryData(summaryRes.data)
         }
       } catch (error) {
         console.error('재고 데이터 조회 실패:', error)
+        setItems([])
       } finally {
         setLoading(false)
       }
@@ -75,18 +86,25 @@ export function SeedInventoryStatusPage() {
   // 품목 목록
   const displayedItems = items
 
-  const selectedItem = displayedItems[selectedIndex] || displayedItems[0] || items[0]
+  // 선택된 인덱스가 목록 범위를 벗어날 경우 대비한 안전 장치
+  const safeSelectedIndex = displayedItems.length > 0 ? Math.min(selectedIndex, displayedItems.length - 1) : 0
+  const selectedItem = displayedItems[safeSelectedIndex]
 
   // 2. 선택된 품목 또는 추이 탭이 변경될 때마다 추이 데이터 API 호출
   useEffect(() => {
-    if (!selectedItem) return
+    if (!selectedItem) {
+      setApiTrendData(null)
+      return
+    }
 
     const fetchTrend = async () => {
       try {
         const periodParam = trendTab === '월별' ? 'month' : trendTab === '분기별' ? 'quarter' : 'year'
-        const res = await ItemStockApi.getTrend(selectedItem.itemCode, { period: periodParam })
+        const res = await ItemStockApi.getTrend(selectedItem.itemCode, { period: periodParam, productType: 0 })
         if (res && res.data) {
           setApiTrendData(res.data)
+        } else {
+          setApiTrendData(null)
         }
       } catch (error) {
         console.error('재고 추이 데이터 조회 실패:', error)
@@ -265,10 +283,7 @@ export function SeedInventoryStatusPage() {
                 <button
                   key={tab}
                   type="button"
-                  onClick={() => {
-                    setActiveTab(tab)
-                    setSelectedIndex(0)
-                  }}
+                  onClick={() => setActiveTab(tab)}
                   style={{
                     padding: '4px 12px',
                     fontSize: '12px',
@@ -288,55 +303,61 @@ export function SeedInventoryStatusPage() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {displayedItems.map((item, index) => {
-              const percentage = (item.currentStock / maxStock) * 100
-              const isSelected = selectedIndex === index
+            {displayedItems.length > 0 ? (
+              displayedItems.map((item, index) => {
+                const percentage = (item.currentStock / maxStock) * 100
+                const isSelected = safeSelectedIndex === index
 
-              return (
-                <div
-                  key={item.itemCode}
-                  onClick={() => setSelectedIndex(index)}
-                  style={{
-                    padding: '12px 16px',
-                    borderRadius: '8px',
-                    border: isSelected ? '1px solid #d97706' : '1px solid #e2e8f0',
-                    background: isSelected ? '#fffbeb' : '#ffffff',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                      <span style={{ color: '#64748b', fontWeight: 500 }}>{item.itemCode}</span>
-                      <span style={{ color: '#cbd5e1' }}>·</span>
-                      <span style={{ color: '#64748b', fontSize: '11px' }}>{item.category}</span>
+                return (
+                  <div
+                    key={item.itemCode}
+                    onClick={() => setSelectedIndex(index)}
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: isSelected ? '1px solid #d97706' : '1px solid #e2e8f0',
+                      background: isSelected ? '#fffbeb' : '#ffffff',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                        <span style={{ color: '#64748b', fontWeight: 500 }}>{item.itemCode}</span>
+                        <span style={{ color: '#cbd5e1' }}>·</span>
+                        <span style={{ color: '#64748b', fontSize: '11px' }}>{item.category}</span>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>{item.stockText}</span>
+                      </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>{item.stockText}</span>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a', minWidth: '140px' }}>
+                        {item.itemName}
+                      </div>
+                      <div style={{ flex: 1, height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden', position: 'relative' }}>
+                        <div
+                          style={{
+                            width: `${percentage}%`,
+                            height: '100%',
+                            background: '#9a3412',
+                            borderRadius: '4px',
+                          }}
+                        />
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#94a3b8', minWidth: '110px', textAlign: 'right' }}>
+                        {item.updateTime}
+                      </div>
                     </div>
                   </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a', minWidth: '140px' }}>
-                      {item.itemName}
-                    </div>
-                    <div style={{ flex: 1, height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden', position: 'relative' }}>
-                      <div
-                        style={{
-                          width: `${percentage}%`,
-                          height: '100%',
-                          background: '#9a3412',
-                          borderRadius: '4px',
-                        }}
-                      />
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8', minWidth: '110px', textAlign: 'right' }}>
-                      {item.updateTime}
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
+                )
+              })
+            ) : (
+              <div style={{ padding: '32px', textAlign: 'center', color: '#94a3b8', fontSize: '13px', background: '#f8fafc', borderRadius: '8px' }}>
+                해당 카테고리에 조회된 품목이 없습니다.
+              </div>
+            )}
           </div>
         </div>
       </Panel>
@@ -354,6 +375,7 @@ export function SeedInventoryStatusPage() {
                   const foundIndex = displayedItems.findIndex((i) => i.itemCode === e.target.value)
                   if (foundIndex !== -1) setSelectedIndex(foundIndex)
                 }}
+                disabled={displayedItems.length === 0}
                 style={{
                   padding: '6px 12px',
                   fontSize: '12px',
@@ -361,23 +383,27 @@ export function SeedInventoryStatusPage() {
                   border: '1px solid #cbd5e1',
                   background: '#ffffff',
                   color: '#0f172a',
-                  cursor: 'pointer',
+                  cursor: displayedItems.length === 0 ? 'not-allowed' : 'pointer',
                 }}
               >
-                {(['원료', '반제품', '완제품'] as const).map((categoryName) => {
-                  const categoryItems = displayedItems.filter((item) => item.category === categoryName)
-                  if (categoryItems.length === 0) return null
+                {displayedItems.length > 0 ? (
+                  (['원료', '반제품', '완제품'] as const).map((categoryName) => {
+                    const categoryItems = displayedItems.filter((item) => item.category === categoryName)
+                    if (categoryItems.length === 0) return null
 
-                  return (
-                    <optgroup key={categoryName} label={`[ ${categoryName} ]`}>
-                      {categoryItems.map((item) => (
-                        <option key={item.itemCode} value={item.itemCode}>
-                          {item.itemCode} · {item.itemName}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )
-                })}
+                    return (
+                      <optgroup key={categoryName} label={`[ ${categoryName} ]`}>
+                        {categoryItems.map((item) => (
+                          <option key={item.itemCode} value={item.itemCode}>
+                            {item.itemCode} · {item.itemName}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )
+                  })
+                ) : (
+                  <option value="">품목 없음</option>
+                )}
               </select>
 
               <div style={{ display: 'flex', gap: '4px', background: '#f1f5f9', padding: '3px', borderRadius: '6px' }}>

@@ -74,6 +74,7 @@ export function SeedInventoryManagePage() {
 
     const fetchItemOptions = useCallback(async () => {
         try {
+            // 씨드 관리 페이지이므로 productType: 0 고정
             const res = await ItemApi.getOptions({ productType: 0 });
             setItemOptions(res.data ?? []);
         } catch (error) {
@@ -132,6 +133,7 @@ export function SeedInventoryManagePage() {
         setIsLoading(true);
         try {
             const params: Record<string, any> = {
+                productType: 0, // 씨드 구분값 0 추가
                 page,
                 size: 10,
             };
@@ -225,6 +227,7 @@ export function SeedInventoryManagePage() {
         setIsUpdating(true);
         try {
             const payload: StockAdjustmentRequest = {
+                productType: 0, // 씨드 구분값 0 추가
                 itemCode,
                 direction: editFormRef.current.direction ?? 'INCREASE',
                 qty,
@@ -377,10 +380,8 @@ export function SeedInventoryManagePage() {
                         iconNode = <PencilIcon className="w-3.5 h-3.5 inline-block mr-1" />;
                     } else if (ioType === '신고입고취소') {
                         badgeClass = 'badge muted';
-                        // 신고입고취소 아이콘 (회전 화살표)
                         iconNode = <ArrowPathIcon className="w-3.5 h-3.5 inline-block mr-1" />;
                     } else {
-                        // 신고입고 아이콘 (상향 삼각형 모양을 위해 PlayIcon을 위로 회전)
                         badgeClass = 'badge info';
                         iconNode = <PlayIcon className="w-3 h-3 inline-block mr-1 rotate-[-90deg]" />;
                     }

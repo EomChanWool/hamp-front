@@ -3,6 +3,7 @@ import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
 /** 재고 조정 등록 요청 */
 export interface StockAdjustmentRequest {
+    productType: number;                // 씨드: 0, 인피: 1
     itemCode: string;
     direction: 'INCREASE' | 'DECREASE'; // 증감구분
     qty: number;                        // 조정 수량 (>= 0.01)
@@ -47,6 +48,7 @@ export const StockHistoryApi = {
 
     /** 재고이력 목록 조회 */
     getList: async (params?: {
+        productType?: number;
         category?: number;
         itemCode?: string;
         ioType?: string;

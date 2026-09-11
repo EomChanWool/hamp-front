@@ -77,8 +77,11 @@ export const ItemStockApi = {
     },
 
     /** 재고 현황 구분별 요약 조회 */
-    getSummary: async (): Promise<ApiResponseItemStockSummaryResponse> => {
-        const res = await apiClient.get('/item-stocks/summary');
+    getSummary: async (params?: {
+        productType?: number;
+        [key: string]: any;
+    }): Promise<ApiResponseItemStockSummaryResponse> => {
+        const res = await apiClient.get('/item-stocks/summary', { params });
         return res.data;
     },
 };
