@@ -55,8 +55,6 @@ export const SeedGoodsReceiptReturnApi = {
     getList: async (params?: {
         itemCode?: string;
         processStatus?: number;
-        page?: number;
-        size?: number;
         [key: string]: any;
     }): Promise<ApiResponsePageSeedGoodsReceiptReturnResponse> => {
         const res = await apiClient.get('/seed-goods-receipt-returns', { params });
