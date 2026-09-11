@@ -42,7 +42,7 @@ export interface ItemStockSummaryResponse {
 
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
-/** 품목 재고 랭킹 조회 API 최종 응답 타입 */
+/** 품목 재고 조회 API 최종 응답 타입 */
 export type ApiResponseListItemStockResponse = ApiResponse<ItemStockResponse[]>;
 
 /** 품목별 재고 추이 조회 API 최종 응답 타입 */
@@ -55,8 +55,8 @@ export type ApiResponseItemStockSummaryResponse = ApiResponse<ItemStockSummaryRe
 // ── 품목 재고현황 API 함수 ─────────────────────────────────────────────────────
 
 export const ItemStockApi = {
-    /** 품목별 현재 재고 랭킹 조회 */
-    getRanking: async (params?: {
+    /** 품목별 현재 재고 조회 */
+    getList: async (params?: {
         category?: number;
         [key: string]: any;
     }): Promise<ApiResponseListItemStockResponse> => {
