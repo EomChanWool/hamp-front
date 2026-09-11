@@ -94,6 +94,7 @@ export interface SalesOrderPerformanceTrendPointResponse {
     periodEnd: string;
     totalOrderQty: number;
     totalProducedQty: number;
+    progressRate: number;
 }
 
 /** 수주실적현황 기간별 추이 시리즈 응답 */
