@@ -93,8 +93,8 @@ export function SeedInventoryStatusPage() {
   }, [selectedItem, trendTab])
 
   const maxStock = useMemo(() => {
-    if (items.length === 0) return 10000
-    return Math.max(...items.map((i) => i.currentStock), 10000)
+    if (items.length === 0) return 1000
+    return Math.max(...items.map((i) => i.currentStock), 1000)
   }, [items])
 
   const currentTrendData = useMemo(() => {
@@ -107,7 +107,7 @@ export function SeedInventoryStatusPage() {
     return []
   }, [apiTrendData])
 
-  const yAxisLabels = ['9,000', '8,000', '7,000', '6,000', '5,000', '4,000', '3,000', '2,000', '1,000', '0']
+  const yAxisLabels = ['9,00', '8,00', '7,00', '6,00', '5,00', '4,00', '3,00', '2,00', '1,00', '0']
 
   const getCategorySummaryValues = (catCode: number) => {
     if (summaryData && summaryData.categories) {
@@ -408,14 +408,14 @@ export function SeedInventoryStatusPage() {
             </div>
 
             <div style={{ flex: 1, position: 'relative', height: '220px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', paddingBottom: '24px', borderBottom: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', paddingLeft: '8px' }}>
-              {[0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000].map((val) => (
+              {[0, 100, 200, 300, 400, 500, 600, 700, 800].map((val) => (
                 <div
                   key={val}
                   style={{
                     position: 'absolute',
                     left: '8px',
                     right: 0,
-                    bottom: `${(val / 9000) * 100}%`,
+                    bottom: `${(val / 900) * 100}%`,
                     borderTop: '1px solid #f1f5f9',
                     pointerEvents: 'none',
                   }}
@@ -424,7 +424,7 @@ export function SeedInventoryStatusPage() {
 
               {currentTrendData.length > 0 ? (
                 currentTrendData.map((data) => {
-                  const heightPercent = Math.min((data.value / 9000) * 100, 100)
+                  const heightPercent = Math.min((data.value / 900) * 100, 100)
                   return (
                     <div key={data.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end', zIndex: 1, position: 'relative' }}>
                       <div
