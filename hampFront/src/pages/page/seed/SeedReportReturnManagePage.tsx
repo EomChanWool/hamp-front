@@ -1,178 +1,346 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Panel } from '@components/card/Panel'
-import { RowDetailModal } from '@/components/modal/RowDetailModal'
-import { SearchBand, type SearchField } from '@components/search/SearchBand'
-import { CusTable } from '@components/table/CusTable'
-import { CusPagination } from '@components/table/CusPagination'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ColumnDef, SortingState } from '@tanstack/react-table';
+import { Panel } from '@components/card/Panel';
+import { SearchBand, type SearchField } from '@components/search/SearchBand';
+import { CusTable } from '@components/table/CusTable';
+import { CusPagination } from '@components/table/CusPagination';
+import Spinner from '@/components/common/Spinner';
+import { 
+  SeedGoodsReceiptReturnApi, 
+  type SeedGoodsReceiptReturnItemResponse, 
+  type SeedGoodsReceiptReturnUpdateRequest 
+} from '@/api/seed/SeedGoodsReceiptReturn';
+import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
 
-interface SeedReportReturnRow {
-  reportNo: string
-  itemName: string
-  quantity: string
-  reportDate: string
-  returnDueDate: string
-  processStatus: string
-  manager: string
-}
+const PROCESS_STATUS_MAP: Record<number, string> = {
+  0: '신고대기',
+  1: '신고완료',
+};
 
-const PROCESS_STATUS_COLORS: Record<string, string> = {
-  신고접수: '#818cf8',
-  반납대기: '#e879f9',
-  반납완료: '#22d3ee',
-  취소: '#94a3b8',
-}
-
-const dummySeedReportReturns: SeedReportReturnRow[] = [
-  { reportNo: 'SR-4000', itemName: '헴프 오일', quantity: '40 kg', reportDate: '2026-06-10', returnDueDate: '2026-06-18', processStatus: '신고접수', manager: '김민준' },
-  { reportNo: 'SR-4001', itemName: '헴프 분말', quantity: '48 kg', reportDate: '2026-06-11', returnDueDate: '2026-06-19', processStatus: '반납대기', manager: '이서연' },
-  { reportNo: 'SR-4002', itemName: '단백질 바', quantity: '56 kg', reportDate: '2026-06-12', returnDueDate: '2026-06-20', processStatus: '반납완료', manager: '박지훈' },
-  { reportNo: 'SR-4003', itemName: '헴프 음료', quantity: '64 kg', reportDate: '2026-06-13', returnDueDate: '2026-06-21', processStatus: '취소', manager: '최유진' },
-  { reportNo: 'SR-4004', itemName: '씨드 그래놀라', quantity: '72 kg', reportDate: '2026-06-14', returnDueDate: '2026-06-22', processStatus: '신고접수', manager: '정도윤' },
-  { reportNo: 'SR-4005', itemName: '헴프 캡슐', quantity: '80 kg', reportDate: '2026-06-15', returnDueDate: '2026-06-23', processStatus: '반납대기', manager: '한수아' },
-]
-
-const PAGE_SIZE = 10
+const PROCESS_STATUS_COLORS: Record<number, string> = {
+  0: '#818cf8',
+  1: '#e879f9',
+};
 
 export function SeedReportReturnManagePage() {
-  const [filteredSeedReportReturns, setFilteredSeedReportReturns] = useState<SeedReportReturnRow[]>(dummySeedReportReturns)
-  const [modalSeedReportReturn, setModalSeedReportReturn] = useState<SeedReportReturnRow | null>(null)
-  const [page, setPage] = useState(0)
+  const [dataList, setDataList] = useState<SeedGoodsReceiptReturnItemResponse[]>([]);
+  const [itemOptions, setItemOptions] = useState<ItemOptionResponse[]>([]);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const reportNoRef = useRef<HTMLInputElement>(null)
-  const itemNameRef = useRef<HTMLInputElement>(null)
-  const processStatusRef = useRef<HTMLInputElement>(null)
-  const managerRef = useRef<HTMLInputElement>(null)
+  const [page, setPage] = useState(0);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
-  const searchFields: SearchField[] = [
-    { type: 'input', label: '신고번호', ref: reportNoRef, name: "equipmentName" },
-    { type: 'input', label: '품목명', ref: itemNameRef, name: "equipmentName" },
-    { type: 'input', label: '처리상태', ref: processStatusRef, name: "equipmentName" },
-    { type: 'input', label: '담당자', ref: managerRef, name: "equipmentName" },
-  ]
+  // 현재 수정 중인 행의 ID
+  const [editingId, setEditingId] = useState<number | null>(null);
+  // 수정 중인 행의 임시 입력 데이터 저장 상태
+  const [editForm, setEditForm] = useState<Partial<SeedGoodsReceiptReturnUpdateRequest>>({});
+
+  const [searchFilters, setSearchFilters] = useState({
+    itemCode: '',
+    processStatus: '',
+  });
+
+  const itemCodeRef = useRef<HTMLSelectElement>(null);
+  const processStatusRef = useRef<HTMLSelectElement>(null);
+
+  // 품목 옵션 조회
+  const fetchItemOptions = useCallback(async () => {
+    try {
+      const res = await ItemApi.getOptions({ productType: 0 });
+      setItemOptions(res.data ?? []);
+    } catch (error) {
+      console.error('품목 옵션 조회 실패:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchItemOptions();
+  }, [fetchItemOptions]);
+
+  const searchFields: SearchField[] = useMemo(
+    () => [
+      {
+        type: 'select',
+        label: '품목',
+        ref: itemCodeRef,
+        name: 'itemCode',
+        options: [
+          { label: '전체', value: '' },
+          ...itemOptions.map((opt) => ({
+            label: `${opt.itemCode} (${opt.itemNm ?? '-'})`,
+            value: opt.itemCode,
+          })),
+        ],
+      },
+      {
+        type: 'select',
+        label: '처리상태',
+        ref: processStatusRef,
+        name: 'processStatus',
+        options: [
+          { label: '전체', value: '' },
+          { label: '신고대기', value: '0' },
+          { label: '신고완료', value: '1' },
+        ],
+      },
+    ],
+    [itemOptions]
+  );
+
+  const sortParams = useMemo(() => {
+    return sorting.map((sort) => `${sort.id},${sort.desc ? 'desc' : 'asc'}`);
+  }, [sorting]);
+
+  const loadList = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const params: Record<string, any> = {
+        page,
+        size: 10,
+      };
+
+      if (searchFilters.itemCode) {
+        params.itemCode = searchFilters.itemCode;
+      }
+
+      if (searchFilters.processStatus !== '') {
+        params.processStatus = Number(searchFilters.processStatus);
+      }
+
+      if (sortParams.length > 0) {
+        params.sort = sortParams;
+      }
+
+      const response = await SeedGoodsReceiptReturnApi.getList(params);
+      const pageData = response.data;
+
+      setDataList(pageData?.content ?? []);
+      setTotalElements(pageData?.totalElements ?? 0);
+      setTotalPages(pageData?.totalPages ?? 0);
+    } catch (error) {
+      console.error('씨드 신고반납 목록 조회 실패:', error);
+      window.alert('데이터를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [page, searchFilters, sortParams]);
+
+  useEffect(() => {
+    loadList();
+  }, [loadList]);
 
   const handleSearch = () => {
-    const reportNo = reportNoRef.current?.value.trim() ?? ''
-    const itemName = itemNameRef.current?.value.trim() ?? ''
-    const processStatus = processStatusRef.current?.value.trim() ?? ''
-    const manager = managerRef.current?.value.trim() ?? ''
-
-    // 현재는 더미신고반납에 필터로 걸러내고 있는데 추후에 api 연동할 것
-    setFilteredSeedReportReturns(
-      dummySeedReportReturns.filter(
-        (item) =>
-          (!reportNo || item.reportNo.includes(reportNo)) &&
-          (!itemName || item.itemName.includes(itemName)) &&
-          (!processStatus || item.processStatus.includes(processStatus)) &&
-          (!manager || item.manager.includes(manager)),
-      ),
-    )
-  }
+    setPage(0);
+    setSearchFilters({
+      itemCode: itemCodeRef.current?.value || '',
+      processStatus: processStatusRef.current?.value || '',
+    });
+  };
 
   const handleReset = () => {
-    ;[reportNoRef, itemNameRef, processStatusRef, managerRef].forEach((ref) => {
-      if (ref.current) ref.current.value = ''
-    })
-    setFilteredSeedReportReturns(dummySeedReportReturns)
-  }
+    if (itemCodeRef.current) itemCodeRef.current.value = '';
+    if (processStatusRef.current) processStatusRef.current.value = '';
 
-  const handleDelete = (item: SeedReportReturnRow) => {
-    if (window.confirm(`${item.reportNo} 신고 건을 삭제할까요?`)) {
-      setFilteredSeedReportReturns((prev) => prev.filter((i) => i !== item))
-      window.alert('mock data에서만 삭제되었습니다.')
+    setPage(0);
+    setSearchFilters({ itemCode: '', processStatus: '' });
+    setSorting([]);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  // 행 수정 모드 진입
+  const handleStartEdit = (item: SeedGoodsReceiptReturnItemResponse) => {
+    setEditingId(item.returnId);
+    setEditForm({
+      returnQty: item.returnQty,
+      processStatus: item.processStatus,
+    });
+  };
+
+  // 행 수정 취소
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditForm({});
+  };
+
+  // 행 수정 내용 저장 API 연동
+  const handleSaveEdit = async (item: SeedGoodsReceiptReturnItemResponse) => {
+    try {
+      await SeedGoodsReceiptReturnApi.update(item.returnId, editForm as SeedGoodsReceiptReturnUpdateRequest);
+      window.alert('성공적으로 수정되었습니다.');
+      setEditingId(null);
+      setEditForm({});
+      loadList();
+    } catch (error) {
+      console.error('씨드 신고반납 수정 실패:', error);
+      window.alert('수정에 실패했습니다.');
     }
-  }
+  };
 
-  const handleSave = (updated: Record<string, string>) => {
-    setFilteredSeedReportReturns((prev) => prev.map((i) => (i === modalSeedReportReturn ? ({ ...i, ...updated } as SeedReportReturnRow) : i)))
-    setModalSeedReportReturn(null)
-    window.alert('화면 상태에만 저장되었습니다.')
-  }
+  // 행 삭제 API 연동
+  const handleDelete = async (item: SeedGoodsReceiptReturnItemResponse) => {
+    const confirmed = window.confirm(`신고 ID [${item.returnId}] 건을 삭제하시겠습니까?`);
+    if (!confirmed) return;
 
-  // 검색 결과가 바뀌면 페이지를 처음으로 되돌리기
-  useEffect(() => {
-    setPage(0)
-  }, [filteredSeedReportReturns])
+    try {
+      await SeedGoodsReceiptReturnApi.delete(item.returnId);
+      window.alert('성공적으로 삭제되었습니다.');
+      loadList();
+    } catch (error) {
+      console.error('씨드 신고반납 삭제 실패:', error);
+      window.alert('삭제에 실패했습니다.');
+    }
+  };
 
-  const totalPages = Math.max(1, Math.ceil(filteredSeedReportReturns.length / PAGE_SIZE))
-  const pagedSeedReportReturns = filteredSeedReportReturns.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
-
-  const columns: ColumnDef<SeedReportReturnRow>[] = useMemo(
+  const columns: ColumnDef<SeedGoodsReceiptReturnItemResponse>[] = useMemo(
     () => [
-      { accessorKey: 'reportNo', header: '신고번호' },
-      { accessorKey: 'itemName', header: '품목명' },
-      { accessorKey: 'quantity', header: '수량' },
-      { accessorKey: 'reportDate', header: '신고일자' },
-      { accessorKey: 'returnDueDate', header: '반납예정일' },
+      { accessorKey: 'returnId', header: '신고ID', meta: { width: '100px' } },
+      {
+        accessorKey: 'itemCode',
+        header: '품목',
+        meta: { width: '250px' },
+        cell: ({ row }) => {
+          const { itemCode, itemNm } = row.original;
+          return (
+            <div className="itemCell">
+              <span className="itemCell__name">{itemNm ?? '-'}</span>
+              <span className="itemCell__code">({itemCode ?? '-'})</span>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: 'returnQty',
+        header: '수량',
+        meta: { width: '100px' },
+        cell: ({ row }) => {
+          const isEditing = editingId === row.original.returnId;
+          if (isEditing) {
+            return (
+              <input
+                type="number"
+                style={{ width: '80px' }}
+                className="w-24 border px-2 py-0.5 rounded text-sm"
+                value={editForm.returnQty ?? ''}
+                onChange={(e) => setEditForm({ ...editForm, returnQty: Number(e.target.value) })}
+              />
+            );
+          }
+          return row.original.returnQty;
+        },
+      },
+      { accessorKey: 'reportDate', header: '신고일자', meta: { width: '130px' } },
+      { accessorKey: 'returnDueDate', header: '처리예정일', meta: { width: '130px' } },
       {
         accessorKey: 'processStatus',
         header: '처리상태',
-        cell: ({ getValue }) => {
-          const value = getValue() as string
-          const color = PROCESS_STATUS_COLORS[value]
-          return color ? <span style={{ color, fontWeight: 600 }}>{value}</span> : value
+        meta: { width: '120px' },
+        cell: ({ row }) => {
+          const isEditing = editingId === row.original.returnId;
+          const statusNum = row.original.processStatus;
+
+          if (isEditing) {
+            return (
+              <select
+                className="w-full border px-1 py-0.5 rounded text-sm"
+                value={editForm.processStatus ?? 0}
+                onChange={(e) => setEditForm({ ...editForm, processStatus: Number(e.target.value) })}
+              >
+                <option value={0}>신고대기</option>
+                <option value={1}>신고완료</option>
+              </select>
+            );
+          }
+
+          const statusText = PROCESS_STATUS_MAP[statusNum] ?? statusNum;
+          const color = PROCESS_STATUS_COLORS[statusNum];
+          return color ? <span style={{ color, fontWeight: 600 }}>{statusText}</span> : statusText;
         },
       },
-      { accessorKey: 'manager', header: '담당자' },
       {
         id: 'actions',
         header: '관리',
         meta: { width: '150px' },
-        cell: ({ row }) => (
-          <div className="rowActions">
-            <button
-              type="button"
-              className="miniButton"
-              onClick={(e) => {
-                e.stopPropagation()
-                setModalSeedReportReturn(row.original)
-              }}
-            >
-              상세
-            </button>
-            <button
-              type="button"
-              className="miniButton danger"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleDelete(row.original)
-              }}
-            >
-              삭제
-            </button>
-          </div>
-        ),
+        cell: ({ row }) => {
+          const isEditing = editingId === row.original.returnId;
+          return (
+            <div className="rowActions">
+              {isEditing ? (
+                <>
+                  <button
+                    type="button"
+                    className="miniButton"
+                    onClick={() => handleSaveEdit(row.original)}
+                  >
+                    저장
+                  </button>
+                  <button
+                    type="button"
+                    className="miniButton danger"
+                    onClick={handleCancelEdit}
+                  >
+                    취소
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="miniButton"
+                    onClick={() => handleStartEdit(row.original)}
+                  >
+                    수정
+                  </button>
+                  <button
+                    type="button"
+                    className="miniButton danger"
+                    onClick={() => handleDelete(row.original)}
+                  >
+                    삭제
+                  </button>
+                </>
+              )}
+            </div>
+          );
+        },
       },
     ],
-    [],
-  )
-
-  const detailFields = [
-    { label: '신고번호', key: 'reportNo' },
-    { label: '품목명', key: 'itemName' },
-    { label: '수량', key: 'quantity' },
-    { label: '신고일자', key: 'reportDate' },
-    { label: '반납예정일', key: 'returnDueDate' },
-    { label: '처리상태', key: 'processStatus' },
-    { label: '담당자', key: 'manager' },
-  ]
+    [editingId, editForm]
+  );
 
   return (
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="신고반납관리 목록" action="등록" onAction={() => window.alert('mock 동작입니다.')}>
-        <CusTable data={pagedSeedReportReturns} columns={columns} onRowClick={setModalSeedReportReturn} />
-        <CusPagination page={page} totalPages={totalPages} totalCount={filteredSeedReportReturns.length} onPageChange={setPage} />
+      <Panel title="씨드 신고반납 관리 목록">
+        <div className="relative min-h-[300px]">
+          {isLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              <CusTable
+                data={dataList}
+                columns={columns}
+                sorting={sorting}
+                onSortingChange={setSorting}
+                noDataMessage="조회된 씨드 신고반납 데이터가 없습니다."
+              />
+              <CusPagination
+                page={page}
+                totalPages={totalPages}
+                totalCount={totalElements}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
+        </div>
       </Panel>
-
-      <RowDetailModal
-        isOpen={modalSeedReportReturn !== null}
-        onClose={() => setModalSeedReportReturn(null)}
-        onSave={handleSave}
-        fields={detailFields}
-        data={(modalSeedReportReturn ?? {}) as unknown as Record<string, string>}
-      />
     </section>
-  )
+  );
 }

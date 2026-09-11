@@ -1,0 +1,85 @@
+/* 재고 요약 카드 전체 레이아웃 (metricsCard나 관련 부모 내부에서 확실히 동작하도록 명시) */
+.screenStack .inventorySummaryCard {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  width: 100%;
+  padding: 4px;
+}
+
+/* 상단 라벨 (원료 재고 등) */
+.inventorySummaryCard__header {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+/* 숫자와 단위가 들어가는 부모 영역 */
+.inventorySummaryCard__valueArea {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 10px;
+  white-space: nowrap;
+}
+
+/* 오직 재고 숫자만 32px로 크게 지정 */
+.inventorySummaryCard__valueArea span:first-child {
+  font-size: 32px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* kg 단위 */
+.inventorySummaryCard__unit {
+  font-size: 16px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+/* 구분선 */
+.inventorySummaryCard__divider {
+  width: 100%;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 10px;
+}
+
+/* 하단 입출고 영역 전체 */
+.inventorySummaryCard__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #475569;
+}
+
+/* 하단 각 행 */
+.inventorySummaryCard__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.inventorySummaryCard__row span {
+  font-size: 12px;
+}
+
+/* 입고 금액/텍스트 */
+.inventorySummaryCard .inventorySummaryCard__inbound {
+  font-weight: 600 !important; /* 또는 상위 요소로 제어가 안 될 경우를 대비해 여기만 선택적으로 유지 */
+  color: #16a34a;
+  font-size: 12px;
+}
+
+/* 출고 금액/텍스트 */
+.inventorySummaryCard .inventorySummaryCard__outbound {
+  font-weight: 600;
+  color: #334155;
+  font-size: 12px;
+}

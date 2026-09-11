@@ -1,266 +1,593 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Panel } from '@components/card/Panel'
-import { RowDetailModal } from '@/components/modal/RowDetailModal'
-import { SearchBand, type SearchField } from '@components/search/SearchBand'
-import { CusTable } from '@components/table/CusTable'
-import { CusPagination } from '@components/table/CusPagination'
-import { paginate } from '@/utils/common'
-
-// 컴포넌트 내부에서 사용할 타입 직접 정의
-export interface SeedInventoryRow {
-  id: string
-  processDate: string
-  processType: string
-  itemName: string
-  quantity: number
-  unit: string
-  manager: string
-  note?: string
-}
-
-export interface SeedInventorySearchParams {
-  startDate?: string
-  endDate?: string
-  processType?: string
-  itemName?: string
-}
-
-// 자체 내장 더미 데이터
-const INITIAL_MOCK_DATA: SeedInventoryRow[] = [
-  {
-    id: '1',
-    processDate: '2026-06-01',
-    processType: '입고',
-    itemName: '방울토마토 씨드 A',
-    quantity: 500,
-    unit: '봉지',
-    manager: '김철수',
-    note: '초기 물량 입고',
-  },
-  {
-    id: '2',
-    processDate: '2026-06-03',
-    processType: '출고',
-    itemName: '방울토마토 씨드 A',
-    quantity: 120,
-    unit: '봉지',
-    manager: '이영희',
-    note: '1하우스 파종용 출고',
-  },
-  {
-    id: '3',
-    processDate: '2026-06-05',
-    processType: '조정',
-    itemName: '청상추 씨드 B',
-    quantity: -15,
-    unit: '팩',
-    manager: '관리자',
-    note: '재고 조사 중 파손 폐기',
-  },
-  {
-    id: '4',
-    processDate: '2026-06-10',
-    processType: '입고',
-    itemName: '청상추 씨드 B',
-    quantity: 300,
-    unit: '팩',
-    manager: '김철수',
-    note: '정기 구매 입고',
-  },
-]
-
-const PROCESS_TYPE_COLORS: Record<string, string> = {
-  입고: '#34d399',
-  출고: '#fb7185',
-  조정: '#94a3b8',
-}
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ColumnDef, SortingState } from '@tanstack/react-table';
+import { Panel } from '@components/card/Panel';
+import { SearchBand, type SearchField } from '@components/search/SearchBand';
+import { CusTable } from '@components/table/CusTable';
+import { CusPagination } from '@components/table/CusPagination';
+import Spinner from '@/components/common/Spinner';
+import { formatDateTime } from '@/utils/common';
+import axios from 'axios';
+import {
+    StockHistoryApi,
+    type StockHistoryResponse,
+    type StockAdjustmentRequest,
+} from '@/api/seed/StockHistory';
+import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
+import { 
+    PencilIcon,
+    ArrowPathIcon,
+    PlayIcon 
+} from "@heroicons/react/16/solid";
 
 export function SeedInventoryManagePage() {
-  const [seedInventory, setSeedInventory] = useState<SeedInventoryRow[]>([])
-  const [searchParams, setSearchParams] = useState<SeedInventorySearchParams>({})
-  const [isLoading, setIsLoading] = useState(false)
-  const [modalSeedInventory, setModalSeedInventory] = useState<SeedInventoryRow | null>(null)
-  const [currentPage, setCurrentPage] = useState(0)
+    const [historyList, setHistoryList] = useState<StockHistoryResponse[]>([]);
+    const [itemOptions, setItemOptions] = useState<ItemOptionResponse[]>([]);
+    const [totalElements, setTotalElements] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
 
-  const processStartRef = useRef<HTMLInputElement>(null)
-  const processEndRef = useRef<HTMLInputElement>(null)
-  const processTypeRef = useRef<HTMLInputElement>(null)
-  const itemNameRef = useRef<HTMLInputElement>(null)
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [page, setPage] = useState(0);
 
-  const searchFields: SearchField[] = [
-    { type: 'date', label: '처리', startRef: processStartRef, endRef: processEndRef },
-    { type: 'input', label: '처리구분', ref: processTypeRef, name: "processType" },
-    { type: 'input', label: '품목명', ref: itemNameRef, name: "itemName" },
-  ]
+    const [selectedDirection, setSelectedDirection] = useState<'INCREASE' | 'DECREASE'>('INCREASE');
 
-  const loadSeedInventory = async (params: SeedInventorySearchParams) => {
-    setIsLoading(true)
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 300))
-      let filtered = [...INITIAL_MOCK_DATA]
-      
-      if (params) {
-        filtered = filtered.filter(
-          (item) =>
-            (!params.startDate || item.processDate >= params.startDate) &&
-            (!params.endDate || item.processDate <= params.endDate) &&
-            (!params.processType || item.processType.includes(params.processType)) &&
-            (!params.itemName || item.itemName.includes(params.itemName)),
-        )
-      }
-      setSeedInventory(filtered)
-      setCurrentPage(0)
-    } catch (error) {
-      console.error(error)
-      window.alert('데이터를 불러오는 중 오류가 발생했습니다.')
-    } finally {
-      setIsLoading(false)
-    }
-  }
+    const [searchFilters, setSearchFilters] = useState({
+        category: '',
+        itemCode: '',
+        ioType: '',
+    });
 
-  useEffect(() => {
-    loadSeedInventory(searchParams)
-  }, [searchParams])
+    const [sorting, setSorting] = useState<SortingState>([]);
 
-  const handleSearch = () => {
-    const params: SeedInventorySearchParams = {
-      startDate: processStartRef.current?.value || undefined,
-      endDate: processEndRef.current?.value || undefined,
-      processType: processTypeRef.current?.value.trim() || undefined,
-      itemName: itemNameRef.current?.value.trim() || undefined,
-    }
-    setSearchParams(params)
-  }
+    const sortParams = useMemo(() => {
+        return sorting.map((sort) => `${sort.id},${sort.desc ? 'desc' : 'asc'}`);
+    }, [sorting]);
 
-  const handleReset = () => {
-    if (processStartRef.current) processStartRef.current.value = ''
-    if (processEndRef.current) processEndRef.current.value = ''
-    ;[processTypeRef, itemNameRef].forEach((ref) => {
-      if (ref.current) ref.current.value = ''
-    })
-    setSearchParams({})
-  }
+    const handleSortingChange = (newSorting: SortingState) => {
+        setSorting(newSorting);
+        setPage(0);
+        setEditingId(null);
+        setIsCreatingNewRow(false);
+    };
 
-  const handleDelete = async (item: SeedInventoryRow) => {
-    if (window.confirm(`${item.processDate} ${item.itemName} 내역을 삭제할까요?`)) {
-      try {
-        setSeedInventory((prev) => prev.filter((i) => i.id !== item.id))
-        window.alert('삭제되었습니다.')
-      } catch (err) {
-        console.error(err)
-        window.alert('삭제에 실패했습니다.')
-      }
-    }
-  }
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [isCreatingNewRow, setIsCreatingNewRow] = useState(false);
 
-  const handleSave = async (updated: Record<string, string>) => {
-    if (!modalSeedInventory) return
-    try {
-      setSeedInventory((prev) =>
-        prev.map((i) => 
-          i.id === modalSeedInventory.id 
-            ? { 
-                ...i, 
-                ...updated, 
-                quantity: updated.quantity ? Number(updated.quantity) : i.quantity 
-              } 
-            : i
-        ),
-      )
+    const editFormRef = useRef<{
+        itemCode?: string;
+        direction?: 'INCREASE' | 'DECREASE';
+        qty?: number;
+        note?: string;
+    }>({
+        itemCode: '',
+        direction: 'INCREASE',
+        qty: 1,
+        note: '',
+    });
 
-      window.alert('저장되었습니다.')
-      setModalSeedInventory(null)
-    } catch (err) {
-      console.error(err)
-      window.alert('저장에 실패했습니다.')
-    }
-  }
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [isDeletingId, setIsDeletingId] = useState<number | null>(null);
 
-  const { totalPages, pagedData } = paginate(seedInventory, currentPage)
+    const categoryRef = useRef<HTMLSelectElement>(null);
+    const itemCodeRef = useRef<HTMLSelectElement>(null);
+    const ioTypeRef = useRef<HTMLSelectElement>(null);
 
-  const columns: ColumnDef<SeedInventoryRow>[] = useMemo(
-    () => [
-      { accessorKey: 'processDate', header: '처리일자' },
-      {
-        accessorKey: 'processType',
-        header: '처리구분',
-        cell: ({ getValue }) => {
-          const value = getValue() as string
-          const color = PROCESS_TYPE_COLORS[value]
-          return color ? <span style={{ color, fontWeight: 600 }}>{value}</span> : value
-        },
-      },
-      { accessorKey: 'itemName', header: '품목명' },
-      { accessorKey: 'quantity', header: '수량' },
-      { accessorKey: 'unit', header: '단위' },
-      { accessorKey: 'manager', header: '담당자' },
-      { accessorKey: 'note', header: '비고' },
-      {
-        id: 'actions',
-        header: '관리',
-        meta: { width: '150px' },
-        cell: ({ row }) => (
-          <div className="rowActions">
-            <button
-              type="button"
-              className="miniButton"
-              onClick={(e) => {
-                e.stopPropagation()
-                setModalSeedInventory(row.original)
-              }}
-            >
-              상세
-            </button>
-            <button
-              type="button"
-              className="miniButton danger"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleDelete(row.original)
-              }}
-            >
-              삭제
-            </button>
-          </div>
-        ),
-      },
-    ],
-    [seedInventory, searchParams],
-  )
+    const fetchItemOptions = useCallback(async () => {
+        try {
+            const res = await ItemApi.getOptions({ productType: 0 });
+            setItemOptions(res.data ?? []);
+        } catch (error) {
+            console.error('품목 옵션 조회 실패:', error);
+        }
+    }, []);
 
-  const detailFields = [
-    { label: '처리일자', key: 'processDate' },
-    { label: '처리구분', key: 'processType' },
-    { label: '품목명', key: 'itemName' },
-    { label: '수량', key: 'quantity' },
-    { label: '단위', key: 'unit' },
-    { label: '담당자', key: 'manager' },
-    { label: '비고', key: 'note' },
-  ]
+    useEffect(() => {
+        fetchItemOptions();
+    }, [fetchItemOptions]);
 
-  return (
-    <section className="screenStack">
-      <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
+    const searchFields: SearchField[] = useMemo(
+        () => [
+            {
+                type: 'select',
+                label: '구분',
+                ref: categoryRef,
+                name: 'category',
+                options: [
+                    { label: '전체', value: '' },
+                    { label: '원료', value: '0' },
+                    { label: '반제품', value: '1' },
+                    { label: '완제품', value: '2' },
+                ],
+            },
+            {
+                type: 'select',
+                label: '품목코드',
+                ref: itemCodeRef,
+                name: 'itemCode',
+                options: [
+                    { label: '전체', value: '' },
+                    ...itemOptions.map((opt) => ({
+                        label: `${opt.itemCode} (${opt.itemNm ?? '-'})`,
+                        value: opt.itemCode,
+                    })),
+                ],
+            },
+            {
+                type: 'select',
+                label: '처리구분',
+                ref: ioTypeRef,
+                name: 'ioType',
+                options: [
+                    { label: '전체', value: '' },
+                    { label: '신고입고', value: '신고입고' },
+                    { label: '신고입고취소', value: '신고입고취소' },
+                    { label: '조정', value: '조정' },
+                ],
+            },
+        ],
+        [itemOptions]
+    );
 
-      <Panel title="씨드 재고관리 목록" action="등록" onAction={() => window.alert('등록 기능은 준비 중입니다.')}>
-        {isLoading ? (
-          <div className="py-10 text-center text-gray-500">데이터를 불러오는 중입니다...</div>
-        ) : (
-          <>
-            <CusTable data={pagedData} columns={columns} onRowClick={setModalSeedInventory} />
-            <CusPagination page={currentPage} totalPages={totalPages} totalCount={seedInventory.length} onPageChange={setCurrentPage} />
-          </>
-        )}
-      </Panel>
+    const loadHistories = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const params: Record<string, any> = {
+                page,
+                size: 10,
+            };
+            if (searchFilters.category !== '') params.category = Number(searchFilters.category);
+            if (searchFilters.itemCode) params.itemCode = searchFilters.itemCode;
+            if (searchFilters.ioType) params.ioType = searchFilters.ioType;
 
-      <RowDetailModal
-        isOpen={modalSeedInventory !== null}
-        onClose={() => setModalSeedInventory(null)}
-        onSave={handleSave}
-        fields={detailFields}
-        data={(modalSeedInventory ?? {}) as unknown as Record<string, string>}
-      />
-    </section>
-  )
+            if (sortParams.length > 0) {
+                params.sort = sortParams;
+            }
+
+            const response = await StockHistoryApi.getList(params);
+            const pageData = response.data;
+
+            setHistoryList(pageData?.content ?? []);
+            setTotalElements(pageData?.totalElements ?? 0);
+            setTotalPages(pageData?.totalPages ?? 0);
+        } catch (error) {
+            console.error('재고이력 목록 조회 실패:', error);
+            window.alert('데이터를 불러오는 중 오류가 발생했습니다.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [page, searchFilters, sortParams, refreshKey]);
+
+    useEffect(() => {
+        loadHistories();
+    }, [loadHistories]);
+
+    const handleSearch = () => {
+        setPage(0);
+        setSearchFilters({
+            category: categoryRef.current?.value || '',
+            itemCode: itemCodeRef.current?.value.trim() || '',
+            ioType: ioTypeRef.current?.value || '',
+        });
+        setEditingId(null);
+        setIsCreatingNewRow(false);
+    };
+
+    const handleReset = () => {
+        if (categoryRef.current) categoryRef.current.value = '';
+        if (itemCodeRef.current) itemCodeRef.current.value = '';
+        if (ioTypeRef.current) ioTypeRef.current.value = '';
+
+        setPage(0);
+        setSearchFilters({ category: '', itemCode: '', ioType: '' });
+        setSorting([]);
+        setEditingId(null);
+        setIsCreatingNewRow(false);
+    };
+
+    const handlePageChange = (newPage: number) => {
+        setEditingId(null);
+        setIsCreatingNewRow(false);
+        setPage(newPage);
+    };
+
+    const handleStartCreate = () => {
+        if (isCreatingNewRow) return;
+        setEditingId(null);
+        editFormRef.current = {
+            itemCode: '',
+            direction: 'INCREASE',
+            qty: 1,
+            note: '',
+        };
+        setSelectedDirection('INCREASE');
+        setIsCreatingNewRow(true);
+    };
+
+    const handleCancelCreate = () => {
+        setIsCreatingNewRow(false);
+    };
+
+    const handleSaveCreate = async () => {
+        if (isUpdating) return;
+
+        const itemCode = editFormRef.current.itemCode?.trim();
+        if (!itemCode) {
+            window.alert('품목을 선택해주세요.');
+            return;
+        }
+
+        const qty = Number(editFormRef.current.qty);
+        if (!qty || qty <= 0) {
+            window.alert('조정 수량은 0보다 커야 합니다.');
+            return;
+        }
+
+        setIsUpdating(true);
+        try {
+            const payload: StockAdjustmentRequest = {
+                itemCode,
+                direction: editFormRef.current.direction ?? 'INCREASE',
+                qty,
+                note: editFormRef.current.note || null,
+            };
+
+            await StockHistoryApi.adjust(payload);
+            window.alert('재고 조정이 등록되었습니다.');
+            setIsCreatingNewRow(false);
+            setPage(0);
+            setRefreshKey((prev) => prev + 1);
+        } catch (err) {
+            console.error('등록 실패:', err);
+            const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
+            window.alert(errorMessage || '등록에 실패했습니다.');
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleStartEdit = (row: StockHistoryResponse) => {
+        if (row.ioType !== '조정') {
+            window.alert('신고입고 및 신고입고취소 내역은 수정할 수 없습니다. (조정 건만 수정 가능)');
+            return;
+        }
+        setIsCreatingNewRow(false);
+        const direction = row.increaseQty > 0 ? 'INCREASE' : 'DECREASE';
+        editFormRef.current = {
+            itemCode: row.itemCode ?? '',
+            direction,
+            qty: row.increaseQty > 0 ? row.increaseQty : row.decreaseQty,
+            note: row.note ?? '',
+        };
+        setSelectedDirection(direction);
+        setEditingId(row.sthiId);
+    };
+
+    const handleCancelEdit = () => {
+        setEditingId(null);
+    };
+
+    const handleSaveEdit = async (_sthiId: number) => {
+        if (isUpdating) return;
+        window.alert(`[목업] sthiId: ${_sthiId} 수정 API 연동 대기 중입니다.`);
+        setEditingId(null);
+    };
+
+    const handleDelete = async (row: StockHistoryResponse) => {
+        if (row.ioType !== '조정') {
+            window.alert('조정 건만 삭제할 수 있습니다.');
+            return;
+        }
+        if (isDeletingId) return;
+
+        const confirmed = window.confirm(`[${row.itemNm}] 해당 재고이력 항목을 삭제하시겠습니까?`);
+        if (!confirmed) return;
+
+        setIsDeletingId(row.sthiId);
+        try {
+            window.alert(`[목업] sthiId: ${row.sthiId} 삭제 API 연동 대기 중입니다.`);
+            setRefreshKey((prev) => prev + 1);
+        } catch (error) {
+            console.error('삭제 실패:', error);
+            window.alert('삭제에 실패했습니다.');
+        } finally {
+            setIsDeletingId(null);
+        }
+    };
+
+    const columns: ColumnDef<StockHistoryResponse>[] = useMemo(
+        () => [
+            {
+                accessorKey: 'processedDate',
+                header: '처리일자',
+                meta: { width: '130px' },
+                cell: ({ row }) => {
+                    const isNew = row.original.sthiId === -999999;
+                    if (isNew) return '-';
+                    return row.original.processedDate ? row.original.processedDate.slice(0, 10) : '-';
+                },
+            },
+            {
+                accessorKey: 'itemCode',
+                header: '품목코드',
+                meta: { width: '220px' },
+                cell: ({ row }) => {
+                    const isNew = row.original.sthiId === -999999;
+                    const isEditing = row.original.sthiId === editingId;
+
+                    if (isNew || isEditing) {
+                        return (
+                            <select
+                                className="tableInput"
+                                defaultValue={editFormRef.current.itemCode}
+                                onChange={(e) => {
+                                    editFormRef.current.itemCode = e.target.value;
+                                }}
+                            >
+                                <option value="" disabled>품목 선택</option>
+                                {itemOptions.map((opt) => (
+                                    <option key={opt.itemCode} value={opt.itemCode}>
+                                        {opt.itemNm ?? '-'} ({opt.itemCode})
+                                    </option>
+                                ))}
+                            </select>
+                        );
+                    }
+
+                    const categoryLabel = row.original.category === 0 ? '원료' : row.original.category === 1 ? '반제품' : '완제품';
+                    return (
+                        <div className="itemCell">
+                            <span className="itemCell__name">{row.original.itemNm} ({categoryLabel})</span>
+                            <span className="itemCell__code">{row.original.itemCode}</span>
+                        </div>
+                    );
+                },
+            },
+            {
+                accessorKey: 'ioType',
+                header: '처리구분',
+                meta: { width: '150px' },
+                cell: ({ row }) => {
+                    const isNew = row.original.sthiId === -999999;
+                    const isEditing = row.original.sthiId === editingId;
+
+                    if (isNew || isEditing) {
+                        return (
+                            <select
+                                className="tableInput"
+                                defaultValue={editFormRef.current.direction}
+                                onChange={(e) => {
+                                    const dir = e.target.value as 'INCREASE' | 'DECREASE';
+                                    editFormRef.current.direction = dir;
+                                    setSelectedDirection(dir);
+                                }}
+                            >
+                                <option value="INCREASE">증가 (조정)</option>
+                                <option value="DECREASE">감소 (조정)</option>
+                            </select>
+                        );
+                    }
+
+                    const ioType = row.original.ioType;
+                    
+                    let badgeClass = 'badge info';
+                    let iconNode = null;
+
+                    if (ioType === '조정') {
+                        badgeClass = 'badge warn';
+                        iconNode = <PencilIcon className="w-3.5 h-3.5 inline-block mr-1" />;
+                    } else if (ioType === '신고입고취소') {
+                        badgeClass = 'badge muted';
+                        // 신고입고취소 아이콘 (회전 화살표)
+                        iconNode = <ArrowPathIcon className="w-3.5 h-3.5 inline-block mr-1" />;
+                    } else {
+                        // 신고입고 아이콘 (상향 삼각형 모양을 위해 PlayIcon을 위로 회전)
+                        badgeClass = 'badge info';
+                        iconNode = <PlayIcon className="w-3 h-3 inline-block mr-1 rotate-[-90deg]" />;
+                    }
+
+                    return (
+                        <span className={badgeClass}>
+                            {iconNode}
+                            {ioType}
+                        </span>
+                    );
+                },
+            },
+            {
+                accessorKey: 'increaseQty',
+                header: '증가수량',
+                meta: { width: '110px' },
+                cell: ({ row }) => {
+                    const isNew = row.original.sthiId === -999999;
+                    const isEditing = row.original.sthiId === editingId;
+
+                    if ((isNew || isEditing) && selectedDirection === 'INCREASE') {
+                        return (
+                            <input
+                                className="tableInput"
+                                type="number"
+                                min="0.01"
+                                step="any"
+                                defaultValue={editFormRef.current.qty}
+                                onChange={(e) => {
+                                    editFormRef.current.qty = Number(e.target.value);
+                                }}
+                            />
+                        );
+                    }
+                    if (isNew || isEditing) return '-';
+                    return row.original.increaseQty > 0 ? `+${row.original.increaseQty.toLocaleString()}` : '-';
+                },
+            },
+            {
+                accessorKey: 'decreaseQty',
+                header: '감소수량',
+                meta: { width: '110px' },
+                cell: ({ row }) => {
+                    const isNew = row.original.sthiId === -999999;
+                    const isEditing = row.original.sthiId === editingId;
+
+                    if ((isNew || isEditing) && selectedDirection === 'DECREASE') {
+                        return (
+                            <input
+                                className="tableInput"
+                                type="number"
+                                min="0.01"
+                                step="any"
+                                defaultValue={editFormRef.current.qty}
+                                onChange={(e) => {
+                                    editFormRef.current.qty = Number(e.target.value);
+                                }}
+                            />
+                        );
+                    }
+                    if (isNew || isEditing) return '-';
+                    return row.original.decreaseQty > 0 ? `-${row.original.decreaseQty.toLocaleString()}` : '-';
+                },
+            },
+            {
+                accessorKey: 'note',
+                header: '비고',
+                cell: ({ row }) => {
+                    const isNew = row.original.sthiId === -999999;
+                    const isEditing = row.original.sthiId === editingId;
+
+                    if (isNew || isEditing) {
+                        return (
+                            <input
+                                className="tableInput"
+                                type="text"
+                                placeholder="조정 사유 입력"
+                                defaultValue={editFormRef.current.note}
+                                onChange={(e) => {
+                                    editFormRef.current.note = e.target.value;
+                                }}
+                            />
+                        );
+                    }
+                    return row.original.note || '-';
+                },
+            },
+            {
+                accessorKey: 'createdAt',
+                header: '등록일시',
+                meta: { width: '170px' },
+                cell: ({ row }) => {
+                    const isNew = row.original.sthiId === -999999;
+                    if (isNew) return '-';
+                    return row.original.createdAt ? formatDateTime(row.original.createdAt) : '-';
+                },
+            },
+            {
+                id: 'actions',
+                header: '관리',
+                meta: { width: '150px' },
+                cell: ({ row }) => {
+                    const isNew = row.original.sthiId === -999999;
+                    const isEditing = row.original.sthiId === editingId;
+                    const isAdjustable = row.original.ioType === '조정';
+
+                    if (isNew || isEditing) {
+                        return (
+                            <div className="rowActions">
+                                <button
+                                    type="button"
+                                    className="miniButton primary"
+                                    disabled={isUpdating}
+                                    onClick={() => (isNew ? handleSaveCreate() : handleSaveEdit(row.original.sthiId))}
+                                >
+                                    {isUpdating ? '저장 중' : '저장'}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="miniButton danger"
+                                    disabled={isUpdating}
+                                    onClick={isNew ? handleCancelCreate : handleCancelEdit}
+                                >
+                                    취소
+                                </button>
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <div className="rowActions">
+                            {isAdjustable ? (
+                                <>
+                                    <button
+                                        type="button"
+                                        className="miniButton"
+                                        onClick={() => handleStartEdit(row.original)}
+                                    >
+                                        수정
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="miniButton danger"
+                                        onClick={() => handleDelete(row.original)}
+                                    >
+                                        삭제
+                                    </button>
+                                </>
+                            ) : (
+                                <span className="text-xs text-gray-400">읽기 전용</span>
+                            )}
+                        </div>
+                    );
+                },
+            },
+        ],
+        [editingId, isCreatingNewRow, isUpdating, itemOptions, selectedDirection]
+    );
+
+    const displayList = useMemo(() => {
+        if (isCreatingNewRow) {
+            const dummyNewRow: StockHistoryResponse = {
+                sthiId: -999999,
+                itemCode: '',
+                itemNm: '',
+                category: 0,
+                ioType: '조정',
+                increaseQty: 0,
+                decreaseQty: 0,
+                processedDate: '',
+                note: '',
+                createdAt: '',
+            };
+            return [dummyNewRow, ...historyList];
+        }
+        return historyList;
+    }, [isCreatingNewRow, historyList]);
+
+    return (
+        <section className="screenStack">
+            <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
+
+            <Panel title="재고이력 관리 목록" action="재고 조정 등록" onAction={handleStartCreate}>
+                <div className="relative min-h-[300px]">
+                    {isLoading ? (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <Spinner />
+                        </div>
+                    ) : (
+                        <>
+                            <CusTable
+                                data={displayList}
+                                columns={columns}
+                                sorting={sorting}
+                                onSortingChange={handleSortingChange}
+                                noDataMessage="조회된 재고이력 데이터가 없습니다."
+                            />
+                            <CusPagination
+                                page={page}
+                                totalPages={totalPages}
+                                totalCount={totalElements}
+                                onPageChange={handlePageChange}
+                            />
+                        </>
+                    )}
+                </div>
+            </Panel>
+        </section>
+    );
 }
