@@ -13,10 +13,10 @@ import {
     type StockAdjustmentRequest,
 } from '@/api/seed/StockHistory';
 import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
-import { 
+import {
     PencilIcon,
     ArrowPathIcon,
-    PlayIcon 
+    ArrowUpIcon,
 } from "@heroicons/react/16/solid";
 
 export function SeedInventoryManagePage() {
@@ -74,7 +74,6 @@ export function SeedInventoryManagePage() {
 
     const fetchItemOptions = useCallback(async () => {
         try {
-            // 씨드 관리 페이지이므로 productType: 0 고정
             const res = await ItemApi.getOptions({ productType: 0 });
             setItemOptions(res.data ?? []);
         } catch (error) {
@@ -133,7 +132,7 @@ export function SeedInventoryManagePage() {
         setIsLoading(true);
         try {
             const params: Record<string, any> = {
-                productType: 0, // 씨드 구분값 0 추가
+                productType: 0,
                 page,
                 size: 10,
             };
@@ -227,7 +226,7 @@ export function SeedInventoryManagePage() {
         setIsUpdating(true);
         try {
             const payload: StockAdjustmentRequest = {
-                productType: 0, // 씨드 구분값 0 추가
+                productType: 0,
                 itemCode,
                 direction: editFormRef.current.direction ?? 'INCREASE',
                 qty,
@@ -371,7 +370,7 @@ export function SeedInventoryManagePage() {
                     }
 
                     const ioType = row.original.ioType;
-                    
+
                     let badgeClass = 'badge info';
                     let iconNode = null;
 
@@ -383,7 +382,7 @@ export function SeedInventoryManagePage() {
                         iconNode = <ArrowPathIcon className="w-3.5 h-3.5 inline-block mr-1" />;
                     } else {
                         badgeClass = 'badge info';
-                        iconNode = <PlayIcon className="w-3 h-3 inline-block mr-1 rotate-[-90deg]" />;
+                        iconNode = <ArrowUpIcon className="w-3.5 h-3.5 inline-block mr-1" />;
                     }
 
                     return (
@@ -417,18 +416,19 @@ export function SeedInventoryManagePage() {
                         );
                     }
                     if (isNew || isEditing) return '-';
-                    
+
+                    // 증가수량이 0보다 클 때 빨간색(qtyIncreaseText) 적용
                     return row.original.increaseQty > 0 ? (
-                        <span style={{ color: '#dc2626', fontWeight: 500 }}>
-                            +{row.original.increaseQty.toLocaleString()}
-                        </span>
-                    ) : '-';
+                        <span className="qtyIncreaseText">+{row.original.increaseQty.toLocaleString()}</span>
+                    ) : (
+                        '-'
+                    );
                 },
             },
             {
                 accessorKey: 'decreaseQty',
                 header: '감소수량',
-                meta: { width: '150px' },
+                meta: { width: '110px' },
                 cell: ({ row }) => {
                     const isNew = row.original.sthiId === -999999;
                     const isEditing = row.original.sthiId === editingId;
@@ -448,12 +448,13 @@ export function SeedInventoryManagePage() {
                         );
                     }
                     if (isNew || isEditing) return '-';
-                    
+
+                    // 감소수량이 0보다 클 때 파란색(qtyDecreaseText) 적용
                     return row.original.decreaseQty > 0 ? (
-                        <span style={{ color: '#2563eb', fontWeight: 500 }}>
-                            -{row.original.decreaseQty.toLocaleString()}
-                        </span>
-                    ) : '-';
+                        <span className="qtyDecreaseText">-{row.original.decreaseQty.toLocaleString()}</span>
+                    ) : (
+                        '-'
+                    );
                 },
             },
             {

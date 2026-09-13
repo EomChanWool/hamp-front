@@ -25,25 +25,13 @@ export function SeedInventoryStatusPage() {
   const [apiTrendData, setApiTrendData] = useState<ItemStockTrendResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
 
-  // 1. 탭(activeTab)이 변경될 때마다 품목 리스트와 요약 정보 조회 API 호출
+  // 1. 초기 데이터 및 요약 정보 조회 API 호출 (productType: 0 씨드 조건 반영)
   useEffect(() => {
-    const fetchListAndSummary = async () => {
+    const fetchInitialData = async () => {
       try {
         setLoading(true)
-
-        // 탭에 따라 category 파라미터 매핑 (전체: undefined, 원료: 0, 반제품: 1, 완제품: 2)
-        const categoryParam = 
-          activeTab === '원료' ? 0 : 
-          activeTab === '반제품' ? 1 : 
-          activeTab === '완제품' ? 2 : undefined
-
-        const listParams: Record<string, any> = { productType: 0 }
-        if (categoryParam !== undefined) {
-          listParams.category = categoryParam
-        }
-
         const [listRes, summaryRes] = await Promise.all([
-          ItemStockApi.getList(listParams),
+          ItemStockApi.getList({ productType: 0 }),
           ItemStockApi.getSummary({ productType: 0 }),
         ])
 
@@ -62,35 +50,38 @@ export function SeedInventoryStatusPage() {
             }
           })
           setItems(mappedItems)
-        } else {
-          setItems([])
         }
-
-        // 탭을 바꿀 때마다 선택된 품목 인덱스를 0으로 초기화
-        setSelectedIndex(0)
 
         if (summaryRes && summaryRes.data) {
           setSummaryData(summaryRes.data)
         }
       } catch (error) {
         console.error('재고 데이터 조회 실패:', error)
-        setItems([])
       } finally {
         setLoading(false)
       }
     }
 
-    fetchListAndSummary()
+    fetchInitialData()
+  }, [])
+
+  // 탭이 변경될 때 선택된 인덱스 초기화
+  useEffect(() => {
+    setSelectedIndex(0)
   }, [activeTab])
 
-  // 품목 목록
-  const displayedItems = items
+  // 2. 필터링된 품목 리스트
+  const displayedItems = useMemo(() => {
+    if (activeTab === '전체') return items
+    return items.filter((item) => item.category === activeTab)
+  }, [items, activeTab])
 
-  // 선택된 인덱스가 목록 범위를 벗어날 경우 대비한 안전 장치
-  const safeSelectedIndex = displayedItems.length > 0 ? Math.min(selectedIndex, displayedItems.length - 1) : 0
-  const selectedItem = displayedItems[safeSelectedIndex]
+  // 탭 변경이나 필터링 시 현재 탭에 속하는 아이템만 안전하게 선택
+  const selectedItem = useMemo(() => {
+    if (displayedItems.length === 0) return null
+    return displayedItems[selectedIndex] || displayedItems[0]
+  }, [displayedItems, selectedIndex])
 
-  // 2. 선택된 품목 또는 추이 탭이 변경될 때마다 추이 데이터 API 호출
   useEffect(() => {
     if (!selectedItem) {
       setApiTrendData(null)
@@ -100,7 +91,11 @@ export function SeedInventoryStatusPage() {
     const fetchTrend = async () => {
       try {
         const periodParam = trendTab === '월별' ? 'month' : trendTab === '분기별' ? 'quarter' : 'year'
-        const res = await ItemStockApi.getTrend(selectedItem.itemCode, { period: periodParam, productType: 0 })
+        // 추이 조회 API에 productType: 0 추가 완료!
+        const res = await ItemStockApi.getTrend(selectedItem.itemCode, { 
+          period: periodParam, 
+          productType: 0 
+        })
         if (res && res.data) {
           setApiTrendData(res.data)
         } else {
@@ -116,9 +111,9 @@ export function SeedInventoryStatusPage() {
   }, [selectedItem, trendTab])
 
   const maxStock = useMemo(() => {
-    if (items.length === 0) return 1000
-    return Math.max(...items.map((i) => i.currentStock), 1000)
-  }, [items])
+    if (displayedItems.length === 0) return 1
+    return Math.max(...displayedItems.map((i) => i.currentStock), 1)
+  }, [displayedItems])
 
   const currentTrendData = useMemo(() => {
     if (apiTrendData && apiTrendData.points && apiTrendData.points.length > 0) {
@@ -130,7 +125,24 @@ export function SeedInventoryStatusPage() {
     return []
   }, [apiTrendData])
 
-  const yAxisLabels = ['9,00', '8,00', '7,00', '6,00', '5,00', '4,00', '3,00', '2,00', '1,00', '0']
+  const trendMax = useMemo(() => {
+    if (currentTrendData.length === 0) return 9000
+    const rawMax = Math.max(...currentTrendData.map((d) => d.value))
+    if (rawMax <= 0) return 9000
+    const padded = rawMax * 1.1
+    const step = padded > 10000 ? 2000 : 1000
+    return Math.ceil(padded / step) * step
+  }, [currentTrendData])
+
+  const yAxisLabels = useMemo(() => {
+    const step = trendMax / 9
+    return Array.from({ length: 10 }, (_, i) => Math.round(trendMax - step * i).toLocaleString())
+  }, [trendMax])
+
+  const gridlineValues = useMemo(() => {
+    const step = trendMax / 9
+    return Array.from({ length: 9 }, (_, i) => Math.round(step * (i + 1)))
+  }, [trendMax])
 
   const getCategorySummaryValues = (catCode: number) => {
     if (summaryData && summaryData.categories) {
@@ -138,8 +150,8 @@ export function SeedInventoryStatusPage() {
       if (found) {
         return {
           currentQty: found.currentQty.toLocaleString(),
-          todayIncrease: `${found.todayIncreaseQty} kg`,
-          todayDecrease: `${found.todayDecreaseQty} kg`,
+          todayIncrease: `${found.todayIncreaseQty.toLocaleString()} kg`,
+          todayDecrease: `${found.todayDecreaseQty.toLocaleString()} kg`,
         }
       }
     }
@@ -157,11 +169,10 @@ export function SeedInventoryStatusPage() {
       tone: (activeTab === '원료' ? 'success' : 'default') as any,
       render: () => (
         <div
+          className="seedKpiClickable"
           onClick={() => {
             setActiveTab('원료')
-            setSelectedIndex(0)
           }}
-          style={{ cursor: 'pointer', width: '100%', height: '100%' }}
         >
           <div className="inventorySummaryCard">
             <div>
@@ -194,11 +205,10 @@ export function SeedInventoryStatusPage() {
       tone: (activeTab === '반제품' ? 'success' : 'default') as any,
       render: () => (
         <div
+          className="seedKpiClickable"
           onClick={() => {
             setActiveTab('반제품')
-            setSelectedIndex(0)
           }}
-          style={{ cursor: 'pointer', width: '100%', height: '100%' }}
         >
           <div className="inventorySummaryCard">
             <div>
@@ -231,11 +241,10 @@ export function SeedInventoryStatusPage() {
       tone: (activeTab === '완제품' ? 'success' : 'default') as any,
       render: () => (
         <div
+          className="seedKpiClickable"
           onClick={() => {
             setActiveTab('완제품')
-            setSelectedIndex(0)
           }}
-          style={{ cursor: 'pointer', width: '100%', height: '100%' }}
         >
           <div className="inventorySummaryCard">
             <div>
@@ -273,27 +282,19 @@ export function SeedInventoryStatusPage() {
       <KpiGrid kpis={seedInventoryKpis} />
 
       <Panel title="품목별 현재 재고">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
-            <div style={{ fontSize: '12px', color: '#64748b' }}>
+        <div className="seedStatusPanel">
+          <div className="seedStatusPanel__header">
+            <div className="seedCaption">
               품목별 현재 재고 현황 · 재고 많은 순 (클릭하면 아래 추이 그래프로 이동)
             </div>
-            <div style={{ display: 'flex', gap: '4px', background: '#f1f5f9', padding: '3px', borderRadius: '6px' }}>
+            <div className="seedTabGroup">
               {(['전체', '원료', '반제품', '완제품'] as const).map((tab) => (
                 <button
                   key={tab}
                   type="button"
-                  onClick={() => setActiveTab(tab)}
-                  style={{
-                    padding: '4px 12px',
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    borderRadius: '4px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: activeTab === tab ? '#ffffff' : 'transparent',
-                    color: activeTab === tab ? '#0f172a' : '#64748b',
-                    boxShadow: activeTab === tab ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                  className={`seedTabButton${activeTab === tab ? ' active' : ''}`}
+                  onClick={() => {
+                    setActiveTab(tab)
                   }}
                 >
                   {tab}
@@ -302,60 +303,45 @@ export function SeedInventoryStatusPage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div className="seedItemList">
             {displayedItems.length > 0 ? (
               displayedItems.map((item, index) => {
                 const percentage = (item.currentStock / maxStock) * 100
-                const isSelected = safeSelectedIndex === index
+                const isSelected = selectedIndex === index
 
                 return (
                   <div
                     key={item.itemCode}
+                    className={`seedItemRow${isSelected ? ' selected' : ''}`}
                     onClick={() => setSelectedIndex(index)}
-                    style={{
-                      padding: '12px 16px',
-                      borderRadius: '8px',
-                      border: isSelected ? '1px solid #d97706' : '1px solid #e2e8f0',
-                      background: isSelected ? '#fffbeb' : '#ffffff',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                        <span style={{ color: '#64748b', fontWeight: 500 }}>{item.itemCode}</span>
-                        <span style={{ color: '#cbd5e1' }}>·</span>
-                        <span style={{ color: '#64748b', fontSize: '11px' }}>{item.category}</span>
+                    <div className="seedItemRow__top">
+                      <div className="seedItemRow__meta">
+                        <span className="code">{item.itemCode}</span>
+                        <span className="dot">·</span>
+                        <span className="category">{item.category}</span>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <span style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>{item.stockText}</span>
+                        <span className="seedItemRow__stock">{item.stockText}</span>
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a', minWidth: '140px' }}>
-                        {item.itemName}
-                      </div>
-                      <div style={{ flex: 1, height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden', position: 'relative' }}>
+                    <div className="seedItemRow__bottom">
+                      <div className="seedItemRow__name">{item.itemName}</div>
+                      <div className="seedProgressTrack">
                         <div
-                          style={{
-                            width: `${percentage}%`,
-                            height: '100%',
-                            background: '#9a3412',
-                            borderRadius: '4px',
-                          }}
+                          className="seedProgressFill"
+                          style={{ width: `${percentage}%` }}
                         />
                       </div>
-                      <div style={{ fontSize: '11px', color: '#94a3b8', minWidth: '110px', textAlign: 'right' }}>
-                        {item.updateTime}
-                      </div>
+                      <div className="seedItemRow__time">{item.updateTime}</div>
                     </div>
                   </div>
                 )
               })
             ) : (
-              <div style={{ padding: '32px', textAlign: 'center', color: '#94a3b8', fontSize: '13px', background: '#f8fafc', borderRadius: '8px' }}>
-                해당 카테고리에 조회된 품목이 없습니다.
+              <div style={{ padding: '32px', textAlign: 'center', color: '#64748b' }}>
+                해당 카테고리에 등록된 품목이 없습니다.
               </div>
             )}
           </div>
@@ -363,66 +349,43 @@ export function SeedInventoryStatusPage() {
       </Panel>
 
       <Panel title="품목별 재고 추이">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-            <div style={{ fontSize: '12px', color: '#64748b' }}>
+        <div className="seedTrendPanel">
+          <div className="seedTrendPanel__header">
+            <div className="seedCaption">
               선택한 품목의 기간별 현재수량 변화 (현재수량 기준, kg)
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="seedTrendControls">
               <select
+                className="seedSelect"
                 value={selectedItem?.itemCode || ''}
                 onChange={(e) => {
                   const foundIndex = displayedItems.findIndex((i) => i.itemCode === e.target.value)
                   if (foundIndex !== -1) setSelectedIndex(foundIndex)
                 }}
-                disabled={displayedItems.length === 0}
-                style={{
-                  padding: '6px 12px',
-                  fontSize: '12px',
-                  borderRadius: '6px',
-                  border: '1px solid #cbd5e1',
-                  background: '#ffffff',
-                  color: '#0f172a',
-                  cursor: displayedItems.length === 0 ? 'not-allowed' : 'pointer',
-                }}
               >
-                {displayedItems.length > 0 ? (
-                  (['원료', '반제품', '완제품'] as const).map((categoryName) => {
-                    const categoryItems = displayedItems.filter((item) => item.category === categoryName)
-                    if (categoryItems.length === 0) return null
+                {(['원료', '반제품', '완제품'] as const).map((categoryName) => {
+                  const categoryItems = displayedItems.filter((item) => item.category === categoryName)
+                  if (categoryItems.length === 0) return null
 
-                    return (
-                      <optgroup key={categoryName} label={`[ ${categoryName} ]`}>
-                        {categoryItems.map((item) => (
-                          <option key={item.itemCode} value={item.itemCode}>
-                            {item.itemCode} · {item.itemName}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )
-                  })
-                ) : (
-                  <option value="">품목 없음</option>
-                )}
+                  return (
+                    <optgroup key={categoryName} label={`[ ${categoryName} ]`}>
+                      {categoryItems.map((item) => (
+                        <option key={item.itemCode} value={item.itemCode}>
+                          {item.itemCode} · {item.itemName}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )
+                })}
               </select>
 
-              <div style={{ display: 'flex', gap: '4px', background: '#f1f5f9', padding: '3px', borderRadius: '6px' }}>
+              <div className="seedTabGroup">
                 {(['월별', '분기별', '연도별'] as const).map((tab) => (
                   <button
                     key={tab}
                     type="button"
+                    className={`seedTabButton${trendTab === tab ? ' active' : ''}`}
                     onClick={() => setTrendTab(tab)}
-                    style={{
-                      padding: '4px 12px',
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      borderRadius: '4px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      background: trendTab === tab ? '#ffffff' : 'transparent',
-                      color: trendTab === tab ? '#0f172a' : '#64748b',
-                      boxShadow: trendTab === tab ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                    }}
                   >
                     {tab}
                   </button>
@@ -431,51 +394,37 @@ export function SeedInventoryStatusPage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'stretch' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8', paddingBottom: '24px', textAlign: 'right', minWidth: '35px' }}>
+          <div className="seedChartWrapper">
+            <div className="seedChartYAxis">
               {yAxisLabels.map((lbl) => (
                 <span key={lbl}>{lbl}</span>
               ))}
             </div>
 
-            <div style={{ flex: 1, position: 'relative', height: '220px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', paddingBottom: '24px', borderBottom: '1px solid #cbd5e1', borderLeft: '1px solid #cbd5e1', paddingLeft: '8px' }}>
-              {[0, 100, 200, 300, 400, 500, 600, 700, 800].map((val) => (
+            <div className="seedChartArea">
+              {gridlineValues.map((val) => (
                 <div
                   key={val}
-                  style={{
-                    position: 'absolute',
-                    left: '8px',
-                    right: 0,
-                    bottom: `${(val / 900) * 100}%`,
-                    borderTop: '1px solid #f1f5f9',
-                    pointerEvents: 'none',
-                  }}
+                  className="seedChartGridline"
+                  style={{ bottom: `${(val / trendMax) * 100}%` }}
                 />
               ))}
 
               {currentTrendData.length > 0 ? (
                 currentTrendData.map((data) => {
-                  const heightPercent = Math.min((data.value / 900) * 100, 100)
+                  const heightPercent = Math.min((data.value / trendMax) * 100, 100)
                   return (
-                    <div key={data.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end', zIndex: 1, position: 'relative' }}>
+                    <div key={data.label} className="seedChartBarCol">
                       <div
-                        style={{
-                          width: '60%',
-                          maxWidth: '28px',
-                          height: `${heightPercent}%`,
-                          background: '#9a3412',
-                          borderRadius: '4px 4px 0 0',
-                          transition: 'height 0.3s ease',
-                        }}
+                        className="seedChartBar"
+                        style={{ height: `${heightPercent}%` }}
                       />
-                      <span style={{ position: 'absolute', bottom: '-22px', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>
-                        {data.label}
-                      </span>
+                      <span className="seedChartBarLabel">{data.label}</span>
                     </div>
                   )
                 })
               ) : (
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                <div className="seedChartEmpty">
                   표시할 추이 데이터가 없습니다.
                 </div>
               )}
