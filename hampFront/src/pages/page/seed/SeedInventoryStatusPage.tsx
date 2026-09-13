@@ -25,13 +25,26 @@ export function SeedInventoryStatusPage() {
   const [apiTrendData, setApiTrendData] = useState<ItemStockTrendResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
 
-  // 1. 초기 데이터 및 요약 정보 조회 API 호출 (productType: 0 씨드 조건 반영)
+  // 탭 문자열을 백엔드 category 코드(number)로 변환하는 매핑
+  const tabToCategoryMap: Record<'전체' | '원료' | '반제품' | '완제품', number | undefined> = {
+    '전체': undefined,
+    '원료': 0,
+    '반제품': 1,
+    '완제품': 2,
+  }
+
+  // 1. 탭(`activeTab`)이 변경될 때마다 백엔드 API를 호출하여 해당 품목 리스트 및 요약 정보 조회
   useEffect(() => {
-    const fetchInitialData = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true)
+        const currentCategory = tabToCategoryMap[activeTab]
+
         const [listRes, summaryRes] = await Promise.all([
-          ItemStockApi.getList({ productType: 0 }),
+          ItemStockApi.getList({ 
+            productType: 0, 
+            ...(currentCategory !== undefined && { category: currentCategory }) 
+          }),
           ItemStockApi.getSummary({ productType: 0 }),
         ])
 
@@ -62,21 +75,18 @@ export function SeedInventoryStatusPage() {
       }
     }
 
-    fetchInitialData()
-  }, [])
+    fetchData()
+  }, [activeTab])
 
   // 탭이 변경될 때 선택된 인덱스 초기화
   useEffect(() => {
     setSelectedIndex(0)
   }, [activeTab])
 
-  // 2. 필터링된 품목 리스트
-  const displayedItems = useMemo(() => {
-    if (activeTab === '전체') return items
-    return items.filter((item) => item.category === activeTab)
-  }, [items, activeTab])
+  // 이미 백엔드에서 카테고리별로 필터링되어 오므로 그대로 사용
+  const displayedItems = items
 
-  // 탭 변경이나 필터링 시 현재 탭에 속하는 아이템만 안전하게 선택
+  // 탭 변경이나 리스트 갱신 시 현재 탭에 속하는 아이템만 안전하게 선택
   const selectedItem = useMemo(() => {
     if (displayedItems.length === 0) return null
     return displayedItems[selectedIndex] || displayedItems[0]
@@ -91,7 +101,6 @@ export function SeedInventoryStatusPage() {
     const fetchTrend = async () => {
       try {
         const periodParam = trendTab === '월별' ? 'month' : trendTab === '분기별' ? 'quarter' : 'year'
-        // 추이 조회 API에 productType: 0 추가 완료!
         const res = await ItemStockApi.getTrend(selectedItem.itemCode, { 
           period: periodParam, 
           productType: 0 
