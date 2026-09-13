@@ -18,6 +18,7 @@ import { apiClient } from "@/api/apiClient";
 import { useImageGallery } from "@/hooks/useImageGallery";
 import ImageGallery from "@components/common/ImageGallery";
 import ImageModal from "@components/modal/ImageModal";
+import UserMultiSelect from "@components/common/UserMultiSelect";
 import "@/pages/layout/Layout.css";
 
 type SectionField = {
@@ -46,7 +47,7 @@ export function EquipmentFacilityDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
-  // form 상태에서 담당자들을 배열(managerUserIds)로 관리하도록 변경
+  // form 상태에서 담당자들을 배열(managerUserIds)로 관리
   const [form, setForm] = useState<Record<string, any>>({});
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -538,28 +539,19 @@ export function EquipmentFacilityDetailPage() {
                 </div>
               </div>
 
-              {/* 담당자 다중 선택 영역 수정 */}
-              <div className="facilityQuickItem">
+              {/* 담당자 다중 선택 영역 — 수정모드에서는 검색+태그 방식(UserMultiSelect).
+                  검색+태그 UI가 폭을 더 쓰기 때문에 수정모드일 때만 wide로 확장하고,
+                  조회모드(텍스트 나열)일 때는 기존처럼 좁은 카드로 되돌아간다. */}
+              <div className={`facilityQuickItem${isEditing ? " wide" : ""}`}>
                 <span className="facilityQuickLabel">담당자</span>
                 <div className="facilityQuickValue">
                   {isEditing ? (
-                    <select
-                      className="tableInput"
-                      multiple
-                      style={{ height: "90px" }}
+                    <UserMultiSelect
+                      options={userOptions}
                       value={currentManagerUserIds}
+                      onChange={(userIds) => setFormField("managerUserIds", userIds)}
                       disabled={isBusy}
-                      onChange={(e) => {
-                        const selectedOptions = Array.from(e.target.selectedOptions, (option) => option.value);
-                        setFormField("managerUserIds", selectedOptions);
-                      }}
-                    >
-                      {userOptions.map((user) => (
-                        <option key={user.userId} value={user.userId}>
-                          {user.userNm} ({user.userId})
-                        </option>
-                      ))}
-                    </select>
+                    />
                   ) : (
                     <span>{displayManagerNames}</span>
                   )}
