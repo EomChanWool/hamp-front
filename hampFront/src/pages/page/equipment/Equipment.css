@@ -152,6 +152,13 @@
   gap: 8px;
   flex-wrap: wrap;
 }
+
+/* 다크모드: 통계 영역 정렬 및 래퍼 */
+[data-theme="dark"] .rts__stats {
+  /* 배경이나 텍스트 색상 커스텀이 필요할 경우 여기에 추가하세요 */
+  color: var(--text-body, #f8fafc);
+}
+
 .rts__chip {
   display: flex;
   align-items: center;
@@ -163,6 +170,13 @@
   background: var(--bg-surface, #f3f4f6);
   color: var(--text-secondary);
 }
+
+/* 다크모드: 칩 컴포넌트 */
+[data-theme="dark"] .rts__chip {
+  background: #1e293b; /* 어두운 표면 색상 */
+  color: #94a3b8; /* 다크모드에서 잘 보이는 보조 텍스트 색상 */
+}
+
 .rts__chipDot {
   width: 8px;
   height: 8px;

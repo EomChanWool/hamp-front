@@ -171,7 +171,7 @@ export function SeedInventoryStatusPage() {
   const semiSummary = getCategorySummaryValues(1)
   const finSummary = getCategorySummaryValues(2)
 
-  // 💡 KPI 카드 정의 (중복된 래퍼 div 제거 및 순수 콘텐츠만 유지)
+  // KPI 카드 정의 (중복된 래퍼 div 제거 및 순수 콘텐츠만 유지)
   const seedInventoryKpis: KpiItem[] = [
     {
       label: '원료 재고',
@@ -266,7 +266,7 @@ export function SeedInventoryStatusPage() {
     return <div style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>재고 현황 데이터를 불러오는 중입니다...</div>
   }
 
-  // 💡 activeTab 상태에 따라 KpiGrid에 매칭될 선택된 라벨 결정 ('전체'일 때는 선택 해제)
+  // activeTab 상태에 따라 KpiGrid에 매칭될 선택된 라벨 결정 ('전체'일 때는 선택 해제)
   const currentSelectedLabel = 
     activeTab === '원료' ? '원료 재고' :
     activeTab === '반제품' ? '반제품 재고' :
@@ -274,7 +274,7 @@ export function SeedInventoryStatusPage() {
 
   return (
     <section className="screenStack">
-      {/* 👉 KpiGrid에 클릭 이벤트와 선택된 라벨 전달 */}
+      {/* KpiGrid에 클릭 이벤트와 선택된 라벨 전달 */}
       <KpiGrid 
         kpis={seedInventoryKpis} 
         selectedLabel={currentSelectedLabel}

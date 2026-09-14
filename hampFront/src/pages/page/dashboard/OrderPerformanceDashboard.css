@@ -1,3 +1,7 @@
+/* =========================================================================
+   대시보드 레이아웃 및 기본 스타일
+   ========================================================================= */
+
 /* 2열 그리드. 카드 4개는 자연스럽게 2x2로 배치됨 */
 .orderPerfDashboard {
   display: grid;
@@ -95,9 +99,64 @@
   color: #4338ca;
 }
 
-/* ================================
+/* =========================================================================
+   특정 차트 클릭 시 하단 상세 정보 표 (추출된 클래스)
+   ========================================================================= */
+
+.orderPerfDashboard__detailContainer {
+  margin-top: 24px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.orderPerfDashboard__detailHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.orderPerfDashboard__detailTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.orderPerfDashboard__detailCloseBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.orderPerfDashboard__detailTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: #fff;
+}
+
+.orderPerfDashboard__detailTable th {
+  padding: 10px;
+  border-bottom: 1px solid #cbd5e1;
+  background: #f1f5f9;
+  text-align: left;
+  color: #475569;
+}
+
+.orderPerfDashboard__detailTable td {
+  padding: 10px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+
+/* =========================================================================
    DARK MODE
-================================ */
+   ========================================================================= */
 
 [data-theme="dark"] .orderPerfDashboard__card {
   background: var(--bg-card);
@@ -144,4 +203,33 @@
 
 [data-theme="dark"] .orderPerfDashboard__filterText {
   color: var(--text-body);
+}
+
+/* 다크모드: 하단 클릭 상세 정보 표 영역 */
+[data-theme="dark"] .orderPerfDashboard__detailContainer {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .orderPerfDashboard__detailTitle {
+  color: var(--text-heading);
+}
+
+[data-theme="dark"] .orderPerfDashboard__detailCloseBtn {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .orderPerfDashboard__detailTable {
+  background: var(--bg-card);
+  color: var(--text-body);
+}
+
+[data-theme="dark"] .orderPerfDashboard__detailTable th {
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom-color: var(--border);
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .orderPerfDashboard__detailTable td {
+  border-bottom-color: var(--border);
 }
