@@ -232,7 +232,7 @@ export function SystemUserDetailPage() {
   return (
     <section className="screenStack">
       <DetailLayout
-        title={form.userNm}
+        title={user.userNm}
         subtitle={
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <span>{form.userId}</span>

@@ -531,6 +531,12 @@ button {
   transition: box-shadow 0.15s;
 }
 
+/* 클릭 가능한 페이지에서 선택되었을 때만 발동 */
+.metricCard.is-selected {
+  background-color: var(--card-selected-bg, #fffbeb); 
+  border-color: var(--card-selected-border, #d97706);
+}
+
 .metricCard:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
