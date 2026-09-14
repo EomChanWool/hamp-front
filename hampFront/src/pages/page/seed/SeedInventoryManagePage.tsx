@@ -392,7 +392,7 @@ export function SeedInventoryManagePage() {
             {
                 accessorKey: 'increaseQty',
                 header: '증가수량',
-                meta: { width: '110px' },
+                meta: { width: '150px' },
                 cell: ({ row }) => {
                     const isNew = row.original.sthiId === -999999;
                     const isEditing = row.original.sthiId === editingId;
@@ -424,7 +424,7 @@ export function SeedInventoryManagePage() {
             {
                 accessorKey: 'decreaseQty',
                 header: '감소수량',
-                meta: { width: '110px' },
+                meta: { width: '150px' },
                 cell: ({ row }) => {
                     const isNew = row.original.sthiId === -999999;
                     const isEditing = row.original.sthiId === editingId;
@@ -456,6 +456,7 @@ export function SeedInventoryManagePage() {
             {
                 accessorKey: 'note',
                 header: '비고',
+                meta: { width: '200px' },
                 cell: ({ row }) => {
                     const isNew = row.original.sthiId === -999999;
                     const isEditing = row.original.sthiId === editingId;
