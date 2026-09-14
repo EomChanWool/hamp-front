@@ -171,37 +171,31 @@ export function SeedInventoryStatusPage() {
   const semiSummary = getCategorySummaryValues(1)
   const finSummary = getCategorySummaryValues(2)
 
+  // 💡 KPI 카드 정의 (중복된 래퍼 div 제거 및 순수 콘텐츠만 유지)
   const seedInventoryKpis: KpiItem[] = [
     {
       label: '원료 재고',
       value: '',
-      tone: (activeTab === '원료' ? 'success' : 'default') as any,
+      tone: 'muted',
       render: () => (
-        <div
-          className="seedKpiClickable"
-          onClick={() => {
-            setActiveTab('원료')
-          }}
-        >
-          <div className="inventorySummaryCard">
-            <div>
-              <div className="inventorySummaryCard__header">원료 재고</div>
-              <div className="inventorySummaryCard__valueArea">
-                <span>{rawSummary.currentQty}</span>
-                <span className="inventorySummaryCard__unit">kg</span>
-              </div>
+        <div className="inventorySummaryCard">
+          <div>
+            <div className="inventorySummaryCard__header">원료 재고</div>
+            <div className="inventorySummaryCard__valueArea">
+              <span>{rawSummary.currentQty}</span>
+              <span className="inventorySummaryCard__unit">kg</span>
             </div>
-            <div>
-              <div className="inventorySummaryCard__divider" />
-              <div className="inventorySummaryCard__footer">
-                <div className="inventorySummaryCard__row">
-                  <span>▲ 금일 입고</span>
-                  <span className="inventorySummaryCard__inbound">{rawSummary.todayIncrease}</span>
-                </div>
-                <div className="inventorySummaryCard__row">
-                  <span>▼ 금일 출고</span>
-                  <span className="inventorySummaryCard__outbound">{rawSummary.todayDecrease}</span>
-                </div>
+          </div>
+          <div>
+            <div className="inventorySummaryCard__divider" />
+            <div className="inventorySummaryCard__footer">
+              <div className="inventorySummaryCard__row">
+                <span>▲ 금일 입고</span>
+                <span className="inventorySummaryCard__inbound">{rawSummary.todayIncrease}</span>
+              </div>
+              <div className="inventorySummaryCard__row">
+                <span>▼ 금일 출고</span>
+                <span className="inventorySummaryCard__outbound">{rawSummary.todayDecrease}</span>
               </div>
             </div>
           </div>
@@ -211,33 +205,26 @@ export function SeedInventoryStatusPage() {
     {
       label: '반제품 재고',
       value: '',
-      tone: (activeTab === '반제품' ? 'success' : 'default') as any,
+      tone: 'muted',
       render: () => (
-        <div
-          className="seedKpiClickable"
-          onClick={() => {
-            setActiveTab('반제품')
-          }}
-        >
-          <div className="inventorySummaryCard">
-            <div>
-              <div className="inventorySummaryCard__header">반제품 재고</div>
-              <div className="inventorySummaryCard__valueArea">
-                <span>{semiSummary.currentQty}</span>
-                <span className="inventorySummaryCard__unit">kg</span>
-              </div>
+        <div className="inventorySummaryCard">
+          <div>
+            <div className="inventorySummaryCard__header">반제품 재고</div>
+            <div className="inventorySummaryCard__valueArea">
+              <span>{semiSummary.currentQty}</span>
+              <span className="inventorySummaryCard__unit">kg</span>
             </div>
-            <div>
-              <div className="inventorySummaryCard__divider" />
-              <div className="inventorySummaryCard__footer">
-                <div className="inventorySummaryCard__row">
-                  <span>▲ 금일 입고</span>
-                  <span className="inventorySummaryCard__inbound">{semiSummary.todayIncrease}</span>
-                </div>
-                <div className="inventorySummaryCard__row">
-                  <span>▼ 금일 출고</span>
-                  <span className="inventorySummaryCard__outbound">{semiSummary.todayDecrease}</span>
-                </div>
+          </div>
+          <div>
+            <div className="inventorySummaryCard__divider" />
+            <div className="inventorySummaryCard__footer">
+              <div className="inventorySummaryCard__row">
+                <span>▲ 금일 입고</span>
+                <span className="inventorySummaryCard__inbound">{semiSummary.todayIncrease}</span>
+              </div>
+              <div className="inventorySummaryCard__row">
+                <span>▼ 금일 출고</span>
+                <span className="inventorySummaryCard__outbound">{semiSummary.todayDecrease}</span>
               </div>
             </div>
           </div>
@@ -247,33 +234,26 @@ export function SeedInventoryStatusPage() {
     {
       label: '완제품 재고',
       value: '',
-      tone: (activeTab === '완제품' ? 'success' : 'default') as any,
+      tone: 'muted',
       render: () => (
-        <div
-          className="seedKpiClickable"
-          onClick={() => {
-            setActiveTab('완제품')
-          }}
-        >
-          <div className="inventorySummaryCard">
-            <div>
-              <div className="inventorySummaryCard__header">완제품 재고</div>
-              <div className="inventorySummaryCard__valueArea">
-                <span>{finSummary.currentQty}</span>
-                <span className="inventorySummaryCard__unit">kg</span>
-              </div>
+        <div className="inventorySummaryCard">
+          <div>
+            <div className="inventorySummaryCard__header">완제품 재고</div>
+            <div className="inventorySummaryCard__valueArea">
+              <span>{finSummary.currentQty}</span>
+              <span className="inventorySummaryCard__unit">kg</span>
             </div>
-            <div>
-              <div className="inventorySummaryCard__divider" />
-              <div className="inventorySummaryCard__footer">
-                <div className="inventorySummaryCard__row">
-                  <span>▲ 금일 입고</span>
-                  <span className="inventorySummaryCard__inbound">{finSummary.todayIncrease}</span>
-                </div>
-                <div className="inventorySummaryCard__row">
-                  <span>▼ 금일 출고</span>
-                  <span className="inventorySummaryCard__outbound">{finSummary.todayDecrease}</span>
-                </div>
+          </div>
+          <div>
+            <div className="inventorySummaryCard__divider" />
+            <div className="inventorySummaryCard__footer">
+              <div className="inventorySummaryCard__row">
+                <span>▲ 금일 입고</span>
+                <span className="inventorySummaryCard__inbound">{finSummary.todayIncrease}</span>
+              </div>
+              <div className="inventorySummaryCard__row">
+                <span>▼ 금일 출고</span>
+                <span className="inventorySummaryCard__outbound">{finSummary.todayDecrease}</span>
               </div>
             </div>
           </div>
@@ -286,9 +266,24 @@ export function SeedInventoryStatusPage() {
     return <div style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>재고 현황 데이터를 불러오는 중입니다...</div>
   }
 
+  // 💡 activeTab 상태에 따라 KpiGrid에 매칭될 선택된 라벨 결정 ('전체'일 때는 선택 해제)
+  const currentSelectedLabel = 
+    activeTab === '원료' ? '원료 재고' :
+    activeTab === '반제품' ? '반제품 재고' :
+    activeTab === '완제품' ? '완제품 재고' : undefined;
+
   return (
     <section className="screenStack">
-      <KpiGrid kpis={seedInventoryKpis} />
+      {/* 👉 KpiGrid에 클릭 이벤트와 선택된 라벨 전달 */}
+      <KpiGrid 
+        kpis={seedInventoryKpis} 
+        selectedLabel={currentSelectedLabel}
+        onCardClick={(kpi) => {
+          if (kpi.label.includes('원료')) setActiveTab('원료');
+          else if (kpi.label.includes('반제품')) setActiveTab('반제품');
+          else if (kpi.label.includes('완제품')) setActiveTab('완제품');
+        }}
+      />
 
       <Panel title="품목별 현재 재고">
         <div className="seedStatusPanel">

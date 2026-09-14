@@ -32,10 +32,12 @@ const kpiIconMap: Record<string, KpiIconMeta> = {
 type Props = {
   kpis: KpiItem[]
   pulse?: number
+  onCardClick?: (kpi: KpiItem) => void
+  selectedLabel?: string
 }
 
 /** KPI 지표 카드들을 그리드로 보여주는 컴포넌트. 다크모드 전환에 맞춰 아이콘 색상도 함께 바뀜 */
-export function KpiGrid({ kpis, pulse = 0 }: Props) {
+export function KpiGrid({ kpis, pulse = 0, onCardClick, selectedLabel }: Props) {
   const [isDark, setIsDark] = useState(
     () => document.documentElement.getAttribute('data-theme') === 'dark',
   )
@@ -57,10 +59,20 @@ export function KpiGrid({ kpis, pulse = 0 }: Props) {
         // render가 지정된 카드는 기본 아이콘/label/value 레이아웃을 쓰지 않으므로 meta 조회 및 아래 기본 렌더링 분기를 건너뛴다.
         const meta = kpi.render ? undefined : kpiIconMap[kpi.label]
         const iconColor = meta ? (isDark ? meta.darkColor : meta.color) : undefined
+
+        // 이 페이지에서 클릭 기능을 썼는지 여부 판단
+        const isClickable = !!onCardClick;
+        // 현재 카드가 선택된 카드인지 판단
+        const isSelected = selectedLabel === kpi.label;
+
         return (
           <article
             key={kpi.label}
-            className={`metricCard ${kpi.tone} ${pulse % 2 === 1 && index === 0 ? 'pulse' : ''}`}
+            onClick={() => onCardClick?.(kpi)}
+            className={`metricCard ${kpi.tone} ${pulse % 2 === 1 && index === 0 ? 'pulse' : ''} ${isSelected ? 'is-selected' : ''}`}
+            style={{
+              cursor: isClickable ? 'pointer' : 'default', // 클릭 가능한 페이지에서만 포인터 커서 적용
+            }}
           >
             {kpi.render ? (
               // 커스텀 렌더 카드 (예: 도넛 차트형 KPI)
