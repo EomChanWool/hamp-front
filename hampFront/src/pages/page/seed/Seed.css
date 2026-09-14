@@ -10,11 +10,67 @@
   padding: 4px;
 }
 
+.screenStack .metricCard.is-selected {
+  --card-selected-bg: var(--bg-subtle, #f1f5f9);
+  --card-selected-border: #64748b;
+}
+[data-theme="dark"] .screenStack .metricCard.is-selected {
+  --card-selected-bg: #1e293b;
+  --card-selected-border: #64748b;
+}
+
+.inventorySummaryCard__badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.inventorySummaryCard__badgeIcon {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.inventorySummaryCard__badgeIcon.raw {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.inventorySummaryCard__badgeIcon.semi {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+.inventorySummaryCard__badgeIcon.finished {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+[data-theme="dark"] .inventorySummaryCard__badgeIcon.raw {
+  background: rgba(59, 130, 246, 0.16);
+  color: #93c5fd;
+}
+
+[data-theme="dark"] .inventorySummaryCard__badgeIcon.semi {
+  background: rgba(139, 92, 246, 0.16);
+  color: #c4b5fd;
+}
+
+[data-theme="dark"] .inventorySummaryCard__badgeIcon.finished {
+  background: rgba(34, 197, 94, 0.16);
+  color: #86efac;
+}
+
 .inventorySummaryCard__header {
   font-size: 13px;
-  font-weight: 600;
-  color: #64748b;
-  margin-bottom: 4px;
+  color: var(--text-body, #475569);
 }
 
 .inventorySummaryCard__valueArea {
@@ -26,67 +82,113 @@
 }
 
 .inventorySummaryCard__valueArea span:first-child {
-  font-size: 32px;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -0.03em;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-heading, #0f172a);
+  letter-spacing: -0.02em;
   line-height: 1;
 }
 
-/* 다크모드: 재고 요약 카드 (KPI) 숫자 및 단위 영역 */
-[data-theme="dark"] .inventorySummaryCard__valueArea span:first-child {
-  color: #f8fafc; /* 밝은 회백색 숫자로 변경 */
-}
-
-[data-theme="dark"] .inventorySummaryCard__unit {
-  color: #94a3b8; /* 단위를 보기 좋은 회색톤으로 변경 */
-}
-
 .inventorySummaryCard__unit {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
+  color: var(--text-body, #475569);
+}
+
+.inventorySummaryCard__stats {
+  display: flex;
+  gap: 8px;
+}
+
+.inventorySummaryCard__statChip {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+.inventorySummaryCard__statChip.in {
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.inventorySummaryCard__statChip.out {
+  background: rgba(100, 116, 139, 0.08);
+}
+
+[data-theme="dark"] .inventorySummaryCard__statChip.in {
+  background: rgba(74, 222, 128, 0.1);
+}
+
+[data-theme="dark"] .inventorySummaryCard__statChip.out {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.inventorySummaryCard__statIcon {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inventorySummaryCard__statIcon.in {
+  background: rgba(22, 163, 74, 0.15);
+  color: #16a34a;
+}
+
+.inventorySummaryCard__statIcon.out {
+  background: rgba(100, 116, 139, 0.15);
   color: #64748b;
 }
 
-.inventorySummaryCard__divider {
-  width: 100%;
-  border-bottom: 1px solid #e2e8f0;
-  margin-bottom: 10px;
+[data-theme="dark"] .inventorySummaryCard__statIcon.in {
+  background: rgba(74, 222, 128, 0.18);
+  color: #4ade80;
 }
 
-.inventorySummaryCard__footer {
+[data-theme="dark"] .inventorySummaryCard__statIcon.out {
+  background: rgba(148, 163, 184, 0.18);
+  color: #94a3b8;
+}
+
+.inventorySummaryCard__statText {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  color: #475569;
+  gap: 1px;
+  min-width: 0;
 }
 
-.inventorySummaryCard__row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  font-weight: normal;
+.inventorySummaryCard__statLabel {
+  font-size: 10px;
+  color: var(--text-muted, #94a3b8);
+  white-space: nowrap;
 }
 
-.inventorySummaryCard__row span {
+.inventorySummaryCard__statValue {
   font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.inventorySummaryCard .inventorySummaryCard__inbound {
-  font-weight: 600;
+.inventorySummaryCard__statValue.in {
   color: #16a34a;
-  font-size: 12px;
 }
 
-.inventorySummaryCard .inventorySummaryCard__outbound {
-  font-weight: 600;
-  color: #334155;
-  font-size: 12px;
+[data-theme="dark"] .inventorySummaryCard__statValue.in {
+  color: #4ade80;
 }
 
-/* KPI 카드 클릭 가능 래퍼 (원래 inline style={{cursor:'pointer', width:'100%', height:'100%'}}) */
+.inventorySummaryCard__statValue.out {
+  color: var(--text-heading, #0f172a);
+}
+
 .seedKpiClickable {
   cursor: pointer;
   width: 100%;
@@ -94,54 +196,52 @@
 }
 
 /* =========================================================================
-   공통 캡션 / 탭 그룹
+   공통 캡션
    ========================================================================= */
 .seedCaption {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-muted, #94a3b8);
 }
 
+/* =========================================================================
+   탭 — 세그먼트 필(pill) 스타일
+   ========================================================================= */
 .seedTabGroup {
   display: flex;
-  gap: 4px;
-  background: #f1f5f9;
+  align-items: center;
+  gap: 2px;
+  height: 36px;
+  box-sizing: border-box;
+  background: var(--bg-subtle, #f1f5f9);
   padding: 3px;
-  border-radius: 6px;
+  border-radius: 10px;
+  flex-shrink: 0;
 }
 
 .seedTabButton {
-  padding: 4px 12px;
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: 4px;
+  height: 100%;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 500;
   border: none;
+  border-radius: 8px;
   cursor: pointer;
   background: transparent;
-  color: #64748b;
-  box-shadow: none;
+  color: var(--text-muted, #94a3b8);
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.seedTabButton:hover {
+  color: var(--text-body, #475569);
 }
 
 .seedTabButton.active {
-  background: #ffffff;
-  color: #0f172a;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-/* 다크모드: 탭 그룹 배경색 변경 */
-[data-theme="dark"] .seedTabGroup {
-  background: #1e293b; /* 어두운 패널 배경색 */
-}
-
-/* 다크모드: 탭 버튼 기본 스타일 */
-[data-theme="dark"] .seedTabButton {
-  color: #94a3b8; /* 다크모드에서 잘 보이는 밝은 회색 텍스트 */
-}
-
-/* 다크모드: 활성화된 탭 버튼 스타일 */
-[data-theme="dark"] .seedTabButton.active {
-  background: #334155; /* 어두운 카드/패널 상위 톤의 배경색 */
-  color: #f8fafc; /* 강조되는 밝은 흰색/회백색 텍스트 */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-heading, #0f172a);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* =========================================================================
@@ -150,116 +250,188 @@
 .seedStatusPanel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .seedStatusPanel__header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   flex-wrap: wrap;
+  gap: 12px;
+}
+
+.seedStatusPanel__titleRow {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.seedStatusPanel__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-heading, #0f172a);
+  margin: 0;
+}
+
+.seedTableHeader {
+  display: grid;
+  grid-template-columns: 1.6fr 0.8fr 0.9fr 0.9fr;
   gap: 8px;
+  padding: 0 10px 10px;
+  font-size: 12px;
+  color: var(--text-muted, #94a3b8);
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.seedTableHeader span:not(:first-child) {
+  text-align: right;
 }
 
 .seedItemList {
   display: flex;
   flex-direction: column;
-  gap: 10px;
 }
 
 .seedItemRow {
-  padding: 12px 16px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
+  display: grid;
+  grid-template-columns: 1.6fr 0.8fr 0.9fr 0.9fr;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease;
 }
 
-/* 다크모드: 품목별 현재 재고 패널 행 */
-[data-theme="dark"] .seedItemRow {
-  background: #1e293b; /* 어두운 카드 배경색 */
-  border-color: #334155; /* 어두운 테두리선 색상 */
-}
-
-/* 다크모드: 선택된 품목 행 */
-[data-theme="dark"] .seedItemRow.selected {
-  background: #451a03; /* 다크모드용 선택 배경 (어두운 주황빛) */
-  border-color: #d97706; /* 강조 테두리선 */
+.seedItemRow:hover {
+  background: var(--bg-subtle, #f8fafc);
 }
 
 .seedItemRow.selected {
-  border: 1px solid #d97706;
-  background: #fffbeb;
+  background: var(--bg-subtle, #f8fafc);
 }
 
-.seedItemRow__top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.seedItemRow__meta {
+.seedItemRow__identity {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 10px;
+  min-width: 0;
 }
 
-.seedItemRow__meta .code {
-  color: #64748b;
-  font-weight: 500;
-}
-
-.seedItemRow__meta .dot {
-  color: #cbd5e1;
-}
-
-.seedItemRow__meta .category {
-  color: #64748b;
-  font-size: 11px;
-}
-
-.seedItemRow__stock {
-  font-size: 15px;
+.seedItemRow__avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
   font-weight: 700;
-  color: #0f172a;
 }
 
-.seedItemRow__bottom {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
+.seedItemRow__avatar.raw {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.seedItemRow__avatar.semi {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+.seedItemRow__avatar.finished {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+[data-theme="dark"] .seedItemRow__avatar.raw {
+  background: rgba(59, 130, 246, 0.16);
+  color: #93c5fd;
+}
+
+[data-theme="dark"] .seedItemRow__avatar.semi {
+  background: rgba(139, 92, 246, 0.16);
+  color: #c4b5fd;
+}
+
+[data-theme="dark"] .seedItemRow__avatar.finished {
+  background: rgba(34, 197, 94, 0.16);
+  color: #86efac;
 }
 
 .seedItemRow__name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: #0f172a;
-  min-width: 140px;
-}
-
-.seedProgressTrack {
-  flex: 1;
-  height: 8px;
-  background: #e2e8f0;
-  border-radius: 4px;
+  color: var(--text-heading, #0f172a);
+  white-space: nowrap;
   overflow: hidden;
-  position: relative;
+  text-overflow: ellipsis;
 }
 
-.seedProgressFill {
-  height: 100%;
-  background: #9a3412;
-  border-radius: 4px;
+.seedItemRow__code {
+  font-size: 11px;
+  color: var(--text-muted, #94a3b8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seedCategoryBadge {
+  width: fit-content;
+  display: inline-flex;
+  justify-self: end;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.seedCategoryBadge.raw {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.seedCategoryBadge.semi {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+.seedCategoryBadge.finished {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+[data-theme="dark"] .seedCategoryBadge.raw {
+  background: rgba(59, 130, 246, 0.16);
+  color: #93c5fd;
+}
+
+[data-theme="dark"] .seedCategoryBadge.semi {
+  background: rgba(139, 92, 246, 0.16);
+  color: #c4b5fd;
+}
+
+[data-theme="dark"] .seedCategoryBadge.finished {
+  background: rgba(34, 197, 94, 0.16);
+  color: #86efac;
+}
+
+.seedItemRow__stock {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-heading, #0f172a);
+  text-align: right;
 }
 
 .seedItemRow__time {
-  font-size: 11px;
-  color: #94a3b8;
-  min-width: 110px;
+  font-size: 12px;
+  color: var(--text-muted, #94a3b8);
   text-align: right;
 }
 
@@ -284,15 +456,18 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .seedSelect {
-  padding: 6px 12px;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 12px;
   font-size: 12px;
   border-radius: 6px;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #0f172a;
+  border: 1px solid var(--border-strong, #cbd5e1);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-heading, #0f172a);
   cursor: pointer;
 }
 
@@ -307,7 +482,7 @@
   flex-direction: column;
   justify-content: space-between;
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--text-muted, #94a3b8);
   padding-bottom: 24px;
   text-align: right;
   min-width: 35px;
@@ -322,15 +497,15 @@
   justify-content: space-between;
   padding-bottom: 24px;
   padding-left: 8px;
-  border-bottom: 1px solid #cbd5e1;
-  border-left: 1px solid #cbd5e1;
+  border-bottom: 1px solid var(--border-strong, #cbd5e1);
+  border-left: 1px solid var(--border-strong, #cbd5e1);
 }
 
 .seedChartGridline {
   position: absolute;
   left: 8px;
   right: 0;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border, #f1f5f9);
   pointer-events: none;
 }
 
@@ -348,7 +523,7 @@
 .seedChartBar {
   width: 60%;
   max-width: 28px;
-  background: #9a3412;
+  background: var(--primary, #3b82f6);
   border-radius: 4px 4px 0 0;
   transition: height 0.3s ease;
 }
@@ -357,7 +532,7 @@
   position: absolute;
   bottom: -22px;
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted, #64748b);
   white-space: nowrap;
 }
 
@@ -367,18 +542,45 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: var(--text-muted, #94a3b8);
   font-size: 13px;
 }
 
 /* 증가수량 (빨강) */
 .qtyIncreaseText {
-    color: #ef4444; /* 선명한 빨간색 (Tailwind red-500 기준) */
+    color: #ef4444;
     font-weight: 500;
 }
 
 /* 감소수량 (파랑) */
 .qtyDecreaseText {
-    color: #3b82f6; /* 선명한 파란색 (Tailwind blue-500 기준) */
+    color: #3b82f6;
     font-weight: 500;
+}
+
+/* =========================================================================
+   좁은 화면 대응
+   ========================================================================= */
+@media (max-width: 720px) {
+  .seedTableHeader {
+    display: none;
+  }
+  .seedItemRow {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "identity stock"
+      "identity time";
+    row-gap: 4px;
+  }
+  .seedItemRow__identity { grid-area: identity; }
+  .seedItemRow__stock { grid-area: stock; }
+  .seedItemRow__time { grid-area: time; }
+  .inventorySummaryCard__badgeIcon { display: none; }
+}
+
+@media (max-width: 900px) {
+  .screenStack .kpiGrid,
+  .screenStack [class*="kpiGrid"] {
+    grid-template-columns: 1fr !important;
+  }
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { CubeIcon, BeakerIcon, ArchiveBoxIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/solid'
 import { KpiGrid, type KpiItem } from '@components/kpi/KpiGrid'
 import { Panel } from '@components/card/Panel'
 import { formatDateTime } from "@/utils/common";
@@ -12,6 +13,20 @@ interface SeedInventoryStatusRow {
   currentStock: number
   stockText: string
   updateTime: string
+}
+
+// 카테고리 → CSS modifier 클래스 매핑 (raw / semi / finished)
+const CATEGORY_CLASS_MAP: Record<SeedInventoryStatusRow['category'], 'raw' | 'semi' | 'finished'> = {
+  '원료': 'raw',
+  '반제품': 'semi',
+  '완제품': 'finished',
+}
+
+// 카테고리 → Heroicons 아이콘 매핑
+const CATEGORY_ICON_MAP: Record<SeedInventoryStatusRow['category'], typeof CubeIcon> = {
+  '원료': CubeIcon,
+  '반제품': BeakerIcon,
+  '완제품': ArchiveBoxIcon,
 }
 
 export function SeedInventoryStatusPage() {
@@ -119,11 +134,6 @@ export function SeedInventoryStatusPage() {
     fetchTrend()
   }, [selectedItem, trendTab])
 
-  const maxStock = useMemo(() => {
-    if (displayedItems.length === 0) return 1
-    return Math.max(...displayedItems.map((i) => i.currentStock), 1)
-  }, [displayedItems])
-
   const currentTrendData = useMemo(() => {
     if (apiTrendData && apiTrendData.points && apiTrendData.points.length > 0) {
       return apiTrendData.points.map((p) => ({
@@ -171,94 +181,69 @@ export function SeedInventoryStatusPage() {
   const semiSummary = getCategorySummaryValues(1)
   const finSummary = getCategorySummaryValues(2)
 
-  // KPI 카드 정의 (중복된 래퍼 div 제거 및 순수 콘텐츠만 유지)
+  // KPI 카드 콘텐츠 렌더 헬퍼 (뱃지 아이콘 + 라벨 + 값 + 입출고 요약)
+  const renderSummaryCard = (
+    category: SeedInventoryStatusRow['category'],
+    summary: { currentQty: string; todayIncrease: string; todayDecrease: string },
+  ) => {
+    const cls = CATEGORY_CLASS_MAP[category]
+    const Icon = CATEGORY_ICON_MAP[category]
+    return (
+      <div className="inventorySummaryCard">
+        <div>
+          <div className="inventorySummaryCard__badge">
+            <div className={`inventorySummaryCard__badgeIcon ${cls}`}>
+              <Icon width={14} height={14} />
+            </div>
+            <span className="inventorySummaryCard__header">{category} 재고</span>
+          </div>
+          <div className="inventorySummaryCard__valueArea">
+            <span>{summary.currentQty}</span>
+            <span className="inventorySummaryCard__unit">kg</span>
+          </div>
+        </div>
+        <div className="inventorySummaryCard__stats">
+          <div className="inventorySummaryCard__statChip in">
+            <div className="inventorySummaryCard__statIcon in">
+              <ArrowUpIcon width={12} height={12} />
+            </div>
+            <div className="inventorySummaryCard__statText">
+              <span className="inventorySummaryCard__statLabel">금일 입고</span>
+              <span className="inventorySummaryCard__statValue in">{summary.todayIncrease}</span>
+            </div>
+          </div>
+          <div className="inventorySummaryCard__statChip out">
+            <div className="inventorySummaryCard__statIcon out">
+              <ArrowDownIcon width={12} height={12} />
+            </div>
+            <div className="inventorySummaryCard__statText">
+              <span className="inventorySummaryCard__statLabel">금일 출고</span>
+              <span className="inventorySummaryCard__statValue out">{summary.todayDecrease}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const seedInventoryKpis: KpiItem[] = [
     {
       label: '원료 재고',
       value: '',
       tone: 'muted',
-      render: () => (
-        <div className="inventorySummaryCard">
-          <div>
-            <div className="inventorySummaryCard__header">원료 재고</div>
-            <div className="inventorySummaryCard__valueArea">
-              <span>{rawSummary.currentQty}</span>
-              <span className="inventorySummaryCard__unit">kg</span>
-            </div>
-          </div>
-          <div>
-            <div className="inventorySummaryCard__divider" />
-            <div className="inventorySummaryCard__footer">
-              <div className="inventorySummaryCard__row">
-                <span>▲ 금일 입고</span>
-                <span className="inventorySummaryCard__inbound">{rawSummary.todayIncrease}</span>
-              </div>
-              <div className="inventorySummaryCard__row">
-                <span>▼ 금일 출고</span>
-                <span className="inventorySummaryCard__outbound">{rawSummary.todayDecrease}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      ),
+      render: () => renderSummaryCard('원료', rawSummary),
     },
     {
       label: '반제품 재고',
       value: '',
       tone: 'muted',
-      render: () => (
-        <div className="inventorySummaryCard">
-          <div>
-            <div className="inventorySummaryCard__header">반제품 재고</div>
-            <div className="inventorySummaryCard__valueArea">
-              <span>{semiSummary.currentQty}</span>
-              <span className="inventorySummaryCard__unit">kg</span>
-            </div>
-          </div>
-          <div>
-            <div className="inventorySummaryCard__divider" />
-            <div className="inventorySummaryCard__footer">
-              <div className="inventorySummaryCard__row">
-                <span>▲ 금일 입고</span>
-                <span className="inventorySummaryCard__inbound">{semiSummary.todayIncrease}</span>
-              </div>
-              <div className="inventorySummaryCard__row">
-                <span>▼ 금일 출고</span>
-                <span className="inventorySummaryCard__outbound">{semiSummary.todayDecrease}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      ),
+      render: () => renderSummaryCard('반제품', semiSummary),
     },
     {
       label: '완제품 재고',
       value: '',
       tone: 'muted',
-      render: () => (
-        <div className="inventorySummaryCard">
-          <div>
-            <div className="inventorySummaryCard__header">완제품 재고</div>
-            <div className="inventorySummaryCard__valueArea">
-              <span>{finSummary.currentQty}</span>
-              <span className="inventorySummaryCard__unit">kg</span>
-            </div>
-          </div>
-          <div>
-            <div className="inventorySummaryCard__divider" />
-            <div className="inventorySummaryCard__footer">
-              <div className="inventorySummaryCard__row">
-                <span>▲ 금일 입고</span>
-                <span className="inventorySummaryCard__inbound">{finSummary.todayIncrease}</span>
-              </div>
-              <div className="inventorySummaryCard__row">
-                <span>▼ 금일 출고</span>
-                <span className="inventorySummaryCard__outbound">{finSummary.todayDecrease}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      ),
+      render: () => renderSummaryCard('완제품', finSummary),
     },
   ]
 
@@ -274,23 +259,11 @@ export function SeedInventoryStatusPage() {
 
   return (
     <section className="screenStack">
-      {/* KpiGrid에 클릭 이벤트와 선택된 라벨 전달 */}
-      <KpiGrid 
-        kpis={seedInventoryKpis} 
-        selectedLabel={currentSelectedLabel}
-        onCardClick={(kpi) => {
-          if (kpi.label.includes('원료')) setActiveTab('원료');
-          else if (kpi.label.includes('반제품')) setActiveTab('반제품');
-          else if (kpi.label.includes('완제품')) setActiveTab('완제품');
-        }}
-      />
-
-      <Panel title="품목별 현재 재고">
-        <div className="seedStatusPanel">
-          <div className="seedStatusPanel__header">
-            <div className="seedCaption">
-              품목별 현재 재고 현황 · 재고 많은 순 (클릭하면 아래 추이 그래프로 이동)
-            </div>
+      {/* 품목별 현재 재고 패널 — 위로 이동, 탭버튼을 타이틀과 같은 줄 우측에 배치 */}
+      <Panel
+        title={
+          <div className="seedStatusPanel__titleRow">
+            <span>품목별 현재 재고</span>
             <div className="seedTabGroup">
               {(['전체', '원료', '반제품', '완제품'] as const).map((tab) => (
                 <button
@@ -306,12 +279,26 @@ export function SeedInventoryStatusPage() {
               ))}
             </div>
           </div>
+        }
+      >
+        <div className="seedStatusPanel">
+          <div className="seedCaption">
+            재고 많은 순 · {displayedItems.length}개 품목
+          </div>
+
+          <div className="seedTableHeader">
+            <span>품목</span>
+            <span>구분</span>
+            <span>현재 수량</span>
+            <span>최근 갱신</span>
+          </div>
 
           <div className="seedItemList">
             {displayedItems.length > 0 ? (
               displayedItems.map((item, index) => {
-                const percentage = (item.currentStock / maxStock) * 100
                 const isSelected = selectedIndex === index
+                const cls = CATEGORY_CLASS_MAP[item.category]
+                const Icon = CATEGORY_ICON_MAP[item.category]
 
                 return (
                   <div
@@ -319,27 +306,19 @@ export function SeedInventoryStatusPage() {
                     className={`seedItemRow${isSelected ? ' selected' : ''}`}
                     onClick={() => setSelectedIndex(index)}
                   >
-                    <div className="seedItemRow__top">
-                      <div className="seedItemRow__meta">
-                        <span className="code">{item.itemCode}</span>
-                        <span className="dot">·</span>
-                        <span className="category">{item.category}</span>
+                    <div className="seedItemRow__identity">
+                      <div className={`seedItemRow__avatar ${cls}`}>
+                        <Icon width={14} height={14} />
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <span className="seedItemRow__stock">{item.stockText}</span>
+                      <div>
+                        <div className="seedItemRow__name">{item.itemName}</div>
+                        <div className="seedItemRow__code">{item.itemCode}</div>
                       </div>
                     </div>
 
-                    <div className="seedItemRow__bottom">
-                      <div className="seedItemRow__name">{item.itemName}</div>
-                      <div className="seedProgressTrack">
-                        <div
-                          className="seedProgressFill"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                      <div className="seedItemRow__time">{item.updateTime}</div>
-                    </div>
+                    <span className={`seedCategoryBadge ${cls}`}>{item.category}</span>
+                    <span className="seedItemRow__stock">{item.stockText}</span>
+                    <span className="seedItemRow__time">{item.updateTime}</span>
                   </div>
                 )
               })
@@ -351,6 +330,17 @@ export function SeedInventoryStatusPage() {
           </div>
         </div>
       </Panel>
+
+      {/* 원료 / 반제품 / 완제품 재고 KPI — 아래로 이동 */}
+      <KpiGrid 
+        kpis={seedInventoryKpis} 
+        selectedLabel={currentSelectedLabel}
+        onCardClick={(kpi) => {
+          if (kpi.label.includes('원료')) setActiveTab('원료');
+          else if (kpi.label.includes('반제품')) setActiveTab('반제품');
+          else if (kpi.label.includes('완제품')) setActiveTab('완제품');
+        }}
+      />
 
       <Panel title="품목별 재고 추이">
         <div className="seedTrendPanel">

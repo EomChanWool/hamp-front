@@ -757,6 +757,7 @@ textarea.tableInput {
 }
 
 .panelHeader h2 {
+  width: 100%;
   margin: 0;
   font-size: 18px; 
   font-weight: 600;
