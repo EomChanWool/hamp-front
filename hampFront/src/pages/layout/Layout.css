@@ -41,23 +41,25 @@
   border-radius: 12px;
   font-weight: 900;
   font-size: 21px;
+  font-family: "Montserrat", sans-serif;
 }
 
 .brandText {
   overflow: hidden;
   white-space: nowrap;
+  font-family: "Montserrat", sans-serif;
 }
 
 .brandText strong {
   display: block;
-  font-size: 16px; 
+  font-size: 18px; 
   font-weight: 700;
   color: var(--text-main);
 }
 
 .brandText small {
   display: block;
-  font-size: 13px;
+  font-size: 11px;
   color: var(--text-sub);
 }
 
