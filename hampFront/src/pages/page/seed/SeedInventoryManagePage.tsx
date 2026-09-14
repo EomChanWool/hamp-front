@@ -13,11 +13,7 @@ import {
     type StockAdjustmentRequest,
 } from '@/api/seed/StockHistory';
 import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
-import { 
-    PencilIcon,
-    ArrowPathIcon,
-    PlayIcon 
-} from "@heroicons/react/16/solid";
+import { PenIcon, RotateIcon, TriangleIcon } from "@/components/icons/CustomIcons";
 
 export function SeedInventoryManagePage() {
     const [historyList, setHistoryList] = useState<StockHistoryResponse[]>([]);
@@ -132,6 +128,7 @@ export function SeedInventoryManagePage() {
         setIsLoading(true);
         try {
             const params: Record<string, any> = {
+                productType: 0,
                 page,
                 size: 10,
             };
@@ -225,6 +222,7 @@ export function SeedInventoryManagePage() {
         setIsUpdating(true);
         try {
             const payload: StockAdjustmentRequest = {
+                productType: 0,
                 itemCode,
                 direction: editFormRef.current.direction ?? 'INCREASE',
                 qty,
@@ -368,25 +366,23 @@ export function SeedInventoryManagePage() {
                     }
 
                     const ioType = row.original.ioType;
-                    
+
                     let badgeClass = 'badge info';
                     let iconNode = null;
 
                     if (ioType === '조정') {
                         badgeClass = 'badge warn';
-                        iconNode = <PencilIcon className="w-3.5 h-3.5 inline-block mr-1" />;
+                        iconNode = <PenIcon />;
                     } else if (ioType === '신고입고취소') {
                         badgeClass = 'badge muted';
-                        // 신고입고취소 아이콘 (회전 화살표)
-                        iconNode = <ArrowPathIcon className="w-3.5 h-3.5 inline-block mr-1" />;
+                        iconNode = <RotateIcon />;
                     } else {
-                        // 신고입고 아이콘 (상향 삼각형 모양을 위해 PlayIcon을 위로 회전)
                         badgeClass = 'badge info';
-                        iconNode = <PlayIcon className="w-3 h-3 inline-block mr-1 rotate-[-90deg]" />;
+                        iconNode = <TriangleIcon />;
                     }
 
                     return (
-                        <span className={badgeClass}>
+                        <span className={badgeClass} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                             {iconNode}
                             {ioType}
                         </span>
@@ -396,7 +392,7 @@ export function SeedInventoryManagePage() {
             {
                 accessorKey: 'increaseQty',
                 header: '증가수량',
-                meta: { width: '110px' },
+                meta: { width: '150px' },
                 cell: ({ row }) => {
                     const isNew = row.original.sthiId === -999999;
                     const isEditing = row.original.sthiId === editingId;
@@ -416,13 +412,19 @@ export function SeedInventoryManagePage() {
                         );
                     }
                     if (isNew || isEditing) return '-';
-                    return row.original.increaseQty > 0 ? `+${row.original.increaseQty.toLocaleString()}` : '-';
+
+                    // 증가수량이 0보다 클 때 빨간색(qtyIncreaseText) 적용
+                    return row.original.increaseQty > 0 ? (
+                        <span className="qtyIncreaseText">+{row.original.increaseQty.toLocaleString()}</span>
+                    ) : (
+                        '-'
+                    );
                 },
             },
             {
                 accessorKey: 'decreaseQty',
                 header: '감소수량',
-                meta: { width: '110px' },
+                meta: { width: '150px' },
                 cell: ({ row }) => {
                     const isNew = row.original.sthiId === -999999;
                     const isEditing = row.original.sthiId === editingId;
@@ -442,12 +444,19 @@ export function SeedInventoryManagePage() {
                         );
                     }
                     if (isNew || isEditing) return '-';
-                    return row.original.decreaseQty > 0 ? `-${row.original.decreaseQty.toLocaleString()}` : '-';
+
+                    // 감소수량이 0보다 클 때 파란색(qtyDecreaseText) 적용
+                    return row.original.decreaseQty > 0 ? (
+                        <span className="qtyDecreaseText">-{row.original.decreaseQty.toLocaleString()}</span>
+                    ) : (
+                        '-'
+                    );
                 },
             },
             {
                 accessorKey: 'note',
                 header: '비고',
+                meta: { width: '200px' },
                 cell: ({ row }) => {
                     const isNew = row.original.sthiId === -999999;
                     const isEditing = row.original.sthiId === editingId;

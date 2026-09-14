@@ -16,6 +16,7 @@ import { AttachmentApi } from "@/api/Attachment";
 import { useImageGallery } from "@/hooks/useImageGallery";
 import ImageGallery from "@components/common/ImageGallery";
 import ImageModal from "@components/modal/ImageModal";
+import UserMultiSelect from "@components/common/UserMultiSelect";
 import "@/pages/layout/Layout.css";
 
 export function EquipmentFacilityCreatePage() {
@@ -169,6 +170,8 @@ export function EquipmentFacilityCreatePage() {
                         </div>
 
                         <div className="facilityCreateFieldsCol">
+                            {/* 설비코드 / 설비명 — 상세화면의 facilityTitleInput 영역에 대응하는
+                                등록 전용 필수 입력값이라 일반 필드(createField) 형태로 유지 */}
                             <div className="facilityCreateFieldGrid">
                                 <div className="createField">
                                     <label className="requiredLabel">
@@ -195,54 +198,56 @@ export function EquipmentFacilityCreatePage() {
                                         placeholder="예) HEMP 추출기"
                                     />
                                 </div>
+                            </div>
 
-                                <div className="createField">
-                                    <label>현재상태</label>
-                                    <select
-                                        className="tableInput"
-                                        value={form.currentStatus}
-                                        disabled={isSubmitting}
-                                        onChange={(e) => handleChange("currentStatus", e.target.value)}
-                                    >
-                                        <option value="0">정지</option>
-                                        <option value="1">작동</option>
-                                        <option value="2">고장</option>
-                                    </select>
+                            {/* 현재상태 / 사용여부 / 담당자 — 상세화면 수정모드(facilityQuickGrid)와
+                                동일한 카드형 레이아웃으로 통일 */}
+                            <div className="facilityQuickGrid">
+                                <div className="facilityQuickItem">
+                                    <span className="facilityQuickLabel">현재상태</span>
+                                    <div className="facilityQuickValue">
+                                        <select
+                                            className="tableInput"
+                                            value={form.currentStatus}
+                                            disabled={isSubmitting}
+                                            onChange={(e) => handleChange("currentStatus", e.target.value)}
+                                        >
+                                            <option value="0">정지</option>
+                                            <option value="1">작동</option>
+                                            <option value="2">고장</option>
+                                        </select>
+                                    </div>
                                 </div>
 
-                                <div className="createField">
-                                    <label>사용여부</label>
-                                    <select
-                                        className="tableInput"
-                                        value={form.useYn ? "true" : "false"}
-                                        disabled={isSubmitting}
-                                        onChange={(e) => handleChange("useYn", e.target.value === "true")}
-                                    >
-                                        <option value="true">사용</option>
-                                        <option value="false">미사용</option>
-                                    </select>
+                                <div className="facilityQuickItem">
+                                    <span className="facilityQuickLabel">사용여부</span>
+                                    <div className="facilityQuickValue">
+                                        <select
+                                            className="tableInput"
+                                            value={form.useYn ? "true" : "false"}
+                                            disabled={isSubmitting}
+                                            onChange={(e) => handleChange("useYn", e.target.value === "true")}
+                                        >
+                                            <option value="true">사용</option>
+                                            <option value="false">미사용</option>
+                                        </select>
+                                    </div>
                                 </div>
 
-                                {/* 담당자 다중 선택 필드 */}
-                                <div className="createField">
-                                    <label>담당자 (다중 선택)</label>
-                                    <select
-                                        multiple
-                                        className="tableInput"
-                                        style={{ height: "90px" }}
-                                        value={form.managerUserIds}
-                                        disabled={isSubmitting}
-                                        onChange={(e) => {
-                                            const selectedOptions = Array.from(e.target.selectedOptions, (option) => option.value);
-                                            handleChange("managerUserIds", selectedOptions);
-                                        }}
-                                    >
-                                        {userOptions.map((user) => (
-                                            <option key={user.userId} value={user.userId}>
-                                                {user.userNm} ({user.userId})
-                                            </option>
-                                        ))}
-                                    </select>
+                                {/* 담당자 다중선택 — 검색+태그 방식(UserMultiSelect)이라 폭이 더 필요해서
+                                    facilityQuickItem.wide로 그리드 전체 폭을 차지하게 함 */}
+                                <div className="facilityQuickItem wide">
+                                    <span className="facilityQuickLabel">
+                                        담당자 (다중 선택) · 총 {userOptions.length}명 중 {form.managerUserIds.length}명 선택
+                                    </span>
+                                    <div className="facilityQuickValue">
+                                        <UserMultiSelect
+                                            options={userOptions}
+                                            value={form.managerUserIds}
+                                            onChange={(userIds) => handleChange("managerUserIds", userIds)}
+                                            disabled={isSubmitting}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>

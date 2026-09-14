@@ -57,6 +57,7 @@ export type ApiResponseItemStockSummaryResponse = ApiResponse<ItemStockSummaryRe
 export const ItemStockApi = {
     /** 품목별 현재 재고 조회 */
     getList: async (params?: {
+        productType: number;
         category?: number;
         [key: string]: any;
     }): Promise<ApiResponseListItemStockResponse> => {
@@ -68,6 +69,7 @@ export const ItemStockApi = {
     getTrend: async (
         itemCode: string,
         params?: {
+            productType: number;
             period?: string; // 기본값: 'month' 등
             [key: string]: any;
         }
@@ -77,8 +79,11 @@ export const ItemStockApi = {
     },
 
     /** 재고 현황 구분별 요약 조회 */
-    getSummary: async (): Promise<ApiResponseItemStockSummaryResponse> => {
-        const res = await apiClient.get('/item-stocks/summary');
+    getSummary: async (params?: {
+        productType?: number;
+        [key: string]: any;
+    }): Promise<ApiResponseItemStockSummaryResponse> => {
+        const res = await apiClient.get('/item-stocks/summary', { params });
         return res.data;
     },
 };
