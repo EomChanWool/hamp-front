@@ -13,11 +13,7 @@ import {
     type StockAdjustmentRequest,
 } from '@/api/seed/StockHistory';
 import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
-import {
-    PencilIcon,
-    ArrowPathIcon,
-    ArrowUpIcon,
-} from "@heroicons/react/16/solid";
+import { PenIcon, RotateIcon, TriangleIcon } from "@/components/icons/CustomIcons";
 
 export function SeedInventoryManagePage() {
     const [historyList, setHistoryList] = useState<StockHistoryResponse[]>([]);
@@ -376,17 +372,17 @@ export function SeedInventoryManagePage() {
 
                     if (ioType === '조정') {
                         badgeClass = 'badge warn';
-                        iconNode = <PencilIcon className="w-3.5 h-3.5 inline-block mr-1" />;
+                        iconNode = <PenIcon />;
                     } else if (ioType === '신고입고취소') {
                         badgeClass = 'badge muted';
-                        iconNode = <ArrowPathIcon className="w-3.5 h-3.5 inline-block mr-1" />;
+                        iconNode = <RotateIcon />;
                     } else {
                         badgeClass = 'badge info';
-                        iconNode = <ArrowUpIcon className="w-3.5 h-3.5 inline-block mr-1" />;
+                        iconNode = <TriangleIcon />;
                     }
 
                     return (
-                        <span className={badgeClass}>
+                        <span className={badgeClass} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                             {iconNode}
                             {ioType}
                         </span>
