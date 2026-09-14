@@ -225,3 +225,9 @@
   font-size: 12px;
   color: #9ca3af;
 }
+
+/* 다크모드 품목 이름 색상 적용 */
+[data-theme="dark"] .itemCell__name,
+[data-theme="dark"] .seedItemRow__name {
+  color: #f8fafc !important;
+}

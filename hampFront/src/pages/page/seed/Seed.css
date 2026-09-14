@@ -33,6 +33,15 @@
   line-height: 1;
 }
 
+/* 다크모드: 재고 요약 카드 (KPI) 숫자 및 단위 영역 */
+[data-theme="dark"] .inventorySummaryCard__valueArea span:first-child {
+  color: #f8fafc; /* 밝은 회백색 숫자로 변경 */
+}
+
+[data-theme="dark"] .inventorySummaryCard__unit {
+  color: #94a3b8; /* 단위를 보기 좋은 회색톤으로 변경 */
+}
+
 .inventorySummaryCard__unit {
   font-size: 16px;
   font-weight: 500;
@@ -66,7 +75,7 @@
 }
 
 .inventorySummaryCard .inventorySummaryCard__inbound {
-  font-weight: 600 !important;
+  font-weight: 600;
   color: #16a34a;
   font-size: 12px;
 }
@@ -118,6 +127,23 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
+/* 다크모드: 탭 그룹 배경색 변경 */
+[data-theme="dark"] .seedTabGroup {
+  background: #1e293b; /* 어두운 패널 배경색 */
+}
+
+/* 다크모드: 탭 버튼 기본 스타일 */
+[data-theme="dark"] .seedTabButton {
+  color: #94a3b8; /* 다크모드에서 잘 보이는 밝은 회색 텍스트 */
+}
+
+/* 다크모드: 활성화된 탭 버튼 스타일 */
+[data-theme="dark"] .seedTabButton.active {
+  background: #334155; /* 어두운 카드/패널 상위 톤의 배경색 */
+  color: #f8fafc; /* 강조되는 밝은 흰색/회백색 텍스트 */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
 /* =========================================================================
    품목별 현재 재고 패널
    ========================================================================= */
@@ -148,6 +174,18 @@
   background: #ffffff;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+/* 다크모드: 품목별 현재 재고 패널 행 */
+[data-theme="dark"] .seedItemRow {
+  background: #1e293b; /* 어두운 카드 배경색 */
+  border-color: #334155; /* 어두운 테두리선 색상 */
+}
+
+/* 다크모드: 선택된 품목 행 */
+[data-theme="dark"] .seedItemRow.selected {
+  background: #451a03; /* 다크모드용 선택 배경 (어두운 주황빛) */
+  border-color: #d97706; /* 강조 테두리선 */
 }
 
 .seedItemRow.selected {

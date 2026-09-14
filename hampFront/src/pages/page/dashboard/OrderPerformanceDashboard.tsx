@@ -391,102 +391,102 @@ function PerformanceBarCard({
               }}
             />
 
-         {groupList.map((group: any, i: number) => {
-  const color = TREND_COLORS[i % TREND_COLORS.length];
-  const isHidden = visibleGroupKeys !== null && !visibleGroupKeys.has(group.groupKey);
+            {groupList.map((group: any, i: number) => {
+              const color = TREND_COLORS[i % TREND_COLORS.length];
+              const isHidden = visibleGroupKeys !== null && !visibleGroupKeys.has(group.groupKey);
 
-  const getLabelText = (row: any) => {
-    const info = row[`${group.groupKey}_info`];
-    if (!info || info.totalOrderQty === 0) return "";
-    return `${info.totalProducedQty.toLocaleString()} / ${info.totalOrderQty.toLocaleString()} (${info.progressRate}%)`;
-  };
+              const getLabelText = (row: any) => {
+                const info = row[`${group.groupKey}_info`];
+                if (!info || info.totalOrderQty === 0) return "";
+                return `${info.totalProducedQty.toLocaleString()} / ${info.totalOrderQty.toLocaleString()} (${info.progressRate}%)`;
+              };
 
-  return (
-    <React.Fragment key={group.groupKey}>
-      {/* 생산량 바 (100%일 때 레이블 담당) */}
-      <Bar
-        dataKey={`${group.groupKey}_prod`}
-        name={group.groupLabel}
-        fill={color}
-        stackId={`group_stack_${group.groupKey}`}
-        maxBarSize={28}
-        hide={isHidden}
-        onClick={(data) => handleBarClick(data, `${group.groupKey}_prod`)}
-        style={{ cursor: "pointer" }}
-      >
-        {/* 생산량이 전체(100%)일 때만 레이블 출력 */}
-        <LabelList
-          dataKey={(row: any) => {
-            const info = row[`${group.groupKey}_info`];
-            return info && info.progressRate >= 100 ? getLabelText(row) : "";
-          }}
-          position="top"
-          style={{ fill: "#1e293b", fontSize: 11, fontWeight: 700 }}
-        />
-      </Bar>
+              return (
+                <React.Fragment key={group.groupKey}>
+                  {/* 생산량 바 (100%일 때 레이블 담당) */}
+                  <Bar
+                    dataKey={`${group.groupKey}_prod`}
+                    name={group.groupLabel}
+                    fill={color}
+                    stackId={`group_stack_${group.groupKey}`}
+                    maxBarSize={28}
+                    hide={isHidden}
+                    onClick={(data) => handleBarClick(data, `${group.groupKey}_prod`)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    {/* 생산량이 전체(100%)일 때만 레이블 출력 */}
+                    <LabelList
+                      dataKey={(row: any) => {
+                        const info = row[`${group.groupKey}_info`];
+                        return info && info.progressRate >= 100 ? getLabelText(row) : "";
+                      }}
+                      position="top"
+                      style={{ fill: "#1e293b", fontSize: 11, fontWeight: 700 }}
+                    />
+                  </Bar>
 
-      {/* 잔여량 바 (0%이거나 진행 중일 때 레이블 담당) */}
-      <Bar
-        dataKey={`${group.groupKey}_remain`}
-        name={group.groupLabel}
-        fill="#e2e8f0"
-        radius={[6, 6, 0, 0]}
-        stackId={`group_stack_${group.groupKey}`}
-        maxBarSize={28}
-        legendType="none"
-        hide={isHidden}
-        onClick={(data) => handleBarClick(data, `${group.groupKey}_remain`)}
-        style={{ cursor: "pointer" }}
-      >
-        {/* 진행률이 100% 미만일 때만 레이블 출력 */}
-        <LabelList
-          dataKey={(row: any) => {
-            const info = row[`${group.groupKey}_info`];
-            return info && info.progressRate < 100 ? getLabelText(row) : "";
-          }}
-          position="top"
-          style={{ fill: "#1e293b", fontSize: 11, fontWeight: 700 }}
-        />
-      </Bar>
-    </React.Fragment>
-  );
-})}
+                  {/* 잔여량 바 (0%이거나 진행 중일 때 레이블 담당) */}
+                  <Bar
+                    dataKey={`${group.groupKey}_remain`}
+                    name={group.groupLabel}
+                    fill="#e2e8f0"
+                    radius={[6, 6, 0, 0]}
+                    stackId={`group_stack_${group.groupKey}`}
+                    maxBarSize={28}
+                    legendType="none"
+                    hide={isHidden}
+                    onClick={(data) => handleBarClick(data, `${group.groupKey}_remain`)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    {/* 진행률이 100% 미만일 때만 레이블 출력 */}
+                    <LabelList
+                      dataKey={(row: any) => {
+                        const info = row[`${group.groupKey}_info`];
+                        return info && info.progressRate < 100 ? getLabelText(row) : "";
+                      }}
+                      position="top"
+                      style={{ fill: "#1e293b", fontSize: 11, fontWeight: 700 }}
+                    />
+                  </Bar>
+                </React.Fragment>
+              );
+            })}
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       {/* 특정 차트 클릭 시 하단에 표출되는 상세 정보 표 */}
       {selectedItemInfo && (
-        <div style={{ marginTop: "24px", padding: "16px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-            <h5 style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "#1e293b" }}>
+        <div className="orderPerfDashboard__detailContainer">
+          <div className="orderPerfDashboard__detailHeader">
+            <h5 className="orderPerfDashboard__detailTitle">
               상세 정보: [{selectedItemInfo.groupLabel}] - {selectedItemInfo.periodLabel}
             </h5>
             <button
               type="button"
               onClick={() => setSelectedItemInfo(null)}
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: "13px", color: "#64748b" }}
+              className="orderPerfDashboard__detailCloseBtn"
             >
               닫기 ✕
             </button>
           </div>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", background: "#fff" }}>
+          <table className="orderPerfDashboard__detailTable">
             <thead>
-              <tr style={{ background: "#f1f5f9", textAlign: "left", color: "#475569" }}>
-                <th style={{ padding: "10px", borderBottom: "1px solid #cbd5e1" }}>기간 구분</th>
-                <th style={{ padding: "10px", borderBottom: "1px solid #cbd5e1" }}>항목명</th>
-                <th style={{ padding: "10px", borderBottom: "1px solid #cbd5e1", textAlign: "right" }}>총주문량</th>
-                <th style={{ padding: "10px", borderBottom: "1px solid #cbd5e1", textAlign: "right" }}>생산량</th>
-                <th style={{ padding: "10px", borderBottom: "1px solid #cbd5e1", textAlign: "right" }}>진행률</th>
+              <tr>
+                <th>기간 구분</th>
+                <th>항목명</th>
+                <th style={{ textAlign: "right" }}>총주문량</th>
+                <th style={{ textAlign: "right" }}>생산량</th>
+                <th style={{ textAlign: "right" }}>진행률</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td style={{ padding: "10px", borderBottom: "1px solid #e2e8f0" }}>{selectedItemInfo.periodLabel}</td>
-                <td style={{ padding: "10px", borderBottom: "1px solid #e2e8f0", fontWeight: 600 }}>{selectedItemInfo.groupLabel}</td>
-                <td style={{ padding: "10px", borderBottom: "1px solid #e2e8f0", textAlign: "right" }}>{selectedItemInfo.totalOrderQty.toLocaleString()} EA</td>
-                <td style={{ padding: "10px", borderBottom: "1px solid #e2e8f0", textAlign: "right", color: "#6366f1" }}>{selectedItemInfo.totalProducedQty.toLocaleString()} EA</td>
-                <td style={{ padding: "10px", borderBottom: "1px solid #e2e8f0", textAlign: "right", fontWeight: "bold", color: "#10b981" }}>{selectedItemInfo.progressRate}%</td>
+                <td>{selectedItemInfo.periodLabel}</td>
+                <td style={{ fontWeight: 600 }}>{selectedItemInfo.groupLabel}</td>
+                <td style={{ textAlign: "right" }}>{selectedItemInfo.totalOrderQty.toLocaleString()} EA</td>
+                <td style={{ textAlign: "right", color: "#6366f1" }}>{selectedItemInfo.totalProducedQty.toLocaleString()} EA</td>
+                <td style={{ textAlign: "right", fontWeight: "bold", color: "#10b981" }}>{selectedItemInfo.progressRate}%</td>
               </tr>
             </tbody>
           </table>

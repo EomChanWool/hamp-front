@@ -619,6 +619,12 @@ button {
   background: #1e293b;
 }
 
+/* 다크모드: 클릭 가능한 페이지에서 선택된 메트릭 카드 */
+[data-theme="dark"] .metricCard.is-selected {
+  background-color: #451a03; /* 어두운 주황빛 배경 */
+  border-color: #d97706; /* 강조 테두리선 */
+}
+
 .contentGrid {
   display: grid;
   gap: 20px;
