@@ -377,7 +377,7 @@ export function SeedInventoryManagePage() {
                         badgeClass = 'badge muted';
                         iconNode = <RotateIcon />;
                     } else {
-                        badgeClass = 'badge info';
+                        badgeClass = 'badge danger';
                         iconNode = <TriangleIcon />;
                     }
 
