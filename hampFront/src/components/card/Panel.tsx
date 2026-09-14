@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 
 /** 제목 + 우측 액션 버튼이 있는 흰색 카드 컨테이너. 페이지 콘텐츠를 감싸는 기본 단위 */
 type PanelProps = {
-  title: string
+  title: ReactNode;
   action?: string
   onAction?: () => void
   children: ReactNode
