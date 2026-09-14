@@ -252,6 +252,12 @@ export function OrderStatusPage() {
         setSearchParams(nextParams);
     };
 
+    // 그룹별 생산 진행률 패널에는 100% 완료된 그룹은 노출하지 않음 (하단 목록 표에는 그대로 유지)
+    const visibleGroupData = useMemo(
+        () => groupData.filter((item) => (item.progressRate ?? 0) < 100),
+        [groupData],
+    );
+
     // 테이블 컬럼 정의
     const columns: ColumnDef<SalesOrderStatusLineResponse>[] = useMemo(
         () => [
@@ -335,7 +341,7 @@ export function OrderStatusPage() {
             <Panel title="그룹별 생산 진행률">
                 <div className="summaryHeader">
                     <span className="summaryDesc">
-                        기준을 선택하면 해당 기준으로 라인을 합산해 진행률을 비교합니다.
+                        기준을 선택하면 해당 기준으로 라인을 합산해 진행률을 비교합니다. (100% 완료된 그룹은 하단 목록에서 확인할 수 있습니다)
                     </span>
 
                     <div className="legend">
@@ -361,6 +367,7 @@ export function OrderStatusPage() {
                 </div>
 
                 {/* 그룹 행: 라벨(이름+건수) / 진행바 / 생산·주문수량 이 한 줄에 나란히 배치 */}
+                {/* 100% 완료된 그룹은 visibleGroupData에서 제외되어 패널에는 나타나지 않음 */}
                 {isGroupLoading ? (
                     <div className="groupStateBox">
                         <Spinner />
@@ -371,7 +378,7 @@ export function OrderStatusPage() {
                     </div>
                 ) : (
                     <div className="groupList">
-                        {groupData.map((item) => {
+                        {visibleGroupData.map((item) => {
                             const pct = item.progressRate ?? 0;
                             const toneClass = getProgressToneClass(pct);
                             return (
@@ -401,9 +408,11 @@ export function OrderStatusPage() {
                                 </div>
                             );
                         })}
-                        {groupData.length === 0 && (
+                        {visibleGroupData.length === 0 && (
                             <div className="emptyState">
-                                조회된 그룹 데이터가 없습니다.
+                                {groupData.length === 0
+                                    ? "조회된 그룹 데이터가 없습니다."
+                                    : "모든 그룹이 100% 완료되었습니다."}
                             </div>
                         )}
                     </div>
