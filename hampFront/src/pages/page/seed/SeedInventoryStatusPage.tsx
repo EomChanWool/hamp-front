@@ -50,9 +50,11 @@ export function SeedInventoryStatusPage() {
 
   // 1. 탭(`activeTab`)이 변경될 때마다 백엔드 API를 호출하여 해당 품목 리스트 및 요약 정보 조회
   useEffect(() => {
+    let cancelled = false;
+
     const fetchData = async () => {
+      setLoading(true)
       try {
-        setLoading(true)
         const currentCategory = tabToCategoryMap[activeTab]
 
         const [listRes, summaryRes] = await Promise.all([
@@ -62,6 +64,8 @@ export function SeedInventoryStatusPage() {
           }),
           ItemStockApi.getSummary({ productType: 0 }),
         ])
+
+        if (cancelled) return;
 
         if (listRes && listRes.data) {
           const mappedItems: SeedInventoryStatusRow[] = listRes.data.map((item: ItemStockResponse) => {
@@ -84,13 +88,21 @@ export function SeedInventoryStatusPage() {
           setSummaryData(summaryRes.data)
         }
       } catch (error) {
-        console.error('재고 데이터 조회 실패:', error)
+        if (!cancelled) {
+          console.error('재고 데이터 조회 실패:', error)
+        }
       } finally {
-        setLoading(false)
+        if (!cancelled) {
+          setLoading(false)
+        }
       }
     }
 
     fetchData()
+
+    return () => {
+      cancelled = true;
+    }
   }, [activeTab])
 
   // 탭이 변경될 때 선택된 인덱스 초기화
@@ -113,6 +125,8 @@ export function SeedInventoryStatusPage() {
       return
     }
 
+    let cancelled = false;
+
     const fetchTrend = async () => {
       try {
         const periodParam = trendTab === '월별' ? 'month' : trendTab === '분기별' ? 'quarter' : 'year'
@@ -120,18 +134,26 @@ export function SeedInventoryStatusPage() {
           period: periodParam, 
           productType: 0 
         })
+        if (cancelled) return;
+
         if (res && res.data) {
           setApiTrendData(res.data)
         } else {
           setApiTrendData(null)
         }
       } catch (error) {
-        console.error('재고 추이 데이터 조회 실패:', error)
-        setApiTrendData(null)
+        if (!cancelled) {
+          console.error('재고 추이 데이터 조회 실패:', error)
+          setApiTrendData(null)
+        }
       }
     }
 
     fetchTrend()
+
+    return () => {
+      cancelled = true;
+    }
   }, [selectedItem, trendTab])
 
   const currentTrendData = useMemo(() => {
@@ -247,10 +269,6 @@ export function SeedInventoryStatusPage() {
     },
   ]
 
-  if (loading && items.length === 0) {
-    return <div style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>재고 현황 데이터를 불러오는 중입니다...</div>
-  }
-
   // activeTab 상태에 따라 KpiGrid에 매칭될 선택된 라벨 결정 ('전체'일 때는 선택 해제)
   const currentSelectedLabel = 
     activeTab === '원료' ? '원료 재고' :
@@ -258,7 +276,8 @@ export function SeedInventoryStatusPage() {
     activeTab === '완제품' ? '완제품 재고' : undefined;
 
   return (
-    <section className="screenStack">
+    // 로딩 중일 때 반투명 처리 및 클릭 차단 클래스 적용
+    <section className={`screenStack${loading ? ' screenStack--loading' : ''}`}>
       {/* 품목별 현재 재고 패널 — 위로 이동, 탭버튼을 타이틀과 같은 줄 우측에 배치 */}
       <Panel
         title={
@@ -273,6 +292,7 @@ export function SeedInventoryStatusPage() {
                   onClick={() => {
                     setActiveTab(tab)
                   }}
+                  disabled={loading} // 로딩 중 연타 방지
                 >
                   {tab}
                 </button>
@@ -336,6 +356,7 @@ export function SeedInventoryStatusPage() {
         kpis={seedInventoryKpis} 
         selectedLabel={currentSelectedLabel}
         onCardClick={(kpi) => {
+          if (loading) return; // 로딩 중 클릭 방지
           if (kpi.label.includes('원료')) setActiveTab('원료');
           else if (kpi.label.includes('반제품')) setActiveTab('반제품');
           else if (kpi.label.includes('완제품')) setActiveTab('완제품');
@@ -356,6 +377,7 @@ export function SeedInventoryStatusPage() {
                   const foundIndex = displayedItems.findIndex((i) => i.itemCode === e.target.value)
                   if (foundIndex !== -1) setSelectedIndex(foundIndex)
                 }}
+                disabled={loading}
               >
                 {(['원료', '반제품', '완제품'] as const).map((categoryName) => {
                   const categoryItems = displayedItems.filter((item) => item.category === categoryName)
@@ -380,6 +402,7 @@ export function SeedInventoryStatusPage() {
                     type="button"
                     className={`seedTabButton${trendTab === tab ? ' active' : ''}`}
                     onClick={() => setTrendTab(tab)}
+                    disabled={loading}
                   >
                     {tab}
                   </button>
