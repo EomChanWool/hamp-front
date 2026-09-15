@@ -770,13 +770,6 @@ textarea.tableInput {
   gap: 10px;
 }
 
-@media (max-width: 768px) {
-  .panelHeader {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-}
-
 /* ================================
    RADIO COMPONENT
 ================================ */
@@ -1607,73 +1600,6 @@ textarea.tableInput {
 }
 
 /* ================================
-   RESPONSIVE
-================================ */
-
-@media (max-width: 1180px) {
-  .metricGrid,
-  .equipmentGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .searchBand,
-  .formGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 860px) {
-  .loginPanel,
-  .contentGrid.two,
-  .fieldBoard {
-    grid-template-columns: 1fr;
-  }
-
-  .loginCopy,
-  .loginForm {
-    padding: 34px 24px;
-  }
-
-  .mainContent {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar {
-    position: static;
-    height: auto;
-    overflow: visible;
-  }
-
-  .metricGrid,
-  .equipmentGrid,
-  .searchBand,
-  .formGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .panelHeader {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .permissionGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .progressRow {
-    grid-template-columns: 1fr;
-  }
-
-  .fieldActions {
-    grid-template-columns: 1fr;
-  }
-
-  .fieldActions button.start {
-    grid-column: auto;
-  }
-}
-
-/* ================================
    TIMELINE (LOT 흐름)
 ================================ */
 
@@ -1719,4 +1645,216 @@ textarea.tableInput {
 [data-theme="dark"] .timelineItem {
   background: var(--bg-subtle);
   border-color: var(--border);
+}
+
+/* ================================================================
+   RESPONSIVE
+   1180  : 소형 데스크탑
+   1024  : 태블릿 (가로/세로 공용)
+   860   : 작은 태블릿 · 큰 폰
+   600   : 폰
+================================================================ */
+
+/* ---- ~1180px : 소형 데스크탑 / 큰 태블릿 가로 ---- */
+@media (max-width: 1180px) {
+  .metricGrid,
+  .equipmentGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .searchBand,
+  .formGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---- ~1024px : 태블릿 공용 ---- */
+@media (max-width: 1024px) {
+  .workspace {
+    padding: 16px 16px 32px;
+    gap: 16px;
+  }
+
+  .contentGrid.two,
+  .fieldBoard {
+    grid-template-columns: 1fr;
+  }
+
+  .fieldBoard {
+    min-height: auto;
+  }
+
+  .fieldHero {
+    padding: 32px;
+  }
+
+  .fieldActions {
+    padding: 28px;
+  }
+
+  /* 검색 필터 4열 → 2열, 기간/조회버튼은 한 줄 전체 차지 */
+  .searchBand .serchItem {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .searchBand .serchItem .dateRangeLabel,
+  .searchBand .serchItem .searchActions {
+    grid-column: span 2;
+  }
+
+  .permissionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pageForm {
+    grid-template-columns: 1fr;
+  }
+
+  .detailModal {
+    width: min(600px, 92vw);
+  }
+
+  .detailModalBody {
+    grid-template-columns: 1fr;
+  }
+
+  .equipmentGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .locationGrid,
+  .sensorPanel {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- ~860px : 작은 태블릿 · 큰 폰 (세로 모드 태블릿 포함) ---- */
+@media (max-width: 860px) {
+  .loginPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .loginCopy,
+  .loginForm {
+    padding: 34px 24px;
+  }
+
+  .mainContent {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+    overflow: visible;
+  }
+
+  .metricGrid,
+  .equipmentGrid,
+  .searchBand,
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .searchBand .serchItem {
+    grid-template-columns: 1fr;
+  }
+
+  .searchBand .serchItem .dateRangeLabel,
+  .searchBand .serchItem .searchActions {
+    grid-column: 1;
+  }
+
+  .panelHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .permissionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .progressRow {
+    grid-template-columns: 1fr;
+  }
+
+  .fieldActions {
+    grid-template-columns: 1fr;
+  }
+
+  .fieldActions button.start {
+    grid-column: auto;
+  }
+
+  .timelineList {
+    flex-wrap: wrap;
+  }
+
+  .timelineItem {
+    flex: 1 1 calc(50% - 6px);
+  }
+}
+
+/* ---- ~600px : 폰 ---- */
+@media (max-width: 600px) {
+  .metricGrid {
+    flex-direction: column;
+  }
+
+  .toolbarRow,
+  .rowActions {
+    flex-wrap: wrap;
+  }
+
+  .headerUserInfo span {
+    display: none;
+  }
+
+  .fieldHero {
+    padding: 24px;
+  }
+
+  .fieldHero h2 {
+    font-size: 28px;
+  }
+
+  .fieldActions button {
+    min-height: 90px;
+    font-size: 17px;
+  }
+
+  .fieldActions button.start {
+    font-size: 20px;
+  }
+
+  .equipmentCard strong {
+    font-size: 28px;
+  }
+
+  .detailModal {
+    width: 100vw;
+    height: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    top: 0;
+    left: 0;
+    transform: none;
+  }
+
+  .paginationBtns {
+    position: static;
+    transform: none;
+    justify-content: center;
+    margin-top: 10px;
+  }
+
+  .paginationBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .timelineItem {
+    flex: 1 1 100%;
+  }
 }
