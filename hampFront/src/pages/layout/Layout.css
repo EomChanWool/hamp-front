@@ -1231,45 +1231,137 @@
     color: var(--text-muted, #9aa3b0);
 }
 
-/* 핵심 정보 2x2 카드 그리드 */
-.facilityQuickGrid {
+/* ==========================================
+   상단 헤더 카드(FacilityHeaderCard) 필드 —
+   더 이상 별도의 컴팩트한 카드형(facilityQuickGrid)을 쓰지 않고,
+   하단 "장비 정보" / "공장 정보" / "장비·공장 정보" 섹션과
+   완전히 동일한 크기·간격의 인풋 폼(detailField/detailGrid/detailValue/
+   detailBadge/tableInput)을 그대로 재사용한다.
+   (이 클래스들은 원래 .detailCard 안에서만 스타일이 적용되도록
+   스코프돼 있어서, .detailCard 밖에 있는 .facilityHeaderCard 안에서도
+   똑같이 동작하도록 동일한 수치로 별도 정의함)
+   ========================================== */
+.facilityHeaderCard .detailGrid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    max-width: 520px;
+    gap: 20px 24px;
 }
 
-.facilityQuickItem {
-    background: var(--bg-subtle, #f8fafc);
-    border-radius: 10px;
-    padding: 12px 16px;
+.facilityHeaderCard .detailField {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 12px;
+    min-width: 0;
 }
 
-/* 담당자처럼 검색창+태그 등 공간이 더 필요한 필드는 grid 전체 폭을 차지하게 함 */
-.facilityQuickItem.wide {
-  grid-column: 1 / -1;
+/* 담당자(UserMultiSelect)처럼 태그가 줄바꿈되며 세로로 늘어날 수 있는
+   필드는 2열 그리드 전체 폭을 차지하도록 예외 처리 */
+.facilityHeaderCard .detailField--full {
+    grid-column: 1 / -1;
 }
 
-.facilityQuickLabel {
-    font-size: 12px;
-    color: var(--text-muted, #94a3b8);
-}
-
-.facilityQuickValue {
-    font-size: 15px;
+.facilityHeaderCard .detailField label {
+    font-size: 16px;
     font-weight: 600;
-    color: var(--text-heading, #14181f);
+    color: var(--text-body, #5b6472);
+    padding-left: 4px;
 }
 
-.facilityQuickValue .tableInput {
+.facilityHeaderCard .detailValue {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text-heading, #14181f);
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    word-break: break-word;
+    padding: 14px 18px;
+}
+
+.facilityHeaderCard .detailField:has(.detailBadge),
+.facilityHeaderCard .detailValue:has(.detailBadge) {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 4px 0 !important;
+    min-height: auto !important;
+}
+
+.facilityHeaderCard .tableInput {
     width: 100%;
-    height: 36px;
-    padding: 0 8px;
-    font-size: 14px;
+    height: 60px;
+    padding: 0 20px;
+    font-size: 19px;
+    color: var(--text-heading, #14181f);
+    background: var(--bg-subtle, #fcfcfb);
+    border: 2px solid var(--border-strong, #c7cdd5);
+    border-radius: 12px;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.facilityHeaderCard .tableInput::placeholder {
+    color: var(--text-muted, #9aa3b0);
+}
+
+.facilityHeaderCard .tableInput:hover:not(:disabled) {
+    border-color: var(--text-muted, #9aa3b0);
+}
+
+.facilityHeaderCard .tableInput:focus {
+    background: var(--bg-card, #ffffff);
+    border-color: var(--primary, #0052cc);
+    box-shadow: 0 0 0 4px rgba(0, 82, 204, 0.12);
+}
+
+.facilityHeaderCard .tableInput:disabled {
+    background: var(--border, #e3e6ea);
+    color: var(--text-muted, #9aa3b0);
+    cursor: not-allowed;
+}
+
+.facilityHeaderCard .detailBadge {
+    font-size: 18px;
+    font-weight: 700;
+    padding: 8px 16px;
     border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+}
+
+.facilityHeaderCard .detailBadge.success,
+.facilityHeaderCard .detailBadge.good {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.facilityHeaderCard .detailBadge.danger {
+    background: #fde8e8;
+    color: #991b1b;
+}
+
+.facilityHeaderCard .detailBadge.warn {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.facilityHeaderCard .detailBadge.muted {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.facilityHeaderCard .detailBadge.success::before,
+.facilityHeaderCard .detailBadge.danger::before,
+.facilityHeaderCard .detailBadge.warn::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+    margin-right: 6px;
 }
 
 /* 액션 버튼 행 */
@@ -1499,8 +1591,12 @@
         flex: none;
     }
 
-    .facilityQuickGrid {
-        max-width: none;
+    .facilityHeaderCard .detailGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .facilityCreateFieldsCol .createGrid2Cols {
+        grid-template-columns: 1fr;
     }
 
     .facilityCreateFieldGrid {
