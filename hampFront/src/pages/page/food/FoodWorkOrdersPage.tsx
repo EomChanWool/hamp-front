@@ -148,7 +148,6 @@ export function FoodWorkOrdersPage() {
   const navigate = useNavigate()
   const [filteredWorkOrders, setFilteredWorkOrders] = useState<WorkOrderRow[]>(dummyWorkOrders)
   const [page, setPage] = useState(0)
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('전체 작업지시')
 
   const workDateStartRef = useRef<HTMLInputElement>(null)
   const workDateEndRef = useRef<HTMLInputElement>(null)
@@ -179,23 +178,11 @@ export function FoodWorkOrdersPage() {
     { label: '지연', value: `${kpiStats.delay}건`, tone: 'danger' },
   ]
 
-  const handleKpiClick = (kpi: KpiItem) => {
-    setSelectedStatusFilter(kpi.label)
-
-    if (kpi.label === '전체 작업지시') {
-      setFilteredWorkOrders(dummyWorkOrders)
-    } else {
-      setFilteredWorkOrders(dummyWorkOrders.filter((o) => o.status === kpi.label))
-    }
-  }
-
   const handleSearch = () => {
     const workDateStart = workDateStartRef.current?.value ?? ''
     const workDateEnd = workDateEndRef.current?.value ?? ''
     const itemName = itemNameRef.current?.value.trim() ?? ''
     const status = statusRef.current?.value.trim() ?? ''
-
-    setSelectedStatusFilter('')
 
     setFilteredWorkOrders(
       dummyWorkOrders.filter(
@@ -212,7 +199,6 @@ export function FoodWorkOrdersPage() {
     ;[workDateStartRef, workDateEndRef, itemNameRef, statusRef].forEach((ref) => {
       if (ref.current) ref.current.value = ''
     })
-    setSelectedStatusFilter('전체 작업지시')
     setFilteredWorkOrders(dummyWorkOrders)
   }
 
@@ -272,7 +258,7 @@ export function FoodWorkOrdersPage() {
         accessorKey: 'orderCode',
         header: '연결 수주',
         cell: ({ row }) => (
-          <span style={{ fontWeight: 500, color: '#2563eb', fontSize: '13px' }}>
+          <span style={{ fontWeight: 500, fontSize: '13px' }}>
             {row.original.orderCode}
           </span>
         ),
@@ -318,8 +304,6 @@ export function FoodWorkOrdersPage() {
     <section className="screenStack" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <KpiGrid
         kpis={kpis}
-        onCardClick={handleKpiClick}
-        selectedLabel={selectedStatusFilter}
       />
 
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
