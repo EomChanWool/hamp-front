@@ -1,13 +1,18 @@
 import { apiClient } from '@/api/apiClient';
 import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
+/** 작업지시 라인 요청 (등록/수정 시) */
+export interface WorkOrderLineRequest {
+    salesOrderLineId: number;
+    instructQty: number;
+}
+
 /** 작업지시 등록 요청 */
 export interface WorkOrderCreateRequest {
-    workId: string;
-    workDate: string | null;
-    status?: string | null;
+    workDate: string; // 예: "2026-09-01"
+    status?: string | null; // "WAIT" | "PROGRESS" | "DONE" | "DELAY"
     managerId?: string | null;
-    lines?: WorkOrderLineRequest[];
+    lines: WorkOrderLineRequest[];
 }
 
 /** 작업지시 정보 수정 요청 */
@@ -18,36 +23,7 @@ export interface WorkOrderUpdateRequest {
     lines: WorkOrderLineRequest[];
 }
 
-/** 작업지시 목록 조회 아이템 응답 */
-export interface WorkOrderResponse {
-    workId: string;
-    workDate: string;
-    status: string;
-    managerId: string;
-    managerNm: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
-/** 작업지시 상세 조회 응답 */
-export interface WorkOrderDetailResponse {
-    workId: string;
-    workDate: string;
-    status: string;
-    managerId: string;
-    managerNm: string;
-    createdAt: string;
-    updatedAt: string;
-    lines: WorkOrderLineResponse[];
-}
-
-/** 작업지시라인 등록 요청 */
-export interface WorkOrderLineRequest {
-    salesOrderLineId: number;
-    instructQty: number;
-}
-
-/** 작업지시라인 등록 응답 */
+/** 작업지시 라인 상세 응답 */
 export interface WorkOrderLineResponse {
     workOrderLineId: number;
     workId: string;
@@ -58,6 +34,33 @@ export interface WorkOrderLineResponse {
     instructQty: number;
     createdAt: string;
     updatedAt: string;
+}
+
+/** 작업지시 목록 조회 아이템 응답 (요약 정보 포함) */
+export interface WorkOrderResponse {
+    workId: string;
+    workDate: string;
+    status: string;
+    managerId: string;
+    managerNm: string;
+    orderCodes: string[];
+    itemNms: string[];
+    totalInstructQty: number;
+    lineCount: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+/** 작업지시 단건 상세 조회 응답 (lines 포함) */
+export interface WorkOrderDetailResponse {
+    workId: string;
+    workDate: string;
+    status: string;
+    managerId: string;
+    managerNm: string;
+    createdAt: string;
+    updatedAt: string;
+    lines: WorkOrderLineResponse[];
 }
 
 /** 작업지시 상태별 건수 아이템 타입 */
@@ -96,37 +99,39 @@ export const WorkOrderApi = {
     getList: async (params?: {
         workId?: string;
         status?: string;
-        workDate?: string;
+        managerId?: string;
+        workDateFrom?: string;
+        workDateTo?: string;
         page?: number;
         size?: number;
         sort?: string;
         [key: string]: any;
     }): Promise<ApiResponsePageWorkOrderResponse> => {
-        const res = await apiClient.get('/work-orders', { params });
+        const res = await apiClient.get('/api/work-orders', { params });
         return res.data;
     },
 
     /** 작업지시 단건 상세 조회 */
     getDetail: async (workId: string): Promise<ApiResponseWorkOrderDetailResponse> => {
-        const res = await apiClient.get(`/work-orders/${workId}`);
+        const res = await apiClient.get(`/api/work-orders/${workId}`);
         return res.data;
     },
 
     /** 작업지시 등록 */
     create: async (data: WorkOrderCreateRequest): Promise<ApiResponseWorkOrderResponse> => {
-        const res = await apiClient.post('/work-orders', data);
+        const res = await apiClient.post('/api/work-orders', data);
         return res.data;
     },
 
     /** 작업지시 수정 */
     update: async (workId: string, data: WorkOrderUpdateRequest): Promise<ApiResponseWorkOrderResponse> => {
-        const res = await apiClient.put(`/work-orders/${workId}`, data);
+        const res = await apiClient.put(`/api/work-orders/${workId}`, data);
         return res.data;
     },
 
     /** 작업지시 삭제 */
     delete: async (workId: string): Promise<ApiResponse<string>> => {
-        const res = await apiClient.delete(`/work-orders/${workId}`);
+        const res = await apiClient.delete(`/api/work-orders/${workId}`);
         return res.data;
     },
 
@@ -138,7 +143,7 @@ export const WorkOrderApi = {
         workDateTo?: string;
         [key: string]: any;
     }): Promise<ApiResponseWorkOrderStatusSummaryResponse> => {
-        const res = await apiClient.get('/work-orders/summary', { params });
+        const res = await apiClient.get('/api/work-orders/summary', { params });
         return res.data;
     },
 };
