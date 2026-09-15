@@ -4,17 +4,22 @@
 .loginPage {
   min-height: 100vh;
   background: url("/src/assets/images/login-bg.png") no-repeat center center;
+  background-size: cover;
   display: grid;
   place-items: center;
   padding: 40px 20px;
+  box-sizing: border-box;
 }
 
 .loginPanel {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 380px;
 }
 
 .loginForm {
+  width: 100%;
   padding: 40px;
   display: flex;
   flex-direction: column;
@@ -24,6 +29,7 @@
   backdrop-filter: blur(10px);
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  box-sizing: border-box;
 }
 
 .loginLogo {
@@ -46,7 +52,7 @@
 }
 
 .loginForm label {
-  width: 300px;
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -64,6 +70,7 @@
 
 .loginForm label input {
   flex: 1;
+  min-width: 0;
   background: transparent;
   border: none;
   color: #fff;
@@ -104,6 +111,7 @@
   width: 18px;
   height: 18px;
   opacity: 0.7;
+  flex-shrink: 0;
 }
 
 .loginForm .primaryButton {
@@ -129,4 +137,23 @@
   /* 위아래 간격 조정 */
   word-break: keep-all;
   /* 한글 단어 단위 줄바꿈 */
+}
+
+/* ================================
+   반응형
+   480 : 작은 폰 — 여백/폰트 축소
+================================ */
+@media (max-width: 480px) {
+  .loginPage {
+    padding: 24px 16px;
+  }
+
+  .loginForm {
+    padding: 28px 20px;
+    gap: 14px;
+  }
+
+  .loginLogo h2 {
+    font-size: 22px;
+  }
 }
