@@ -40,6 +40,9 @@ export function SeedInventoryStatusPage() {
   const [apiTrendData, setApiTrendData] = useState<ItemStockTrendResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
 
+  // 차트 막대 마우스 호버 시 툴팁 표시를 위한 상태 (현재 마우스가 올라간 데이터의 label 보관)
+  const [hoveredBar, setHoveredBar] = useState<string | null>(null)
+
   // 탭 문자열을 백엔드 category 코드(number)로 변환하는 매핑
   const tabToCategoryMap: Record<'전체' | '원료' | '반제품' | '완제품', number | undefined> = {
     '전체': undefined,
@@ -105,9 +108,10 @@ export function SeedInventoryStatusPage() {
     }
   }, [activeTab])
 
-  // 탭이 변경될 때 선택된 인덱스 초기화
+  // 탭이 변경될 때 선택된 인덱스 초기화 및 툴팁 초기화
   useEffect(() => {
     setSelectedIndex(0)
+    setHoveredBar(null)
   }, [activeTab])
 
   // 이미 백엔드에서 카테고리별로 필터링되어 오므로 그대로 사용
@@ -158,13 +162,35 @@ export function SeedInventoryStatusPage() {
 
   const currentTrendData = useMemo(() => {
     if (apiTrendData && apiTrendData.points && apiTrendData.points.length > 0) {
-      return apiTrendData.points.map((p) => ({
-        label: p.periodStart,
-        value: p.qty,
-      }))
+      return apiTrendData.points.map((p) => {
+        let formattedLabel = p.periodStart
+
+        if (trendTab === '월별') {
+          formattedLabel = p.periodStart.substring(0, 7)
+        } else if (trendTab === '분기별') {
+          // 만약 백엔드에서 "2026-01" 또는 "2026-Q1" 등으로 올 때 변환
+          const [year, monthOrQ] = p.periodStart.split(/[-Q]/)
+          if (year && monthOrQ) {
+            const shortYear = year.slice(-2)
+            const m = parseInt(monthOrQ, 10)
+            const q = m <= 3 ? 1 : m <= 6 ? 2 : m <= 9 ? 3 : 4
+            formattedLabel = `${shortYear} Q${q}`
+          } else {
+            // 이미 "2026-Q1" 형태인 경우 등
+            formattedLabel = p.periodStart.replace(/^20/, '')
+          }
+        } else if (trendTab === '연도별') {
+          formattedLabel = p.periodStart.substring(0, 4)
+        }
+
+        return {
+          label: formattedLabel,
+          value: p.qty,
+        }
+      })
     }
     return []
-  }, [apiTrendData])
+  }, [apiTrendData, trendTab])
 
   const trendMax = useMemo(() => {
     if (currentTrendData.length === 0) return 9000
@@ -430,8 +456,32 @@ export function SeedInventoryStatusPage() {
               {currentTrendData.length > 0 ? (
                 currentTrendData.map((data) => {
                   const heightPercent = Math.min((data.value / trendMax) * 100, 100)
+                  const isHovered = hoveredBar === data.label
+
                   return (
-                    <div key={data.label} className="seedChartBarCol">
+                    <div 
+                      key={data.label} 
+                      className="seedChartBarCol"
+                      onMouseEnter={() => setHoveredBar(data.label)}
+                      onMouseLeave={() => setHoveredBar(null)}
+                    >
+                      {/* 마우스 호버 시 노출되는 커스텀 툴팁 UI */}
+                      {isHovered && (
+                        <div 
+                          className="seedChartTooltip"
+                          style={{ bottom: `calc(${heightPercent}% + 12px)` }}
+                        >
+                          <div className="seedChartTooltip__title">
+                            {data.label}
+                          </div>
+                          <div className="seedChartTooltip__content">
+                            <span className="seedChartTooltip__colorBox" />
+                            <span className="seedChartTooltip__value">{data.value.toLocaleString()}</span>
+                            <span className="seedChartTooltip__unit">kg</span>
+                          </div>
+                        </div>
+                      )}
+
                       <div
                         className="seedChartBar"
                         style={{ height: `${heightPercent}%` }}
