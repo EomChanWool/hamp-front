@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FolderIcon, FolderOpenIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { menuRoutes } from "@/router";
@@ -58,6 +58,49 @@ export function SideMenu({ collapsed }: SideMenuProps) {
   const [openGroup, setOpenGroup] = useState<string | null>(currentActiveGroupTitle);
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
 
+  // ── 플라이아웃(collapsed 상태의 팝업 서브메뉴) 위치 계산용 ──────────────
+  // .navItems가 position:fixed인데 top 값이 CSS에 없어서, 사이드바를
+  // 스크롤한 상태에서 열면 실제 버튼 위치와 어긋나 화면 밖으로 벗어나던
+  // 문제를 해결하기 위해 hover 시점의 실제 좌표(getBoundingClientRect)를
+  // 계산해서 인라인 스타일로 꽂아준다.
+  const sidebarRef = useRef<HTMLElement | null>(null);
+  const headerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [flyoutPos, setFlyoutPos] = useState<{ top: number; left: number } | null>(null);
+
+  const updateFlyoutPosition = (title: string) => {
+    const btn = headerRefs.current[title];
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    setFlyoutPos({ top: rect.top, left: rect.right + 8 });
+  };
+
+  const handleGroupEnter = (title: string) => {
+    if (!collapsed) return;
+    setHoveredGroup(title);
+    updateFlyoutPosition(title);
+  };
+
+  const handleGroupLeave = () => {
+    setHoveredGroup(null);
+  };
+
+  // 사이드바를 스크롤하거나 창 크기가 바뀌는 동안(플라이아웃이 열려있을 때)
+  // 실시간으로 위치를 다시 계산해서 버튼을 계속 따라가게 함
+  useEffect(() => {
+    if (!collapsed || !hoveredGroup) return;
+
+    const handleReposition = () => updateFlyoutPosition(hoveredGroup);
+
+    const sidebarEl = sidebarRef.current;
+    sidebarEl?.addEventListener("scroll", handleReposition, { passive: true });
+    window.addEventListener("resize", handleReposition);
+
+    return () => {
+      sidebarEl?.removeEventListener("scroll", handleReposition);
+      window.removeEventListener("resize", handleReposition);
+    };
+  }, [collapsed, hoveredGroup]);
+
   // URL 주소가 바뀔 때마다 활성화된 그룹 자동 확장
   useEffect(() => {
     if (currentActiveGroupTitle) {
@@ -78,7 +121,7 @@ export function SideMenu({ collapsed }: SideMenuProps) {
   }
 
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" ref={sidebarRef}>
       {/* 내부 스크롤과 플라이아웃 메뉴 잘림 방지를 위해 Wrapper 추가 */}
       <div className="sidebarMenuWrapper">
         <nav className="navMenu" aria-label="주 메뉴">
@@ -96,6 +139,7 @@ export function SideMenu({ collapsed }: SideMenuProps) {
 
             const isOpen = openGroup === group.title;
             const hasActiveItem = currentActiveGroupTitle === group.title;
+            const isFlyoutOpen = collapsed && hoveredGroup === group.title;
 
             // 3. 소메뉴 필터링: hidden이 아니면서, 백엔드가 허용한 urlPath에 포함되는 것만 추출
             const visibleItems = group.items.filter((item) => {
@@ -114,14 +158,15 @@ export function SideMenu({ collapsed }: SideMenuProps) {
                 className={[
                   "navGroup",
                   hasActiveItem ? "current" : "",
-                  collapsed && hoveredGroup === group.title ? "flyoutOpen" : "",
+                  isFlyoutOpen ? "flyoutOpen" : "",
                 ].join(" ")}
-                onMouseEnter={() => collapsed && setHoveredGroup(group.title)}
-                onMouseLeave={() => collapsed && setHoveredGroup(null)}
+                onMouseEnter={() => handleGroupEnter(group.title)}
+                onMouseLeave={handleGroupLeave}
               >
                 {/* 대메뉴 헤더 토글 버튼 */}
                 <button
                   type="button"
+                  ref={(el) => { headerRefs.current[group.title] = el; }}
                   className="navGroupHeader"
                   aria-expanded={isOpen}
                   onClick={() => !collapsed && toggleGroup(group.title)}
@@ -135,7 +180,10 @@ export function SideMenu({ collapsed }: SideMenuProps) {
                 </button>
 
                 {/* 소메뉴 아이템 리스트 영역 */}
-                <div className={`navItems ${isOpen && !collapsed ? "open" : ""}`}>
+                <div
+                  className={`navItems ${isOpen && !collapsed ? "open" : ""}`}
+                  style={isFlyoutOpen && flyoutPos ? { top: flyoutPos.top, left: flyoutPos.left } : undefined}
+                >
                   {visibleItems.map((item) => {
                     const fullPath = `${group.path}/${item.path}`.replace(/\/+/g, "/");
 
