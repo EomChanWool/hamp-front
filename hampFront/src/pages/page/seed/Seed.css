@@ -459,8 +459,16 @@
 .seedTrendControls {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
-  flex-shrink: 0;
+  /* 기존 flex-shrink:0 때문에 품목 select + 탭그룹이 절대 줄어들지
+     않아서, 좁은 화면에서 부모(.seedTrendPanel__header)가 줄바꿈돼도
+     이 블록 내부에서 다시 넘치던 문제 수정 */
+}
+
+.seedTrendControls .seedSelect {
+  flex: 1 1 180px;
+  min-width: 0;
 }
 
 .seedSelect {
@@ -610,8 +618,37 @@
 }
 
 /* =========================================================================
-   좁은 화면 대응
+   반응형
+   1024 : 태블릿 — 차트/카드 여백 축소
+   900  : KPI 3열 → 1열 (기존)
+   720  : 재고 리스트 테이블 → 카드형 (기존)
+   480  : 폰 — 폰트/차트 높이 축소
    ========================================================================= */
+
+/* ---- ~1024px : 태블릿 ---- */
+@media (max-width: 1024px) {
+  .seedChartArea {
+    height: 200px;
+  }
+
+  .inventorySummaryCard__valueArea span:first-child {
+    font-size: 24px;
+  }
+
+  .seedTrendPanel {
+    gap: 16px;
+  }
+}
+
+/* ---- ~900px : KPI 3열 → 1열 ---- */
+@media (max-width: 900px) {
+  .screenStack .kpiGrid,
+  .screenStack [class*="kpiGrid"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ---- ~720px : 재고 리스트 테이블 → 카드형 ---- */
 @media (max-width: 720px) {
   .seedTableHeader {
     display: none;
@@ -627,11 +664,62 @@
   .seedItemRow__stock { grid-area: stock; }
   .seedItemRow__time { grid-area: time; }
   .inventorySummaryCard__badgeIcon { display: none; }
+
+  .seedChartWrapper {
+    gap: 8px;
+  }
+
+  .seedChartYAxis {
+    min-width: 28px;
+    font-size: 10px;
+  }
 }
 
-@media (max-width: 900px) {
-  .screenStack .kpiGrid,
-  .screenStack [class*="kpiGrid"] {
-    grid-template-columns: 1fr !important;
+/* ---- ~480px : 폰 ---- */
+@media (max-width: 480px) {
+  .inventorySummaryCard__valueArea span:first-child {
+    font-size: 20px;
+  }
+
+  .inventorySummaryCard__stats {
+    flex-wrap: wrap;
+  }
+
+  .inventorySummaryCard__statChip {
+    flex: 1 1 100%;
+  }
+
+  .seedTabGroup {
+    height: 32px;
+  }
+
+  .seedTabButton {
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  .seedChartArea {
+    height: 160px;
+    padding-bottom: 20px;
+  }
+
+  .seedChartBarLabel {
+    font-size: 10px;
+    bottom: -18px;
+  }
+
+  .seedSelect {
+    height: 32px;
+    font-size: 11px;
+    padding: 0 8px;
+  }
+
+  .seedTrendControls .seedSelect {
+    flex: 1 1 100%;
+  }
+
+  .seedTrendControls .seedTabGroup {
+    flex: 1 1 100%;
+    justify-content: center;
   }
 }
