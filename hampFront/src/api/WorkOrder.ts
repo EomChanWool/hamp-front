@@ -60,6 +60,18 @@ export interface WorkOrderLineResponse {
     updatedAt: string;
 }
 
+/** 작업지시 상태별 건수 아이템 타입 */
+export interface WorkOrderStatusCount {
+    status: string; // WAIT / PROGRESS / DONE / DELAY
+    count: number;
+}
+
+/** 작업지시 상태별 건수 집계 응답 타입 */
+export interface WorkOrderStatusSummaryResponse {
+    total: number;
+    byStatus: WorkOrderStatusCount[];
+}
+
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 작업지시 단건/기본 응답 API 최종 응답 타입 */
@@ -73,6 +85,9 @@ export type PageWorkOrderResponse = PageResponse<WorkOrderResponse>;
 
 /** 작업지시 목록 페이징 API 최종 응답 타입 */
 export type ApiResponsePageWorkOrderResponse = ApiResponsePage<WorkOrderResponse>;
+
+/** 작업지시 상태별 건수 집계 API 최종 응답 타입 */
+export type ApiResponseWorkOrderStatusSummaryResponse = ApiResponse<WorkOrderStatusSummaryResponse>;
 
 // ── 작업지시 관리 API 함수 ────────────────────────────────────────────────────────
 
@@ -112,6 +127,18 @@ export const WorkOrderApi = {
     /** 작업지시 삭제 */
     delete: async (workId: string): Promise<ApiResponse<string>> => {
         const res = await apiClient.delete(`/work-orders/${workId}`);
+        return res.data;
+    },
+
+    /** 작업지시 상태별 건수 집계 조회 */
+    getSummary: async (params?: {
+        workId?: string;
+        managerId?: string;
+        workDateFrom?: string;
+        workDateTo?: string;
+        [key: string]: any;
+    }): Promise<ApiResponseWorkOrderStatusSummaryResponse> => {
+        const res = await apiClient.get('/work-orders/summary', { params });
         return res.data;
     },
 };
