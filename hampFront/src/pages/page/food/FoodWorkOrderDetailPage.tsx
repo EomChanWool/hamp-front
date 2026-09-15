@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import Barcode from "react-barcode"; // 1. 바코드 라이브러리 임포트
 import { Badge } from "@/components/common/Badge";
 import '@/pages/page/master/MasterItem.css';
 
@@ -75,14 +76,17 @@ function LabelPrintModal({ isOpen, onClose, selectedLines, workOrderNo }: LabelP
                   <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', marginBottom: '12px' }}>
                     지시수량 <span style={{ fontWeight: 700 }}>{line.instructQty}</span>
                   </div>
-                  {/* 바코드 시각화 */}
-                  <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '8px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                    <div style={{ fontFamily: 'monospace', letterSpacing: '2px', fontSize: '18px', fontWeight: 'bold', lineHeight: '1', color: '#0f172a' }}>
-                      ||||| ||| || |||| ||
-                    </div>
-                    <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', fontWeight: 500 }}>
-                      {line.barcode}
-                    </span>
+                  
+                  {/* 실제 바코드 컴포넌트 적용 (모달용 크기 조절) */}
+                  <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '8px', overflowX: 'auto' }}>
+                    <Barcode 
+                      value={line.barcode} 
+                      width={1.3} 
+                      height={40} 
+                      fontSize={11} 
+                      displayValue={true} 
+                      margin={0}
+                    />
                   </div>
                 </div>
               ))}
@@ -235,7 +239,7 @@ export function FoodWorkOrderDetailPage() {
             {/* 테이블 헤더 */}
             <div style={{ 
               display: 'grid', 
-              gridTemplateColumns: '50px 2fr 2fr 1fr 2fr', 
+              gridTemplateColumns: '50px 2fr 2fr 1fr 2.5fr', 
               background: '#f1f5f9', 
               padding: '12px 16px', 
               fontSize: '13px', 
@@ -264,7 +268,7 @@ export function FoodWorkOrderDetailPage() {
                 key={line.id} 
                 style={{ 
                   display: 'grid', 
-                  gridTemplateColumns: '50px 2fr 2fr 1fr 2fr', 
+                  gridTemplateColumns: '50px 2fr 2fr 1fr 2.5fr', 
                   gap: '12px', 
                   padding: '16px', 
                   alignItems: 'center', 
@@ -297,24 +301,16 @@ export function FoodWorkOrderDetailPage() {
                   {line.instructQty}
                 </div>
 
-                {/* 바코드 시각화 영역 */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                  <div style={{ 
-                    fontFamily: 'monospace', 
-                    letterSpacing: '2px', 
-                    fontSize: '20px', 
-                    fontWeight: 'bold', 
-                    lineHeight: '1',
-                    color: '#0f172a',
-                    height: '28px',
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}>
-                    ||||| ||| || |||| ||
-                  </div>
-                  <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', fontWeight: 500 }}>
-                    {line.barcode}
-                  </span>
+                {/* 실제 바코드 컴포넌트 적용 (테이블용) */}
+                <div style={{ display: 'flex', alignItems: 'center', overflowX: 'auto' }}>
+                  <Barcode 
+                    value={line.barcode} 
+                    width={1.2} 
+                    height={38} 
+                    fontSize={11} 
+                    displayValue={true} 
+                    margin={0}
+                  />
                 </div>
 
               </div>
