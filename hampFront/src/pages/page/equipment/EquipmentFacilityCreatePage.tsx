@@ -200,54 +200,49 @@ export function EquipmentFacilityCreatePage() {
                                 </div>
                             </div>
 
-                            {/* 현재상태 / 사용여부 / 담당자 — 상세화면 수정모드(facilityQuickGrid)와
-                                동일한 카드형 레이아웃으로 통일 */}
-                            <div className="facilityQuickGrid">
-                                <div className="facilityQuickItem">
-                                    <span className="facilityQuickLabel">현재상태</span>
-                                    <div className="facilityQuickValue">
-                                        <select
-                                            className="tableInput"
-                                            value={form.currentStatus}
-                                            disabled={isSubmitting}
-                                            onChange={(e) => handleChange("currentStatus", e.target.value)}
-                                        >
-                                            <option value="0">정지</option>
-                                            <option value="1">작동</option>
-                                            <option value="2">고장</option>
-                                        </select>
-                                    </div>
+                            {/* 현재상태 / 사용여부 / 담당자 — 하단 "장비/공장 정보" 섹션과 동일한
+                                인풋 폼 스타일(createField)로 통일하고, 담당자도 기본 2열 그리드
+                                안에 함께 배치한다 (더 이상 wide로 폭을 넓히지 않음) */}
+                            <div className="createGrid2Cols">
+                                <div className="createField">
+                                    <label>현재상태</label>
+                                    <select
+                                        className="tableInput"
+                                        value={form.currentStatus}
+                                        disabled={isSubmitting}
+                                        onChange={(e) => handleChange("currentStatus", e.target.value)}
+                                    >
+                                        <option value="0">정지</option>
+                                        <option value="1">작동</option>
+                                        <option value="2">고장</option>
+                                    </select>
                                 </div>
 
-                                <div className="facilityQuickItem">
-                                    <span className="facilityQuickLabel">사용여부</span>
-                                    <div className="facilityQuickValue">
-                                        <select
-                                            className="tableInput"
-                                            value={form.useYn ? "true" : "false"}
-                                            disabled={isSubmitting}
-                                            onChange={(e) => handleChange("useYn", e.target.value === "true")}
-                                        >
-                                            <option value="true">사용</option>
-                                            <option value="false">미사용</option>
-                                        </select>
-                                    </div>
+                                <div className="createField">
+                                    <label>사용여부</label>
+                                    <select
+                                        className="tableInput"
+                                        value={form.useYn ? "true" : "false"}
+                                        disabled={isSubmitting}
+                                        onChange={(e) => handleChange("useYn", e.target.value === "true")}
+                                    >
+                                        <option value="true">사용</option>
+                                        <option value="false">미사용</option>
+                                    </select>
                                 </div>
 
-                                {/* 담당자 다중선택 — 검색+태그 방식(UserMultiSelect)이라 폭이 더 필요해서
-                                    facilityQuickItem.wide로 그리드 전체 폭을 차지하게 함 */}
-                                <div className="facilityQuickItem wide">
-                                    <span className="facilityQuickLabel">
-                                        담당자 (다중 선택) · 총 {userOptions.length}명 중 {form.managerUserIds.length}명 선택
-                                    </span>
-                                    <div className="facilityQuickValue">
-                                        <UserMultiSelect
-                                            options={userOptions}
-                                            value={form.managerUserIds}
-                                            onChange={(userIds) => handleChange("managerUserIds", userIds)}
-                                            disabled={isSubmitting}
-                                        />
-                                    </div>
+                                {/* 담당자 다중 선택 — 태그가 줄바꿈되며 세로로 늘어날 수 있어
+                                    2열 그리드 전체 폭을 차지하도록 fullWidth 적용 */}
+                                <div className="createField fullWidth">
+                                    <label>
+                                        담당자 (총 {userOptions.length}명 중 {form.managerUserIds.length}명 선택)
+                                    </label>
+                                    <UserMultiSelect
+                                        options={userOptions}
+                                        value={form.managerUserIds}
+                                        onChange={(userIds) => handleChange("managerUserIds", userIds)}
+                                        disabled={isSubmitting}
+                                    />
                                 </div>
                             </div>
                         </div>

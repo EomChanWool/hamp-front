@@ -497,65 +497,64 @@ export function EquipmentFacilityDetailPage() {
               {`${form.eqNm || "장비 미지정"} · ${form.facNm || "공장 미지정"}`}
             </div>
 
-            <div className="facilityQuickGrid">
-              <div className="facilityQuickItem">
-                <span className="facilityQuickLabel">사용여부</span>
-                <div className="facilityQuickValue">
-                  {isEditing ? (
-                    <select
-                      className="tableInput"
-                      value={form.useYn === "true" ? "true" : "false"}
-                      disabled={isBusy}
-                      onChange={(e) => setFormField("useYn", e.target.value)}
-                    >
-                      <option value="true">사용</option>
-                      <option value="false">미사용</option>
-                    </select>
-                  ) : (
+            {/* 사용여부 / 현재상태 / 담당자 — 하단 "장비 정보" / "공장 정보" 섹션과
+                동일한 인풋 폼 스타일(detailField/detailValue)로 통일하고,
+                담당자도 기본 2열 그리드(detailGrid) 안에 함께 배치한다
+                (더 이상 wide로 폭을 넓히지 않음) */}
+            <div className="detailGrid">
+              <div className="detailField">
+                <label>사용여부</label>
+                {isEditing ? (
+                  <select
+                    className="tableInput"
+                    value={form.useYn === "true" ? "true" : "false"}
+                    disabled={isBusy}
+                    onChange={(e) => setFormField("useYn", e.target.value)}
+                  >
+                    <option value="true">사용</option>
+                    <option value="false">미사용</option>
+                  </select>
+                ) : (
+                  <div className="detailValue">
                     <span className={`detailBadge ${form.useYn === "true" ? "good" : "muted"}`}>
                       {form.useYn === "true" ? "사용" : "미사용"}
                     </span>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
-              <div className="facilityQuickItem">
-                <span className="facilityQuickLabel">현재상태</span>
-                <div className="facilityQuickValue">
-                  {isEditing ? (
-                    <select
-                      className="tableInput"
-                      value={form.currentStatus}
-                      disabled={isBusy}
-                      onChange={(e) => setFormField("currentStatus", e.target.value)}
-                    >
-                      <option value="0">정지</option>
-                      <option value="1">작동</option>
-                      <option value="2">고장</option>
-                    </select>
-                  ) : (
-                    renderStatusBadge(form.currentStatus)
-                  )}
-                </div>
+              <div className="detailField">
+                <label>현재상태</label>
+                {isEditing ? (
+                  <select
+                    className="tableInput"
+                    value={form.currentStatus}
+                    disabled={isBusy}
+                    onChange={(e) => setFormField("currentStatus", e.target.value)}
+                  >
+                    <option value="0">정지</option>
+                    <option value="1">작동</option>
+                    <option value="2">고장</option>
+                  </select>
+                ) : (
+                  <div className="detailValue">{renderStatusBadge(form.currentStatus)}</div>
+                )}
               </div>
 
-              {/* 담당자 다중 선택 영역 — 수정모드에서는 검색+태그 방식(UserMultiSelect).
-                  검색+태그 UI가 폭을 더 쓰기 때문에 수정모드일 때만 wide로 확장하고,
-                  조회모드(텍스트 나열)일 때는 기존처럼 좁은 카드로 되돌아간다. */}
-              <div className={`facilityQuickItem${isEditing ? " wide" : ""}`}>
-                <span className="facilityQuickLabel">담당자</span>
-                <div className="facilityQuickValue">
-                  {isEditing ? (
-                    <UserMultiSelect
-                      options={userOptions}
-                      value={currentManagerUserIds}
-                      onChange={(userIds) => setFormField("managerUserIds", userIds)}
-                      disabled={isBusy}
-                    />
-                  ) : (
-                    <span>{displayManagerNames}</span>
-                  )}
-                </div>
+              {/* 담당자 다중 선택 — 태그가 줄바꿈되며 세로로 늘어날 수 있어
+                  2열 그리드 전체 폭을 차지하도록 detailField--full 적용 */}
+              <div className="detailField detailField--full">
+                <label>담당자</label>
+                {isEditing ? (
+                  <UserMultiSelect
+                    options={userOptions}
+                    value={currentManagerUserIds}
+                    onChange={(userIds) => setFormField("managerUserIds", userIds)}
+                    disabled={isBusy}
+                  />
+                ) : (
+                  <div className="detailValue">{displayManagerNames}</div>
+                )}
               </div>
             </div>
           </div>
