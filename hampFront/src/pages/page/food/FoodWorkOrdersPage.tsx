@@ -226,7 +226,7 @@ export function FoodWorkOrdersPage() {
         accessorKey: 'manager',
         header: '담당자',
         cell: ({ row }) => (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}>
             <span style={{ 
               display: 'inline-flex', 
               alignItems: 'center', 
@@ -267,7 +267,7 @@ export function FoodWorkOrdersPage() {
                   border: '1px solid #cbd5e1', 
                   color: '#334155', 
                   fontSize: '11px', 
-                  padding: '2px 8px', 
+                  padding: '4px 8px', 
                   borderRadius: '4px',
                   fontWeight: 500
                 }}

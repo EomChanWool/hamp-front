@@ -550,6 +550,53 @@
   font-size: 13px;
 }
 
+/* =========================================================================
+   차트 툴팁 스타일 
+   ========================================================================= */
+.seedChartTooltip {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  white-space: nowrap;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.seedChartTooltip__title {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.seedChartTooltip__content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #0f172a;
+}
+
+.seedChartTooltip__colorBox {
+  width: 10px;
+  height: 10px;
+  background: var(--primary, #3b82f6);
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.seedChartTooltip__value {
+  font-weight: 700;
+}
+
+.seedChartTooltip__unit {
+  color: #64748b;
+}
+
 /* 증가수량 (빨강) */
 .qtyIncreaseText {
     color: #ef4444;
