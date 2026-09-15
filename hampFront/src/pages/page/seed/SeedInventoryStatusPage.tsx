@@ -454,13 +454,13 @@ export function SeedInventoryStatusPage() {
               ))}
 
               {currentTrendData.length > 0 ? (
-                currentTrendData.map((data) => {
+                currentTrendData.map((data, index) => {
                   const heightPercent = Math.min((data.value / trendMax) * 100, 100)
                   const isHovered = hoveredBar === data.label
 
                   return (
                     <div 
-                      key={data.label} 
+                      key={`${data.label}-${index}`}
                       className="seedChartBarCol"
                       onMouseEnter={() => setHoveredBar(data.label)}
                       onMouseLeave={() => setHoveredBar(null)}
