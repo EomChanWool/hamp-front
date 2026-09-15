@@ -5,7 +5,6 @@ import { Panel } from '@components/card/Panel'
 import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
-import { KpiGrid, type KpiItem } from '@/components/kpi/KpiGrid'
 import { useNavigate } from 'react-router-dom'
 
 interface WorkOrderRow {
@@ -170,14 +169,6 @@ export function FoodWorkOrdersPage() {
     return { total, wait, progress, done, delay }
   }, [])
 
-  const kpis: KpiItem[] = [
-    { label: '전체 작업지시', value: `${kpiStats.total}건`, tone: 'muted' },
-    { label: '대기', value: `${kpiStats.wait}건`, tone: 'warn' },
-    { label: '진행중', value: `${kpiStats.progress}건`, tone: 'info' },
-    { label: '완료', value: `${kpiStats.done}건`, tone: 'good' },
-    { label: '지연', value: `${kpiStats.delay}건`, tone: 'danger' },
-  ]
-
   const handleSearch = () => {
     const workDateStart = workDateStartRef.current?.value ?? ''
     const workDateEnd = workDateEndRef.current?.value ?? ''
@@ -302,9 +293,63 @@ export function FoodWorkOrdersPage() {
 
   return (
     <section className="screenStack" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <KpiGrid
-        kpis={kpis}
-      />
+      {/* 이미지와 동일한 인라인 스타일 KPI 그리드 영역 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
+        {/* 전체 작업지시 */}
+        <div style={{ backgroundColor: '#ffffff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#2563eb' }}></span>
+            <span style={{ fontSize: '13px', fontWeight: 500, color: '#475569' }}>전체 작업지시</span>
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a' }}>
+            {kpiStats.total}<span style={{ fontSize: '15px', fontWeight: 600, marginLeft: '2px', color: '#0f172a' }}>건</span>
+          </div>
+        </div>
+
+        {/* 대기 */}
+        <div style={{ backgroundColor: '#ffffff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#64748b' }}></span>
+            <span style={{ fontSize: '13px', fontWeight: 500, color: '#475569' }}>대기</span>
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a' }}>
+            {kpiStats.wait}<span style={{ fontSize: '15px', fontWeight: 600, marginLeft: '2px', color: '#0f172a' }}>건</span>
+          </div>
+        </div>
+
+        {/* 진행중 */}
+        <div style={{ backgroundColor: '#ffffff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#2563eb' }}></span>
+            <span style={{ fontSize: '13px', fontWeight: 500, color: '#475569' }}>진행중</span>
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a' }}>
+            {kpiStats.progress}<span style={{ fontSize: '15px', fontWeight: 600, marginLeft: '2px', color: '#0f172a' }}>건</span>
+          </div>
+        </div>
+
+        {/* 완료 */}
+        <div style={{ backgroundColor: '#ffffff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#16a34a' }}></span>
+            <span style={{ fontSize: '13px', fontWeight: 500, color: '#475569' }}>완료</span>
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a' }}>
+            {kpiStats.done}<span style={{ fontSize: '15px', fontWeight: 600, marginLeft: '2px', color: '#0f172a' }}>건</span>
+          </div>
+        </div>
+
+        {/* 지연 */}
+        <div style={{ backgroundColor: '#ffffff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#dc2626' }}></span>
+            <span style={{ fontSize: '13px', fontWeight: 500, color: '#475569' }}>지연</span>
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a' }}>
+            {kpiStats.delay}<span style={{ fontSize: '15px', fontWeight: 600, marginLeft: '2px', color: '#0f172a' }}>건</span>
+          </div>
+        </div>
+      </div>
 
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 

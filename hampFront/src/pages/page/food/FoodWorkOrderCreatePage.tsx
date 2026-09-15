@@ -1,7 +1,9 @@
 import { useState, useMemo, type SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { type ColumnDef } from '@tanstack/react-table';
 import { TrashIcon } from "@heroicons/react/24/outline";
 import { Badge } from "@/components/common/Badge";
+import { CusTable } from "@/components/table/CusTable";
 import '@/pages/page/master/MasterItem.css'; 
 
 interface WorkOrderLine {
@@ -14,7 +16,7 @@ interface WorkOrderLine {
 }
 
 // ==========================================
-// 1. 수주라인 선택 모달 컴포넌트 내부 통합
+// 1. 수주라인 선택 모달 컴포넌트
 // ==========================================
 interface SalesOrderLineItem {
   id: string;
@@ -59,6 +61,51 @@ function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalProps) {
     );
   }, [searchTerm]);
 
+  const modalColumns = useMemo<ColumnDef<SalesOrderLineItem>[]>(
+    () => [
+      { accessorKey: 'orderCode', header: '수주코드', cell: ({ row }) => <span style={{ fontWeight: 600, color: '#1e293b' }}>{row.original.orderCode}</span> },
+      { accessorKey: 'customer', header: '거래처' },
+      { accessorKey: 'dueDate', header: '납기일' },
+      { accessorKey: 'itemName', header: '품목', cell: ({ row }) => <span style={{ fontWeight: 500 }}>{row.original.itemName}</span> },
+      { 
+        accessorKey: 'orderQty', 
+        header: '주문수량', 
+        cell: ({ row }) => <div style={{ textAlign: 'right' }}>{row.original.orderQty.toLocaleString()} {row.original.unit}</div> 
+      },
+      { 
+        accessorKey: 'remainQty', 
+        header: '잔여수량', 
+        cell: ({ row }) => (
+          <div style={{ textAlign: 'right', fontWeight: 600 }}>
+            {row.original.isClosed ? <Badge tone="danger">마감</Badge> : `${row.original.remainQty.toLocaleString()} ${row.original.unit}`}
+          </div>
+        ) 
+      },
+      {
+        id: 'action',
+        header: '관리',
+        enableSorting: false,
+        cell: ({ row }) => (
+          <div style={{ textAlign: 'center' }}>
+            {!row.original.isClosed ? (
+              <button
+                type="button"
+                style={modalStyles.selectButton}
+                onClick={() => { onSelect(row.original); onClose(); }}
+              >
+                선택
+              </button>
+            ) : (
+              <span style={{ fontSize: '12px', color: '#94a3b8' }}>-</span>
+            )}
+          </div>
+        ),
+        meta: { width: '80px' },
+      },
+    ],
+    [onSelect, onClose]
+  );
+
   if (!isOpen) return null;
 
   return (
@@ -69,9 +116,7 @@ function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalProps) {
             <h2 style={modalStyles.title}>수주라인 선택</h2>
             <p style={modalStyles.subtitle}>수주코드·거래처·품목명으로 검색할 수 있어요. 잔여수량이 없는 라인은 선택할 수 없습니다.</p>
           </div>
-          <button type="button" onClick={onClose} style={modalStyles.closeButton}>
-            ✕
-          </button>
+          <button type="button" onClick={onClose} style={modalStyles.closeButton}>✕</button>
         </div>
 
         <div style={modalStyles.searchWrapper}>
@@ -85,72 +130,17 @@ function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalProps) {
         </div>
 
         <div style={modalStyles.tableContainer}>
-          <table style={modalStyles.table}>
-            <thead>
-              <tr style={modalStyles.trHead}>
-                <th style={modalStyles.th}>수주코드</th>
-                <th style={modalStyles.th}>거래처</th>
-                <th style={modalStyles.th}>납기일</th>
-                <th style={modalStyles.th}>품목</th>
-                <th style={{ ...modalStyles.th, textAlign: 'right' }}>주문수량</th>
-                <th style={{ ...modalStyles.th, textAlign: 'right' }}>잔여수량</th>
-                <th style={{ ...modalStyles.th, textAlign: 'center', width: '80px' }}>관리</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredLines.length > 0 ? (
-                filteredLines.map((row) => (
-                  <tr 
-                    key={row.id} 
-                    style={{ 
-                      ...modalStyles.trBody, 
-                      opacity: row.isClosed ? 0.6 : 1,
-                      background: row.isClosed ? '#f8fafc' : '#fff'
-                    }}
-                  >
-                    <td style={{ ...modalStyles.td, fontWeight: 600, color: '#1e293b' }}>{row.orderCode}</td>
-                    <td style={modalStyles.td}>{row.customer}</td>
-                    <td style={modalStyles.td}>{row.dueDate}</td>
-                    <td style={{ ...modalStyles.td, fontWeight: 500 }}>{row.itemName}</td>
-                    <td style={{ ...modalStyles.td, textAlign: 'right' }}>
-                      {row.orderQty.toLocaleString()} <span style={{ fontSize: '11px', color: '#64748b' }}>{row.unit}</span>
-                    </td>
-                    <td style={{ ...modalStyles.td, textAlign: 'right', fontWeight: 600 }}>
-                      {row.isClosed ? (
-                        <Badge tone="danger">마감</Badge>
-                      ) : (
-                        <>
-                          {row.remainQty.toLocaleString()} <span style={{ fontSize: '11px', color: '#64748b' }}>{row.unit}</span>
-                        </>
-                      )}
-                    </td>
-                    <td style={{ ...modalStyles.td, textAlign: 'center' }}>
-                      {!row.isClosed ? (
-                        <button
-                          type="button"
-                          style={modalStyles.selectButton}
-                          onClick={() => {
-                            onSelect(row);
-                            onClose();
-                          }}
-                        >
-                          선택
-                        </button>
-                      ) : (
-                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>-</span>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
-                    검색 결과가 없습니다.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          <CusTable
+            data={filteredLines}
+            columns={modalColumns}
+            noDataMessage="검색 결과가 없습니다."
+            onRowClick={(row) => {
+              if (!row.isClosed) {
+                onSelect(row);
+                onClose();
+              }
+            }}
+          />
         </div>
       </div>
     </div>
@@ -165,18 +155,15 @@ export function FoodWorkOrderCreatePage() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 모달 제어 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
 
-  // 폼 입력 상태 정의
   const [form, setForm] = useState({
     workDate: new Date().toISOString().split('T')[0],
     status: "대기",
     managerId: "김도현",
   });
 
-  // 작업지시 라인 목록 상태
   const [lines, setLines] = useState<WorkOrderLine[]>([
     {
       id: "line-1",
@@ -188,19 +175,16 @@ export function FoodWorkOrderCreatePage() {
     },
   ]);
 
-  // 입력값 변경 핸들러
   const handleChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  // 라인 지시수량 변경 핸들러
   const handleQtyChange = (id: string, qty: number) => {
     setLines((prev) =>
       prev.map((line) => (line.id === id ? { ...line, instructQty: qty } : line))
     );
   };
 
-  // 라인 삭제 핸들러
   const handleRemoveLine = (id: string) => {
     if (lines.length === 1) {
       alert("최소 1개 이상의 작업지시 라인이 필요합니다.");
@@ -209,7 +193,6 @@ export function FoodWorkOrderCreatePage() {
     setLines((prev) => prev.filter((line) => line.id !== id));
   };
 
-  // 라인 추가 핸들러 (기본 빈 값 혹은 신규 템플릿으로 추가)
   const handleAddLine = () => {
     const newLine: WorkOrderLine = {
       id: `line-${Date.now()}`,
@@ -222,13 +205,11 @@ export function FoodWorkOrderCreatePage() {
     setLines((prev) => [...prev, newLine]);
   };
 
-  // 모달 열기 핸들러
   const handleOpenModal = (lineId: string) => {
     setActiveLineId(lineId);
     setIsModalOpen(true);
   };
 
-  // 모달에서 수주라인 선택 완료 시 처리
   const handleSelectSalesOrderLine = (selected: SalesOrderLineItem) => {
     if (!activeLineId) return;
 
@@ -239,9 +220,9 @@ export function FoodWorkOrderCreatePage() {
             ...line,
             salesOrderLineId: Number(selected.id),
             orderCode: selected.orderCode,
-            itemCode: `ITM-${selected.id}`, // 품목코드가 따로 없으면 예시로 채움
+            itemCode: `ITM-${selected.id}`,
             itemNm: selected.itemName,
-            instructQty: selected.remainQty, // 기본 잔여수량을 지시수량 초기값으로 세팅
+            instructQty: selected.remainQty,
           };
         }
         return line;
@@ -249,7 +230,86 @@ export function FoodWorkOrderCreatePage() {
     );
   };
 
-  // 폼 유효성 검사
+  // 작업지시 라인 테이블 컬럼 정의
+  const workOrderColumns = useMemo<ColumnDef<WorkOrderLine>[]>(
+    () => [
+      {
+        accessorKey: 'orderCode',
+        header: '수주라인',
+        meta: { width: '400px' },
+        cell: ({ row }) => {
+          const line = row.original;
+          return (
+            <button
+              type="button"
+              onClick={() => handleOpenModal(line.id)}
+              className="tableInput"
+              style={{ 
+                cursor: 'pointer', 
+                textAlign: 'left', 
+                background: 'var(--bg-input, #fff)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '10px',
+                width: '100%',
+                padding: '8px 12px',
+                boxSizing: 'border-box'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flex: 1 }}>
+                <span style={{ fontWeight: 600, color: 'var(--primary-color, #2563eb)' }}>{line.orderCode}</span>
+                <Badge tone="info">{line.itemCode}</Badge>
+                <span style={{ color: 'var(--text-main, #374151)' }}>{line.itemNm}</span>
+              </div>
+              <span style={{ fontSize: '12px', color: 'var(--text-sub, #6b7280)', whiteSpace: 'nowrap' }}>(변경)</span>
+            </button>
+          );
+        },
+      },
+      {
+        accessorKey: 'instructQty',
+        header: '지시수량',
+        cell: ({ row }) => {
+          const line = row.original;
+          return (
+            <input
+              type="number"
+              className="tableInput"
+              value={line.instructQty}
+              disabled={isSubmitting}
+              onChange={(e) => handleQtyChange(line.id, Number(e.target.value))}
+              style={{ padding: '8px 12px', boxSizing: 'border-box', width: '100%' }}
+            />
+          );
+        },
+        meta: { width: '150px' },
+      },
+      {
+        id: 'action',
+        header: '관리',
+        enableSorting: false,
+        cell: ({ row }) => {
+          const line = row.original;
+          return (
+            <div style={{ textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={() => handleRemoveLine(line.id)}
+                disabled={isSubmitting}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px' }}
+                title="라인 삭제"
+              >
+                <TrashIcon style={{ width: '18px', height: '18px' }} />
+              </button>
+            </div>
+          );
+        },
+        meta: { width: '60px' },
+      },
+    ],
+    [isSubmitting, lines]
+  );
+
   const validateForm = (): boolean => {
     if (!form.workDate) {
       alert("작업일자를 입력해주세요.");
@@ -272,12 +332,10 @@ export function FoodWorkOrderCreatePage() {
     return true;
   };
 
-  // 취소 버튼
   const handleCancel = () => {
     navigate(-1);
   };
 
-  // 등록 제출 버튼
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -327,24 +385,16 @@ export function FoodWorkOrderCreatePage() {
               <h2 className="createSectionTitle">기본정보</h2>
               <div className="createGrid2Cols">
                 
-                {/* 작업지시코드 */}
                 <div className="createField">
                   <label className="requiredLabel">작업지시코드</label>
-                  <input
-                    className="tableInput"
-                    value="(저장 시 자동 채번)"
-                    disabled
-                  />
+                  <input className="tableInput" value="(저장 시 자동 채번)" disabled />
                   <span className="createMeta" style={{ marginTop: '4px', display: 'block' }}>
                     등록 시 날짜+일련번호로 자동 채번됩니다.
                   </span>
                 </div>
 
-                {/* 작업일자 */}
                 <div className="createField">
-                  <label className="requiredLabel">
-                    작업일자 <span className="required">*</span>
-                  </label>
+                  <label className="requiredLabel">작업일자 <span className="required">*</span></label>
                   <input
                     type="date"
                     className="tableInput"
@@ -354,7 +404,6 @@ export function FoodWorkOrderCreatePage() {
                   />
                 </div>
 
-                {/* 상태 */}
                 <div className="createField">
                   <label className="requiredLabel">상태</label>
                   <select
@@ -370,7 +419,6 @@ export function FoodWorkOrderCreatePage() {
                   </select>
                 </div>
 
-                {/* 담당자 */}
                 <div className="createField">
                   <label className="requiredLabel">담당자</label>
                   <select
@@ -389,7 +437,7 @@ export function FoodWorkOrderCreatePage() {
               </div>
             </div>
 
-            {/* 2. 작업지시 라인 섹션 */}
+            {/* 2. 작업지시 라인 섹션 (CusTable 적용) */}
             <div className="createSection">
               <div className="routing-header-wrapper">
                 <label className="requiredLabel routing-header-label">
@@ -412,71 +460,13 @@ export function FoodWorkOrderCreatePage() {
                 수주코드·거래처·품목으로 검색해서 수주라인을 선택하세요.
               </div>
 
-              {/* 테이블 구조 형태의 라인 입력 폼 */}
-              <div style={{ border: '1px solid var(--border-color, #e5e7eb)', borderRadius: '6px', overflow: 'hidden' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', background: 'var(--bg-sub, #f9fafb)', padding: '10px 16px', fontSize: '13px', fontWeight: 600, color: 'var(--text-main, #374151)', borderBottom: '1px solid var(--border-color, #e5e7eb)' }}>
-                  <span>수주라인</span>
-                  <span>지시수량</span>
-                  <span style={{ textAlign: 'center', width: '40px' }}>관리</span>
-                </div>
-
-                {lines.map((line) => (
-                  <div key={line.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '12px', padding: '12px 16px', alignItems: 'center', borderBottom: '1px solid var(--border-light, #f3f4f6)' }}>
-                    
-                    {/* 수주라인 선택 영역 (누르면 모달 오픈) */}
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenModal(line.id)}
-                        className="tableInput"
-                        style={{ 
-                          cursor: 'pointer', 
-                          textAlign: 'left', 
-                          background: 'var(--bg-input, #fff)', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '10px',
-                          width: '100%',
-                          padding: '8px 12px',
-                          boxSizing: 'border-box'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flex: 1 }}>
-                          <span style={{ fontWeight: 600, color: 'var(--primary-color, #2563eb)' }}>{line.orderCode}</span>
-                          <Badge tone="info">{line.itemCode}</Badge>
-                          <span style={{ color: 'var(--text-main, #374151)' }}>{line.itemNm}</span>
-                        </div>
-                        <span style={{ fontSize: '12px', color: 'var(--text-sub, #6b7280)', whiteSpace: 'nowrap' }}>(변경)</span>
-                      </button>
-                    </div>
-
-                    {/* 지시수량 입력 영역 */}
-                    <div>
-                      <input
-                        type="number"
-                        className="tableInput"
-                        value={line.instructQty}
-                        disabled={isSubmitting}
-                        onChange={(e) => handleQtyChange(line.id, Number(e.target.value))}
-                        style={{ padding: '8px 12px', boxSizing: 'border-box' }}
-                      />
-                    </div>
-
-                    {/* 삭제 버튼 */}
-                    <div style={{ textAlign: 'center', width: '40px' }}>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveLine(line.id)}
-                        disabled={isSubmitting}
-                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px' }}
-                        title="라인 삭제"
-                      >
-                        <TrashIcon style={{ width: '18px', height: '18px' }} />
-                      </button>
-                    </div>
-
-                  </div>
-                ))}
+              {/* CusTable 컴포넌트를 통한 일관된 테이블 렌더링 */}
+              <div style={{ marginTop: '12px' }}>
+                <CusTable
+                  data={lines}
+                  columns={workOrderColumns}
+                  noDataMessage="등록된 작업지시 라인이 없습니다."
+                />
               </div>
 
             </div>
@@ -485,19 +475,10 @@ export function FoodWorkOrderCreatePage() {
 
           {/* 하단 버튼 영역 */}
           <div className="createFooter">
-            <button 
-              type="button" 
-              className="ghostButton" 
-              onClick={handleCancel} 
-              disabled={isSubmitting}
-            >
+            <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
               취소
             </button>
-            <button 
-              type="submit" 
-              className="primaryButton" 
-              disabled={isSubmitting}
-            >
+            <button type="submit" className="primaryButton" disabled={isSubmitting}>
               {isSubmitting ? "등록 중..." : "저장"}
             </button>
           </div>
@@ -517,111 +498,26 @@ export function FoodWorkOrderCreatePage() {
   );
 }
 
-// 모달 컴포넌트 전용 스타일 객체
 const modalStyles: { [key: string]: React.CSSProperties } = {
   overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
   },
   container: {
-    backgroundColor: '#ffffff',
-    width: '900px',
-    maxWidth: '95vw',
-    maxHeight: '85vh',
-    borderRadius: '12px',
-    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
+    backgroundColor: '#ffffff', width: '900px', maxWidth: '95vw', maxHeight: '85vh',
+    borderRadius: '12px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+    display: 'flex', flexDirection: 'column', overflow: 'hidden',
   },
   header: {
-    padding: '20px 24px 16px 24px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    borderBottom: '1px solid #f1f5f9',
+    padding: '20px 24px 16px 24px', display: 'flex', justifyContent: 'space-between',
+    alignItems: 'flex-start', borderBottom: '1px solid #f1f5f9',
   },
-  title: {
-    margin: 0,
-    fontSize: '18px',
-    fontWeight: 700,
-    color: '#0f172a',
-  },
-  subtitle: {
-    margin: '4px 0 0 0',
-    fontSize: '13px',
-    color: '#64748b',
-  },
-  closeButton: {
-    background: 'none',
-    border: 'none',
-    fontSize: '18px',
-    cursor: 'pointer',
-    color: '#64748b',
-    padding: '4px',
-  },
-  searchWrapper: {
-    padding: '16px 24px',
-    backgroundColor: '#f8fafc',
-    borderBottom: '1px solid #f1f5f9',
-  },
-  searchInput: {
-    width: '100%',
-    padding: '10px 14px',
-    borderRadius: '6px',
-    border: '1px solid #cbd5e1',
-    fontSize: '14px',
-    outline: 'none',
-    backgroundColor: '#ffffff',
-  },
-  tableContainer: {
-    padding: '0 24px 24px 24px',
-    overflowY: 'auto',
-    maxHeight: '500px',
-    marginTop: '12px',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    textAlign: 'left',
-  },
-  trHead: {
-    borderBottom: '2px solid #e2e8f0',
-    color: '#475569',
-    fontSize: '13px',
-  },
-  th: {
-    padding: '12px 8px',
-    fontWeight: 600,
-    backgroundColor: '#ffffff',
-    position: 'sticky',
-    top: 0,
-    zIndex: 1,
-  },
-  trBody: {
-    borderBottom: '1px solid #f1f5f9',
-    fontSize: '13px',
-    color: '#334155',
-  },
-  td: {
-    padding: '14px 8px',
-  },
-  selectButton: {
-    padding: '4px 12px',
-    backgroundColor: '#ffffff',
-    border: '1px solid #cbd5e1',
-    borderRadius: '4px',
-    fontSize: '12px',
-    fontWeight: 500,
-    color: '#334155',
-    cursor: 'pointer',
-  },
+  title: { margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' },
+  subtitle: { margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' },
+  closeButton: { background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#64748b', padding: '4px' },
+  searchWrapper: { padding: '16px 24px', backgroundColor: '#f8fafc', borderBottom: '1px solid #f1f5f9' },
+  searchInput: { width: '100%', padding: '10px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' },
+  tableContainer: { padding: '16px 24px 24px 24px', overflowY: 'auto', maxHeight: '500px' },
+  selectButton: { padding: '4px 12px', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', fontWeight: 500, cursor: 'pointer' },
 };

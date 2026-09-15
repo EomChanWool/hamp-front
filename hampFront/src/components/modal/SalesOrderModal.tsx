@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react'
+import { type ColumnDef } from '@tanstack/react-table'
+import { CusTable } from '@/components/table/CusTable'
 import { Badge } from '@components/common/Badge'
 
 interface SalesOrderLine {
@@ -44,6 +46,81 @@ export function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalPr
     )
   }, [searchTerm])
 
+  // TanStack Table 컬럼 정의
+  const columns = useMemo<ColumnDef<SalesOrderLine>[]>(
+    () => [
+      {
+        accessorKey: 'orderCode',
+        header: '수주코드',
+        cell: ({ row }) => <span style={{ fontWeight: 600, color: '#1e293b' }}>{row.original.orderCode}</span>,
+      },
+      {
+        accessorKey: 'customer',
+        header: '거래처',
+        cell: ({ row }) => <span>{row.original.customer}</span>,
+      },
+      {
+        accessorKey: 'dueDate',
+        header: '납기일',
+        cell: ({ row }) => <span>{row.original.dueDate}</span>,
+      },
+      {
+        accessorKey: 'itemName',
+        header: '품목',
+        cell: ({ row }) => <span style={{ fontWeight: 500 }}>{row.original.itemName}</span>,
+      },
+      {
+        accessorKey: 'orderQty',
+        header: '주문수량',
+        cell: ({ row }) => (
+          <div style={{ textAlign: 'right' }}>
+            {row.original.orderQty.toLocaleString()} <span style={{ fontSize: '11px', color: '#64748b' }}>{row.original.unit}</span>
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'remainQty',
+        header: '잔여수량',
+        cell: ({ row }) => (
+          <div style={{ textAlign: 'right', fontWeight: 600 }}>
+            {row.original.isClosed ? (
+              <Badge tone="danger">마감</Badge>
+            ) : (
+              <>
+                {row.original.remainQty.toLocaleString()} <span style={{ fontSize: '11px', color: '#64748b' }}>{row.original.unit}</span>
+              </>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: 'action',
+        header: '관리',
+        enableSorting: false, // 관리 컬럼은 정렬 제외
+        cell: ({ row }) => (
+          <div style={{ textAlign: 'center' }}>
+            {!row.original.isClosed ? (
+              <button
+                type="button"
+                style={modalStyles.selectButton}
+                onClick={() => {
+                  onSelect(row.original)
+                  onClose()
+                }}
+              >
+                선택
+              </button>
+            ) : (
+              <span style={{ fontSize: '12px', color: '#94a3b8' }}>-</span>
+            )}
+          </div>
+        ),
+        meta: { width: '80px' },
+      },
+    ],
+    [onSelect, onClose]
+  )
+
   if (!isOpen) return null
 
   return (
@@ -71,81 +148,27 @@ export function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalPr
           />
         </div>
 
-        {/* 테이블 영역 */}
+        {/* CusTable 적용 영역 */}
         <div style={modalStyles.tableContainer}>
-          <table style={modalStyles.table}>
-            <thead>
-              <tr style={modalStyles.trHead}>
-                <th style={modalStyles.th}>수주코드</th>
-                <th style={modalStyles.th}>거래처</th>
-                <th style={modalStyles.th}>납기일</th>
-                <th style={modalStyles.th}>품목</th>
-                <th style={{ ...modalStyles.th, textAlign: 'right' }}>주문수량</th>
-                <th style={{ ...modalStyles.th, textAlign: 'right' }}>잔여수량</th>
-                <th style={{ ...modalStyles.th, textAlign: 'center', width: '80px' }}>관리</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredLines.length > 0 ? (
-                filteredLines.map((row) => (
-                  <tr 
-                    key={row.id} 
-                    style={{ 
-                      ...modalStyles.trBody, 
-                      opacity: row.isClosed ? 0.6 : 1,
-                      background: row.isClosed ? '#f8fafc' : '#fff'
-                    }}
-                  >
-                    <td style={{ ...modalStyles.td, fontWeight: 600, color: '#1e293b' }}>{row.orderCode}</td>
-                    <td style={modalStyles.td}>{row.customer}</td>
-                    <td style={modalStyles.td}>{row.dueDate}</td>
-                    <td style={{ ...modalStyles.td, fontWeight: 500 }}>{row.itemName}</td>
-                    <td style={{ ...modalStyles.td, textAlign: 'right' }}>
-                      {row.orderQty.toLocaleString()} <span style={{ fontSize: '11px', color: '#64748b' }}>{row.unit}</span>
-                    </td>
-                    <td style={{ ...modalStyles.td, textAlign: 'right', fontWeight: 600 }}>
-                      {row.isClosed ? (
-                        <Badge tone="danger">마감</Badge>
-                      ) : (
-                        <>
-                          {row.remainQty.toLocaleString()} <span style={{ fontSize: '11px', color: '#64748b' }}>{row.unit}</span>
-                        </>
-                      )}
-                    </td>
-                    <td style={{ ...modalStyles.td, textAlign: 'center' }}>
-                      {!row.isClosed ? (
-                        <button
-                          type="button"
-                          style={modalStyles.selectButton}
-                          onClick={() => {
-                            onSelect(row)
-                            onClose()
-                          }}
-                        >
-                          선택
-                        </button>
-                      ) : (
-                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>-</span>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
-                    검색 결과가 없습니다.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          <CusTable
+            data={filteredLines}
+            columns={columns}
+            noDataMessage="검색 결과가 없습니다."
+            onRowClick={(row) => {
+              // 마감되지 않은 항목은 행 클릭 시에도 선택되도록 편의 기능 추가 (선택사항)
+              if (!row.isClosed) {
+                onSelect(row)
+                onClose()
+              }
+            }}
+          />
         </div>
       </div>
     </div>
   )
 }
 
-// 스타일 객체 (디자인 톤 맞춤)
+// 스타일 객체
 const modalStyles: { [key: string]: React.CSSProperties } = {
   overlay: {
     position: 'fixed',
@@ -211,36 +234,9 @@ const modalStyles: { [key: string]: React.CSSProperties } = {
     backgroundColor: '#ffffff',
   },
   tableContainer: {
-    padding: '0 24px 24px 24px',
+    padding: '16px 24px 24px 24px',
     overflowY: 'auto',
     maxHeight: '500px',
-    marginTop: '12px',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    textAlign: 'left',
-  },
-  trHead: {
-    borderBottom: '2px solid #e2e8f0',
-    color: '#475569',
-    fontSize: '13px',
-  },
-  th: {
-    padding: '12px 8px',
-    fontWeight: 600,
-    backgroundColor: '#ffffff',
-    position: 'sticky',
-    top: 0,
-    zIndex: 1,
-  },
-  trBody: {
-    borderBottom: '1px solid #f1f5f9',
-    fontSize: '13px',
-    color: '#334155',
-  },
-  td: {
-    padding: '14px 8px',
   },
   selectButton: {
     padding: '4px 12px',
