@@ -4,6 +4,26 @@
 
 .tableWrap {
   overflow-x: auto;
+
+  /* ── 반응형 추가: 가로 스크롤 가능 힌트 ──────────────────────────
+     테이블 컬럼 총폭이 화면보다 넓어져서(태블릿/모바일) 가로 스크롤이
+     생길 때, "오른쪽에 더 있다"는 걸 알려주는 그림자를 좌우 끝에 표시.
+     JS 없이 배경 그라디언트 4겹으로 구현하는 방식(CSS-only scroll shadow):
+       1) 왼쪽을 카드 배경색으로 가려서 콘텐츠가 시작되는 지점을 자연스럽게
+       2) 오른쪽도 동일하게 카드 배경색으로
+       3) 왼쪽 끝에 옅은 그림자(스크롤 가능함을 암시)
+       4) 오른쪽 끝에 옅은 그림자
+     스크롤이 끝(맨 왼쪽/맨 오른쪽)에 도달하면 background-attachment:local
+     덕분에 해당 쪽 그림자가 자연스럽게 사라짐 */
+  background:
+    linear-gradient(to right, var(--bg-card, #fff) 30%, rgba(255, 255, 255, 0)) 0 0,
+    linear-gradient(to left, var(--bg-card, #fff) 30%, rgba(255, 255, 255, 0)) 100% 0,
+    linear-gradient(to right, rgba(15, 23, 42, 0.12), rgba(15, 23, 42, 0)) 0 0,
+    linear-gradient(to left, rgba(15, 23, 42, 0.12), rgba(15, 23, 42, 0)) 100% 0;
+  background-repeat: no-repeat;
+  background-color: var(--bg-card, #fff);
+  background-size: 32px 100%, 32px 100%, 12px 100%, 12px 100%;
+  background-attachment: local, local, scroll, scroll;
 }
 
 table {
@@ -102,4 +122,34 @@ tbody tr:hover td {
 
 [data-theme="dark"] tbody tr:hover td {
   background: #232632;
+}
+
+/* 다크모드에서는 스크롤 그림자 배경도 카드색(--bg-card, 다크 팔레트)에
+   맞춰 자동으로 바뀜 — var(--bg-card)를 그대로 쓰고 있어서 별도
+   오버라이드 불필요. 그림자 자체의 진하기만 살짝 보정 */
+[data-theme="dark"] .tableWrap {
+  background:
+    linear-gradient(to right, var(--bg-card) 30%, rgba(26, 29, 39, 0)) 0 0,
+    linear-gradient(to left, var(--bg-card) 30%, rgba(26, 29, 39, 0)) 100% 0,
+    linear-gradient(to right, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0)) 0 0,
+    linear-gradient(to left, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0)) 100% 0;
+  background-repeat: no-repeat;
+  background-color: var(--bg-card);
+  background-size: 32px 100%, 32px 100%, 12px 100%, 12px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+/* ================================
+   TABLE - 반응형 (좁은 화면 밀도 축소)
+================================ */
+@media (max-width: 600px) {
+  th,
+  td {
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+
+  th {
+    height: 40px;
+  }
 }
