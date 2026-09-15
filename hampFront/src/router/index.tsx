@@ -75,6 +75,8 @@ import { InpiOutboundManagePage } from '@pages/page/ioInpi/InpiOutboundManagePag
 
 // 식품생산관리 + 식품품질검사
 import { FoodWorkOrdersPage } from '@pages/page/food/FoodWorkOrdersPage'
+import { FoodWorkOrderCreatePage } from '@/pages/page/food/FoodWorkOrderCreatePage'  
+import { FoodWorkOrderDetailPage } from '@/pages/page/food/FoodWorkOrderDetailPage'
 import { FoodProductionResultsPage } from '@pages/page/food/FoodProductionResultsPage'
 import { FoodProductionStatusPage } from '@pages/page/food/FoodProductionStatusPage'
 import { FoodLotManagePage } from '@pages/page/food/FoodLotManagePage'
@@ -261,6 +263,8 @@ export const menuRoutes: MenuRouteGroup[] = [
     path: '/food',
     items: [
       { path: 'work-orders', name: '작업지시관리', element: <FoodWorkOrdersPage /> },
+      { path: 'work-order/create', name: '작업지시 등록', element: <FoodWorkOrderCreatePage />, hidden: true },
+      { path: 'work-order/detail', name: '작업지시 상세', element: <FoodWorkOrderDetailPage />, hidden: true },
       { path: 'prod-results', name: '생산실적관리', element: <FoodProductionResultsPage /> },
       { path: 'prod-status', name: '생산현황', element: <FoodProductionStatusPage /> },
       { path: 'lot-manage', name: 'LOT관리', element: <FoodLotManagePage /> },
