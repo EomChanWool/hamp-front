@@ -711,6 +711,7 @@ export function SeedInboundManagePage() {
         itemCode: '',
         itemNm: '',
         unit: '',
+        barcode: '',
         receiptQty: 0,
         defectQty: 0,
         goodQty: 0,

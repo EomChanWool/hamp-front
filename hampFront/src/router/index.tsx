@@ -108,6 +108,9 @@ import { SalesBusinessPartnerPage } from '@/pages/page/sales/SalesBusinessPartne
 import { SalesBusinessPartnerCreatePage } from '@/pages/page/sales/SalesBusinessPartnerCreatePage'
 import { SalesBusinessPartnerDetailPage } from '@/pages/page/sales/SalesBusinessPartnerDetailPage'
 
+// 태블릿 전용 페이지
+import { WorkTabletHome } from '@/pages/work/WorkTabletHome'
+
 
 const RootRouter = () => {
   const router = createBrowserRouter(routeObj)
@@ -340,6 +343,10 @@ export const routeObj: RouteObject[] = [
 
       { path: '*', element: <Navigate to="/" replace /> },
     ],
+  },
+  {
+    path: '/work',
+    element: <WorkTabletHome />,
   },
   {
     path: '/login',
