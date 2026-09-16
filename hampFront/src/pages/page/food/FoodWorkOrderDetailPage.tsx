@@ -6,18 +6,20 @@ import { CusTable } from "@/components/table/CusTable";
 import { Badge } from "@/components/common/Badge";
 import Spinner from "@/components/common/Spinner";
 import { WorkOrderApi } from "@/api/WorkOrder"; 
+import { UserApi, type UserOptionResponse } from "@/api/User";
 import { type SalesOrderStatusLineResponse } from "@/api/sales/SalesOrder"; 
 
 import { SalesOrderModal } from "@/components/modal/SalesOrderModal"; 
-import '@/pages/page/master/MasterItem.css';
+import '@/pages/page/food/Food.css';
 
 interface WorkOrderLineDetail {
   id: string;
+  salesOrderLineId: number; 
   orderCode: string;
   lineId: string;
-  itemCode: string; // 추가: 품목코드 저장용
+  itemCode: string;
   itemNm: string;
-  instructQty: string;
+  instructQty: number;
   barcode: string;
 }
 
@@ -25,8 +27,9 @@ interface WorkOrderMaster {
   workOrderNo: string;
   title: string;
   workDate: string;
-  status: "대기" | "진행중" | "완료" | "지연";
+  status: "WAIT" | "PROGRESS" | "DONE" | "DELAY"; 
   managerId: string;
+  managerNm: string;
   lines: WorkOrderLineDetail[];
 }
 
@@ -44,38 +47,38 @@ function LabelPrintModal({ isOpen, onClose, selectedLines, workOrderNo }: LabelP
   if (!isOpen) return null;
 
   return (
-    <div style={labelModalStyles.overlay}>
-      <div style={labelModalStyles.container}>
-        <div style={labelModalStyles.header}>
+    <div className="food-label-modal-overlay">
+      <div className="food-label-modal-container">
+        <div className="food-label-modal-header">
           <div>
-            <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '2px' }}>생산관리 &gt; 작업지시 &gt; 라벨 인쇄</div>
-            <h2 style={labelModalStyles.title}>라벨 인쇄 미리보기</h2>
-            <p style={labelModalStyles.subtitle}>선택한 라인만 라벨로 출력됩니다. (총 {selectedLines.length}건)</p>
+            <div className="food-label-modal-breadcrumb">생산관리 &gt; 작업지시 &gt; 라벨 인쇄</div>
+            <h2 className="food-label-modal-title">라벨 인쇄 미리보기</h2>
+            <p className="food-label-modal-subtitle">선택한 라인만 라벨로 출력됩니다. (총 {selectedLines.length}건)</p>
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button type="button" className="ghostButton" onClick={onClose} style={{ fontSize: '13px', padding: '6px 12px' }}>
+          <div className="food-label-modal-actions">
+            <button type="button" className="ghostButton food-label-modal-btn-close" onClick={onClose}>
               닫기
             </button>
-            <button type="button" className="primaryButton" onClick={() => window.print()} style={{ fontSize: '13px', padding: '6px 16px' }}>
+            <button type="button" className="primaryButton food-label-modal-btn-print" onClick={() => window.print()}>
               인쇄
             </button>
           </div>
         </div>
 
-        <div style={labelModalStyles.body}>
-          <div style={labelModalStyles.grid}>
+        <div className="food-label-modal-body">
+          <div className="food-label-modal-grid">
             {selectedLines.map((line) => (
-              <div key={line.id} style={labelModalStyles.labelCard}>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
+              <div key={line.id} className="food-label-card">
+                <div className="food-card-header-meta">
                   {workOrderNo}
                 </div>
-                <div style={{ fontSize: '13px', color: '#334155', marginBottom: '8px', fontWeight: 500 }}>
-                  {line.itemNm} <span style={{ color: '#64748b', fontSize: '12px' }}>({line.orderCode})</span>
+                <div className="food-card-body-meta">
+                  {line.itemNm} <span className="food-cell-item-code">({line.orderCode})</span>
                 </div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', marginBottom: '12px' }}>
+                <div className="food-card-qty-meta">
                   지시수량 <span style={{ fontWeight: 700 }}>{line.instructQty}</span>
                 </div>
-                <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '8px' }}>
+                <div className="food-card-barcode-wrap">
                   <Barcode value={line.barcode || workOrderNo} width={1.3} height={40} fontSize={11} displayValue={true} margin={0} />
                 </div>
               </div>
@@ -95,12 +98,15 @@ export function FoodWorkOrderDetailPage() {
   const { workId } = useParams<{ workId: string }>();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [userOptions, setUserOptions] = useState<UserOptionResponse[]>([]);
+
   const [workOrder, setWorkOrder] = useState<WorkOrderMaster>({
     workOrderNo: workId || "",
     title: "",
     workDate: "",
-    status: "대기",
+    status: "WAIT",
     managerId: "",
+    managerNm: "",
     lines: [],
   });
 
@@ -109,6 +115,20 @@ export function FoodWorkOrderDetailPage() {
   const [selectedLines, setSelectedLines] = useState<string[]>([]);
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
   const [isSalesOrderModalOpen, setIsSalesOrderModalOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchUserOptions = async () => {
+      try {
+        const res = await UserApi.getOptions();
+        if (res && res.data) {
+          setUserOptions(res.data);
+        }
+      } catch (error) {
+        console.error("회원 옵션 조회 실패:", error);
+      }
+    };
+    fetchUserOptions();
+  }, []);
 
   const fetchWorkOrderDetail = useCallback(async () => {
     if (!workId) return;
@@ -119,19 +139,19 @@ export function FoodWorkOrderDetailPage() {
       
       const mappedData: WorkOrderMaster = {
         workOrderNo: data.workId || workId,
-        title: data.title || data.workName || data.note || "작업 지시 상세",
+        title: data.title || data.workName || "작업 지시 상세",
         workDate: data.workDate || "",
-        status: data.status === "DONE" || data.status === "완료" ? "완료" : 
-                data.status === "PROGRESS" || data.status === "진행중" ? "진행중" : 
-                data.status === "DELAY" || data.status === "지연" ? "지연" : "대기",
-        managerId: data.managerNm ? `${data.managerNm} (${data.managerId})` : data.managerId || "",
-        lines: (data.lines || data.workOrderLines || []).map((l: any, idx: number) => ({
-          id: l.id || `line-${idx}`,
-          orderCode: l.orderCode || l.salesOrderCode || "",
-          lineId: l.lineId || `#${101 + idx}`,
+        status: data.status || "WAIT",
+        managerId: data.managerId || "",
+        managerNm: data.managerNm || "",
+        lines: (data.lines || []).map((l: any, idx: number) => ({
+          id: l.workOrderLineId ? String(l.workOrderLineId) : `line-${idx}`,
+          salesOrderLineId: l.salesOrderLineId || 0,
+          orderCode: l.orderCode || "",
+          lineId: `#${101 + idx}`,
           itemCode: l.itemCode || "",
-          itemNm: l.itemNm || l.itemName || "",
-          instructQty: String(l.instructQty || l.qty || ""),
+          itemNm: l.itemNm || "",
+          instructQty: Number(l.instructQty || 0),
           barcode: l.barcode || `${data.workId || workId}-${101 + idx}`,
         })),
       };
@@ -153,6 +173,7 @@ export function FoodWorkOrderDetailPage() {
   const handleStartEdit = () => {
     setEditForm(workOrder);
     setIsEditing(true);
+    setSelectedLines([]);
   };
 
   const handleCancelEdit = () => {
@@ -163,19 +184,18 @@ export function FoodWorkOrderDetailPage() {
   const handleSaveEdit = async () => {
     try {
       setIsLoading(true);
-      const payload: Record<string, any> = {
-        workId: editForm.workOrderNo,
-        title: editForm.title,
+      const payload = {
         workDate: editForm.workDate,
-        status: editForm.status === "완료" ? "DONE" : editForm.status === "진행중" ? "PROGRESS" : editForm.status === "지연" ? "DELAY" : "WAIT",
-        lines: editForm.lines,
+        status: editForm.status,
+        managerId: editForm.managerId,
+        lines: editForm.lines.map((l) => ({
+          salesOrderLineId: l.salesOrderLineId,
+          instructQty: l.instructQty,
+        })),
       };
 
-      if (WorkOrderApi.update) {
-        await WorkOrderApi.update(editForm.workOrderNo, payload as any);
-      }
+      await WorkOrderApi.update(editForm.workOrderNo, payload);
 
-      setWorkOrder(editForm);
       setIsEditing(false);
       alert("성공적으로 수정되었습니다.");
       fetchWorkOrderDetail();
@@ -191,9 +211,7 @@ export function FoodWorkOrderDetailPage() {
     if (!window.confirm("정말 이 작업지시를 삭제하시겠습니까?")) return;
     try {
       setIsLoading(true);
-      if (WorkOrderApi.delete) {
-        await WorkOrderApi.delete(workOrder.workOrderNo);
-      }
+      await WorkOrderApi.delete(workOrder.workOrderNo);
       alert("삭제되었습니다.");
       navigate(-1);
     } catch (error) {
@@ -212,16 +230,16 @@ export function FoodWorkOrderDetailPage() {
     setSelectedLines(prev => prev.filter(item => item !== lineId));
   };
 
-  // 모달에서 선택한 실제 API 응답 타입 기반 라인 추가 처리
   const handleSelectSalesOrderLine = (selectedLine: SalesOrderStatusLineResponse) => {
     const activeLinesCount = editForm.lines.length;
     const newLine: WorkOrderLineDetail = {
       id: `line-${Date.now()}`,
+      salesOrderLineId: selectedLine.salesOrderLineId,
       orderCode: selectedLine.orderCode,
       lineId: `#${101 + activeLinesCount}`,
       itemCode: selectedLine.itemCode,
       itemNm: selectedLine.itemNm,
-      instructQty: String(selectedLine.orderQty || 0),
+      instructQty: Number(selectedLine.orderQty || 0),
       barcode: `${editForm.workOrderNo}-${101 + activeLinesCount}`,
     };
 
@@ -233,78 +251,64 @@ export function FoodWorkOrderDetailPage() {
 
   const activeLines = isEditing ? editForm.lines : workOrder.lines;
 
-  const handleLineChange = (lineId: string, field: keyof WorkOrderLineDetail, value: string) => {
+  const handleLineQtyChange = (lineId: string, qty: number) => {
     setEditForm(prev => ({
       ...prev,
-      lines: prev.lines.map(l => l.id === lineId ? { ...l, [field]: value } : l)
+      lines: prev.lines.map(l => l.id === lineId ? { ...l, instructQty: qty } : l)
     }));
   };
 
   const columns = useMemo<ColumnDef<WorkOrderLineDetail>[]>(
     () => [
-      {
-        id: "select",
-        header: () => (
-          <input 
-            type="checkbox" 
-            onChange={(e) => {
-              if (e.target.checked) setSelectedLines(activeLines.map(l => l.id));
-              else setSelectedLines([]);
-            }}
-            checked={selectedLines.length === activeLines.length && activeLines.length > 0}
-            style={{ cursor: 'pointer', width: '16px', height: '16px' }}
-          />
-        ),
-        cell: ({ row }) => (
-          <input 
-            type="checkbox" 
-            checked={selectedLines.includes(row.original.id)}
-            onChange={() => {
-              setSelectedLines(prev => prev.includes(row.original.id) ? prev.filter(i => i !== row.original.id) : [...prev, row.original.id]);
-            }}
-            style={{ cursor: 'pointer', width: '16px', height: '16px' }}
-          />
-        ),
-        meta: { width: '50px' },
-      },
+      ...(!isEditing
+        ? [
+            {
+              id: "select",
+              header: () => (
+                <input 
+                  type="checkbox" 
+                  onChange={(e) => {
+                    if (e.target.checked) setSelectedLines(activeLines.map(l => l.id));
+                    else setSelectedLines([]);
+                  }}
+                  checked={selectedLines.length === activeLines.length && activeLines.length > 0}
+                  style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                />
+              ),
+              cell: ({ row }: { row: any }) => (
+                <input 
+                  type="checkbox" 
+                  checked={selectedLines.includes(row.original.id)}
+                  onChange={() => {
+                    setSelectedLines(prev => prev.includes(row.original.id) ? prev.filter(i => i !== row.original.id) : [...prev, row.original.id]);
+                  }}
+                  style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                />
+              ),
+              meta: { width: '50px' },
+            },
+          ]
+        : []),
       {
         accessorKey: "orderCode",
         header: "연결 수주라인",
         cell: ({ row }) => (
-          isEditing ? (
-            <input 
-              type="text"
-              value={row.original.orderCode}
-              onChange={(e) => handleLineChange(row.original.id, 'orderCode', e.target.value)}
-              style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', width: '130px' }}
-            />
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontWeight: 600, color: '#2563eb' }}>{row.original.orderCode}</span>
-              <span style={{ fontSize: '12px', background: '#e0f2fe', color: '#0369a1', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
-                {row.original.lineId}
-              </span>
-            </div>
-          )
+          <div className="food-cell-flex-wrap">
+            <span className="food-cell-order-code">{row.original.orderCode}</span>
+            <span className="food-cell-line-badge">
+              {row.original.lineId}
+            </span>
+          </div>
         ),
       },
       {
         accessorKey: "itemNm",
         header: "품목",
         cell: ({ row }) => (
-          isEditing ? (
-            <input 
-              type="text"
-              value={row.original.itemNm}
-              onChange={(e) => handleLineChange(row.original.id, 'itemNm', e.target.value)}
-              style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', width: '100%' }}
-            />
-          ) : (
-            <div style={{ color: '#1e293b', fontWeight: 600 }}>
-              {row.original.itemNm} 
-              {row.original.itemCode && <span style={{ fontSize: '11px', color: '#64748b', marginLeft: '6px' }}>({row.original.itemCode})</span>}
-            </div>
-          )
+          <div className="food-cell-item-name">
+            {row.original.itemNm} 
+            {row.original.itemCode && <span className="food-cell-item-code">({row.original.itemCode})</span>}
+          </div>
         ),
       },
       {
@@ -313,13 +317,13 @@ export function FoodWorkOrderDetailPage() {
         cell: ({ row }) => (
           isEditing ? (
             <input 
-              type="text"
+              type="number"
               value={row.original.instructQty}
-              onChange={(e) => handleLineChange(row.original.id, 'instructQty', e.target.value)}
-              style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', width: '100px' }}
+              onChange={(e) => handleLineQtyChange(row.original.id, Number(e.target.value))}
+              className="food-line-input"
             />
           ) : (
-            <div style={{ color: '#0f172a', fontWeight: 700 }}>{row.original.instructQty}</div>
+            <div className="food-cell-qty">{row.original.instructQty}</div>
           )
         ),
       },
@@ -327,13 +331,13 @@ export function FoodWorkOrderDetailPage() {
         accessorKey: "barcode",
         header: "바코드",
         cell: ({ row }) => (
-          <div style={{ justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="food-cell-center">
             <Barcode value={row.original.barcode || "NO-BARCODE"} width={1.2} height={38} fontSize={11} displayValue={true} margin={0} />
             {isEditing && (
               <button 
                 type="button" 
                 onClick={() => handleDeleteLine(row.original.id)}
-                style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
+                className="food-line-delete-btn-sm"
               >
                 삭제
               </button>
@@ -354,6 +358,15 @@ export function FoodWorkOrderDetailPage() {
     setIsLabelModalOpen(true);
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "DONE": return <Badge tone="good">완료</Badge>;
+      case "PROGRESS": return <Badge tone="info">진행중</Badge>;
+      case "DELAY": return <Badge tone="danger">지연</Badge>;
+      default: return <Badge tone="muted">대기</Badge>;
+    }
+  };
+
   return (
     <section className="screenStack relative min-h-[400px]">
       {isLoading && (
@@ -362,106 +375,101 @@ export function FoodWorkOrderDetailPage() {
         </div>
       )}
 
-      <div className="createCard" style={{ padding: '32px', background: '#ffffff', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+      <div className="createCard food-detail-card">
         
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid #e5e7eb', paddingBottom: '16px' }}>
+        <div className="food-detail-header">
           <div>
-            <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: '0 0 4px 0' }}>
+            <h1 className="food-detail-title">
               {workOrder.workOrderNo}
             </h1>
-            <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: 500 }}>
+            <span className="food-detail-subtitle">
               {workOrder.title}
             </span>
           </div>
         </div>
 
-        <div style={{ 
-          background: '#f8fafc', 
-          border: '1px solid #e2e8f0', 
-          borderRadius: '10px', 
-          padding: '20px 24px',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '20px',
-          marginBottom: '36px',
-          boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
-        }}>
+        <div className="food-summary-grid-box">
           <div>
-            <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>작업일자</div>
+            <div className="food-summary-label">작업일자</div>
             {isEditing ? (
               <input 
                 type="date"
                 value={editForm.workDate}
                 onChange={(e) => setEditForm({ ...editForm, workDate: e.target.value })}
-                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', width: '100%' }}
+                className="food-edit-input"
               />
             ) : (
-              <div style={{ fontSize: '16px', fontWeight: 600, color: '#0f172a' }}>{workOrder.workDate || '-'}</div>
+              <div className="food-summary-value">{workOrder.workDate || '-'}</div>
             )}
           </div>
           <div>
-            <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>상태</div>
+            <div className="food-summary-label">상태</div>
             {isEditing ? (
               <select
                 value={editForm.status}
                 onChange={(e) => setEditForm({ ...editForm, status: e.target.value as any })}
-                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', width: '100%' }}
+                className="food-edit-input"
               >
-                <option value="대기">대기</option>
-                <option value="진행중">진행중</option>
-                <option value="완료">완료</option>
-                <option value="지연">지연</option>
+                <option value="WAIT">대기</option>
+                <option value="PROGRESS">진행중</option>
+                <option value="DONE">완료</option>
+                <option value="DELAY">지연</option>
               </select>
             ) : (
-              <div>
-                <Badge tone={workOrder.status === '완료' ? 'good' : workOrder.status === '진행중' ? 'info' : 'muted'}>
-                  {workOrder.status}
-                </Badge>
+              <div>{getStatusBadge(workOrder.status)}</div>
+            )}
+          </div>
+          <div>
+            <div className="food-summary-label">담당자</div>
+            {isEditing ? (
+              <select
+                value={editForm.managerId}
+                onChange={(e) => setEditForm({ ...editForm, managerId: e.target.value })}
+                className="food-edit-input"
+              >
+                <option value="">담당자 선택</option>
+                {userOptions.map((user) => (
+                  <option key={user.userId} value={user.userId}>
+                    {user.userNm} ({user.userId})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="food-summary-value">
+                {workOrder.managerNm ? `${workOrder.managerNm} (${workOrder.managerId})` : workOrder.managerId || '-'}
               </div>
             )}
           </div>
           <div>
-            <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>담당자</div>
-            {isEditing ? (
-              <input 
-                type="text"
-                value={editForm.managerId}
-                onChange={(e) => setEditForm({ ...editForm, managerId: e.target.value })}
-                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', width: '100%' }}
-              />
-            ) : (
-              <div style={{ fontSize: '16px', fontWeight: 600, color: '#0f172a' }}>{workOrder.managerId || '-'}</div>
-            )}
-          </div>
-          <div>
-            <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>라인 수</div>
-            <div style={{ fontSize: '16px', fontWeight: 600, color: '#0f172a' }}>{activeLines.length}건</div>
+            <div className="food-summary-label">라인 수</div>
+            <div className="food-summary-value">{activeLines.length}건</div>
           </div>
         </div>
 
         <div style={{ marginBottom: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0 }}>
+          <div className="food-section-header">
+            <h2 className="food-section-title">
               작업지시 라인
             </h2>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="food-header-btn-group">
               {isEditing && (
                 <button
                   type="button"
+                  className="miniButton primary"
                   onClick={() => setIsSalesOrderModalOpen(true)}
-                  style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', fontSize: '13px', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
                 >
                   + 수주라인 추가
                 </button>
               )}
-              <button
-                type="button"
-                className="ghostButton"
-                style={{ fontSize: '13px', padding: '6px 14px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                onClick={handleOpenLabelModal}
-              >
-                선택 라벨 인쇄
-              </button>
+              {!isEditing && (
+                <button
+                  type="button"
+                  className="ghostButton food-label-print-btn"
+                  onClick={handleOpenLabelModal}
+                >
+                  선택 라벨 인쇄
+                </button>
+              )}
             </div>
           </div>
 
@@ -472,26 +480,25 @@ export function FoodWorkOrderDetailPage() {
           />
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '36px', paddingTop: '20px', borderTop: '1px solid #e5e7eb' }}>
+        <div className="food-detail-footer">
           <div>
             {isEditing && (
               <button
                 type="button"
+                className="dangerButton"
                 onClick={handleDeleteWorkOrder}
-                style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
               >
                 지시서 삭제
               </button>
             )}
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div className="food-footer-btn-group">
             {isEditing ? (
               <>
                 <button 
                   type="button" 
                   className="ghostButton" 
                   onClick={handleCancelEdit}
-                  style={{ padding: '8px 20px', fontSize: '14px', borderRadius: '6px', fontWeight: 600 }}
                 >
                   취소
                 </button>
@@ -499,7 +506,6 @@ export function FoodWorkOrderDetailPage() {
                   type="button"
                   className="primaryButton"
                   onClick={handleSaveEdit}
-                  style={{ padding: '8px 20px', fontSize: '14px', borderRadius: '6px', fontWeight: 600 }}
                 >
                   저장
                 </button>
@@ -510,7 +516,6 @@ export function FoodWorkOrderDetailPage() {
                   type="button" 
                   className="ghostButton" 
                   onClick={() => navigate(-1)}
-                  style={{ padding: '8px 20px', fontSize: '14px', borderRadius: '6px', fontWeight: 600 }}
                 >
                   목록
                 </button>
@@ -518,7 +523,6 @@ export function FoodWorkOrderDetailPage() {
                   type="button"
                   className="primaryButton"
                   onClick={handleStartEdit}
-                  style={{ padding: '8px 20px', fontSize: '14px', borderRadius: '6px', fontWeight: 600 }}
                 >
                   수정
                 </button>
@@ -543,14 +547,3 @@ export function FoodWorkOrderDetailPage() {
     </section>
   );
 }
-
-const labelModalStyles: { [key: string]: React.CSSProperties } = {
-  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 },
-  container: { backgroundColor: '#f8fafc', width: '850px', maxWidth: '95vw', maxHeight: '85vh', borderRadius: '12px', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
-  header: { padding: '20px 24px', backgroundColor: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0' },
-  title: { margin: '0 0 4px 0', fontSize: '20px', fontWeight: 700 },
-  subtitle: { margin: 0, fontSize: '13px', color: '#64748b' },
-  body: { padding: '24px', overflowY: 'auto', flex: 1 },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' },
-  labelCard: { backgroundColor: '#ffffff', border: '1px dashed #cbd5e1', borderRadius: '8px', padding: '20px' },
-};

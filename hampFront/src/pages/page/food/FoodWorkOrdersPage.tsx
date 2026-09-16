@@ -15,6 +15,7 @@ import { Badge } from "@components/common/Badge";
 import { KpiGrid, type KpiItem } from "@/components/kpi/KpiGrid";
 import type { StatusTone } from "@/types";
 import { WorkOrderApi, type WorkOrderResponse } from "@/api/WorkOrder"; 
+import '@/pages/page/food/Food.css';
 
 export function FoodWorkOrdersPage() {
   const navigate = useNavigate();
@@ -283,15 +284,15 @@ export function FoodWorkOrdersPage() {
     );
   };
 
-  // 공통 KpiGrid에 전달할 kpis 데이터 구성
+  // 공통 KpiGrid에 전달할 kpis 데이터 구성 (클래스 적용)
   const kpis: KpiItem[] = useMemo(
     () => [
       {
         label: "전체 작업지시",
         value: (
-          <div style={{ display: 'inline-flex', alignItems: 'baseline' }}>
+          <div className="food-kpi-value-container">
             {kpiStats.total}
-            <span style={{ fontSize: '15px', fontWeight: 600, marginLeft: '2px' }}>건</span>
+            <span className="food-kpi-unit">건</span>
           </div>
         ),
         tone: "neutral" as StatusTone,
@@ -299,9 +300,9 @@ export function FoodWorkOrdersPage() {
       {
         label: "대기",
         value: (
-          <div style={{ display: 'inline-flex', alignItems: 'baseline' }}>
+          <div className="food-kpi-value-container">
             {kpiStats.wait}
-            <span style={{ fontSize: '15px', fontWeight: 600, marginLeft: '2px' }}>건</span>
+            <span className="food-kpi-unit">건</span>
           </div>
         ),
         tone: "muted" as StatusTone,
@@ -309,9 +310,9 @@ export function FoodWorkOrdersPage() {
       {
         label: "진행중",
         value: (
-          <div style={{ display: 'inline-flex', alignItems: 'baseline' }}>
+          <div className="food-kpi-value-container">
             {kpiStats.progress}
-            <span style={{ fontSize: '15px', fontWeight: 600, marginLeft: '2px' }}>건</span>
+            <span className="food-kpi-unit">건</span>
           </div>
         ),
         tone: "info" as StatusTone,
@@ -319,9 +320,9 @@ export function FoodWorkOrdersPage() {
       {
         label: "완료",
         value: (
-          <div style={{ display: 'inline-flex', alignItems: 'baseline' }}>
+          <div className="food-kpi-value-container">
             {kpiStats.done}
-            <span style={{ fontSize: '15px', fontWeight: 600, marginLeft: '2px' }}>건</span>
+            <span className="food-kpi-unit">건</span>
           </div>
         ),
         tone: "good" as StatusTone,
@@ -329,9 +330,9 @@ export function FoodWorkOrdersPage() {
       {
         label: "지연",
         value: (
-          <div style={{ display: 'inline-flex', alignItems: 'baseline' }}>
+          <div className="food-kpi-value-container">
             {kpiStats.delay}
-            <span style={{ fontSize: '15px', fontWeight: 600, marginLeft: '2px' }}>건</span>
+            <span className="food-kpi-unit">건</span>
           </div>
         ),
         tone: "danger" as StatusTone,
@@ -340,13 +341,24 @@ export function FoodWorkOrdersPage() {
     [kpiStats]
   );
 
-  // 테이블 컬럼 정의
+  // 영문 상태 코드를 한글 텍스트로 변환해주는 헬퍼 함수
+  const getStatusLabel = (status: string) => {
+    switch (status?.trim()) {
+      case 'WAIT': return '대기';
+      case 'PROGRESS': return '진행중';
+      case 'DONE': return '완료';
+      case 'DELAY': return '지연';
+      default: return status || '-';
+    }
+  };
+
+  // 테이블 컬럼 정의 (클래스 적용)
   const columns: ColumnDef<WorkOrderResponse>[] = useMemo(
     () => [
       {
         accessorKey: "workId",
         header: "작업지시코드",
-        cell: ({ getValue }) => <span style={{ fontWeight: 700 }}>{getValue<string>() || "-"}</span>,
+        cell: ({ getValue }) => <span className="food-table-code-cell">{getValue<string>() || "-"}</span>,
       },
       {
         accessorKey: "workDate",
@@ -362,7 +374,8 @@ export function FoodWorkOrdersPage() {
             value === 'DONE' || value === '완료' ? 'good' : 
             value === 'PROGRESS' || value === '진행중' ? 'info' : 
             value === 'DELAY' || value === '지연' ? 'danger' : 'muted';
-          return <Badge tone={tone}>{value || "-"}</Badge>;
+          
+          return <Badge tone={tone}>{getStatusLabel(value)}</Badge>;
         },
       },
       {
@@ -404,7 +417,7 @@ export function FoodWorkOrdersPage() {
 
   return (
     <section className="screenStack">
-        <KpiGrid kpis={kpis} />
+      <KpiGrid kpis={kpis} />
 
       <SearchBand
         fields={searchFields}
