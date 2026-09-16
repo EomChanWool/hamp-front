@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react'
-import {
-  SunIcon,
-  BeakerIcon,
-  CloudIcon,
+import { 
+  SunIcon, 
+  BeakerIcon, 
+  CloudIcon, 
   SparklesIcon,
+  ClipboardDocumentListIcon,
+  ClockIcon,
+  PlayCircleIcon,
+  CheckCircleIcon,
+  ExclamationCircleIcon,
 } from '@heroicons/react/16/solid'
 import type { StatusTone } from '@/types'
 
@@ -27,6 +32,13 @@ const kpiIconMap: Record<string, KpiIconMeta> = {
   습도: { icon: BeakerIcon, color: '#0284C7', darkColor: '#38BDF8' },
   CO2: { icon: CloudIcon, color: '#64748B', darkColor: '#94A3B8' },
   미세먼지: { icon: SparklesIcon, color: '#16A34A', darkColor: '#4ADE80' },
+
+  // 작업지시 관련 추가
+  "전체 작업지시": { icon: ClipboardDocumentListIcon, color: '#2563EB', darkColor: '#3B82F6' },
+  "대기": { icon: ClockIcon, color: '#64748B', darkColor: '#94A3B8' },
+  "진행중": { icon: PlayCircleIcon, color: '#2563EB', darkColor: '#60A5FA' },
+  "완료": { icon: CheckCircleIcon, color: '#16A34A', darkColor: '#4ADE80' },
+  "지연": { icon: ExclamationCircleIcon, color: '#DC2626', darkColor: '#F87171' },
 }
 
 type Props = {

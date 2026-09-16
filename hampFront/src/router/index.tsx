@@ -264,7 +264,7 @@ export const menuRoutes: MenuRouteGroup[] = [
     items: [
       { path: 'work-orders', name: '작업지시관리', element: <FoodWorkOrdersPage /> },
       { path: 'work-order/create', name: '작업지시 등록', element: <FoodWorkOrderCreatePage />, hidden: true },
-      { path: 'work-order/detail', name: '작업지시 상세', element: <FoodWorkOrderDetailPage />, hidden: true },
+      { path: 'work-order/:workId', name: '작업지시 상세', element: <FoodWorkOrderDetailPage />, hidden: true },
       { path: 'prod-results', name: '생산실적관리', element: <FoodProductionResultsPage /> },
       { path: 'prod-status', name: '생산현황', element: <FoodProductionStatusPage /> },
       { path: 'lot-manage', name: 'LOT관리', element: <FoodLotManagePage /> },

@@ -1020,28 +1020,6 @@
 }
 
 /* ================================
-   반응형
-================================ */
-@media (max-width: 640px) {
-  .detailCard .detailHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
-    padding: 24px 20px 20px;
-  }
-
-  .detailCard .detailBody {
-    grid-template-columns: 1fr;
-    padding: 20px;
-    gap: 20px;
-  }
-
-  .detailCard .detailFooter {
-    padding: 20px;
-  }
-}
-
-/* ================================
    신규 등록 페이지 전용 스타일 (Create Page Only)
 ================================ */
 .createCard {
@@ -1166,8 +1144,11 @@
 }
 
 /* ---------- 좌측: 이미지 영역 ---------- */
+/* 기존 flex: 0 0 700px 와 width: 260px 가 서로 충돌해서
+   실제로는 이미지 칼럼이 700px로 고정되어 태블릿(≤1024px)에서
+   레이아웃이 깨지던 문제를 수정 — 260px 기준으로 통일 */
 .facilityImageCol {
-    flex: 0 0 700px;
+    flex: 0 0 260px;
     width: 260px;
 }
 
@@ -1579,8 +1560,108 @@
   text-align: center;
 }
 
+/* ================================================================
+   반응형
+   1024 : 태블릿 (헤더/사이드바/디테일·등록·설비 카드 축소)
+   720  : 작은 태블릿 (facilityHeaderTop 세로 전환)
+   640  : 폰 (디테일/등록 카드 1열)
+   600  : 폰 (헤더 축약)
+================================================================ */
 
-/* ---------- 반응형 ---------- */
+/* ---- ~1024px : 태블릿 ---- */
+@media (max-width: 1024px) {
+  .header {
+    padding: 12px 16px;
+    gap: 16px;
+  }
+
+  .brandMark {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+
+  .brandText strong {
+    font-size: 16px;
+  }
+
+  .topbar h1 {
+    font-size: 24px;
+  }
+
+  .headerDivider {
+    margin: 0 12px;
+  }
+
+  /* 사이드바 폭 축소 (완전 스택은 860px 이하에서) */
+  .mainContent {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+
+  .mainContent.collapsed {
+    grid-template-columns: 72px 1fr;
+  }
+
+  .sidebar {
+    padding: 16px 12px;
+  }
+
+  .detailCard .detailHeader {
+    padding: 28px 28px 20px;
+  }
+
+  .detailCard .detailTitle {
+    font-size: 26px;
+  }
+
+  .detailCard .detailBody {
+    padding: 24px;
+    gap: 20px;
+  }
+
+  .detailCard .detailSection {
+    padding: 22px 24px;
+  }
+
+  .createHeader {
+    padding: 28px 28px 20px;
+  }
+
+  .createTitle {
+    font-size: 26px;
+  }
+
+  .createBody {
+    padding: 24px;
+  }
+
+  .createSection {
+    padding: 22px 24px;
+  }
+
+  .createFooter {
+    padding: 22px 28px;
+  }
+
+  .facilityHeaderCard {
+    padding: 24px;
+  }
+
+  .facilityHeaderTop {
+    gap: 22px;
+  }
+
+  .facilityImageCol {
+    flex: 0 0 210px;
+    width: 210px;
+  }
+
+  .facilityTitle {
+    font-size: 22px;
+  }
+}
+
+/* ---- 반응형 ---- */
 @media (max-width: 720px) {
     .facilityHeaderTop {
         flex-direction: column;
@@ -1602,4 +1683,86 @@
     .facilityCreateFieldGrid {
         grid-template-columns: 1fr;
     }
+}
+
+/* ---- ~640px : 폰 ---- */
+@media (max-width: 640px) {
+  .detailCard .detailHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 24px 20px 20px;
+  }
+
+  .detailCard .detailBody {
+    grid-template-columns: 1fr;
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .detailCard .detailFooter {
+    padding: 20px;
+  }
+
+  .createHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 24px 20px 20px;
+  }
+
+  .createGrid2Cols {
+    grid-template-columns: 1fr;
+  }
+
+  .createBody {
+    padding: 20px;
+  }
+
+  .createFooter {
+    padding: 20px;
+  }
+}
+
+/* ---- ~600px : 폰 (헤더 축약) ---- */
+@media (max-width: 600px) {
+  .header {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .brandText small {
+    display: none;
+  }
+
+  .breadcrumb {
+    display: none;
+  }
+
+  .headerDivider {
+    display: none;
+  }
+
+  .headerUserInfo {
+    display: none;
+  }
+
+  .detailCard .detailTitle,
+  .createTitle {
+    font-size: 22px;
+  }
+
+  .detailCard .detailCode {
+    font-size: 13px;
+    height: 34px;
+    padding: 0 12px;
+  }
+
+  .facilityHeaderCard {
+    padding: 18px;
+  }
+
+  .facilityTitle {
+    font-size: 20px;
+  }
 }
