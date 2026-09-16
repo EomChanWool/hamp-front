@@ -107,31 +107,31 @@ export const WorkOrderApi = {
         sort?: string;
         [key: string]: any;
     }): Promise<ApiResponsePageWorkOrderResponse> => {
-        const res = await apiClient.get('/api/work-orders', { params });
+        const res = await apiClient.get('/work-orders', { params });
         return res.data;
     },
 
     /** 작업지시 단건 상세 조회 */
     getDetail: async (workId: string): Promise<ApiResponseWorkOrderDetailResponse> => {
-        const res = await apiClient.get(`/api/work-orders/${workId}`);
+        const res = await apiClient.get(`/work-orders/${workId}`);
         return res.data;
     },
 
     /** 작업지시 등록 */
     create: async (data: WorkOrderCreateRequest): Promise<ApiResponseWorkOrderResponse> => {
-        const res = await apiClient.post('/api/work-orders', data);
+        const res = await apiClient.post('/work-orders', data);
         return res.data;
     },
 
     /** 작업지시 수정 */
     update: async (workId: string, data: WorkOrderUpdateRequest): Promise<ApiResponseWorkOrderResponse> => {
-        const res = await apiClient.put(`/api/work-orders/${workId}`, data);
+        const res = await apiClient.put(`/work-orders/${workId}`, data);
         return res.data;
     },
 
     /** 작업지시 삭제 */
     delete: async (workId: string): Promise<ApiResponse<string>> => {
-        const res = await apiClient.delete(`/api/work-orders/${workId}`);
+        const res = await apiClient.delete(`/work-orders/${workId}`);
         return res.data;
     },
 
@@ -143,7 +143,7 @@ export const WorkOrderApi = {
         workDateTo?: string;
         [key: string]: any;
     }): Promise<ApiResponseWorkOrderStatusSummaryResponse> => {
-        const res = await apiClient.get('/api/work-orders/summary', { params });
+        const res = await apiClient.get('/work-orders/summary', { params });
         return res.data;
     },
 };
