@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { type ColumnDef } from '@tanstack/react-table'
 import { CusTable } from '@/components/table/CusTable'
 import { Badge } from '@/components/common/Badge'
-import { type SalesOrderStatusLineResponse } from '@/api/sales/SalesOrder'
+import { SalesOrderApi, type SalesOrderStatusLineResponse } from '@/api/sales/SalesOrder'
 import '@/components/modal/SalesOrderModal.css'
 
 interface SalesOrderModalProps {
@@ -11,31 +11,52 @@ interface SalesOrderModalProps {
   onSelect: (line: SalesOrderStatusLineResponse) => void
 }
 
-// 실제 SalesOrderStatusLineResponse 타입에 맞춘 목업 데이터
-const dummySalesOrderLines: SalesOrderStatusLineResponse[] = [
-  { salesOrderLineId: 1, orderCode: 'SO-2026-0912', itemCode: 'ITEM-001', itemNm: '헴프 원료(건조)', orderQty: 800, orderAmount: 800000, producedQty: 680, progressRate: 85 },
-  { salesOrderLineId: 2, orderCode: 'SO-2026-0912', itemCode: 'ITEM-002', itemNm: 'CBD 오일 원료', orderQty: 150, orderAmount: 150000, producedQty: 120, progressRate: 80 },
-  { salesOrderLineId: 3, orderCode: 'SO-2026-0915', itemCode: 'ITEM-003', itemNm: 'CBD 아이솔레이트 반제품', orderQty: 65, orderAmount: 650000, producedQty: 65, progressRate: 100 },
-  { salesOrderLineId: 4, orderCode: 'SO-2026-0918', itemCode: 'ITEM-004', itemNm: '헴프 오일 반제품', orderQty: 300, orderAmount: 300000, producedQty: 250, progressRate: 83 },
-  { salesOrderLineId: 5, orderCode: 'SO-2026-0918', itemCode: 'ITEM-005', itemNm: 'CBD 오일 30ml', orderQty: 5000, orderAmount: 5000000, producedQty: 4500, progressRate: 90 },
-  { salesOrderLineId: 6, orderCode: 'SO-2026-0921', itemCode: 'ITEM-006', itemNm: '헴프 그래놀 완제품', orderQty: 1200, orderAmount: 1200000, producedQty: 900, progressRate: 75 },
-  { salesOrderLineId: 7, orderCode: 'SO-2026-0921', itemCode: 'ITEM-007', itemNm: 'CBDA 캡슐 완제품', orderQty: 8000, orderAmount: 8000000, producedQty: 7200, progressRate: 90 },
-  { salesOrderLineId: 8, orderCode: 'SO-2026-0925', itemCode: 'ITEM-001', itemNm: '헴프 원료(건조)', orderQty: 1000, orderAmount: 1000000, producedQty: 640, progressRate: 64 },
-]
-
 export function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalProps) {
   const [searchTerm, setSearchTerm] = useState('')
+  const [data, setData] = useState<SalesOrderStatusLineResponse[]>([])
+  const [loading, setLoading] = useState(false)
 
-  const filteredLines = useMemo(() => {
-    const term = searchTerm.toLowerCase().trim()
-    if (!term) return dummySalesOrderLines
-    return dummySalesOrderLines.filter(
-      (item) =>
-        item.orderCode?.toLowerCase().includes(term) ||
-        item.itemCode?.toLowerCase().includes(term) ||
-        item.itemNm?.toLowerCase().includes(term)
-    )
-  }, [searchTerm])
+  // 1. 모달이 열릴 때 전체 데이터 조회 (검색어 변경과 무관하게 한 번만 로드)
+  useEffect(() => {
+    if (!isOpen) return
+
+    const fetchSalesOrderLines = async () => {
+      try {
+        setLoading(true)
+        // 파라미터 없이 전체 목록 조회
+        const res = await SalesOrderApi.getStatusList()
+
+        // ApiResponsePage 구조에 따라 데이터 추출 (res.data.content 등)
+        if (res && res.data) {
+          setData(res.data.content || [])
+        }
+      } catch (error) {
+        console.error('수주라인 목록 조회 실패:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSalesOrderLines()
+  }, [isOpen])
+
+  // 2. 수주코드, 품목코드, 품목명 통합 클라이언트 필터링
+  const filteredData = useMemo(() => {
+    if (!searchTerm.trim()) return data
+
+    const lowerKeyword = searchTerm.toLowerCase()
+    return data.filter((item) => {
+      const orderCode = item.orderCode?.toLowerCase() || ''
+      const itemCode = item.itemCode?.toLowerCase() || ''
+      const itemNm = item.itemNm?.toLowerCase() || ''
+
+      return (
+        orderCode.includes(lowerKeyword) ||
+        itemCode.includes(lowerKeyword) ||
+        itemNm.includes(lowerKeyword)
+      )
+    })
+  }, [data, searchTerm])
 
   const columns = useMemo<ColumnDef<SalesOrderStatusLineResponse>[]>(
     () => [
@@ -136,12 +157,12 @@ export function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalPr
           />
         </div>
 
-        {/* 테이블 영역 */}
+        {/* 테이블 영역 (filteredData 전달) */}
         <div className="sales-order-table-container">
           <CusTable
-            data={filteredLines}
+            data={filteredData}
             columns={columns}
-            noDataMessage="검색 결과가 없습니다."
+            noDataMessage={loading ? "데이터를 불러오는 중..." : "검색 결과가 없습니다."}
             onRowClick={(row) => {
               onSelect(row)
               onClose()

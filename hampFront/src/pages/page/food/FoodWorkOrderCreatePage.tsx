@@ -1,4 +1,4 @@
-import { useState, useMemo, type SyntheticEvent } from "react";
+import { useState, useMemo, useEffect, type SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { type ColumnDef } from '@tanstack/react-table';
 import { TrashIcon } from "@heroicons/react/24/outline";
@@ -6,7 +6,9 @@ import { Badge } from "@/components/common/Badge";
 import { CusTable } from "@/components/table/CusTable";
 import { SalesOrderModal } from "@/components/modal/SalesOrderModal";
 import { type SalesOrderStatusLineResponse } from "@/api/sales/SalesOrder";
-import '@/pages/page/master/MasterItem.css'; 
+import { WorkOrderApi } from "@/api/WorkOrder";
+import { UserApi, type UserOptionResponse } from "@/api/User";
+import '@/pages/page/food/Food.css'; 
 
 interface WorkOrderLine {
   id: string;
@@ -24,22 +26,36 @@ export function FoodWorkOrderCreatePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
 
+  // 회원 옵션 목록 상태
+  const [userOptions, setUserOptions] = useState<UserOptionResponse[]>([]);
+
   const [form, setForm] = useState({
     workDate: new Date().toISOString().split('T')[0],
-    status: "대기",
-    managerId: "김도현",
+    status: "WAIT", // 영문 상태 코드 ("WAIT" | "PROGRESS" | "DONE" | "DELAY")
+    managerId: "",
   });
 
-  const [lines, setLines] = useState<WorkOrderLine[]>([
-    {
-      id: "line-1",
-      salesOrderLineId: 4,
-      orderCode: "SO-2026-0918",
-      itemCode: "ITEM-004",
-      itemNm: "헴프 오일 반제품",
-      instructQty: 100,
-    },
-  ]);
+  // 초기 목업 데이터 제거 및 빈 배열 상태로 설정
+  const [lines, setLines] = useState<WorkOrderLine[]>([]);
+
+  // 회원 옵션 데이터 조회
+  useEffect(() => {
+    const fetchUserOptions = async () => {
+      try {
+        const res = await UserApi.getOptions();
+        if (res && res.data) {
+          setUserOptions(res.data);
+          if (res.data.length > 0) {
+            setForm((prev) => ({ ...prev, managerId: prev.managerId || res.data[0].userId }));
+          }
+        }
+      } catch (error) {
+        console.error("회원 옵션 조회 실패:", error);
+      }
+    };
+
+    fetchUserOptions();
+  }, []);
 
   const handleChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -52,10 +68,6 @@ export function FoodWorkOrderCreatePage() {
   };
 
   const handleRemoveLine = (id: string) => {
-    if (lines.length === 1) {
-      alert("최소 1개 이상의 작업지시 라인이 필요합니다.");
-      return;
-    }
     setLines((prev) => prev.filter((line) => line.id !== id));
   };
 
@@ -76,7 +88,7 @@ export function FoodWorkOrderCreatePage() {
     setIsModalOpen(true);
   };
 
-  // 모달에서 '선택' 버튼을 누르거나 행을 클릭했을 때 실행되는 핸들러
+  // 모달에서 수주 라인을 선택했을 때 실행되는 핸들러
   const handleSelectSalesOrderLine = (selected: SalesOrderStatusLineResponse) => {
     if (!activeLineId) return;
 
@@ -89,7 +101,7 @@ export function FoodWorkOrderCreatePage() {
             orderCode: selected.orderCode,
             itemCode: selected.itemCode,
             itemNm: selected.itemNm,
-            instructQty: selected.orderQty, // 기본값으로 주문수량 연동 또는 0 처리 가능
+            instructQty: selected.orderQty, 
           };
         }
         return line;
@@ -106,29 +118,23 @@ export function FoodWorkOrderCreatePage() {
         meta: { width: '450px' },
         cell: ({ row }) => {
           const line = row.original;
+          const isSelected = line.salesOrderLineId > 0;
           return (
             <button
               type="button"
               onClick={() => handleOpenModal(line.id)}
-              className="tableInput"
-              style={{ 
-                cursor: 'pointer', 
-                textAlign: 'left', 
-                background: 'var(--bg-input, #fff)', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '10px',
-                width: '100%',
-                padding: '8px 12px',
-                boxSizing: 'border-box'
-              }}
+              className="tableInput food-order-select-btn"
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flex: 1 }}>
-                <span style={{ fontWeight: 600, color: 'var(--primary-color, #2563eb)' }}>{line.orderCode}</span>
-                <Badge tone="info">{line.itemCode}</Badge>
-                <span style={{ color: 'var(--text-main, #374151)' }}>{line.itemNm}</span>
-              </div>
-              <span style={{ fontSize: '12px', color: 'var(--text-sub, #6b7280)', whiteSpace: 'nowrap' }}>(변경)</span>
+              {isSelected ? (
+                <div className="food-order-selected-container">
+                  <span className="food-order-code-text">{line.orderCode}</span>
+                  <Badge tone="info">{line.itemCode}</Badge>
+                  <span className="food-item-name-text">{line.itemNm}</span>
+                </div>
+              ) : (
+                <span className="food-order-placeholder-text">클릭하여 수주라인을 선택하세요</span>
+              )}
+              <span className="food-order-change-text">(변경)</span>
             </button>
           );
         },
@@ -141,11 +147,10 @@ export function FoodWorkOrderCreatePage() {
           return (
             <input
               type="number"
-              className="tableInput"
+              className="tableInput food-table-input-cell"
               value={line.instructQty}
               disabled={isSubmitting}
               onChange={(e) => handleQtyChange(line.id, Number(e.target.value))}
-              style={{ padding: '8px 12px', boxSizing: 'border-box', width: '100%' }}
             />
           );
         },
@@ -163,10 +168,10 @@ export function FoodWorkOrderCreatePage() {
                 type="button"
                 onClick={() => handleRemoveLine(line.id)}
                 disabled={isSubmitting}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px' }}
+                className="food-line-delete-btn"
                 title="라인 삭제"
               >
-                <TrashIcon style={{ width: '18px', height: '18px' }} />
+                <TrashIcon className="food-delete-icon" />
               </button>
             </div>
           );
@@ -182,8 +187,12 @@ export function FoodWorkOrderCreatePage() {
       alert("작업일자를 입력해주세요.");
       return false;
     }
+    if (!form.managerId) {
+      alert("담당자를 선택해주세요.");
+      return false;
+    }
     if (lines.length === 0) {
-      alert("수주라인을 최소 1개 이상 선택해야 합니다.");
+      alert("수주라인을 최소 1개 이상 추가해야 합니다.");
       return false;
     }
     for (const line of lines) {
@@ -219,10 +228,8 @@ export function FoodWorkOrderCreatePage() {
 
     setIsSubmitting(true);
     try {
-      console.log("전송할 Payload:", payload);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      alert("작업지시가 성공적으로 등록되었습니다. (Mock)");
+      await WorkOrderApi.create(payload);
+      alert("작업지시가 성공적으로 등록되었습니다.");
       navigate("/food/work-orders");
     } catch (error) {
       console.error("작업지시 등록 실패:", error);
@@ -255,7 +262,7 @@ export function FoodWorkOrderCreatePage() {
                 <div className="createField">
                   <label className="requiredLabel">작업지시코드</label>
                   <input className="tableInput" value="(저장 시 자동 채번)" disabled />
-                  <span className="createMeta" style={{ marginTop: '4px', display: 'block' }}>
+                  <span className="createMeta food-create-meta-spacing">
                     등록 시 날짜+일련번호로 자동 채번됩니다.
                   </span>
                 </div>
@@ -279,25 +286,27 @@ export function FoodWorkOrderCreatePage() {
                     disabled={isSubmitting}
                     onChange={(e) => handleChange("status", e.target.value)}
                   >
-                    <option value="대기">대기</option>
-                    <option value="진행중">진행중</option>
-                    <option value="완료">완료</option>
-                    <option value="지연">지연</option>
+                    <option value="WAIT">대기</option>
+                    <option value="PROGRESS">진행중</option>
+                    <option value="DONE">완료</option>
+                    <option value="DELAY">지연</option>
                   </select>
                 </div>
 
                 <div className="createField">
-                  <label className="requiredLabel">담당자</label>
+                  <label className="requiredLabel">담당자 <span className="required">*</span></label>
                   <select
                     className="tableInput"
                     value={form.managerId}
                     disabled={isSubmitting}
                     onChange={(e) => handleChange("managerId", e.target.value)}
                   >
-                    <option value="김도현">김도현</option>
-                    <option value="박서연">박서연</option>
-                    <option value="전지윤">전지윤</option>
-                    <option value="이하늘">이하늘</option>
+                    <option value="">담당자 선택</option>
+                    {userOptions.map((user) => (
+                      <option key={user.userId} value={user.userId}>
+                        {user.userNm} ({user.userId})
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -327,12 +336,11 @@ export function FoodWorkOrderCreatePage() {
                 수주코드·품목코드·품목명으로 검색해서 수주라인을 선택하세요.
               </div>
 
-              {/* CusTable 컴포넌트 적용 */}
-              <div style={{ marginTop: '12px' }}>
+              <div className="food-table-container-margin">
                 <CusTable
                   data={lines}
                   columns={workOrderColumns}
-                  noDataMessage="등록된 작업지시 라인이 없습니다."
+                  noDataMessage="등록된 작업지시 라인이 없습니다. [+ 라인 추가] 버튼을 눌러주세요."
                 />
               </div>
 

@@ -198,11 +198,10 @@ export function SeedReportReturnManagePage() {
 
   const columns: ColumnDef<SeedGoodsReceiptReturnItemResponse>[] = useMemo(
     () => [
-      { accessorKey: 'returnId', header: '신고ID', meta: { width: '100px' } },
+      { accessorKey: 'returnId', header: '신고ID' },
       {
         accessorKey: 'itemCode',
         header: '품목',
-        meta: { width: '250px' },
         cell: ({ row }) => {
           const { itemCode, itemNm } = row.original;
           return (
@@ -216,7 +215,6 @@ export function SeedReportReturnManagePage() {
       {
         accessorKey: 'returnQty',
         header: '수량',
-        meta: { width: '100px' },
         cell: ({ row }) => {
           const isEditing = editingId === row.original.returnId;
           if (isEditing) {
@@ -233,12 +231,11 @@ export function SeedReportReturnManagePage() {
           return row.original.returnQty;
         },
       },
-      { accessorKey: 'reportDate', header: '신고일자', meta: { width: '130px' } },
-      { accessorKey: 'returnDueDate', header: '처리예정일', meta: { width: '130px' } },
+      { accessorKey: 'reportDate', header: '신고일자' },
+      { accessorKey: 'returnDueDate', header: '처리예정일' },
       {
         accessorKey: 'processStatus',
         header: '처리상태',
-        meta: { width: '120px' },
         cell: ({ row }) => {
           const isEditing = editingId === row.original.returnId;
           const statusNum = row.original.processStatus;
@@ -264,7 +261,6 @@ export function SeedReportReturnManagePage() {
       {
         id: 'actions',
         header: '관리',
-        meta: { width: '150px' },
         cell: ({ row }) => {
           const isEditing = editingId === row.original.returnId;
           return (

@@ -469,7 +469,6 @@ export function MasterDefectsPage() {
       {
         id: "actions",
         header: "관리",
-        meta: { width: "130px" },
         cell: ({ row }) => {
           const isNewRow = row.original.defCode === "__NEW_ROW__";
           const isEditing = row.original.defCode === editingDefCode;

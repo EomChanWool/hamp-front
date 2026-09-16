@@ -3,7 +3,7 @@ import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
 /** 씨드 등록 요청 */
 export interface SeedGoodsReceiptCreateRequest {
-  itemCode: string;          
+  itemCode: string;           
   receiptQty: number;  
   defectQty: number;     
   goodQty: number;   
@@ -12,7 +12,7 @@ export interface SeedGoodsReceiptCreateRequest {
 
 /** 씨드 정보 수정 요청 */
 export interface SeedGoodsReceiptUpdateRequest {
-  itemCode: string;          
+  itemCode: string;           
   receiptQty: number;  
   defectQty: number;     
   goodQty: number;   
@@ -24,6 +24,7 @@ export interface SeedGoodsReceiptResponse {
   receiptId: number;
   itemCode: string;
   itemNm: string;
+  barcode: string;
   unit: string;
   receiptQty: number;  
   defectQty: number;     
@@ -98,6 +99,14 @@ export const SeedGoodsReceiptApi = {
   /** 씨드 입고 단건 조회 */
   getDetail: async (receiptId: number): Promise<ApiResponseSeedGoodsReceiptResponse> => {
     const res = await apiClient.get<ApiResponseSeedGoodsReceiptResponse>(`/seed-goods-receipts/${receiptId}`);
+    return res.data;
+  },
+
+  /** 씨드 입고 라벨 바코드 스캔 조회 */
+  scan: async (code: string): Promise<ApiResponseSeedGoodsReceiptResponse> => {
+    const res = await apiClient.get<ApiResponseSeedGoodsReceiptResponse>('/seed-goods-receipts/scan', {
+      params: { code },
+    });
     return res.data;
   },
 

@@ -1,0 +1,563 @@
+/* ==========================================
+   Food 작업지시 목록 페이지 추가 스타일
+   ========================================== */
+
+/* KPI 수치 및 단위를 정렬하기 위한 인라인 플렉스 컨테이너 */
+.food-kpi-value-container {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+/* KPI 단위('건') 텍스트 스타일 */
+.food-kpi-unit {
+  font-size: 15px;
+  font-weight: 600;
+  margin-left: 2px;
+}
+
+/* 작업지시코드 테이블 셀 굵기 */
+.food-table-code-cell {
+  font-weight: 700;
+}
+
+/* ==========================================
+   Food 작업지시 등록 페이지 추가 스타일
+   ========================================== */
+
+/* 작업지시코드 안내 메타 텍스트 */
+.food-create-meta-spacing {
+  margin-top: 4px;
+  display: block;
+}
+
+/* 수주라인 선택 버튼 컴포넌트 */
+.food-order-select-btn {
+  cursor: pointer;
+  text-align: left;
+  background: var(--bg-input, #fff);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  box-sizing: border-box;
+}
+
+/* 수주라인 선택 완료된 내부 컨테이너 */
+.food-order-selected-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+/* 수주코드 텍스트 강조 */
+.food-order-code-text {
+  font-weight: 600;
+  color: var(--primary-color, #2563eb);
+}
+
+/* 수주라인 품목명 텍스트 */
+.food-item-name-text {
+  color: var(--text-main, #374151);
+}
+
+/* 수주라인 미선택 안내 텍스트 */
+.food-order-placeholder-text {
+  color: var(--text-sub, #9ca3af);
+  flex: 1;
+}
+
+/* 수주라인 변경 액션 텍스트 */
+.food-order-change-text {
+  font-size: 12px;
+  color: var(--text-sub, #6b7280);
+  white-space: nowrap;
+}
+
+/* 테이블 내 인풋 공통 스타일 (지시수량 등) */
+.food-table-input-cell {
+  padding: 8px 12px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* 라인 삭제 버튼 스타일 */
+.food-line-delete-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #ef4444;
+  padding: 4px;
+}
+
+/* 삭제 아이콘 크기 지정 */
+.food-delete-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* 테이블 영역 상단 마진 */
+.food-table-container-margin {
+  margin-top: 12px;
+}
+
+/* ==========================================
+   Food 작업지시 상세 페이지 추가 스타일
+   ========================================== */
+
+/* 상세 메인 카드 커스텀 패딩 및 스타일 */
+.food-detail-card {
+  padding: 32px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* 헤더 영역 */
+.food-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 16px;
+}
+
+.food-detail-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 4px 0;
+}
+
+.food-detail-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* 요약 정보 그리드 박스 */
+.food-summary-grid-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 20px 24px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 36px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.food-summary-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.food-summary-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* 수정모드 인폼 컨트롤 (input, select) */
+.food-edit-input {
+  padding: 6px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 라인 테이블 인풋 */
+.food-line-input {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  width: 100px;
+}
+
+/* 섹션 타이틀 및 상단 버튼 영역 */
+.food-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.food-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.food-label-print-btn {
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+}
+
+/* 하단 컨트롤 바 */
+.food-detail-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 36px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.food-card-header-meta {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.food-card-body-meta {
+  font-size: 13px;
+  color: #334155;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.food-card-qty-meta {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 12px;
+}
+
+.food-card-barcode-wrap {
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 8px;
+}
+
+/* 테이블 내부 flex 컨테이너 관련 */
+.food-cell-flex-wrap {
+  display: flex;
+  align-items: center;     /* 가로 기준 가운데 정렬 */
+  justify-content: center; /* 세로 기준 가운데 정렬 (테이블 셀 높이가 여유 있을 때) */
+  text-align: center;      /* 내부 텍스트 자체도 가운데 정렬 */
+  gap: 8px;
+}
+
+/* 헤더 우측 및 하단 버튼 그룹 레이아웃 */
+.food-header-btn-group {
+  display: flex;
+  gap: 8px;
+}
+
+.food-footer-btn-group {
+  display: flex;
+  gap: 12px;
+}
+
+/* ==========================================
+   라벨 인쇄 미리보기 모달 CSS
+   ========================================== */
+.food-label-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.food-label-modal-container {
+  background-color: #f8fafc;
+  width: 850px;
+  max-width: 95vw;
+  max-height: 85vh;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.food-label-modal-header {
+  padding: 20px 24px;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.food-label-modal-breadcrumb {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+
+.food-label-modal-title {
+  margin: 0 0 4px 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.food-label-modal-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.food-label-modal-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.food-label-modal-btn-close {
+  font-size: 13px;
+  padding: 6px 12px;
+}
+
+.food-label-modal-btn-print {
+  font-size: 13px;
+  padding: 6px 16px;
+}
+
+.food-label-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.food-label-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.food-label-card {
+  background-color: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+/* 테이블 셀 내부 레이아웃 전용 클래스들 */
+.food-cell-center {
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.food-cell-order-code {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.food-cell-line-badge {
+  font-size: 12px;
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.food-cell-item-name {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.food-cell-item-code {
+  font-size: 11px;
+  color: #64748b;
+  margin-left: 6px;
+}
+
+.food-cell-qty {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.food-line-delete-btn-sm {
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+
+/* ================================================
+   DARK MODE (Food 작업지시 전용 추가 스타일)
+   ================================================ */
+
+[data-theme="dark"] .food-detail-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+[data-theme="dark"] .food-detail-header {
+  border-bottom-color: var(--border);
+}
+
+[data-theme="dark"] .food-detail-title {
+  color: var(--text-heading);
+}
+
+[data-theme="dark"] .food-detail-subtitle {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .food-summary-grid-box {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .food-summary-label {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .food-summary-value {
+  color: var(--text-main);
+}
+
+[data-theme="dark"] .food-edit-input,
+[data-theme="dark"] .food-line-input {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+  color: var(--text-main);
+}
+
+[data-theme="dark"] .food-section-title {
+  color: var(--text-heading);
+}
+
+[data-theme="dark"] .food-label-print-btn {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+  color: var(--text-main);
+}
+
+[data-theme="dark"] .food-label-print-btn:hover {
+  background: #252a36;
+}
+
+[data-theme="dark"] .food-detail-footer {
+  border-top-color: var(--border);
+}
+
+[data-theme="dark"] .food-card-header-meta {
+  color: var(--text-heading);
+}
+
+[data-theme="dark"] .food-card-body-meta {
+  color: var(--text-body);
+}
+
+[data-theme="dark"] .food-card-qty-meta {
+  color: var(--text-main);
+}
+
+[data-theme="dark"] .food-card-barcode-wrap {
+  border-top-color: var(--border);
+}
+
+[data-theme="dark"] .food-order-select-btn {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+}
+
+[data-theme="dark"] .food-order-code-text {
+  color: #60a5fa; /* 다크모드용 파란색 계열 강조 */
+}
+
+[data-theme="dark"] .food-item-name-text {
+  color: var(--text-body);
+}
+
+[data-theme="dark"] .food-order-placeholder-text {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .food-order-change-text {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .food-line-delete-btn {
+  color: #fca5a5;
+}
+
+/* 라벨 인쇄 미리보기 모달 다크모드 대응 */
+[data-theme="dark"] .food-label-modal-container {
+  background-color: var(--bg-app);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+[data-theme="dark"] .food-label-modal-header {
+  background-color: var(--bg-card);
+  border-bottom-color: var(--border);
+}
+
+[data-theme="dark"] .food-label-modal-breadcrumb {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .food-label-modal-title {
+  color: var(--text-heading);
+}
+
+[data-theme="dark"] .food-label-modal-subtitle {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .food-label-card {
+  background-color: var(--bg-card);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .food-cell-order-code {
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .food-cell-line-badge {
+  background: #1e3a8a;
+  color: #dbeafe;
+}
+
+[data-theme="dark"] .food-cell-item-name {
+  color: var(--text-body);
+}
+
+[data-theme="dark"] .food-cell-item-code {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .food-cell-qty {
+  color: var(--text-main);
+}
+
+[data-theme="dark"] .food-line-delete-btn-sm {
+  background: #451a1a;
+  color: #fca5a5;
+}
+
+[data-theme="dark"] .food-line-delete-btn-sm:hover {
+  background: #7f1d1d;
+  color: #ffffff;
+}
