@@ -6,13 +6,16 @@ import { CusTable } from "@/components/table/CusTable";
 import { Badge } from "@/components/common/Badge";
 import Spinner from "@/components/common/Spinner";
 import { WorkOrderApi } from "@/api/WorkOrder"; 
-import { SalesOrderApi, type SalesOrderStatusLineResponse } from "@/api/sales/SalesOrder"; 
+import { type SalesOrderStatusLineResponse } from "@/api/sales/SalesOrder"; 
+
+import { SalesOrderModal } from "@/components/modal/SalesOrderModal"; 
 import '@/pages/page/master/MasterItem.css';
 
 interface WorkOrderLineDetail {
   id: string;
   orderCode: string;
   lineId: string;
+  itemCode: string; // 추가: 품목코드 저장용
   itemNm: string;
   instructQty: string;
   barcode: string;
@@ -25,153 +28,6 @@ interface WorkOrderMaster {
   status: "대기" | "진행중" | "완료" | "지연";
   managerId: string;
   lines: WorkOrderLineDetail[];
-}
-
-// ==========================================
-// 수주라인 선택 모달 컴포넌트
-// ==========================================
-interface SalesOrderModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelect: (line: SalesOrderStatusLineResponse) => void;
-}
-
-function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [salesLines, setSalesLines] = useState<SalesOrderStatusLineResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const fetchSalesLines = useCallback(async (keyword = '') => {
-    setIsLoading(true);
-    try {
-      const response = await SalesOrderApi.getStatusList({
-        orderCode: keyword || undefined,
-        page: 0,
-        size: 50,
-      });
-      const items = response.data?.content || [];
-      setSalesLines(items);
-    } catch (error) {
-      console.error("수주라인 조회 실패:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchSalesLines(searchTerm);
-    }
-  }, [isOpen, searchTerm, fetchSalesLines]);
-
-  const columns = useMemo<ColumnDef<SalesOrderStatusLineResponse>[]>(
-    () => [
-      {
-        accessorKey: 'orderCode',
-        header: '수주코드',
-        cell: ({ row }) => <span style={{ fontWeight: 600, color: '#1e293b' }}>{row.original.orderCode}</span>,
-      },
-      {
-        accessorKey: 'itemNm',
-        header: '품목명',
-        cell: ({ row }) => <span style={{ fontWeight: 500 }}>{row.original.itemNm}</span>,
-      },
-      {
-        accessorKey: 'orderQty',
-        header: '주문수량',
-        cell: ({ row }) => (
-          <div style={{ textAlign: 'right' }}>
-            {row.original.orderQty?.toLocaleString()}
-          </div>
-        ),
-      },
-      {
-        accessorKey: 'producedQty',
-        header: '생산완료수량',
-        cell: ({ row }) => (
-          <div style={{ textAlign: 'right' }}>
-            {row.original.producedQty?.toLocaleString() || 0}
-          </div>
-        ),
-      },
-      {
-        accessorKey: 'progressRate',
-        header: '진행률',
-        cell: ({ row }) => (
-          <div style={{ textAlign: 'right', fontWeight: 600 }}>
-            {row.original.progressRate}%
-          </div>
-        ),
-      },
-      {
-        id: 'action',
-        header: '관리',
-        enableSorting: false,
-        cell: ({ row }) => (
-          <div style={{ textAlign: 'center' }}>
-            <button
-              type="button"
-              style={modalStyles.selectButton}
-              onClick={() => {
-                onSelect(row.original);
-                onClose();
-              }}
-            >
-              선택
-            </button>
-          </div>
-        ),
-        meta: { width: '80px' },
-      },
-    ],
-    [onSelect, onClose]
-  );
-
-  if (!isOpen) return null;
-
-  return (
-    <div style={modalStyles.overlay}>
-      <div style={modalStyles.container}>
-        <div style={modalStyles.header}>
-          <div>
-            <h2 style={modalStyles.title}>수주라인 선택</h2>
-            <p style={modalStyles.subtitle}>작업지시에 연결할 수주 코드를 검색하여 선택하세요.</p>
-          </div>
-          <button type="button" onClick={onClose} style={modalStyles.closeButton}>
-            ✕
-          </button>
-        </div>
-
-        <div style={modalStyles.searchWrapper}>
-          <input
-            type="text"
-            placeholder="수주코드 입력 (예: SO-2026-...)"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={modalStyles.searchInput}
-          />
-        </div>
-
-        <div style={{ ...modalStyles.tableContainer, position: 'relative', minHeight: '200px' }}>
-          {isLoading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '150px' }}>
-              <Spinner />
-            </div>
-          ) : (
-            <CusTable
-              data={salesLines}
-              columns={columns}
-              noDataMessage="검색 결과가 없습니다."
-              onRowClick={(row) => {
-                onSelect(row);
-                onClose();
-              }}
-            />
-          )}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ==========================================
@@ -254,7 +110,6 @@ export function FoodWorkOrderDetailPage() {
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
   const [isSalesOrderModalOpen, setIsSalesOrderModalOpen] = useState(false);
 
-  // 작업지시 상세 조회 API 연동
   const fetchWorkOrderDetail = useCallback(async () => {
     if (!workId) return;
     setIsLoading(true);
@@ -274,6 +129,7 @@ export function FoodWorkOrderDetailPage() {
           id: l.id || `line-${idx}`,
           orderCode: l.orderCode || l.salesOrderCode || "",
           lineId: l.lineId || `#${101 + idx}`,
+          itemCode: l.itemCode || "",
           itemNm: l.itemNm || l.itemName || "",
           instructQty: String(l.instructQty || l.qty || ""),
           barcode: l.barcode || `${data.workId || workId}-${101 + idx}`,
@@ -294,13 +150,11 @@ export function FoodWorkOrderDetailPage() {
     fetchWorkOrderDetail();
   }, [fetchWorkOrderDetail]);
 
-  // 수정 모드 진입
   const handleStartEdit = () => {
     setEditForm(workOrder);
     setIsEditing(true);
   };
 
-  // 수정 취소
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditForm(workOrder);
@@ -350,7 +204,6 @@ export function FoodWorkOrderDetailPage() {
     }
   };
 
-  // 라인 개별 삭제
   const handleDeleteLine = (lineId: string) => {
     setEditForm(prev => ({
       ...prev,
@@ -359,12 +212,14 @@ export function FoodWorkOrderDetailPage() {
     setSelectedLines(prev => prev.filter(item => item !== lineId));
   };
 
+  // 모달에서 선택한 실제 API 응답 타입 기반 라인 추가 처리
   const handleSelectSalesOrderLine = (selectedLine: SalesOrderStatusLineResponse) => {
     const activeLinesCount = editForm.lines.length;
     const newLine: WorkOrderLineDetail = {
       id: `line-${Date.now()}`,
       orderCode: selectedLine.orderCode,
       lineId: `#${101 + activeLinesCount}`,
+      itemCode: selectedLine.itemCode,
       itemNm: selectedLine.itemNm,
       instructQty: String(selectedLine.orderQty || 0),
       barcode: `${editForm.workOrderNo}-${101 + activeLinesCount}`,
@@ -378,7 +233,6 @@ export function FoodWorkOrderDetailPage() {
 
   const activeLines = isEditing ? editForm.lines : workOrder.lines;
 
-  // 라인 필드 값 직접 수정 (수정 모드 시)
   const handleLineChange = (lineId: string, field: keyof WorkOrderLineDetail, value: string) => {
     setEditForm(prev => ({
       ...prev,
@@ -446,7 +300,10 @@ export function FoodWorkOrderDetailPage() {
               style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', width: '100%' }}
             />
           ) : (
-            <div style={{ color: '#1e293b', fontWeight: 600 }}>{row.original.itemNm}</div>
+            <div style={{ color: '#1e293b', fontWeight: 600 }}>
+              {row.original.itemNm} 
+              {row.original.itemCode && <span style={{ fontSize: '11px', color: '#64748b', marginLeft: '6px' }}>({row.original.itemCode})</span>}
+            </div>
           )
         ),
       },
@@ -507,7 +364,6 @@ export function FoodWorkOrderDetailPage() {
 
       <div className="createCard" style={{ padding: '32px', background: '#ffffff', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
         
-        {/* 상단 타이틀 영역 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid #e5e7eb', paddingBottom: '16px' }}>
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: '0 0 4px 0' }}>
@@ -519,7 +375,6 @@ export function FoodWorkOrderDetailPage() {
           </div>
         </div>
 
-        {/* 기본 정보 요약 카드 박스 (4열 그리드 레이아웃) */}
         <div style={{ 
           background: '#f8fafc', 
           border: '1px solid #e2e8f0', 
@@ -584,7 +439,6 @@ export function FoodWorkOrderDetailPage() {
           </div>
         </div>
 
-        {/* 작업지시 라인 섹션 */}
         <div style={{ marginBottom: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0 }}>
@@ -618,7 +472,6 @@ export function FoodWorkOrderDetailPage() {
           />
         </div>
 
-        {/* 하단 버튼 영역 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '36px', paddingTop: '20px', borderTop: '1px solid #e5e7eb' }}>
           <div>
             {isEditing && (
@@ -690,19 +543,6 @@ export function FoodWorkOrderDetailPage() {
     </section>
   );
 }
-
-const modalStyles: { [key: string]: React.CSSProperties } = {
-  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
-  container: { backgroundColor: '#ffffff', width: '900px', maxWidth: '95vw', maxHeight: '85vh', borderRadius: '12px', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
-  header: { padding: '20px 24px', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9' },
-  title: { margin: 0, fontSize: '18px', fontWeight: 700 },
-  subtitle: { margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' },
-  closeButton: { background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer' },
-  searchWrapper: { padding: '16px 24px', backgroundColor: '#f8fafc', borderBottom: '1px solid #f1f5f9' },
-  searchInput: { width: '100%', padding: '10px 14px', borderRadius: '6px', border: '1px solid #cbd5e1' },
-  tableContainer: { padding: '16px 24px', overflowY: 'auto' },
-  selectButton: { padding: '4px 12px', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' },
-};
 
 const labelModalStyles: { [key: string]: React.CSSProperties } = {
   overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 },
