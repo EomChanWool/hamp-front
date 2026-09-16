@@ -404,9 +404,7 @@ export function FoodWorkOrdersPage() {
 
   return (
     <section className="screenStack">
-      <div style={{ marginBottom: '16px' }}>
         <KpiGrid kpis={kpis} />
-      </div>
 
       <SearchBand
         fields={searchFields}
