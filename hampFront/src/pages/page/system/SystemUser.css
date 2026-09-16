@@ -48,7 +48,9 @@
   appearance: none;
   -webkit-appearance: none;
   width: 18px;
-  height: 35px;
+  /* height:35px는 오타로 보임 — 정사각형 체크박스가 세로로 길쭉하게
+     나오고 있었음. width와 동일한 18px로 수정 */
+  height: 18px;
   border: 2px solid var(--border);
   border-radius: 4px;
   outline: none;
@@ -57,6 +59,7 @@
   place-content: center;
   margin: 0;
   cursor: pointer;
+  flex-shrink: 0;
   transition: all 0.15s ease;
 }
 
@@ -117,6 +120,10 @@
   padding: 20px;
   transition: border-color 0.15s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  /* 아래 CRUD 도트 그리드(고정 225px)가 카드 폭보다 넓어지는 아주 좁은
+     화면(작은 폰)에서 박스 밖으로 새지 않고 카드 안에서만 가로
+     스크롤되게 하는 안전망 */
+  overflow-x: auto;
 }
 
 .authGroupCard:hover {
@@ -128,12 +135,15 @@
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .authGroupCardHeaderLeft {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .authGroupCardTitle {
@@ -153,6 +163,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 /* 총 메뉴 개수 배지 */
@@ -292,6 +303,11 @@
 .menuPermHeaderName,
 .menuPermName {
   flex: 1;
+  /* flex 아이템 기본값(min-width:auto)에서는 white-space:nowrap +
+     ellipsis를 걸어도 실제로는 줄어들지 않아서, 옆의 고정폭 도트
+     그리드(225px)와 합쳐지면 좁은 화면에서 카드 밖으로 넘치던 문제.
+     min-width:0을 줘야 ellipsis 축소가 실제로 동작함 */
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -341,4 +357,35 @@
 
 .permDot--off {
   background: #e2e8f0;
+}
+
+/* ================================
+   반응형
+   1024 : 태블릿 — 카테고리 3열 → 2열
+   640  : 폰 — 카테고리 1열, CRUD 도트 칸 폭 축소
+================================ */
+
+@media (max-width: 1024px) {
+  .categoryGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .categoryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .authGroupCard {
+    padding: 16px;
+  }
+
+  .menuPermHeaderLabels,
+  .menuPermDots {
+    grid-template-columns: repeat(5, 36px);
+  }
+
+  .permHeaderLabel {
+    font-size: 10px;
+  }
 }

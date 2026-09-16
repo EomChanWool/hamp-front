@@ -373,7 +373,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
 
     return (
         <div className="reportModalOverlay" onClick={onClose}>
-            <div className="reportModalContent customModalSize" onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
+            <div className="reportModalContent" onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
                 
                 {/* 모달 전체 스피너 오버레이 */}
                 {(isLoading || isSaving) && (

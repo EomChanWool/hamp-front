@@ -2,7 +2,9 @@
    WORK TABLET HOME (현장 태블릿 메뉴)
 ================================ */
 .workTabletPage {
-  width: 100vw;
+  width: 100%; /* 100vw는 세로 스크롤바 폭까지 포함해 계산될 수 있어
+                  콘텐츠가 늘어났을 때 우측에 미세한 가로 여백/스크롤이
+                  생길 수 있음. 100%로 변경 */
   min-height: 100vh;
   min-height: 100dvh;
   background: url("/src/assets/images/login-bg.png") no-repeat center center;
@@ -93,6 +95,54 @@
 
 .workTabletBtn:active {
   transform: translateY(0);
+}
+
+/* ================================
+   세로 높이가 짧을 때 대응 (태블릿 가로모드 등)
+   폭 기준 미디어쿼리만 있으면 "폭은 넉넉한데 높이가 짧은" 상황
+   (현장에서 태블릿을 가로로 눕혀 쓰는 경우 흔함)을 못 잡아서,
+   헤더+버튼 2개+패딩 합이 뷰포트 높이를 넘어 아래가 잘리거나
+   스크롤이 생길 수 있었음. 높이 기준으로 별도 축소 처리
+================================ */
+@media (max-height: 600px) {
+  .workTabletPage {
+    padding: 16px;
+    align-items: center;
+  }
+
+  .workTabletContainer {
+    padding: 24px 32px;
+    gap: 14px;
+  }
+
+  .workTabletHeader {
+    gap: 4px;
+  }
+
+  .workTabletHeader h1 {
+    font-size: 24px;
+  }
+
+  .workTabletHeader p {
+    font-size: 13px;
+  }
+
+  .workTabletMenuButtons {
+    gap: 12px;
+  }
+
+  .workTabletBtn {
+    height: 64px;
+    font-size: 20px;
+  }
+}
+
+/* 폭도 좁고 높이도 짧은 극단적인 경우(작은 폰 가로모드)를 위한 안전망 */
+@media (max-height: 420px) {
+  .workTabletPage {
+    align-items: flex-start;
+    overflow-y: auto;
+  }
 }
 
 /* ================================

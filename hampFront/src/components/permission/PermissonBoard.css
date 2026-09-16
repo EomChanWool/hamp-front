@@ -256,7 +256,7 @@
   border-color: rgba(224, 160, 48, 0.3);
 }
 
-/* ── [신규] 우측 상세 1단 헤더: 제목 + 뱃지(좌) / 액션 버튼(우) ── */
+/* ── 우측 상세 1단 헤더: 제목 + 뱃지(좌) / 액션 버튼(우) ── */
 
 .permDetailHeader {
   position: sticky;
@@ -332,7 +332,7 @@
   border-color: #17875f;
 }
 
-/* ── [신규] 좌측 대메뉴 목록 스크롤 영역 ── */
+/* ── 좌측 대메뉴 목록 스크롤 영역 ── */
 
 .permNavList {
   flex: 1;
@@ -449,6 +449,12 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  /* --check-col × 권한 컬럼 개수 + 라벨 폭이 화면보다 넓어질 때,
+     헤더/행이 이 박스 밖으로 흘러넘치지 않고 안에서만 가로 스크롤
+     되도록 하는 안전망. 헤더(.permMatrixHeader)와 행(.permSubRow)이
+     같은 스크롤 컨테이너 안에 있어야 좌우로 같이 움직이며 정렬이
+     유지된다 */
+  overflow-x: auto;
 }
 
 .permDetailEmpty {
@@ -470,10 +476,15 @@
   padding: 14px 20px;
   background: #eceff4;
   border-bottom: 1px solid var(--border);
+  /* 부모(.permMenuDetail)가 가로 스크롤될 때 이 행 자체는 줄어들지
+     않고 내용(라벨+체크컬럼) 폭만큼 그대로 유지되어야 정렬이 안 깨짐 */
+  width: fit-content;
+  min-width: 100%;
 }
 
 .permMatrixHeaderLabel {
   flex: 1;
+  min-width: 160px;
   font-size: 15px;
   font-weight: 700;
   color: var(--text-heading);
@@ -516,6 +527,10 @@
 .permSubChildren {
   display: flex;
   flex-direction: column;
+  /* 헤더와 마찬가지로, 부모가 가로 스크롤될 때 폭이 줄어들지 않고
+     헤더와 같은 최소폭을 유지해야 체크 컬럼이 서로 어긋나지 않음 */
+  width: fit-content;
+  min-width: 100%;
 }
 
 .permSubChildren .permSubChildren {
@@ -542,7 +557,8 @@
   gap: 8px;
   font-size: 15px;
   color: var(--text-body);
-  min-width: 0;
+  min-width: 160px;
+  flex: 1;
 }
 
 .permSubToggleIcon {
@@ -686,11 +702,32 @@
   opacity: 0.5;
 }
 
-/* ── 반응형 ── */
+/* ── 반응형 ──
+   1024 : 태블릿 — nav/check 컬럼 폭 1차 축소
+   860  : 작은 태블릿 — nav/check 컬럼 폭 2차 축소 (기존 nav-col만 있던 것 보강)
+   640  : 완전 세로 스택 (기존)
+*/
+
+@media (max-width: 1024px) {
+  .permissionBoard {
+    --nav-col: 220px;
+    --check-col: 120px;
+    padding: 16px;
+  }
+
+  .permSubRow {
+    padding: 10px 16px;
+  }
+
+  .permMatrixHeader {
+    padding: 12px 16px;
+  }
+}
 
 @media (max-width: 860px) {
   .permissionBoard {
-    --nav-col: 220px;
+    --nav-col: 200px;
+    --check-col: 100px;
   }
 }
 
@@ -730,6 +767,10 @@
 
   .permDetailHeader {
     align-items: flex-start;
+  }
+
+  .permissionBoard {
+    --check-col: 90px;
   }
 }
 

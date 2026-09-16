@@ -30,7 +30,18 @@ table {
   width: 100%;
   border-collapse: collapse;
   min-width: 600px;
-  table-layout: fixed;
+  /* fixed였을 때는 컬럼폭이 지정값(또는 auto 균등분배)으로 고정돼서
+     내용이 넘치면 줄바꿈되던 구조였음. auto로 바꾸면 브라우저가 각
+     컬럼의 헤더/데이터 중 가장 긴 한 줄 텍스트 기준으로 폭을 계산해
+     확보해준다. 아래 white-space:nowrap과 합쳐지면: 줄바꿈/잘림 없이
+     필요한 만큼 컬럼이 넓어지고, 화면보다 커지면 .tableWrap의
+     overflow-x:auto가 대신 스크롤을 열어준다 */
+  table-layout: auto;
+}
+
+th,
+td {
+  white-space: nowrap;
 }
 
 th,
@@ -51,6 +62,14 @@ th {
   user-select: none;
 }
 
+/* 컬럼에 meta.width를 안 준(= auto) 경우, 화면이 좁아질수록 한없이
+   쪼그라들다가 헤더가 줄바꿈되던 걸 방지하는 최소 폭 방어선.
+   더 좁아져야 하면 줄바꿈 대신 .tableWrap의 가로 스크롤이 대신 열림 */
+th,
+td {
+  min-width: 90px;
+}
+
 th svg {
   width: 16px; 
   height: 16px;
@@ -62,11 +81,13 @@ th svg {
   align-items: center;
   justify-content: center; 
   gap: 6px; 
+  overflow: hidden;
 }
 
 .sort-icon {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   color: #94a3b8;
   cursor: pointer;
 }
