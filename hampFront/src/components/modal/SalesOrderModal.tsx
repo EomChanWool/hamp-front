@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { type ColumnDef } from '@tanstack/react-table'
 import { CusTable } from '@/components/table/CusTable'
 import { Badge } from '@components/common/Badge'
+import '@/components/modal/SalesOrderModal.css'
 
 interface SalesOrderLine {
   id: string
@@ -46,13 +47,12 @@ export function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalPr
     )
   }, [searchTerm])
 
-  // TanStack Table 컬럼 정의
   const columns = useMemo<ColumnDef<SalesOrderLine>[]>(
     () => [
       {
         accessorKey: 'orderCode',
         header: '수주코드',
-        cell: ({ row }) => <span style={{ fontWeight: 600, color: '#1e293b' }}>{row.original.orderCode}</span>,
+        cell: ({ row }) => <span className="sales-order-order-code">{row.original.orderCode}</span>,
       },
       {
         accessorKey: 'customer',
@@ -67,14 +67,14 @@ export function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalPr
       {
         accessorKey: 'itemName',
         header: '품목',
-        cell: ({ row }) => <span style={{ fontWeight: 500 }}>{row.original.itemName}</span>,
+        cell: ({ row }) => <span className="sales-order-item-name">{row.original.itemName}</span>,
       },
       {
         accessorKey: 'orderQty',
         header: '주문수량',
         cell: ({ row }) => (
-          <div style={{ textAlign: 'right' }}>
-            {row.original.orderQty.toLocaleString()} <span style={{ fontSize: '11px', color: '#64748b' }}>{row.original.unit}</span>
+          <div className="sales-order-qty-cell">
+            {row.original.orderQty.toLocaleString()} <span className="sales-order-unit">{row.original.unit}</span>
           </div>
         ),
       },
@@ -82,12 +82,12 @@ export function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalPr
         accessorKey: 'remainQty',
         header: '잔여수량',
         cell: ({ row }) => (
-          <div style={{ textAlign: 'right', fontWeight: 600 }}>
+          <div className="sales-order-qty-cell bold">
             {row.original.isClosed ? (
               <Badge tone="danger">마감</Badge>
             ) : (
               <>
-                {row.original.remainQty.toLocaleString()} <span style={{ fontSize: '11px', color: '#64748b' }}>{row.original.unit}</span>
+                {row.original.remainQty.toLocaleString()} <span className="sales-order-unit">{row.original.unit}</span>
               </>
             )}
           </div>
@@ -96,13 +96,13 @@ export function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalPr
       {
         id: 'action',
         header: '관리',
-        enableSorting: false, // 관리 컬럼은 정렬 제외
+        enableSorting: false,
         cell: ({ row }) => (
-          <div style={{ textAlign: 'center' }}>
+          <div className="sales-order-action-cell">
             {!row.original.isClosed ? (
               <button
                 type="button"
-                style={modalStyles.selectButton}
+                className="sales-order-select-btn"
                 onClick={() => {
                   onSelect(row.original)
                   onClose()
@@ -111,7 +111,7 @@ export function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalPr
                 선택
               </button>
             ) : (
-              <span style={{ fontSize: '12px', color: '#94a3b8' }}>-</span>
+              <span className="sales-order-closed-dash">-</span>
             )}
           </div>
         ),
@@ -124,38 +124,37 @@ export function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalPr
   if (!isOpen) return null
 
   return (
-    <div style={modalStyles.overlay}>
-      <div style={modalStyles.container}>
+    <div className="sales-order-modal-overlay">
+      <div className="sales-order-modal-container">
         {/* 헤더 영역 */}
-        <div style={modalStyles.header}>
+        <div className="sales-order-modal-header">
           <div>
-            <h2 style={modalStyles.title}>수주라인 선택</h2>
-            <p style={modalStyles.subtitle}>수주코드·거래처·품목명으로 검색할 수 있어요. 잔여수량이 없는 라인은 선택할 수 없습니다.</p>
+            <h2 className="sales-order-modal-title">수주라인 선택</h2>
+            <p className="sales-order-modal-subtitle">수주코드·거래처·품목명으로 검색할 수 있어요. 잔여수량이 없는 라인은 선택할 수 없습니다.</p>
           </div>
-          <button type="button" onClick={onClose} style={modalStyles.closeButton}>
+          <button type="button" onClick={onClose} className="sales-order-modal-close-btn">
             ✕
           </button>
         </div>
 
         {/* 검색 인풋 영역 */}
-        <div style={modalStyles.searchWrapper}>
+        <div className="sales-order-search-wrapper">
           <input
             type="text"
             placeholder="예: SO-2026-0918, 헴프코리아, CBD 오일"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={modalStyles.searchInput}
+            className="sales-order-search-input"
           />
         </div>
 
-        {/* CusTable 적용 영역 */}
-        <div style={modalStyles.tableContainer}>
+        {/* 테이블 영역 */}
+        <div className="sales-order-table-container">
           <CusTable
             data={filteredLines}
             columns={columns}
             noDataMessage="검색 결과가 없습니다."
             onRowClick={(row) => {
-              // 마감되지 않은 항목은 행 클릭 시에도 선택되도록 편의 기능 추가 (선택사항)
               if (!row.isClosed) {
                 onSelect(row)
                 onClose()
@@ -166,86 +165,4 @@ export function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalPr
       </div>
     </div>
   )
-}
-
-// 스타일 객체
-const modalStyles: { [key: string]: React.CSSProperties } = {
-  overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-  },
-  container: {
-    backgroundColor: '#ffffff',
-    width: '900px',
-    maxWidth: '95vw',
-    maxHeight: '85vh',
-    borderRadius: '12px',
-    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-  },
-  header: {
-    padding: '20px 24px 16px 24px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    borderBottom: '1px solid #f1f5f9',
-  },
-  title: {
-    margin: 0,
-    fontSize: '18px',
-    fontWeight: 700,
-    color: '#0f172a',
-  },
-  subtitle: {
-    margin: '4px 0 0 0',
-    fontSize: '13px',
-    color: '#64748b',
-  },
-  closeButton: {
-    background: 'none',
-    border: 'none',
-    fontSize: '18px',
-    cursor: 'pointer',
-    color: '#64748b',
-    padding: '4px',
-  },
-  searchWrapper: {
-    padding: '16px 24px',
-    backgroundColor: '#f8fafc',
-    borderBottom: '1px solid #f1f5f9',
-  },
-  searchInput: {
-    width: '100%',
-    padding: '10px 14px',
-    borderRadius: '6px',
-    border: '1px solid #cbd5e1',
-    fontSize: '14px',
-    outline: 'none',
-    backgroundColor: '#ffffff',
-  },
-  tableContainer: {
-    padding: '16px 24px 24px 24px',
-    overflowY: 'auto',
-    maxHeight: '500px',
-  },
-  selectButton: {
-    padding: '4px 12px',
-    backgroundColor: '#ffffff',
-    border: '1px solid #cbd5e1',
-    borderRadius: '4px',
-    fontSize: '12px',
-    fontWeight: 500,
-    color: '#334155',
-    cursor: 'pointer',
-  },
 }
