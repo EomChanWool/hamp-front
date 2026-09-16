@@ -297,7 +297,6 @@ export function SeedInventoryManagePage() {
             {
                 accessorKey: 'processedDate',
                 header: '처리일자',
-                meta: { width: '130px' },
                 cell: ({ row }) => {
                     const isNew = row.original.sthiId === -999999;
                     if (isNew) return '-';
@@ -307,7 +306,6 @@ export function SeedInventoryManagePage() {
             {
                 accessorKey: 'itemCode',
                 header: '품목코드',
-                meta: { width: '220px' },
                 cell: ({ row }) => {
                     const isNew = row.original.sthiId === -999999;
                     const isEditing = row.original.sthiId === editingId;
@@ -343,7 +341,6 @@ export function SeedInventoryManagePage() {
             {
                 accessorKey: 'ioType',
                 header: '처리구분',
-                meta: { width: '150px' },
                 cell: ({ row }) => {
                     const isNew = row.original.sthiId === -999999;
                     const isEditing = row.original.sthiId === editingId;
@@ -392,7 +389,6 @@ export function SeedInventoryManagePage() {
             {
                 accessorKey: 'increaseQty',
                 header: '증가수량',
-                meta: { width: '150px' },
                 cell: ({ row }) => {
                     const isNew = row.original.sthiId === -999999;
                     const isEditing = row.original.sthiId === editingId;
@@ -424,7 +420,6 @@ export function SeedInventoryManagePage() {
             {
                 accessorKey: 'decreaseQty',
                 header: '감소수량',
-                meta: { width: '150px' },
                 cell: ({ row }) => {
                     const isNew = row.original.sthiId === -999999;
                     const isEditing = row.original.sthiId === editingId;
@@ -456,7 +451,6 @@ export function SeedInventoryManagePage() {
             {
                 accessorKey: 'note',
                 header: '비고',
-                meta: { width: '200px' },
                 cell: ({ row }) => {
                     const isNew = row.original.sthiId === -999999;
                     const isEditing = row.original.sthiId === editingId;
@@ -480,7 +474,6 @@ export function SeedInventoryManagePage() {
             {
                 accessorKey: 'createdAt',
                 header: '등록일시',
-                meta: { width: '170px' },
                 cell: ({ row }) => {
                     const isNew = row.original.sthiId === -999999;
                     if (isNew) return '-';
@@ -490,7 +483,6 @@ export function SeedInventoryManagePage() {
             {
                 id: 'actions',
                 header: '관리',
-                meta: { width: '150px' },
                 cell: ({ row }) => {
                     const isNew = row.original.sthiId === -999999;
                     const isEditing = row.original.sthiId === editingId;
