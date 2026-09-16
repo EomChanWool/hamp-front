@@ -75,6 +75,20 @@ export interface WorkOrderStatusSummaryResponse {
     byStatus: WorkOrderStatusCount[];
 }
 
+/** 작업지시 라인 바코드 스캔 조회 응답 타입 */
+export interface WorkOrderLineScanResponse {
+    workId: string;
+    workDate: string; // "2026-09-16"
+    status: string;
+    workOrderLineId: number;
+    salesOrderLineId: number;
+    orderCode: string;
+    itemCode: string;
+    itemNm: string;
+    unit: string;
+    instructQty: number;
+}
+
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 작업지시 단건/기본 응답 API 최종 응답 타입 */
@@ -91,6 +105,9 @@ export type ApiResponsePageWorkOrderResponse = ApiResponsePage<WorkOrderResponse
 
 /** 작업지시 상태별 건수 집계 API 최종 응답 타입 */
 export type ApiResponseWorkOrderStatusSummaryResponse = ApiResponse<WorkOrderStatusSummaryResponse>;
+
+/** 작업지시 라인 바코드 스캔 조회 API 최종 응답 타입 */
+export type ApiResponseWorkOrderLineScanResponse = ApiResponse<WorkOrderLineScanResponse>;
 
 // ── 작업지시 관리 API 함수 ────────────────────────────────────────────────────────
 
@@ -144,6 +161,14 @@ export const WorkOrderApi = {
         [key: string]: any;
     }): Promise<ApiResponseWorkOrderStatusSummaryResponse> => {
         const res = await apiClient.get('/work-orders/summary', { params });
+        return res.data;
+    },
+
+    /** 작업지시 라인 바코드 스캔 조회 */
+    scan: async (code: string): Promise<ApiResponseWorkOrderLineScanResponse> => {
+        const res = await apiClient.get('/work-orders/scan', {
+            params: { code },
+        });
         return res.data;
     },
 };
