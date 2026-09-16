@@ -123,6 +123,9 @@
   margin-bottom: 24px;
   border-bottom: 1px solid #e5e7eb;
   padding-bottom: 16px;
+  /* 타이틀 + 버튼그룹이 좁은 화면에서 안 넘치도록 줄바꿈 허용 */
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .food-detail-title {
@@ -188,6 +191,8 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .food-section-title {
@@ -212,6 +217,9 @@
   margin-top: 36px;
   padding-top: 20px;
   border-top: 1px solid #e5e7eb;
+  /* 버튼그룹이 여러 개일 때 좁은 화면에서 안 넘치도록 줄바꿈 허용 */
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .food-card-header-meta {
@@ -253,11 +261,13 @@
 .food-header-btn-group {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .food-footer-btn-group {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 /* ==========================================
@@ -294,6 +304,8 @@
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .food-label-modal-breadcrumb {
@@ -398,6 +410,67 @@
   font-weight: 600;
 }
 
+
+/* ================================================
+   반응형
+   1024 : 태블릿 — 요약 그리드 4열→2열, 카드 패딩 축소
+   640  : 폰 — 요약 그리드 1열, 라벨 모달 그리드 1열, 모달 여백 축소
+   ================================================ */
+
+@media (max-width: 1024px) {
+  .food-summary-grid-box {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 18px 20px;
+    gap: 16px;
+  }
+
+  .food-detail-card {
+    padding: 24px;
+  }
+
+  .food-label-modal-body {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .food-summary-grid-box {
+    grid-template-columns: 1fr;
+    margin-bottom: 24px;
+  }
+
+  .food-detail-card {
+    padding: 18px;
+  }
+
+  .food-detail-header {
+    align-items: flex-start;
+  }
+
+  .food-detail-title {
+    font-size: 20px;
+  }
+
+  .food-label-modal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .food-label-modal-header {
+    padding: 16px 18px;
+  }
+
+  .food-label-modal-title {
+    font-size: 17px;
+  }
+
+  .food-label-modal-body {
+    padding: 16px;
+  }
+
+  .food-label-card {
+    padding: 16px;
+  }
+}
 
 /* ================================================
    DARK MODE (Food 작업지시 전용 추가 스타일)

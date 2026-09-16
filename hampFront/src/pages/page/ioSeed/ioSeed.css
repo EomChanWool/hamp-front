@@ -145,12 +145,8 @@
 }
 
 .reportModalContent {
-    /* 기존에 width:100%; max-width:700px; max-width:65vw; 가 순서대로
-       덮어써서 실제로는 65vw만 적용되던 상태였음(700px는 무시됨).
-       화면이 넓을 때(65vw > 700px)는 지나치게 커지고, 좁을 때는
-       min-width 없이 너무 눌리는 문제가 있어 min()으로 통일 */
     width: 100%;
-    max-width: min(700px, 92vw);
+    max-width: min(920px, 94vw);
     max-height: 90vh;
     overflow-y: auto;
     background: #ffffff;
@@ -690,7 +686,7 @@
 /* ---- ~1024px : 태블릿 ---- */
 @media (max-width: 1024px) {
     .reportModalContent {
-        max-width: min(700px, 88vw);
+        max-width: min(760px, 90vw);
     }
 
     .reportModalHeader {

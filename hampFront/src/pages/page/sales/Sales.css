@@ -4,6 +4,8 @@
   justify-content: space-between;
   align-items: center;
   margin-top: -15px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .summaryDesc {
@@ -15,6 +17,7 @@
   display: flex;
   gap: 12px;
   font-size: 12px;
+  flex-wrap: wrap;
 }
 
 .legendItem {
@@ -49,6 +52,8 @@
   gap: 4px;
   margin-bottom: 20px;
   width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .tabButton {
@@ -61,6 +66,8 @@
   font-size: 13px;
   font-weight: 500;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tabButtonActive {
@@ -230,4 +237,55 @@
 [data-theme="dark"] .itemCell__name,
 [data-theme="dark"] .seedItemRow__name {
   color: #f8fafc !important;
+}
+
+/* ================================
+   반응형
+   1024 : 태블릿 — groupRow 고정폭 살짝 축소
+   640  : 폰 — groupRow를 2행(이름+수량 / 진행바 전체폭)으로 재배치
+================================ */
+
+@media (max-width: 1024px) {
+  .groupRow {
+    grid-template-columns: 140px 1fr minmax(110px, auto);
+    gap: 12px;
+  }
+
+  .progressTrack {
+    width: 60px;
+  }
+}
+
+@media (max-width: 640px) {
+  .groupRow {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "info numbers"
+      "bar bar";
+    row-gap: 8px;
+  }
+
+  .groupInfo {
+    grid-area: info;
+  }
+
+  .groupNumbers {
+    grid-area: numbers;
+  }
+
+  .groupBarTrack {
+    grid-area: bar;
+  }
+
+  .progressCell {
+    flex-wrap: wrap;
+  }
+
+  .progressTrack {
+    width: 100%;
+  }
+
+  .progressPct {
+    min-width: auto;
+  }
 }

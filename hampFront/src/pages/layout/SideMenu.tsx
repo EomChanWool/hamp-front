@@ -65,13 +65,40 @@ export function SideMenu({ collapsed }: SideMenuProps) {
   // 계산해서 인라인 스타일로 꽂아준다.
   const sidebarRef = useRef<HTMLElement | null>(null);
   const headerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  // 플라이아웃(서브메뉴 목록) 자체의 DOM을 잡아서 실제 렌더링된 높이를
+  // 재기 위한 ref. opacity:0 상태에서도 레이아웃은 이미 잡혀있어서
+  // 높이를 정확히 읽을 수 있다.
+  const flyoutRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [flyoutPos, setFlyoutPos] = useState<{ top: number; left: number } | null>(null);
+
+  const FLYOUT_MARGIN = 8; // 화면 가장자리와 최소로 띄울 여백(px)
+  const FLYOUT_WIDTH = 215; // .navItems collapsed 상태 고정 폭과 동일
 
   const updateFlyoutPosition = (title: string) => {
     const btn = headerRefs.current[title];
     if (!btn) return;
     const rect = btn.getBoundingClientRect();
-    setFlyoutPos({ top: rect.top, left: rect.right + 8 });
+
+    // 1차: 버튼의 top/right 기준으로 기본 위치 산정
+    let top = rect.top;
+    let left = rect.right + FLYOUT_MARGIN;
+
+    // 2차: 플라이아웃 자체의 실제 높이를 재서, 화면 하단을 벗어나면
+    // 위로 당겨서 붙인다 (버튼 위치 그대로 아래로만 펼치면 하단에
+    // 가까운 메뉴일수록 서브항목이 화면 밖으로 잘려 나가던 문제 수정)
+    const flyoutEl = flyoutRefs.current[title];
+    if (flyoutEl) {
+      const flyoutHeight = flyoutEl.getBoundingClientRect().height;
+      const maxTop = window.innerHeight - flyoutHeight - FLYOUT_MARGIN;
+      top = Math.min(top, maxTop);
+    }
+    top = Math.max(FLYOUT_MARGIN, top);
+
+    // 가로 방향도 동일하게: 우측 가장자리를 벗어나지 않도록 보정
+    const maxLeft = window.innerWidth - FLYOUT_WIDTH - FLYOUT_MARGIN;
+    left = Math.min(left, maxLeft);
+
+    setFlyoutPos({ top, left });
   };
 
   const handleGroupEnter = (title: string) => {
@@ -181,6 +208,7 @@ export function SideMenu({ collapsed }: SideMenuProps) {
 
                 {/* 소메뉴 아이템 리스트 영역 */}
                 <div
+                  ref={(el) => { flyoutRefs.current[group.title] = el; }}
                   className={`navItems ${isOpen && !collapsed ? "open" : ""}`}
                   style={isFlyoutOpen && flyoutPos ? { top: flyoutPos.top, left: flyoutPos.left } : undefined}
                 >

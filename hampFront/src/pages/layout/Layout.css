@@ -588,8 +588,11 @@
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   z-index: 9999; /* 가장 위로 오도록 높게 설정 */
-  max-height: none;
-  overflow: visible;
+  /* JS(getBoundingClientRect 기반)가 화면 하단을 넘지 않도록 top을
+     보정해주지만, 하위 메뉴 항목이 아주 많아 화면 전체 높이보다도
+     길어지는 극단적인 경우를 위한 안전망으로 최대높이+스크롤 추가 */
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
   opacity: 0;
   transform: translateX(-6px);
   pointer-events: none;
@@ -1144,9 +1147,12 @@
 }
 
 /* ---------- 좌측: 이미지 영역 ---------- */
+/* 기존 flex: 0 0 700px 와 width: 260px 가 서로 충돌해서
+   실제로는 이미지 칼럼이 700px로 고정되어 태블릿(≤1024px)에서
+   레이아웃이 깨지던 문제를 수정 — 260px 기준으로 통일 */
 .facilityImageCol {
-    flex: 0 0 460px;
-    width: 460px;
+    flex: 0 0 260px;
+    width: 260px;
 }
 
 /* ---------- 우측: 상세보기 정보 영역 ---------- */
@@ -1649,8 +1655,8 @@
   }
 
   .facilityImageCol {
-    flex: 0 0 260px; /* 태블릿 화면에서는 적당히 줄어듦 */
-    width: 260px;
+    flex: 0 0 210px;
+    width: 210px;
   }
 
   .facilityTitle {
