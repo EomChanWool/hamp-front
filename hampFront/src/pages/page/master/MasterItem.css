@@ -13,6 +13,8 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .routingEmptyBox {
@@ -41,6 +43,9 @@
   border-radius: 12px; 
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  /* 뱃지+정보+select가 한 줄에 다 안 들어가는 좁은 화면에서
+     줄바꿈되도록 허용 (기존엔 nowrap 상태라 그냥 넘쳤음) */
+  flex-wrap: wrap;
 }
 
 .routingItem:focus {
@@ -101,6 +106,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .routingCount {
@@ -168,9 +174,11 @@
 
 .routingInfoWrapper {
   flex: 1;
+  min-width: 160px;
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .routingCode {
@@ -193,11 +201,13 @@
   display: flex;
   gap: 12px;
   width: 100%;
+  flex-wrap: wrap;
 }
 
 /* 1. '종류' 전용 가로형 아이콘 버튼 스타일 */
 .inlineTypeButton {
   flex: 1;
+  min-width: 140px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -247,6 +257,7 @@
 /* 2. '품목구분' 전용 세로형 카드 버튼 스타일 (원료/반제품/완제품) */
 .typeCardButton {
   flex: 1;
+  min-width: 100px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -309,9 +320,9 @@
 ======================================================== */
 
 /* 헤더 및 안내 문구 */
-.routing-header-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.routing-header-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
 .routing-header-label { font-size: 16px; font-weight: 600; }
-.routing-header-right { display: flex; align-items: center; gap: 12px; }
+.routing-header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .routing-count-text { font-weight: 500; }
 .routing-guide-text { font-size: 13px; color: #6b7280; margin-bottom: 12px; }
 
@@ -328,22 +339,24 @@
   padding: 10px 14px; margin-bottom: 8px; border-radius: 6px; 
   cursor: grab; transition: all 0.15s ease; user-select: none; 
   background: #ffffff; border: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .routing-list-item.is-dragged { opacity: 0.4; }
 .routing-list-item.is-drag-over { background: #d1fae5; border: 2px dashed #059669; }
 .routing-list-item.is-selected { background: #ecfdf5; border: 2px solid #10b981; }
 
-.routing-item-left { display: flex; align-items: center; gap: 12px; }
+.routing-item-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .routing-drag-handle { color: #9ca3af; font-size: 16px; letter-spacing: 1px; padding: 2px 4px; display: inline-block; }
 .routing-drag-handle.is-dragging { cursor: grabbing; }
 .routing-drag-handle:not(.is-dragging) { cursor: grab; }
 
 .routing-seq { font-weight: 600; color: #374151; min-width: 24px; }
-.routing-oper-nm { font-weight: 500; color: #1f2937; }
-.routing-item-right { display: flex; align-items: center; gap: 8px; }
+.routing-oper-nm { font-weight: 500; color: #1f2937; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.routing-item-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
 /* 공정 타입 배지 (일반/최종) */
-.routing-type-badge { font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: 500; background: #f3f4f6; color: #4b5563; }
+.routing-type-badge { font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: 500; background: #f3f4f6; color: #4b5563; white-space: nowrap; }
 .routing-type-badge.is-final { background: #d1fae5; color: #065f46; }
 
 /* 이동 화살표 버튼 */
@@ -361,7 +374,7 @@
 .routing-empty-panel { text-align: center; color: #9ca3af; padding: 40px 0; }
 
 /* 상세 패널 내부 UI */
-.routing-step-card { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f0fdf4; border-radius: 8px; margin-bottom: 20px; border: 1px solid #bbf7d0; }
+.routing-step-card { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f0fdf4; border-radius: 8px; margin-bottom: 20px; border: 1px solid #bbf7d0; flex-wrap: wrap; }
 .routing-step-badge { background: #10b981; color: #fff; padding: 8px 12px; border-radius: 6px; text-align: center; font-weight: bold; }
 .routing-step-badge-title { font-size: 10px; opacity: 0.9; }
 .routing-step-badge-num { font-size: 16px; }
@@ -384,6 +397,66 @@
 .routing-delete-btn { width: 100%; padding: 10px; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
 .routing-delete-btn:hover:not(:disabled) { background: #fecaca; }
 
+/* ========================================================
+   반응형
+   1024 : 태블릿 — 우측 500px 고정 패널을 비율 기반으로 전환
+   860  : 좌우 2단 → 세로 스택 (리스트가 위, 상세편집이 아래)
+   480  : 폰 — 라우팅 아이템 내부 select 등 폭 조정
+======================================================== */
+
+@container content (max-width: 1024px) {
+  /* 500px 고정폭이 태블릿에서 왼쪽 리스트를 거의 다 밀어내던 문제.
+     고정폭 대신 최대 45%까지만 차지하도록 완화 */
+  .routing-layout-grid {
+    grid-template-columns: 1fr minmax(280px, 45%);
+  }
+
+  .routing-list-container {
+    max-height: 480px;
+  }
+}
+
+@container content (max-width: 860px) {
+  /* 그래도 좁으면 아예 세로로 쌓아서 각 영역이 전체 폭을 쓰게 함 */
+  .routing-layout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .routing-list-container {
+    max-height: 360px;
+  }
+
+  .routingSelect {
+    width: 110px;
+  }
+}
+
+@container content (max-width: 480px) {
+  .routingItem {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .routingSelect {
+    width: 100%;
+  }
+
+  .routingStepWrapper {
+    min-width: 44px;
+  }
+
+  .routing-move-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .routing-detail-panel {
+    padding: 16px;
+  }
+
+  .routing-list-item {
+    padding: 10px;
+  }
+}
 
 /* ========================================================
    공정 라우팅 설정 영역 (다크모드)

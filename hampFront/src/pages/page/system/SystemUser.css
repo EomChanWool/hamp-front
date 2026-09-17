@@ -365,13 +365,13 @@
    640  : 폰 — 카테고리 1열, CRUD 도트 칸 폭 축소
 ================================ */
 
-@media (max-width: 1024px) {
+@container content (max-width: 1024px) {
   .categoryGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 640px) {
+@container content (max-width: 640px) {
   .categoryGrid {
     grid-template-columns: 1fr;
   }
