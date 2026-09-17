@@ -222,31 +222,7 @@
   gap: 12px;
 }
 
-.food-card-header-meta {
-  font-size: 14px;
-  font-weight: 700;
-  color: #0f172a;
-  margin-bottom: 6px;
-}
 
-.food-card-body-meta {
-  font-size: 13px;
-  color: #334155;
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-
-.food-card-qty-meta {
-  font-size: 13px;
-  font-weight: 600;
-  color: #0f172a;
-  margin-bottom: 12px;
-}
-
-.food-card-barcode-wrap {
-  border-top: 1px dashed #cbd5e1;
-  padding-top: 8px;
-}
 
 /* 테이블 내부 flex 컨테이너 관련 */
 .food-cell-flex-wrap {
@@ -415,22 +391,6 @@
 }
 
 [data-theme="dark"] .food-detail-footer {
-  border-top-color: var(--border);
-}
-
-[data-theme="dark"] .food-card-header-meta {
-  color: var(--text-heading);
-}
-
-[data-theme="dark"] .food-card-body-meta {
-  color: var(--text-body);
-}
-
-[data-theme="dark"] .food-card-qty-meta {
-  color: var(--text-main);
-}
-
-[data-theme="dark"] .food-card-barcode-wrap {
   border-top-color: var(--border);
 }
 
