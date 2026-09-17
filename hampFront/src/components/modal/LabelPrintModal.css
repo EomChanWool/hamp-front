@@ -90,6 +90,38 @@
   padding: 20px;
 }
 
+.food-card-header-meta {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.food-card-body-meta {
+  font-size: 13px;
+  color: #334155;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.food-card-qty-meta {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 12px;
+}
+
+.food-card-barcode-wrap {
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 8px;
+}
+
+.food-card-barcode-wrap svg {
+  width: 100% !important;
+  /* 짧은 바코드도 카드가 허용하는 가로 폭만큼 강제로 늘어남 */
+  height: auto;
+}
+
 
 /* ================================================
    라벨 인쇄 미리보기 모달 반응형 (Media Queries)
@@ -156,6 +188,21 @@
   border-color: var(--border);
 }
 
+[data-theme="dark"] .food-card-barcode-wrap {
+  border-top-color: var(--border);
+}
+
+[data-theme="dark"] .food-card-header-meta {
+  color: var(--text-heading);
+}
+
+[data-theme="dark"] .food-card-body-meta {
+  color: var(--text-body);
+}
+
+[data-theme="dark"] .food-card-qty-meta {
+  color: var(--text-main);
+}
 
 /* ================================================
    라벨 인쇄 전용 스타일 (Print Styles)
@@ -163,6 +210,7 @@
    ================================================ */
 
 @media print {
+
   /* 1. 기본적으로 페이지 내 모든 요소를 숨깁니다 */
   body * {
     visibility: hidden;

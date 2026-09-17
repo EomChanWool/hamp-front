@@ -8,6 +8,7 @@ export interface WorkOrderLineDetail {
   lineId: string;
   itemCode: string;
   itemNm: string;
+  unit?: string;
   instructQty: number;
   barcode: string;
 }
@@ -66,10 +67,10 @@ export function LabelPrintModal({
                   {line.itemNm} <span className="food-cell-item-code">({line.orderCode})</span>
                 </div>
                 <div className="food-card-qty-meta">
-                  지시수량 <span style={{ fontWeight: 700 }}>{line.instructQty}</span>
+                  지시수량 <span style={{ fontWeight: 700 }}>{line.instructQty}{line.unit ?? ''}</span>
                 </div>
                 <div className="food-card-barcode-wrap">
-                  <Barcode value={line.barcode || workOrderNo} width={1.3} height={40} fontSize={11} displayValue={true} margin={0} />
+                  <Barcode value={line.barcode || workOrderNo} width={1.6} height={40} fontSize={11} displayValue={true} margin={0} />
                 </div>
               </div>
             ))}
