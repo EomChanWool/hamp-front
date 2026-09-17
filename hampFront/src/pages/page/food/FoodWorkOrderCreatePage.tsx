@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, type SyntheticEvent } from "react";
+import { useState, useMemo, useEffect, useRef, type SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { type ColumnDef } from '@tanstack/react-table';
 import { TrashIcon } from "@heroicons/react/24/outline";
@@ -35,8 +35,10 @@ export function FoodWorkOrderCreatePage() {
     managerId: "",
   });
 
-  // 초기 목업 데이터 제거 및 빈 배열 상태로 설정
   const [lines, setLines] = useState<WorkOrderLine[]>([]);
+
+  // --- useRef 기반 지시수량 임시 저장소 (line id를 키로 관리) ---
+  const editQuantitiesRef = useRef<Record<string, number | ''>>({});
 
   // 회원 옵션 데이터 조회
   useEffect(() => {
@@ -61,19 +63,18 @@ export function FoodWorkOrderCreatePage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleQtyChange = (id: string, qty: number) => {
-    setLines((prev) =>
-      prev.map((line) => (line.id === id ? { ...line, instructQty: qty } : line))
-    );
-  };
-
   const handleRemoveLine = (id: string) => {
+    delete editQuantitiesRef.current[id];
     setLines((prev) => prev.filter((line) => line.id !== id));
   };
 
   const handleAddLine = () => {
+    const newId = `line-${Date.now()}`;
+    // 신규 라인 추가 시 기본 수량 0을 ref에 등록
+    editQuantitiesRef.current[newId] = 0;
+
     const newLine: WorkOrderLine = {
-      id: `line-${Date.now()}`,
+      id: newId,
       salesOrderLineId: 0,
       orderCode: "수주선택 필요",
       itemCode: "선택요망",
@@ -92,6 +93,9 @@ export function FoodWorkOrderCreatePage() {
   const handleSelectSalesOrderLine = (selected: SalesOrderStatusLineResponse) => {
     if (!activeLineId) return;
 
+    const defaultQty = Number(selected.orderQty || 0);
+    editQuantitiesRef.current[activeLineId] = defaultQty;
+
     setLines((prev) =>
       prev.map((line) => {
         if (line.id === activeLineId) {
@@ -101,7 +105,7 @@ export function FoodWorkOrderCreatePage() {
             orderCode: selected.orderCode,
             itemCode: selected.itemCode,
             itemNm: selected.itemNm,
-            instructQty: selected.orderQty, 
+            instructQty: defaultQty, 
           };
         }
         return line;
@@ -148,9 +152,11 @@ export function FoodWorkOrderCreatePage() {
             <input
               type="number"
               className="tableInput food-table-input-cell"
-              value={line.instructQty}
+              defaultValue={editQuantitiesRef.current[line.id] ?? line.instructQty}
               disabled={isSubmitting}
-              onChange={(e) => handleQtyChange(line.id, Number(e.target.value))}
+              onChange={(e) => {
+                editQuantitiesRef.current[line.id] = e.target.value === '' ? '' : Number(e.target.value);
+              }}
             />
           );
         },
@@ -179,7 +185,7 @@ export function FoodWorkOrderCreatePage() {
         meta: { width: '60px' },
       },
     ],
-    [isSubmitting, lines]
+    [isSubmitting]
   );
 
   const validateForm = (): boolean => {
@@ -200,7 +206,8 @@ export function FoodWorkOrderCreatePage() {
         alert("모든 라인에 수주라인을 선택해주셔야 합니다.");
         return false;
       }
-      if (line.instructQty <= 0) {
+      const currentQty = editQuantitiesRef.current[line.id];
+      if (currentQty === '' || Number(currentQty) <= 0) {
         alert("지시수량은 0보다 커야 합니다.");
         return false;
       }
@@ -216,14 +223,17 @@ export function FoodWorkOrderCreatePage() {
     e.preventDefault();
     if (!validateForm()) return;
 
+    // 제출 직전에 ref의 최신 입력값들을 반영
+    const finalizedLines = lines.map((l) => ({
+      salesOrderLineId: l.salesOrderLineId,
+      instructQty: Number(editQuantitiesRef.current[l.id]) || 0,
+    }));
+
     const payload = {
       workDate: form.workDate,
       status: form.status,
       managerId: form.managerId,
-      lines: lines.map((l) => ({
-        salesOrderLineId: l.salesOrderLineId,
-        instructQty: l.instructQty,
-      })),
+      lines: finalizedLines,
     };
 
     setIsSubmitting(true);
