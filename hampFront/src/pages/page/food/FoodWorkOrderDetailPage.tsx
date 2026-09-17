@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Barcode from "react-barcode";
 import { type ColumnDef } from "@tanstack/react-table";
@@ -38,6 +38,9 @@ export function FoodWorkOrderDetailPage() {
   const [selectedLines, setSelectedLines] = useState<string[]>([]);
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
   const [isSalesOrderModalOpen, setIsSalesOrderModalOpen] = useState(false);
+
+  // --- useRef 기반 지시수량 임시 저장소 (lineId를 키로 관리) ---
+  const editQuantitiesRef = useRef<Record<string, number | ''>>({});
 
   useEffect(() => {
     const fetchUserOptions = async () => {
@@ -95,6 +98,13 @@ export function FoodWorkOrderDetailPage() {
 
   const handleStartEdit = () => {
     setEditForm(workOrder);
+    // 수정 모드 진입 시 현재 라인들의 수량을 ref에 초기화
+    const initialQtyMap: Record<string, number | ''> = {};
+    workOrder.lines.forEach(l => {
+      initialQtyMap[l.id] = l.instructQty;
+    });
+    editQuantitiesRef.current = initialQtyMap;
+
     setIsEditing(true);
     setSelectedLines([]);
   };
@@ -107,11 +117,18 @@ export function FoodWorkOrderDetailPage() {
   const handleSaveEdit = async () => {
     try {
       setIsLoading(true);
+
+      // 저장 시점 직전에 ref에 입력된 최신 수량을 editForm.lines에 반영
+      const updatedLines = editForm.lines.map(l => ({
+        ...l,
+        instructQty: Number(editQuantitiesRef.current[l.id]) || 0,
+      }));
+
       const payload = {
         workDate: editForm.workDate,
         status: editForm.status,
         managerId: editForm.managerId,
-        lines: editForm.lines.map((l) => ({
+        lines: updatedLines.map((l) => ({
           salesOrderLineId: l.salesOrderLineId,
           instructQty: l.instructQty,
         })),
@@ -146,6 +163,7 @@ export function FoodWorkOrderDetailPage() {
   };
 
   const handleDeleteLine = (lineId: string) => {
+    delete editQuantitiesRef.current[lineId];
     setEditForm(prev => ({
       ...prev,
       lines: prev.lines.filter(l => l.id !== lineId)
@@ -155,14 +173,20 @@ export function FoodWorkOrderDetailPage() {
 
   const handleSelectSalesOrderLine = (selectedLine: SalesOrderStatusLineResponse) => {
     const activeLinesCount = editForm.lines.length;
+    const newId = `line-${Date.now()}`;
+    const defaultQty = Number(selectedLine.orderQty || 0);
+
+    // 신규 추가된 라인의 수량도 ref에 등록
+    editQuantitiesRef.current[newId] = defaultQty;
+
     const newLine: WorkOrderLineDetail = {
-      id: `line-${Date.now()}`,
+      id: newId,
       salesOrderLineId: selectedLine.salesOrderLineId,
       orderCode: selectedLine.orderCode,
       lineId: `#${101 + activeLinesCount}`,
       itemCode: selectedLine.itemCode,
       itemNm: selectedLine.itemNm,
-      instructQty: Number(selectedLine.orderQty || 0),
+      instructQty: defaultQty,
       barcode: `${editForm.workOrderNo}-${101 + activeLinesCount}`,
       unit: (selectedLine as any).unit || "",
     };
@@ -174,13 +198,6 @@ export function FoodWorkOrderDetailPage() {
   };
 
   const activeLines = isEditing ? editForm.lines : workOrder.lines;
-
-  const handleLineQtyChange = (lineId: string, qty: number) => {
-    setEditForm(prev => ({
-      ...prev,
-      lines: prev.lines.map(l => l.id === lineId ? { ...l, instructQty: qty } : l)
-    }));
-  };
 
   const columns = useMemo<ColumnDef<WorkOrderLineDetail>[]>(
     () => [
@@ -238,18 +255,22 @@ export function FoodWorkOrderDetailPage() {
       {
         accessorKey: "instructQty",
         header: "지시수량",
-        cell: ({ row }) => (
-          isEditing ? (
-            <input 
-              type="number"
-              value={row.original.instructQty}
-              onChange={(e) => handleLineQtyChange(row.original.id, Number(e.target.value))}
-              className="food-line-input"
-            />
-          ) : (
-            <div className="food-cell-qty">{row.original.instructQty}</div>
-          )
-        ),
+        cell: ({ row }) => {
+          const item = row.original;
+          if (isEditing) {
+            return (
+              <input 
+                type="number"
+                className="food-line-input"
+                defaultValue={editQuantitiesRef.current[item.id] ?? item.instructQty}
+                onChange={(e) => {
+                  editQuantitiesRef.current[item.id] = e.target.value === '' ? '' : Number(e.target.value);
+                }}
+              />
+            );
+          }
+          return <div className="food-cell-qty">{item.instructQty}</div>;
+        },
       },
       {
         accessorKey: "barcode",
