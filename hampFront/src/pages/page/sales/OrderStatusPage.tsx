@@ -341,7 +341,7 @@ export function OrderStatusPage() {
             <Panel title="그룹별 생산 진행률">
                 <div className="summaryHeader">
                     <span className="summaryDesc">
-                        기준을 선택하면 해당 기준으로 라인을 합산해 진행률을 비교합니다. (100% 완료된 그룹은 하단 목록에서 확인할 수 있습니다)
+                        해당 기준별로 라인을 합산해 진행률을 비교합니다. (100% 완료된 그룹은 하단 목록에서 확인할 수 있습니다)
                     </span>
 
                     <div className="legend">
