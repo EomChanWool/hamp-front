@@ -472,6 +472,8 @@ button {
   background: var(--bg-app);
   overflow-y: auto;
   box-sizing: border-box;
+  container-type: inline-size;
+  container-name: content;
 }
 
 /* workspace 내부의 가장 마지막에 오는 요소가 잘리지 않도록 밀어줌 */
@@ -486,6 +488,10 @@ button {
 .screenStack {
   display: grid;
   gap: 18px;
+}
+
+.screenStack > * {
+  min-width: 0;
 }
 
 .screenStack--loading {
@@ -639,6 +645,10 @@ button {
   padding: 22px; 
   display: grid;
   gap: 18px;
+}
+
+.panel > * {
+  min-width: 0;
 }
 
 .toolbarRow {
@@ -1649,14 +1659,78 @@ textarea.tableInput {
 
 /* ================================================================
    RESPONSIVE
-   1180  : 소형 데스크탑
-   1024  : 태블릿 (가로/세로 공용)
-   860   : 작은 태블릿 · 큰 폰
-   600   : 폰
+   ─ 쉘(사이드바 접힘, 로그인 페이지, 모달)은 화면 전체 폭 기준이 맞아서
+     @media 그대로 둠
+   ─ .workspace 안에 있는 컴포넌트(그리드/카드/폼)는 .workspace를
+     기준점으로 하는 @container로 전환 — 사이드바가 먹는 폭을
+     제외한 "실제 콘텐츠 영역 폭"으로 정확히 판단됨
 ================================================================ */
 
+/* ── 쉘 / 모달 (뷰포트 기준 유지) ───────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .workspace {
+    padding: 16px 16px 32px;
+    gap: 16px;
+  }
+
+  .detailModal {
+    width: min(600px, 92vw);
+  }
+
+  .detailModalBody {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .loginPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .loginCopy,
+  .loginForm {
+    padding: 34px 24px;
+  }
+
+  .mainContent {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 600px) {
+  .headerUserInfo span {
+    display: none;
+  }
+
+  .detailModal {
+    width: 100vw;
+    height: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    top: 0;
+    left: 0;
+    transform: none;
+  }
+}
+
+/* ── .workspace 콘텐츠 컴포넌트 (컨테이너 쿼리) ───────────────────
+   1180 : 소형 데스크탑
+   1024 : 태블릿 (가로/세로 공용)
+   860  : 작은 태블릿 · 큰 폰
+   600  : 폰
+   ※ 기준값은 이전 뷰포트 기준과 동일하게 유지 — 다만 이제 "사이드바를
+     뺀 콘텐츠 영역 폭"으로 정확히 재는 것만 다름
+──────────────────────────────────────────────────────────────── */
+
 /* ---- ~1180px : 소형 데스크탑 / 큰 태블릿 가로 ---- */
-@media (max-width: 1180px) {
+@container content (max-width: 1180px) {
   .metricGrid,
   .equipmentGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1669,12 +1743,7 @@ textarea.tableInput {
 }
 
 /* ---- ~1024px : 태블릿 공용 ---- */
-@media (max-width: 1024px) {
-  .workspace {
-    padding: 16px 16px 32px;
-    gap: 16px;
-  }
-
+@container content (max-width: 1024px) {
   .contentGrid.two,
   .fieldBoard {
     grid-template-columns: 1fr;
@@ -1710,14 +1779,6 @@ textarea.tableInput {
     grid-template-columns: 1fr;
   }
 
-  .detailModal {
-    width: min(600px, 92vw);
-  }
-
-  .detailModalBody {
-    grid-template-columns: 1fr;
-  }
-
   .equipmentGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1729,26 +1790,7 @@ textarea.tableInput {
 }
 
 /* ---- ~860px : 작은 태블릿 · 큰 폰 (세로 모드 태블릿 포함) ---- */
-@media (max-width: 860px) {
-  .loginPanel {
-    grid-template-columns: 1fr;
-  }
-
-  .loginCopy,
-  .loginForm {
-    padding: 34px 24px;
-  }
-
-  .mainContent {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar {
-    position: static;
-    height: auto;
-    overflow: visible;
-  }
-
+@container content (max-width: 860px) {
   .metricGrid,
   .equipmentGrid,
   .searchBand,
@@ -1796,7 +1838,7 @@ textarea.tableInput {
 }
 
 /* ---- ~600px : 폰 ---- */
-@media (max-width: 600px) {
+@container content (max-width: 600px) {
   .metricGrid {
     flex-direction: column;
   }
@@ -1804,10 +1846,6 @@ textarea.tableInput {
   .toolbarRow,
   .rowActions {
     flex-wrap: wrap;
-  }
-
-  .headerUserInfo span {
-    display: none;
   }
 
   .fieldHero {
@@ -1829,16 +1867,6 @@ textarea.tableInput {
 
   .equipmentCard strong {
     font-size: 28px;
-  }
-
-  .detailModal {
-    width: 100vw;
-    height: 100%;
-    max-height: 100vh;
-    border-radius: 0;
-    top: 0;
-    left: 0;
-    transform: none;
   }
 
   .paginationBtns {

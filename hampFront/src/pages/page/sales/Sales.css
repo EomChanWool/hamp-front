@@ -245,7 +245,7 @@
    640  : 폰 — groupRow를 2행(이름+수량 / 진행바 전체폭)으로 재배치
 ================================ */
 
-@media (max-width: 1024px) {
+@container content (max-width: 1024px) {
   .groupRow {
     grid-template-columns: 140px 1fr minmax(110px, auto);
     gap: 12px;
@@ -256,7 +256,7 @@
   }
 }
 
-@media (max-width: 640px) {
+@container content (max-width: 640px) {
   .groupRow {
     grid-template-columns: 1fr auto;
     grid-template-areas:
