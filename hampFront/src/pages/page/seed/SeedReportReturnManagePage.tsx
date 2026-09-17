@@ -34,8 +34,12 @@ export function SeedReportReturnManagePage() {
 
   // 현재 수정 중인 행의 ID
   const [editingId, setEditingId] = useState<number | null>(null);
-  // 수정 중인 행의 임시 입력 데이터 저장 상태
+  
+  // 상태 변경 및 날짜 수정용 폼 상태
   const [editForm, setEditForm] = useState<Partial<SeedGoodsReceiptReturnUpdateRequest>>({});
+  
+  // --- useRef 기반 수량 임시 저장소 (returnId를 키로 관리하여 포커스 튀김 방지) ---
+  const editQuantitiesRef = useRef<Record<number, number | ''>>({});
 
   const [searchFilters, setSearchFilters] = useState({
     itemCode: '',
@@ -155,14 +159,18 @@ export function SeedReportReturnManagePage() {
   // 행 수정 모드 진입
   const handleStartEdit = (item: SeedGoodsReceiptReturnItemResponse) => {
     setEditingId(item.returnId);
+    editQuantitiesRef.current[item.returnId] = item.returnQty;
+
     setEditForm({
-      returnQty: item.returnQty,
-      processStatus: item.processStatus,
+      processStatus: item.processStatus ?? 0,
+      returnDueDate: item.returnDueDate ?? '',
+      reportDate: item.reportDate ?? '', // undefined 방지를 위해 기본값 설정
     });
   };
 
   // 행 수정 취소
-  const handleCancelEdit = () => {
+  const handleCancelEdit = (returnId: number) => {
+    delete editQuantitiesRef.current[returnId];
     setEditingId(null);
     setEditForm({});
   };
@@ -170,8 +178,20 @@ export function SeedReportReturnManagePage() {
   // 행 수정 내용 저장 API 연동
   const handleSaveEdit = async (item: SeedGoodsReceiptReturnItemResponse) => {
     try {
-      await SeedGoodsReceiptReturnApi.update(item.returnId, editForm as SeedGoodsReceiptReturnUpdateRequest);
+      const finalReturnQty = editQuantitiesRef.current[item.returnId];
+      
+      // 타입 단언(as SeedGoodsReceiptReturnUpdateRequest)을 통해 필수값 누락 타입 에러 방지
+      const payload: SeedGoodsReceiptReturnUpdateRequest = {
+        returnQty: finalReturnQty === '' ? 0 : Number(finalReturnQty),
+        processStatus: editForm.processStatus ?? item.processStatus,
+        returnDueDate: editForm.returnDueDate ?? item.returnDueDate,
+        reportDate: editForm.reportDate ?? item.reportDate,
+      };
+
+      await SeedGoodsReceiptReturnApi.update(item.returnId, payload);
       window.alert('성공적으로 수정되었습니다.');
+      
+      delete editQuantitiesRef.current[item.returnId];
       setEditingId(null);
       setEditForm({});
       loadList();
@@ -216,23 +236,48 @@ export function SeedReportReturnManagePage() {
         accessorKey: 'returnQty',
         header: '수량',
         cell: ({ row }) => {
-          const isEditing = editingId === row.original.returnId;
+          const item = row.original;
+          const isEditing = editingId === item.returnId;
+          
           if (isEditing) {
             return (
               <input
                 type="number"
                 style={{ width: '80px' }}
                 className="w-24 border px-2 py-0.5 rounded text-sm"
-                value={editForm.returnQty ?? ''}
-                onChange={(e) => setEditForm({ ...editForm, returnQty: Number(e.target.value) })}
+                defaultValue={editQuantitiesRef.current[item.returnId] ?? item.returnQty}
+                onChange={(e) => {
+                  editQuantitiesRef.current[item.returnId] = e.target.value === '' ? '' : Number(e.target.value);
+                }}
               />
             );
           }
-          return row.original.returnQty;
+          return item.returnQty;
         },
       },
-      { accessorKey: 'reportDate', header: '신고일자' },
-      { accessorKey: 'returnDueDate', header: '처리예정일' },
+      {
+        accessorKey: 'reportDate',
+        header: '신고일자',
+        cell: ({ row }) => row.original.reportDate,
+      },
+      {
+        accessorKey: 'returnDueDate',
+        header: '처리예정일',
+        cell: ({ row }) => {
+          const isEditing = editingId === row.original.returnId;
+          if (isEditing) {
+            return (
+              <input
+                type="date"
+                className="border px-2 py-0.5 rounded text-sm"
+                value={editForm.returnDueDate ?? ''}
+                onChange={(e) => setEditForm({ ...editForm, returnDueDate: e.target.value })}
+              />
+            );
+          }
+          return row.original.returnDueDate;
+        },
+      },
       {
         accessorKey: 'processStatus',
         header: '처리상태',
@@ -262,7 +307,8 @@ export function SeedReportReturnManagePage() {
         id: 'actions',
         header: '관리',
         cell: ({ row }) => {
-          const isEditing = editingId === row.original.returnId;
+          const item = row.original;
+          const isEditing = editingId === item.returnId;
           return (
             <div className="rowActions">
               {isEditing ? (
@@ -270,14 +316,14 @@ export function SeedReportReturnManagePage() {
                   <button
                     type="button"
                     className="miniButton"
-                    onClick={() => handleSaveEdit(row.original)}
+                    onClick={() => handleSaveEdit(item)}
                   >
                     저장
                   </button>
                   <button
                     type="button"
                     className="miniButton danger"
-                    onClick={handleCancelEdit}
+                    onClick={() => handleCancelEdit(item.returnId)}
                   >
                     취소
                   </button>
@@ -287,14 +333,14 @@ export function SeedReportReturnManagePage() {
                   <button
                     type="button"
                     className="miniButton"
-                    onClick={() => handleStartEdit(row.original)}
+                    onClick={() => handleStartEdit(item)}
                   >
                     수정
                   </button>
                   <button
                     type="button"
                     className="miniButton danger"
-                    onClick={() => handleDelete(row.original)}
+                    onClick={() => handleDelete(item)}
                   >
                     삭제
                   </button>
