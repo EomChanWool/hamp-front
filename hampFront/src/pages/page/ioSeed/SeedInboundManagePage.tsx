@@ -770,6 +770,7 @@ export function SeedInboundManagePage() {
         lineId: `#${idx + 1}`,
         itemCode: r.itemCode,
         itemNm: r.itemNm || '',
+        unit: r.unit || '',
         instructQty: r.goodQty || r.receiptQty,
         barcode: r.barcode || String(r.receiptId),
       }));

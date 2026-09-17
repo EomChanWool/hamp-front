@@ -164,6 +164,7 @@ export function FoodWorkOrderDetailPage() {
       itemNm: selectedLine.itemNm,
       instructQty: Number(selectedLine.orderQty || 0),
       barcode: `${editForm.workOrderNo}-${101 + activeLinesCount}`,
+      unit: (selectedLine as any).unit || "",
     };
 
     setEditForm(prev => ({
