@@ -4,7 +4,6 @@ import { Panel } from '@components/card/Panel';
 import { SearchBand, type SearchField } from '@components/search/SearchBand';
 import { CusTable } from '@components/table/CusTable';
 import { CusPagination } from '@components/table/CusPagination';
-// import { DashboardCharts } from '@components/chart/InOutChart';
 import Spinner from '@/components/common/Spinner';
 import { formatDateTime } from '@/utils/common';
 import axios from 'axios';
@@ -16,6 +15,7 @@ import {
 } from '@/api/ioSeed/SeedGoodsReceipt';
 import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
 import { ReportModal } from '@/components/modal/ReportModal';
+import { LabelPrintModal, type WorkOrderLineDetail } from '@/components/modal/LabelPrintModal';
 import '@/pages/page/ioSeed/ioSeed.css';
 
 // 백엔드 reportStatus 값: '미신고' / '부분신고' / '신고완료'
@@ -43,12 +43,11 @@ export function SeedInboundManagePage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [page, setPage] = useState(0);
   
-  // 검색 필드 상태에 reportProgress(진행상태) 추가
   const [searchFilters, setSearchFilters] = useState({
     itemCode: '',
     receivedAtFrom: '',
     receivedAtTo: '',
-    reportProgress: '', // 0: 미신고, 1: 부분신고, 2: 신고완료
+    reportProgress: '', 
   });
 
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -66,6 +65,11 @@ export function SeedInboundManagePage() {
 
   const [editingReceiptId, setEditingReceiptId] = useState<number | null>(null);
   const [isCreatingNewRow, setIsCreatingNewRow] = useState(false);
+
+  // 체크박스 선택된 행 ID 관리 (receiptId 기준)
+  const [selectedReceiptIds, setSelectedReceiptIds] = useState<number[]>([]);
+  // 라벨 인쇄 모달 오픈 여부
+  const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
 
   // 신고처리 모달 대상 (null이면 닫힘)
   const [reportModalReceipt, setReportModalReceipt] = useState<SeedGoodsReceiptResponse | null>(null);
@@ -87,13 +91,9 @@ export function SeedInboundManagePage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeletingId, setIsDeletingId] = useState<number | null>(null);
 
-  // 사용자가 양품수량을 직접 수정했는지 여부 - true면 자동 재계산을 멈춘다
   const [isGoodQtyManual, setIsGoodQtyManual] = useState(false);
-
-  // 양품수량 입력 DOM 직접 제어를 위한 Ref
   const goodQtyInputRef = useRef<HTMLInputElement>(null);
 
-  // 입고수량/불량수량이 바뀔 때 호출. 사용자가 양품수량을 직접 수정한 상태(수동모드)라면 건드리지 않는다.
   const recalcGoodQty = () => {
     if (isGoodQtyManual) return;
     const receiptQty = Number(editFormRef.current.receiptQty) || 0;
@@ -101,19 +101,16 @@ export function SeedInboundManagePage() {
     const nextGoodQty = Math.max(receiptQty - defectQty, 0);
     editFormRef.current.goodQty = nextGoodQty;
 
-    // 렌더링을 유발하지 않고 input 값을 직접 갱신하여 커서 풀림 방지
     if (goodQtyInputRef.current) {
       goodQtyInputRef.current.value = String(nextGoodQty);
     }
   };
 
-  // 양품수량을 사용자가 직접 입력했을 때
   const handleManualGoodQtyChange = (value: number) => {
     editFormRef.current.goodQty = value;
     setIsGoodQtyManual(true);
   };
 
-  // 다시 자동 계산 모드로 전환 (입고수량 - 불량수량으로 재계산)
   const handleResetGoodQtyToAuto = () => {
     setIsGoodQtyManual(false);
     const receiptQty = Number(editFormRef.current.receiptQty) || 0;
@@ -126,13 +123,11 @@ export function SeedInboundManagePage() {
     }
   };
 
-  // 검색바 Ref 선언 (품목코드 select용, 입고일자 start/end용, 진행상태 select용)
   const itemCodeRef = useRef<HTMLSelectElement>(null);
   const receivedAtStartRef = useRef<HTMLInputElement>(null);
   const receivedAtEndRef = useRef<HTMLInputElement>(null);
   const reportProgressRef = useRef<HTMLSelectElement>(null);
 
-  // 1. 씨드 품목 옵션 조회
   const fetchItemOptions = useCallback(async () => {
     try {
       const res = await ItemApi.getOptions({ productType: 0 });
@@ -146,7 +141,6 @@ export function SeedInboundManagePage() {
     fetchItemOptions();
   }, [fetchItemOptions]);
 
-  // 검색 필드 정의
   const searchFields: SearchField[] = useMemo(
     () => [
       {
@@ -185,7 +179,6 @@ export function SeedInboundManagePage() {
     [itemOptions]
   );
 
-  // 2. 입고 목록 조회
   const loadReceipts = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -230,6 +223,7 @@ export function SeedInboundManagePage() {
     });
     setEditingReceiptId(null);
     setIsCreatingNewRow(false);
+    setSelectedReceiptIds([]);
   };
 
   const handleReset = () => {
@@ -248,11 +242,13 @@ export function SeedInboundManagePage() {
     setSorting([]);
     setEditingReceiptId(null);
     setIsCreatingNewRow(false);
+    setSelectedReceiptIds([]);
   };
 
   const handlePageChange = (newPage: number) => {
     setEditingReceiptId(null);
     setIsCreatingNewRow(false);
+    setSelectedReceiptIds([]);
     setPage(newPage);
   };
 
@@ -274,7 +270,6 @@ export function SeedInboundManagePage() {
     setIsCreatingNewRow(false);
   };
 
-  // 공통 유효성 검사 함수 (입고수량 vs 양품 + 불량)
   const validateQuantities = () => {
     const receiptQty = Number(editFormRef.current.receiptQty) || 0;
     const defectQty = Number(editFormRef.current.defectQty) || 0;
@@ -354,7 +349,6 @@ export function SeedInboundManagePage() {
       receivedAt: row.receivedAt ?? '',
     };
     const initialAutoGoodQty = Math.max((row.receiptQty ?? 0) - (row.defectQty ?? 0), 0);
-    // 기존 저장된 양품수량이 (입고수량-불량수량)과 다르면 이미 수동 조정된 값이므로 수동모드로 시작
     setIsGoodQtyManual((row.goodQty ?? 0) !== initialAutoGoodQty);
     setEditingReceiptId(row.receiptId);
   };
@@ -428,13 +422,57 @@ export function SeedInboundManagePage() {
     setReportModalReceipt(null);
   };
 
-  // 신고 이력이 변경되면(등록/수정/삭제) 목록의 진행상태를 다시 불러온다.
   const handleReportChanged = () => {
     setRefreshKey((prev) => prev + 1);
   };
 
+  const handleOpenLabelModal = () => {
+    if (selectedReceiptIds.length === 0) {
+      window.alert("인쇄할 항목을 최소 1개 이상 선택해주세요.");
+      return;
+    }
+    setIsLabelModalOpen(true);
+  };
+
   const columns: ColumnDef<SeedGoodsReceiptResponse>[] = useMemo(
     () => [
+      {
+        id: 'select',
+        header: () => (
+          <input 
+            type="checkbox" 
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedReceiptIds(receipts.map(r => r.receiptId));
+              } else {
+                setSelectedReceiptIds([]);
+              }
+            }}
+            checked={selectedReceiptIds.length === receipts.length && receipts.length > 0}
+            style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+          />
+        ),
+        cell: ({ row }) => {
+          const isNewRow = row.original.receiptId === -999999;
+          if (isNewRow) return null;
+
+          return (
+            <input 
+              type="checkbox" 
+              checked={selectedReceiptIds.includes(row.original.receiptId)}
+              onChange={() => {
+                setSelectedReceiptIds(prev => 
+                  prev.includes(row.original.receiptId) 
+                    ? prev.filter(id => id !== row.original.receiptId) 
+                    : [...prev, row.original.receiptId]
+                );
+              }}
+              style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+            />
+          );
+        },
+        meta: { width: '50px' },
+      },
       {
         accessorKey: 'itemCode',
         header: '품목',
@@ -503,7 +541,6 @@ export function SeedInboundManagePage() {
               />
             );
           }
-          // 수량 뒤에 단위(unit) 표출 (unit이 존재할 경우 공백 후 출력, 없으면 빈 문자열)
           const qtyVal = (row.original.receiptQty ?? 0).toLocaleString();
           const unitVal = row.original.unit ? ` ${row.original.unit}` : '';
           return `${qtyVal}${unitVal}`;
@@ -532,7 +569,6 @@ export function SeedInboundManagePage() {
               />
             );
           }
-          // 불량수량 단위(unit) 표출 반영
           const qtyVal = (row.original.defectQty ?? 0).toLocaleString();
           const unitVal = row.original.unit ? ` ${row.original.unit}` : '';
           return `${qtyVal}${unitVal}`;
@@ -573,7 +609,6 @@ export function SeedInboundManagePage() {
               </div>
             );
           }
-          // 양품수량 단위(unit) 표출 반영
           const qtyVal = (row.original.goodQty ?? 0).toLocaleString();
           const unitVal = row.original.unit ? ` ${row.original.unit}` : '';
           return `${qtyVal}${unitVal}`;
@@ -615,8 +650,6 @@ export function SeedInboundManagePage() {
           const returnedQty = Math.max(goodQty - remainingQty, 0);
           const meta = REPORT_STATUS_META[row.original.reportStatus] ?? DEFAULT_STATUS_META;
           const percent = goodQty > 0 ? Math.min((returnedQty / goodQty) * 100, 100) : 0;
-          
-          // 진행상태 하단 신고 카운트에서도 단위(unit) 표출 반영
           const unitVal = row.original.unit ? ` ${row.original.unit}` : '';
 
           return (
@@ -701,7 +734,7 @@ export function SeedInboundManagePage() {
         },
       },
     ],
-    [editingReceiptId, isCreatingNewRow, isUpdating, isDeletingId, itemOptions, isGoodQtyManual]
+    [editingReceiptId, isCreatingNewRow, isUpdating, isDeletingId, itemOptions, isGoodQtyManual, selectedReceiptIds, receipts]
   );
 
   const displayReceipts = useMemo(() => {
@@ -727,12 +760,46 @@ export function SeedInboundManagePage() {
     return receipts;
   }, [isCreatingNewRow, receipts]);
 
+  const selectedLabelLines: WorkOrderLineDetail[] = useMemo(() => {
+    return receipts
+      .filter((r) => selectedReceiptIds.includes(r.receiptId))
+      .map((r, idx) => ({
+        id: String(r.receiptId),
+        salesOrderLineId: 0,
+        orderCode: r.itemCode,
+        lineId: `#${idx + 1}`,
+        itemCode: r.itemCode,
+        itemNm: r.itemNm || '',
+        instructQty: r.goodQty || r.receiptQty,
+        barcode: r.barcode || String(r.receiptId),
+      }));
+  }, [receipts, selectedReceiptIds]);
+
   return (
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
-      {/* <DashboardCharts pageType="seedInbound" /> */}
 
-      <Panel title="씨드 입고관리 목록" action="등록" onAction={handleStartCreate}>
+      <Panel 
+        title="씨드 입고관리 목록" 
+        action={
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="ghostButton"
+              onClick={handleOpenLabelModal}
+            >
+              선택 라벨 인쇄 ({selectedReceiptIds.length}건)
+            </button>
+            <button
+              type="button"
+              className="primaryButton"
+              onClick={handleStartCreate}
+            >
+              등록
+            </button>
+          </div>
+        }
+      >
         <div className="relative min-h-[300px]">
           {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -761,6 +828,13 @@ export function SeedInboundManagePage() {
       {reportModalReceipt && (
         <ReportModal receipt={reportModalReceipt} onClose={handleCloseReportModal} onChanged={handleReportChanged} />
       )}
+
+      <LabelPrintModal
+        isOpen={isLabelModalOpen}
+        onClose={() => setIsLabelModalOpen(false)}
+        selectedLines={selectedLabelLines}
+        workOrderNo="SEED-BARCODE"
+      />
     </section>
   );
 }
