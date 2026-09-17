@@ -1147,12 +1147,10 @@
 }
 
 /* ---------- 좌측: 이미지 영역 ---------- */
-/* 기존 flex: 0 0 700px 와 width: 260px 가 서로 충돌해서
-   실제로는 이미지 칼럼이 700px로 고정되어 태블릿(≤1024px)에서
-   레이아웃이 깨지던 문제를 수정 — 260px 기준으로 통일 */
 .facilityImageCol {
-    flex: 0 0 260px;
-    width: 260px;
+    flex: 1 1 700px;
+    width: 100%;
+    max-width: 700px;
 }
 
 /* ---------- 우측: 상세보기 정보 영역 ---------- */
@@ -1655,8 +1653,8 @@
   }
 
   .facilityImageCol {
-    flex: 0 0 210px;
-    width: 210px;
+    flex: 0 0 330px;
+    width: 330px;
   }
 
   .facilityTitle {
