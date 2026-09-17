@@ -1,0 +1,262 @@
+/* ==========================================
+   라벨 인쇄 미리보기 모달 CSS
+   ========================================== */
+
+.food-label-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.food-label-modal-container {
+  background-color: #f8fafc;
+  width: 850px;
+  max-width: 95vw;
+  max-height: 85vh;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.food-label-modal-header {
+  padding: 20px 24px;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.food-label-modal-breadcrumb {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+
+.food-label-modal-title {
+  margin: 0 0 4px 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.food-label-modal-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.food-label-modal-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.food-label-modal-btn-close {
+  font-size: 13px;
+  padding: 6px 12px;
+}
+
+.food-label-modal-btn-print {
+  font-size: 13px;
+  padding: 6px 16px;
+}
+
+.food-label-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.food-label-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.food-label-card {
+  background-color: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.food-card-header-meta {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.food-card-body-meta {
+  font-size: 13px;
+  color: #334155;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.food-card-qty-meta {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 12px;
+}
+
+.food-card-barcode-wrap {
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 8px;
+}
+
+.food-card-barcode-wrap svg {
+  width: 100% !important;
+  /* 짧은 바코드도 카드가 허용하는 가로 폭만큼 강제로 늘어남 */
+  height: auto;
+}
+
+
+/* ================================================
+   라벨 인쇄 미리보기 모달 반응형 (Media Queries)
+   ================================================ */
+
+@media (max-width: 1024px) {
+  .food-label-modal-body {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .food-label-modal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .food-label-modal-header {
+    padding: 16px 18px;
+  }
+
+  .food-label-modal-title {
+    font-size: 17px;
+  }
+
+  .food-label-modal-body {
+    padding: 16px;
+  }
+
+  .food-label-card {
+    padding: 16px;
+  }
+}
+
+
+/* ================================================
+   라벨 인쇄 미리보기 모달 다크모드 대응
+   ================================================ */
+
+[data-theme="dark"] .food-label-modal-container {
+  background-color: var(--bg-app);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+[data-theme="dark"] .food-label-modal-header {
+  background-color: var(--bg-card);
+  border-bottom-color: var(--border);
+}
+
+[data-theme="dark"] .food-label-modal-breadcrumb {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .food-label-modal-title {
+  color: var(--text-heading);
+}
+
+[data-theme="dark"] .food-label-modal-subtitle {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .food-label-card {
+  background-color: var(--bg-card);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .food-card-barcode-wrap {
+  border-top-color: var(--border);
+}
+
+[data-theme="dark"] .food-card-header-meta {
+  color: var(--text-heading);
+}
+
+[data-theme="dark"] .food-card-body-meta {
+  color: var(--text-body);
+}
+
+[data-theme="dark"] .food-card-qty-meta {
+  color: var(--text-main);
+}
+
+/* ================================================
+   라벨 인쇄 전용 스타일 (Print Styles)
+   - 뒤쪽 메인 페이지와 모달 헤더/버튼을 숨기고 라벨 카드만 출력
+   ================================================ */
+
+@media print {
+
+  /* 1. 기본적으로 페이지 내 모든 요소를 숨깁니다 */
+  body * {
+    visibility: hidden;
+  }
+
+  /* 2. 모달 컨테이너와 그 내부의 라벨 카드 영역만 다시 보이게 설정합니다 */
+  .food-label-modal-container,
+  .food-label-modal-container * {
+    visibility: visible;
+  }
+
+  /* 3. 모달 배경(오버레이) 및 전체 레이아웃 초기화 */
+  .food-label-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: transparent !important;
+  }
+
+  .food-label-modal-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    background-color: #ffffff !important;
+    overflow: visible !important;
+  }
+
+  /* 4. 모달 상단 헤더(제목, 닫기/인쇄 버튼 등)는 인쇄에서 제외합니다 */
+  .food-label-modal-header {
+    display: none !important;
+  }
+
+  /* 5. 모달 바디 스크롤 및 여백 제거 */
+  .food-label-modal-body {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* 6. 인쇄 페이지 여백 최소화 */
+  @page {
+    size: auto;
+    margin: 15mm;
+  }
+}

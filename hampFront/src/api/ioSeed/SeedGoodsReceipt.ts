@@ -156,3 +156,26 @@ export const SeedGoodsReceiptReturnApi = {
     return res.data;
   }
 };
+
+// // ── 씨드 입고 스캔 스트림 (SSE) API ──────────────────────────────────────────────
+
+// export const SeedGoodsReceiptStreamApi = {
+//   /** 신고처리 스캔 결과 실시간 구독 (SSE) */
+//   subscribeScanStream: (
+//     onMessage: (event: MessageEvent) => void,
+//     onError?: (error: Event) => void
+//   ): EventSource => {
+//     // API 베이스 URL이 있다면 조합해서 사용
+//     const eventSource = new EventSource('/seed-goods-receipts/scan/stream');
+
+//     eventSource.onmessage = (event) => {
+//       onMessage(event);
+//     };
+
+//     eventSource.onerror = (error) => {
+//       if (onError) onError(error);
+//     };
+
+//     return eventSource; // 컴포넌트 unmount 시 .close() 호출을 위해 반환
+//   },
+// };

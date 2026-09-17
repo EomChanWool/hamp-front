@@ -222,31 +222,7 @@
   gap: 12px;
 }
 
-.food-card-header-meta {
-  font-size: 14px;
-  font-weight: 700;
-  color: #0f172a;
-  margin-bottom: 6px;
-}
 
-.food-card-body-meta {
-  font-size: 13px;
-  color: #334155;
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-
-.food-card-qty-meta {
-  font-size: 13px;
-  font-weight: 600;
-  color: #0f172a;
-  margin-bottom: 12px;
-}
-
-.food-card-barcode-wrap {
-  border-top: 1px dashed #cbd5e1;
-  padding-top: 8px;
-}
 
 /* 테이블 내부 flex 컨테이너 관련 */
 .food-cell-flex-wrap {
@@ -268,97 +244,6 @@
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-}
-
-/* ==========================================
-   라벨 인쇄 미리보기 모달 CSS
-   ========================================== */
-.food-label-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1100;
-}
-
-.food-label-modal-container {
-  background-color: #f8fafc;
-  width: 850px;
-  max-width: 95vw;
-  max-height: 85vh;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.food-label-modal-header {
-  padding: 20px 24px;
-  background-color: #ffffff;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #e2e8f0;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.food-label-modal-breadcrumb {
-  font-size: 12px;
-  color: #64748b;
-  margin-bottom: 2px;
-}
-
-.food-label-modal-title {
-  margin: 0 0 4px 0;
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.food-label-modal-subtitle {
-  margin: 0;
-  font-size: 13px;
-  color: #64748b;
-}
-
-.food-label-modal-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.food-label-modal-btn-close {
-  font-size: 13px;
-  padding: 6px 12px;
-}
-
-.food-label-modal-btn-print {
-  font-size: 13px;
-  padding: 6px 16px;
-}
-
-.food-label-modal-body {
-  padding: 24px;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.food-label-modal-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-
-.food-label-card {
-  background-color: #ffffff;
-  border: 1px dashed #cbd5e1;
-  border-radius: 8px;
-  padding: 20px;
 }
 
 /* 테이블 셀 내부 레이아웃 전용 클래스들 */
@@ -414,7 +299,7 @@
 /* ================================================
    반응형
    1024 : 태블릿 — 요약 그리드 4열→2열, 카드 패딩 축소
-   640  : 폰 — 요약 그리드 1열, 라벨 모달 그리드 1열, 모달 여백 축소
+   640  : 폰 — 요약 그리드 1열, 모달 관련 제외
    ================================================ */
 
 @media (max-width: 1024px) {
@@ -426,10 +311,6 @@
 
   .food-detail-card {
     padding: 24px;
-  }
-
-  .food-label-modal-body {
-    padding: 20px;
   }
 }
 
@@ -450,30 +331,10 @@
   .food-detail-title {
     font-size: 20px;
   }
-
-  .food-label-modal-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .food-label-modal-header {
-    padding: 16px 18px;
-  }
-
-  .food-label-modal-title {
-    font-size: 17px;
-  }
-
-  .food-label-modal-body {
-    padding: 16px;
-  }
-
-  .food-label-card {
-    padding: 16px;
-  }
 }
 
 /* ================================================
-   DARK MODE (Food 작업지시 전용 추가 스타일)
+   DARK MODE (Food 작업지시 전용 추가 스타일 - 모달 제외)
    ================================================ */
 
 [data-theme="dark"] .food-detail-card {
@@ -533,22 +394,6 @@
   border-top-color: var(--border);
 }
 
-[data-theme="dark"] .food-card-header-meta {
-  color: var(--text-heading);
-}
-
-[data-theme="dark"] .food-card-body-meta {
-  color: var(--text-body);
-}
-
-[data-theme="dark"] .food-card-qty-meta {
-  color: var(--text-main);
-}
-
-[data-theme="dark"] .food-card-barcode-wrap {
-  border-top-color: var(--border);
-}
-
 [data-theme="dark"] .food-order-select-btn {
   background: var(--bg-subtle);
   border: 1px solid var(--border);
@@ -556,7 +401,7 @@
 }
 
 [data-theme="dark"] .food-order-code-text {
-  color: #60a5fa; /* 다크모드용 파란색 계열 강조 */
+  color: #60a5fa;
 }
 
 [data-theme="dark"] .food-item-name-text {
@@ -573,35 +418,6 @@
 
 [data-theme="dark"] .food-line-delete-btn {
   color: #fca5a5;
-}
-
-/* 라벨 인쇄 미리보기 모달 다크모드 대응 */
-[data-theme="dark"] .food-label-modal-container {
-  background-color: var(--bg-app);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-}
-
-[data-theme="dark"] .food-label-modal-header {
-  background-color: var(--bg-card);
-  border-bottom-color: var(--border);
-}
-
-[data-theme="dark"] .food-label-modal-breadcrumb {
-  color: var(--text-muted);
-}
-
-[data-theme="dark"] .food-label-modal-title {
-  color: var(--text-heading);
-}
-
-[data-theme="dark"] .food-label-modal-subtitle {
-  color: var(--text-muted);
-}
-
-[data-theme="dark"] .food-label-card {
-  background-color: var(--bg-card);
-  border-color: var(--border);
 }
 
 [data-theme="dark"] .food-cell-order-code {
