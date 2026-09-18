@@ -1,0 +1,86 @@
+/* ================================
+   WORK TABLET LOGIN (현장 태블릿 로그인)
+================================ */
+.workTabletLoginContainer {
+  width: 100%;
+  padding: 48px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-sizing: border-box;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.workTabletLoginFields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.workTabletLoginInput {
+  width: 100%;
+  height: 64px;
+  padding: 0 20px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 500;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.workTabletLoginInput::placeholder {
+  color: #fff;
+  opacity: 0.5;
+}
+
+.workTabletLoginInput:focus {
+  outline: none;
+  border-color: var(--primary-light);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.workTabletLoginInput:-webkit-autofill,
+.workTabletLoginInput:-webkit-autofill:hover,
+.workTabletLoginInput:-webkit-autofill:focus,
+.workTabletLoginInput:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+  -webkit-text-fill-color: #fff !important;
+  caret-color: #fff;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+@media (max-width: 480px) {
+  .workTabletLoginContainer {
+    padding: 28px 20px;
+    gap: 20px;
+  }
+
+  .workTabletLoginInput {
+    height: 56px;
+    font-size: 18px;
+  }
+}
+
+@media (max-height: 600px) {
+  .workTabletLoginContainer {
+    padding: 24px 32px;
+    gap: 16px;
+  }
+
+  .workTabletLoginFields {
+    gap: 12px;
+  }
+
+  .workTabletLoginInput {
+    height: 52px;
+    font-size: 17px;
+  }
+}

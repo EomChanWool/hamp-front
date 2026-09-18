@@ -1,0 +1,321 @@
+/* ================================
+   WORK SEED REPORT SCAN (신고처리 스캔 화면)
+================================ */
+.workScanPanel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 720px;
+  box-sizing: border-box;
+}
+
+.workScanContainer {
+  width: 100%;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-sizing: border-box;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  position: relative;
+}
+
+.workScanTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workScanHomeBtn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #f0f0f0;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workScanStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.workScanStatusDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #f59e0b;
+}
+
+.workScanStatus--open .workScanStatusDot {
+  background: #22c55e;
+}
+
+.workScanStatus--closed .workScanStatusDot {
+  background: #ef4444;
+}
+
+/* ── 대기 화면 ─────────────────────────────────── */
+.workScanWaiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  padding: 64px 16px;
+}
+
+.workScanWaitingIcon {
+  font-size: 56px;
+}
+
+.workScanWaiting h1 {
+  margin: 0;
+  color: #f0f0f0;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.workScanWaiting p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 15px;
+}
+
+/* ── 스캔 실패(잘못된 바코드 등) 화면 ───────────────── */
+.workScanFailure h1 {
+  color: #f87171;
+}
+
+.workScanFailure p {
+  color: #fca5a5;
+  word-break: keep-all;
+}
+
+.workScanFailure .workScanCancelBtn {
+  flex: none;
+  width: 220px;
+  margin-top: 8px;
+}
+
+/* ── 신고수량 입력 화면 ─────────────────────────── */
+.workScanEntry {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.workScanItemCard {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.workScanItemCard h2 {
+  margin: 0 0 14px;
+  color: #f0f0f0;
+  font-size: 22px;
+  font-weight: 700;
+  word-break: keep-all;
+}
+
+.workScanInfoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.workScanInfoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.workScanInfoItem span {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.workScanInfoItem strong {
+  color: #f0f0f0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.workScanRemainingBanner {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #4ade80;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.workScanForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.workScanQtyDisplay {
+  text-align: right;
+  color: #fff;
+  font-size: 36px;
+  font-weight: 700;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+}
+
+.workScanQtyDisplay span {
+  font-size: 16px;
+  color: #94a3b8;
+  margin-left: 6px;
+}
+
+.workScanKeypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.workScanKeypadBtn {
+  height: 60px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease;
+}
+
+.workScanKeypadBtn:active {
+  background: var(--primary);
+}
+
+.workScanDueDateRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workScanDueDateRow label {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.workScanDueDateRow input[type='date'] {
+  flex: 1;
+  max-width: 220px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+  font-size: 15px;
+}
+
+.workScanErrorMsg {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+  font-size: 14px;
+  text-align: center;
+}
+
+.workScanActionRow {
+  display: flex;
+  gap: 12px;
+}
+
+.workScanCancelBtn,
+.workScanSubmitBtn {
+  flex: 1;
+  height: 64px;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.workScanCancelBtn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f0f0f0;
+}
+
+.workScanSubmitBtn {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary-light);
+}
+
+.workScanCancelBtn:disabled,
+.workScanSubmitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.workScanSuccessToast {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.9);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* ── 모바일/저해상도 대응 ───────────────────────── */
+@media (max-width: 480px) {
+  .workScanContainer {
+    padding: 20px;
+  }
+
+  .workScanInfoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .workScanQtyDisplay {
+    font-size: 28px;
+  }
+
+  .workScanKeypadBtn {
+    height: 52px;
+    font-size: 20px;
+  }
+}
+
+@media (max-height: 600px) {
+  .workScanWaiting {
+    padding: 32px 16px;
+  }
+}

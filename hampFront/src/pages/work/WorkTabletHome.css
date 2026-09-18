@@ -41,6 +41,53 @@
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 }
 
+.workTabletTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workTabletUserInfo {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: #f0f0f0;
+  min-width: 0;
+}
+
+.workTabletUserName {
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workTabletUserPosition {
+  font-size: 13px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.workTabletLogoutBtn {
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #f0f0f0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workTabletLogoutBtn:active {
+  background: var(--primary);
+}
+
 .workTabletHeader {
   text-align: center;
   display: flex;
@@ -167,6 +214,16 @@
   }
 
   .workTabletHeader p {
+    font-size: 13px;
+  }
+
+  .workTabletUserName {
+    font-size: 14px;
+  }
+
+  .workTabletLogoutBtn {
+    height: 36px;
+    padding: 0 12px;
     font-size: 13px;
   }
 

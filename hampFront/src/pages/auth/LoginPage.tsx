@@ -1,5 +1,5 @@
 import { LockClosedIcon, UserCircleIcon } from "@heroicons/react/24/outline";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect, type SyntheticEvent } from "react";
 import './LoginPage.css';
@@ -10,13 +10,17 @@ export function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, isAuthenticated } = useAuth();
+
+  // 태블릿 화면(/work 등) 진입이 막혀 로그인으로 넘어온 경우, 로그인 후 원래 경로로 복귀
+  const from = (location.state as { from?: string } | null)?.from || '/';
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/', { replace: true });
+      navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, from]);
 
   // 1차: 프론트엔드 유효성 검증
   const validateForm = (): boolean => {
@@ -42,8 +46,8 @@ export function LoginPage() {
     try {
       setIsSubmitting(true);
       await login({ userId, password });
-      
-      navigate('/', { replace: true });
+
+      navigate(from, { replace: true });
     } catch (error: any) {
       // [2차 검증] 백엔드에서 넘어오는 에러 메시지 우선 노출
       const apiErrorMessage =

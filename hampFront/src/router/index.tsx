@@ -109,7 +109,10 @@ import { SalesBusinessPartnerCreatePage } from '@/pages/page/sales/SalesBusiness
 import { SalesBusinessPartnerDetailPage } from '@/pages/page/sales/SalesBusinessPartnerDetailPage'
 
 // 태블릿 전용 페이지
+import { WorkTabletGuard } from '@/pages/work/WorkTabletGuard'
+import { WorkTabletLoginPage } from '@/pages/work/WorkTabletLoginPage'
 import { WorkTabletHome } from '@/pages/work/WorkTabletHome'
+import { WorkSeedReportScanPage } from '@/pages/work/WorkSeedReportScanPage'
 
 
 const RootRouter = () => {
@@ -345,8 +348,16 @@ export const routeObj: RouteObject[] = [
     ],
   },
   {
+    path: '/work/login',
+    element: <WorkTabletLoginPage />,
+  },
+  {
     path: '/work',
-    element: <WorkTabletHome />,
+    element: <WorkTabletGuard />,
+    children: [
+      { index: true, element: <WorkTabletHome /> },
+      { path: 'seed-report-scan', element: <WorkSeedReportScanPage /> },
+    ],
   },
   {
     path: '/login',
