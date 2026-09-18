@@ -17,12 +17,6 @@ interface ReportModalProps {
     onClose: () => void;
     onChanged: () => void;
 }
-const PROCESS_STATUS_MAP = {
-    0: '신고대기',
-    1: '신고완료',
-} as const;
-
-type ProcessStatusNumber = 0 | 1;
 
 export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
     const [returns, setReturns] = useState<SeedGoodsReceiptReturnResponse[]>([]);
@@ -37,19 +31,16 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
         returnQty: number | '';
         reportDate: string;
         returnDueDate: string;
-        processStatus: ProcessStatusNumber;
     }>({
         returnQty: '',
         reportDate: '',
         returnDueDate: '',
-        processStatus: 0, // 기본값 신고대기(0)
     });
 
     // --- 2. 하단 신규 등록 모드 상태 ---
     const [newReturnQtyInput, setNewReturnQtyInput] = useState<number | ''>('');
     const [newReportDateInput, setNewReportDateInput] = useState<string>('');
     const [newReturnDueDateInput, setNewReturnDueDateInput] = useState<string>('');
-    const [newProcessStatusInput, setNewProcessStatusInput] = useState<ProcessStatusNumber>(0); // 기본값 신고대기(0)
 
     const goodQty = receipt.goodQty ?? 0;
     const unitText = receipt.unit ?? ''; // API로 받아온 단위 연동
@@ -98,7 +89,6 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
             returnQty: item.returnQty ?? '',
             reportDate: item.reportDate ?? '',
             returnDueDate: item.returnDueDate ?? '',
-            processStatus: (item.processStatus as ProcessStatusNumber) ?? 1,
         };
     };
 
@@ -135,7 +125,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
         try {
             const payload: SeedGoodsReceiptReturnUpdateRequest = {
                 returnQty: qty,
-                processStatus: editFormRef.current.processStatus,
+                processStatus: 0,
                 reportDate: editFormRef.current.reportDate,
                 returnDueDate: editFormRef.current.returnDueDate,
             };
@@ -200,7 +190,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
         try {
             const payload: SeedGoodsReceiptReturnCreateRequest = {
                 returnQty: qty,
-                processStatus: newProcessStatusInput,
+                processStatus: 0,
                 reportDate: newReportDateInput,
                 returnDueDate: newReturnDueDateInput,
             };
@@ -289,28 +279,10 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                 },
             },
             {
-                accessorKey: 'processStatus',
+                id: 'processStatus',
                 header: '상태',
                 enableSorting: false,
-                cell: ({ row }) => {
-                    const item = row.original;
-                    const isEditing = editingReturnId === item.returnId;
-                    if (isEditing) {
-                        return (
-                            <select
-                                className="modalTableSelect"
-                                defaultValue={editFormRef.current.processStatus}
-                                onChange={(e) => {
-                                    editFormRef.current.processStatus = Number(e.target.value) as ProcessStatusNumber;
-                                }}
-                            >
-                                <option value={0}>신고대기</option>
-                                <option value={1}>신고완료</option>
-                            </select>
-                        );
-                    }
-                    return PROCESS_STATUS_MAP[item.processStatus as ProcessStatusNumber] ?? (item.processStatus === 0 ? '신고대기' : '신고완료');
-                },
+                cell: () => '신고대기',
             },
             {
                 id: 'actions',
@@ -467,20 +439,6 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                                 <p className="reportFormHelper">
                                     잔여수량({Math.max(goodQty - reportedTotal, 0).toLocaleString()}{unitText ? ` ${unitText}` : ''})을 초과하여 등록할 수 없습니다.
                                 </p>
-
-                                <div>
-                                    <label className="reportFormInputLabel">처리상태 *</label>
-                                    <select
-                                        className="reportFormSelect"
-                                        value={newProcessStatusInput}
-                                        onChange={(e) => {
-                                            setNewProcessStatusInput(Number(e.target.value) as ProcessStatusNumber);
-                                        }}
-                                    >
-                                        <option value={0}>신고대기</option>
-                                        <option value={1}>신고완료</option>
-                                    </select>
-                                </div>
 
                                 <div className="reportFormDateRow">
                                     <div className="reportFormDateItem">
