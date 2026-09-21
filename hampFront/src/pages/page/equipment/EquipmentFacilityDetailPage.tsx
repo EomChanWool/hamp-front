@@ -20,7 +20,6 @@ import ImageGallery from "@components/common/ImageGallery";
 import ImageModal from "@components/modal/ImageModal";
 import UserMultiSelect from "@components/common/UserMultiSelect";
 import { LabelPrintModal } from "@/components/modal/LabelPrintModal";
-import Barcode from 'react-barcode';
 import "@/pages/layout/Layout.css";
 
 type SectionField = {
@@ -53,7 +52,7 @@ export function EquipmentFacilityDetailPage() {
   const [form, setForm] = useState<Record<string, any>>({});
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   // 라벨프린터 모달 오픈 상태 추가
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
 
@@ -451,11 +450,11 @@ export function EquipmentFacilityDetailPage() {
   const currentManagerUserIds: string[] = form.managerUserIds || [];
   const displayManagerNames = currentManagerUserIds.length > 0
     ? currentManagerUserIds
-        .map((id) => {
-          const userObj = userOptions.find((u) => u.userId === id);
-          return userObj ? `${userObj.userNm} (${userObj.userId})` : id;
-        })
-        .join(", ")
+      .map((id) => {
+        const userObj = userOptions.find((u) => u.userId === id);
+        return userObj ? `${userObj.userNm} (${userObj.userId})` : id;
+      })
+      .join(", ")
     : "-";
 
   return (
@@ -501,35 +500,23 @@ export function EquipmentFacilityDetailPage() {
                 <div className="facilityStatusRow">
                   <h1 className="facilityTitle">{form.fcltNm || facility.fcltCode}</h1>
                   <span className="facilityCode">{form.fcltCode}</span>
+
+                  <button
+                    type="button"
+                    className="barcodeActionBtn"
+                    disabled={isBusy}
+                    onClick={() => {
+                      setIsLabelModalOpen(true);
+                    }}
+                  >
+                    바코드 출력
+                  </button>
                 </div>
               </div>
             )}
 
             <div className="facilitySubtitle">
               {`${form.eqNm || "장비 미지정"} · ${form.facNm || "공장 미지정"}`}
-            </div>
-
-            {/* 바코드 정보 영역 (적용하신 .barcodeSection 스타일 적용 및 라벨프린터 모달 연결) */}
-            <div className="barcodeSection">
-              <div className="barcodeInfo">
-                <span className="barcodeLabel">설비 바코드 정보</span>
-                {form.barcode ? (
-                  <Barcode value={form.barcode} width={1.5} height={40} fontSize={14} />
-                ) : (
-                  <span className="barcodeValue">-</span>
-                )}
-              </div>
-              <button
-                type="button"
-                className="barcodeActionBtn"
-                disabled={isBusy}
-                onClick={() => {
-                  // alert 대신 라벨프린터 모달을 띄우도록 변경
-                  setIsLabelModalOpen(true);
-                }}
-              >
-                바코드 출력
-              </button>
             </div>
 
             {/* 사용여부 / 현재상태 / 담당자 입력폼 영역 */}

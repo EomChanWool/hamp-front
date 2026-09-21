@@ -1215,66 +1215,6 @@
     color: var(--text-muted, #9aa3b0);
 }
 
-/* ==========================================
-     바코드 정보 영역 (Barcode Section)
-   - 설비의 바코드 번호 표시/수정 및 출력 버튼 영역
-   ========================================== */
-.barcodeSection {
-    margin-top: 4px;
-    padding: 16px 20px;
-    background: var(--bg-subtle, #fcfcfb);
-    border: 2px dashed var(--border-strong, #c7cdd5);
-    border-radius: 12px;
-    display: flex;
-    flex-wrap: wrap; 
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px 16px;   
-    transition: border-color 0.15s ease;
-}
-
-.barcodeSection:hover {
-    border-color: var(--text-muted, #9aa3b0);
-}
-
-.barcodeInfo {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    flex: 1 1 auto;
-    min-width: 0;
-}
-
-.barcodeInfo svg,
-.barcodeInfo canvas,
-.barcodeInfo img {
-    display: block;
-    max-width: 100%;
-    height: auto;
-}
-
-.barcodeLabel {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-body, #5b6472);
-}
-
-.barcodeValue {
-    font-family: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, monospace;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-heading, #14181f);
-    word-break: break-all;
-}
-
-/* 바코드 편집용 입력 필드 (기존 tableInput 스타일을 컴팩트하게 오버라이드) */
-.barcodeSection .tableInput {
-    height: 40px;
-    font-size: 14px;
-    padding: 0 12px;
-    max-width: 280px;
-}
-
 /* 바코드 영역 내 액션 버튼 (출력 버튼) */
 .barcodeActionBtn {
     height: 38px;
@@ -1852,17 +1792,6 @@
         grid-template-columns: 1fr;
     }
 
-    .barcodeSection {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 12px;
-        padding: 14px 16px;
-    }
-
-    .barcodeSection .tableInput {
-        max-width: 100%; /* 편집 모드일 때 인풋이 꽉 차게 조정 */
-    }
-
     .barcodeActionBtn {
         width: 100%; /* 모바일/작은 태블릿에서 버튼을 누르기 쉽게 풀 폭으로 전환 */
         margin-left: 0;
@@ -1925,10 +1854,5 @@
 
   .facilityTitle {
     font-size: 20px;
-  }
-
-  /* 초소형 뷰포트에서 바코드 글자 크기 살짝 조정 */
-  .barcodeValue {
-    font-size: 15px;
   }
 }
