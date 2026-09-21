@@ -89,6 +89,13 @@ export interface WorkOrderLineScanResponse {
     instructQty: number;
 }
 
+/** 작업지시 공정 시작 요청 */
+export interface WorkOrderPerformanceStartRequest {
+    operCode: string;
+    qty: number;
+}
+
+
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 작업지시 단건/기본 응답 API 최종 응답 타입 */
@@ -108,6 +115,10 @@ export type ApiResponseWorkOrderStatusSummaryResponse = ApiResponse<WorkOrderSta
 
 /** 작업지시 라인 바코드 스캔 조회 API 최종 응답 타입 */
 export type ApiResponseWorkOrderLineScanResponse = ApiResponse<WorkOrderLineScanResponse>;
+
+/** 작업지시 공정 시작 API 최종 응답 타입 (기본 ApiResponse 활용) */
+export type ApiResponseWorkOrderPerformanceStartResponse = ApiResponse<string>;
+
 
 // ── 작업지시 관리 API 함수 ────────────────────────────────────────────────────────
 
@@ -169,6 +180,12 @@ export const WorkOrderApi = {
         const res = await apiClient.get('/work-orders/scan', {
             params: { code },
         });
+        return res.data;
+    },
+
+    /** 공정 시작 확정 (투입수량 등록) */
+    performanceStart: async (data: WorkOrderPerformanceStartRequest): Promise<ApiResponse<string>> => {
+        const res = await apiClient.post('/work-orders/performance/start', data);
         return res.data;
     },
 };
