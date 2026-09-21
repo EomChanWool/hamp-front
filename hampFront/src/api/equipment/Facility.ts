@@ -43,6 +43,7 @@ export interface FacilityUpdateRequest {
 /** 설비 정보 응답 */
 export interface FacilityResponse {
     fcltCode: string;
+    barcode: string;
     eqNm: string;
     facNm: string;
     fcltNm: string;
@@ -55,6 +56,7 @@ export interface FacilityResponse {
 /** 설비 상세 정보 응답 */
 export interface FacilityDetailResponse {
     fcltCode: string;
+    barcode: string;
     eqCode: string;
     eqNm: string;
     eqType: string;

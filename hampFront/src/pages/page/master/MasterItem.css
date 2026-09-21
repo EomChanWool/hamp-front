@@ -353,7 +353,7 @@
 
 .routing-seq { font-weight: 600; color: #374151; min-width: 24px; }
 .routing-oper-nm { font-weight: 500; color: #1f2937; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.routing-item-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.routing-item-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: auto; }
 
 /* 공정 타입 배지 (일반/최종) */
 .routing-type-badge { font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: 500; background: #f3f4f6; color: #4b5563; white-space: nowrap; }

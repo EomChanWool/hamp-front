@@ -1,7 +1,9 @@
 /* ProgressRadialChart 루트: 크기(--prc-size)만 컴포넌트에서 동적으로 주입 */
 .progressRadialChart {
   width: var(--prc-size);
-  height: var(--prc-size);
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
   position: relative;
   margin: 0 auto;
   display: flex;

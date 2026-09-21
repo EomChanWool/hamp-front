@@ -17,6 +17,7 @@ import { FacilityApi, STATUS_TONE, STATUS_TYPE_LABEL } from "@/api/equipment/Fac
 import { EquipmentApi } from "@/api/master/Equipment";
 import { FactoryZoneApi } from "@/api/master/FactoryZone";
 import { Badge } from "@/components/common/Badge";
+import { LabelPrintModal, type WorkOrderLineDetail } from "@/components/modal/LabelPrintModal";
 
 export function EquipmentFacilityPage() {
   const navigate = useNavigate();
@@ -31,6 +32,11 @@ export function EquipmentFacilityPage() {
 
   // 새로고침 초기화가 끝난 뒤에 목록 조회를 시작하기 위한 상태
   const [isReady, setIsReady] = useState(false);
+
+  // 체크박스 선택된 행 ID 관리 (fcltCode 기준)
+  const [selectedFcltCodes, setSelectedFcltCodes] = useState<string[]>([]);
+  // 라벨 인쇄 모달 오픈 여부
+  const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
 
   // 커스텀 훅으로 정렬 상태 및 핸들러 연동
   const { sorting, sortParams, handleSortingChange } = useTableSorting();
@@ -220,6 +226,7 @@ export function EquipmentFacilityPage() {
     else nextParams.delete("currentStatus");
 
     setSearchParams(nextParams);
+    setSelectedFcltCodes([]);
   };
 
   const handleReset = () => {
@@ -230,12 +237,14 @@ export function EquipmentFacilityPage() {
       if (ref.current) ref.current.value = "";
     });
     setSearchParams({ page: "0" }, { replace: true });
+    setSelectedFcltCodes([]);
   };
 
   const handlePageChange = (newPage: number) => {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("page", String(newPage));
     setSearchParams(nextParams);
+    setSelectedFcltCodes([]);
   };
 
   const handleCreate = () => {
@@ -253,9 +262,50 @@ export function EquipmentFacilityPage() {
     );
   };
 
+  const handleOpenLabelModal = () => {
+    if (selectedFcltCodes.length === 0) {
+      window.alert("인쇄할 항목을 최소 1개 이상 선택해주세요.");
+      return;
+    }
+    setIsLabelModalOpen(true);
+  };
+
   const columns: ColumnDef<FacilityResponse>[] = useMemo(
     () => [
+      {
+        id: 'select',
+        header: () => (
+          <input
+            type="checkbox"
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedFcltCodes(facilities.map(f => f.fcltCode));
+              } else {
+                setSelectedFcltCodes([]);
+              }
+            }}
+            checked={selectedFcltCodes.length === facilities.length && facilities.length > 0}
+            style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            checked={selectedFcltCodes.includes(row.original.fcltCode)}
+            onChange={() => {
+              setSelectedFcltCodes(prev =>
+                prev.includes(row.original.fcltCode)
+                  ? prev.filter(code => code !== row.original.fcltCode)
+                  : [...prev, row.original.fcltCode]
+              );
+            }}
+            style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+          />
+        ),
+        meta: { width: '50px' },
+      },
       { accessorKey: "fcltCode", header: "설비코드" },
+      { accessorKey: "barcode", header: "바코드" }, // 필요시 화면 테이블에도 바코드 컬럼 추가 가능
       {
         accessorKey: "fcltNm",
         header: "설비명",
@@ -281,14 +331,51 @@ export function EquipmentFacilityPage() {
         cell: ({ getValue }) => formatDateTime(getValue<string>()),
       },
     ],
-    []
+    [facilities, selectedFcltCodes]
   );
+
+  // 수정 포인트: f.barcode 값을 가져와서 모달 라벨 데이터로 전달
+  const selectedLabelLines: WorkOrderLineDetail[] = useMemo(() => {
+    return facilities
+      .filter((f) => selectedFcltCodes.includes(f.fcltCode))
+      .map((f, idx) => ({
+        id: f.fcltCode,
+        salesOrderLineId: 0,
+        orderCode: f.eqNm || '', // 또는 필요한 정보
+        lineId: `#${idx + 1}`,
+        itemCode: f.fcltCode,
+        itemNm: f.fcltNm || '',
+        unit: '',
+        instructQty: 1,
+        barcode: f.barcode || f.fcltCode, // 응답으로 온 barcode 사용 (없을 시 fcltCode Fallback)
+      }));
+  }, [facilities, selectedFcltCodes]);
 
   return (
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="설비관리 목록" action="등록" onAction={handleCreate}>
+      <Panel
+        title="설비관리 목록"
+        action={
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="ghostButton"
+              onClick={handleOpenLabelModal}
+            >
+              선택 라벨 인쇄 ({selectedFcltCodes.length}건)
+            </button>
+            <button
+              type="button"
+              className="primaryButton"
+              onClick={handleCreate}
+            >
+              등록
+            </button>
+          </div>
+        }
+      >
         <div className="relative min-h-[300px]">
           {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -301,7 +388,13 @@ export function EquipmentFacilityPage() {
                 columns={columns}
                 sorting={sorting}
                 onSortingChange={handleSortingChange}
-                onRowClick={(row) => handleOpenDetail(row.fcltCode)}
+                onRowClick={(row, event) => {
+                  const target = event.target as HTMLElement;
+                  if (target.tagName === 'INPUT' && target.getAttribute('type') === 'checkbox') {
+                    return;
+                  }
+                  handleOpenDetail(row.fcltCode);
+                }}
                 noDataMessage="조회된 데이터가 없습니다."
               />
               <CusPagination
@@ -314,6 +407,13 @@ export function EquipmentFacilityPage() {
           )}
         </div>
       </Panel>
+
+      <LabelPrintModal
+        isOpen={isLabelModalOpen}
+        onClose={() => setIsLabelModalOpen(false)}
+        selectedLines={selectedLabelLines}
+        workOrderNo="FACILITY-BARCODE"
+      />
     </section>
   );
 }

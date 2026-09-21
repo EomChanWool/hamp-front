@@ -115,7 +115,10 @@ export function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalPr
             <button
               type="button"
               className="sales-order-select-btn"
-              onClick={() => {
+              onClick={(e) => {
+                // 이벤트 버블링 방지 (행 클릭 이벤트가 중복으로 실행되는 것을 막음)
+                e.stopPropagation()
+                
                 onSelect(row.original)
                 onClose()
               }}

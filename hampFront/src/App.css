@@ -471,6 +471,7 @@ button {
   gap: 20px; 
   background: var(--bg-app);
   overflow-y: auto;
+  overflow-x: hidden;
   box-sizing: border-box;
   container-type: inline-size;
   container-name: content;
@@ -1834,6 +1835,20 @@ textarea.tableInput {
 
   .timelineItem {
     flex: 1 1 calc(50% - 6px);
+  }
+}
+
+/* 검색 필터(사용자ID/이름/부서처럼 짧은 텍스트 필드가 대부분)는 2열을
+   860px보다 더 좁은 폭까지 유지 — 860 기준을 그대로 쓰면 태블릿
+   폭에서 짧은 입력창 몇 개가 불필요하게 한 줄씩 길게 늘어져 보임 */
+@container content (max-width: 640px) {
+  .searchBand .serchItem {
+    grid-template-columns: 1fr;
+  }
+
+  .searchBand .serchItem .dateRangeLabel,
+  .searchBand .serchItem .searchActions {
+    grid-column: 1;
   }
 }
 
