@@ -7,6 +7,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+  min-width: 0;
 }
 
 /* 카드 기본 스타일 */
@@ -15,6 +16,7 @@
   padding: 20px;
   border-radius: 10px;
   background: #fff;
+  min-width: 0;
 }
 
 .orderPerfDashboard__title {
@@ -109,6 +111,7 @@
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
+  overflow-x: auto;
 }
 
 .orderPerfDashboard__detailHeader {
@@ -116,6 +119,8 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .orderPerfDashboard__detailTitle {
@@ -135,6 +140,7 @@
 
 .orderPerfDashboard__detailTable {
   width: 100%;
+  min-width: 480px;
   border-collapse: collapse;
   font-size: 13px;
   background: #fff;
@@ -146,6 +152,7 @@
   background: #f1f5f9;
   text-align: left;
   color: #475569;
+  white-space: nowrap;
 }
 
 .orderPerfDashboard__detailTable td {
@@ -153,6 +160,15 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
+/* =========================================================================
+   반응형 (컨테이너 쿼리 — .workspace 기준)
+   ========================================================================= */
+
+@container content (max-width: 860px) {
+  .orderPerfDashboard {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* =========================================================================
    DARK MODE

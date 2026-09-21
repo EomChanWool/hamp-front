@@ -256,7 +256,10 @@
 
   /* 6. 인쇄 페이지 여백 최소화 */
   @page {
-    size: auto;
-    margin: 15mm;
+    size: auto;  /* TODO: 실측 라벨 규격으로 교체 */
+    margin: 15mm; /* 라벨은 보통 여백 없이 꽉 채움. 프린터 자체의
+                  비인쇄 영역(하드웨어 마진)이 있다면 그만큼은
+                  @page margin이 아니라 아래 .food-label-card의
+                  padding으로 대신 확보할 것 */
   }
 }

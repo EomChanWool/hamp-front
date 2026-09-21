@@ -259,9 +259,6 @@
 /* ── 우측 상세 1단 헤더: 제목 + 뱃지(좌) / 액션 버튼(우) ── */
 
 .permDetailHeader {
-  position: sticky;
-  top: 0;
-  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -271,6 +268,7 @@
   background: var(--bg-card);
   flex-wrap: wrap;
 }
+
 
 .permDetailHeaderLeft {
   display: flex;
@@ -468,9 +466,6 @@
 }
 
 .permMatrixHeader {
-  position: sticky;
-  top: 0;
-  z-index: 2;
   display: flex;
   align-items: center;
   padding: 14px 20px;
@@ -708,7 +703,7 @@
    640  : 완전 세로 스택 (기존)
 */
 
-@media (max-width: 1024px) {
+@container content (max-width: 1024px) {
   .permissionBoard {
     --nav-col: 220px;
     --check-col: 120px;
@@ -724,14 +719,14 @@
   }
 }
 
-@media (max-width: 860px) {
+@container content (max-width: 860px) {
   .permissionBoard {
     --nav-col: 200px;
     --check-col: 100px;
   }
 }
 
-@media (max-width: 640px) {
+@container content (max-width: 640px) {
   .permMatrixBody {
     flex-direction: column;
   }

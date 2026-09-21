@@ -146,7 +146,7 @@
 
 .reportModalContent {
     width: 100%;
-    max-width: min(920px, 94vw);
+    max-width: min(980px, 94vw);
     max-height: 90vh;
     overflow-y: auto;
     background: #ffffff;
@@ -218,11 +218,11 @@
 }
 
 .reportModalLeftCol {
-    flex: 1;
+    flex: 0 1 300px;
     display: flex;
     flex-direction: column;
     gap: 16px;
-    min-width: 0;
+    min-width: 260px;
 }
 
 .reportModalRightCol {
