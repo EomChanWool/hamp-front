@@ -19,6 +19,7 @@ import { useImageGallery } from "@/hooks/useImageGallery";
 import ImageGallery from "@components/common/ImageGallery";
 import ImageModal from "@components/modal/ImageModal";
 import UserMultiSelect from "@components/common/UserMultiSelect";
+import Barcode from 'react-barcode';
 import "@/pages/layout/Layout.css";
 
 type SectionField = {
@@ -62,6 +63,7 @@ export function EquipmentFacilityDetailPage() {
 
   const isBusy = isUpdating || isDeleting;
 
+  // 상세 정보 하단 섹션 정의 (장비 정보, 공장 정보)
   const sections: SectionDef[] = [
     {
       title: "장비 정보",
@@ -119,6 +121,7 @@ export function EquipmentFacilityDetailPage() {
     },
   ];
 
+  // 옵션 데이터 로드 (장비, 공장구역, 사용자)
   const fetchOptions = useCallback(async () => {
     try {
       const [eqRes, facRes, userRes] = await Promise.all([
@@ -134,6 +137,7 @@ export function EquipmentFacilityDetailPage() {
     }
   }, []);
 
+  // 첨부파일 이미지들을 Blob URL로 변환하여 로드
   const loadImagesAsBlobs = async (attachments: any[]) => {
     const newUrls: Record<number, string> = { ...existingImageUrls };
     const targets = attachments.filter((file) => !newUrls[file.attachmentId]);
@@ -193,6 +197,7 @@ export function EquipmentFacilityDetailPage() {
 
         setForm({
           fcltCode: fcltData.fcltCode,
+          barcode: fcltData.barcode || "",
           eqCode: fcltData.eqCode || "",
           eqNm: fcltData.eqNm || "",
           eqType: fcltData.eqType || "",
@@ -241,6 +246,7 @@ export function EquipmentFacilityDetailPage() {
 
       setForm({
         fcltCode: facility.fcltCode,
+        barcode: facility.barcode || "",
         eqCode: facility.eqCode || "",
         eqNm: facility.eqNm || "",
         eqType: facility.eqType || "",
@@ -256,6 +262,7 @@ export function EquipmentFacilityDetailPage() {
     }
   }, [isEditing, facility]);
 
+  // 이미지 갤러리 연동용 초기 기존 파일 목록 맵핑
   const initialExistingForGallery = useMemo(() => {
     return existingAttachments
       .filter((a) => existingImageUrls[a.attachmentId])
@@ -439,11 +446,11 @@ export function EquipmentFacilityDetailPage() {
   const currentManagerUserIds: string[] = form.managerUserIds || [];
   const displayManagerNames = currentManagerUserIds.length > 0
     ? currentManagerUserIds
-        .map((id) => {
-          const userObj = userOptions.find((u) => u.userId === id);
-          return userObj ? `${userObj.userNm} (${userObj.userId})` : id;
-        })
-        .join(", ")
+      .map((id) => {
+        const userObj = userOptions.find((u) => u.userId === id);
+        return userObj ? `${userObj.userNm} (${userObj.userId})` : id;
+      })
+      .join(", ")
     : "-";
 
   return (
@@ -497,11 +504,30 @@ export function EquipmentFacilityDetailPage() {
               {`${form.eqNm || "장비 미지정"} · ${form.facNm || "공장 미지정"}`}
             </div>
 
-            {/* 사용여부 / 현재상태 / 담당자 — 하단 "장비 정보" / "공장 정보" 섹션과
-                동일한 인풋 폼 스타일(detailField/detailValue)로 통일하고,
-                담당자도 기본 2열 그리드(detailGrid) 안에 함께 배치한다
-                (더 이상 wide로 폭을 넓히지 않음) */}
-            <div className="detailGrid">
+            {/* 바코드 정보 영역 (적용하신 .barcodeSection 스타일 적용) */}
+            <div className="barcodeSection">
+              <div className="barcodeInfo">
+                <span className="barcodeLabel">설비 바코드 정보</span>
+                {form.barcode ? (
+                  <Barcode value={form.barcode} width={1.5} height={40} fontSize={14} />
+                ) : (
+                  <span className="barcodeValue">-</span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="barcodeActionBtn"
+                disabled={isBusy}
+                onClick={() => {
+                  alert(`바코드 출력: ${form.barcode}`);
+                }}
+              >
+                바코드 출력
+              </button>
+            </div>
+
+            {/* 사용여부 / 현재상태 / 담당자 입력폼 영역 */}
+            <div className="detailGrid" style={{ marginTop: '16px' }}>
               <div className="detailField">
                 <label>사용여부</label>
                 {isEditing ? (
@@ -541,8 +567,7 @@ export function EquipmentFacilityDetailPage() {
                 )}
               </div>
 
-              {/* 담당자 다중 선택 — 태그가 줄바꿈되며 세로로 늘어날 수 있어
-                  2열 그리드 전체 폭을 차지하도록 detailField--full 적용 */}
+              {/* 담당자 다중 선택 영역 */}
               <div className="detailField detailField--full">
                 <label>담당자</label>
                 {isEditing ? (
