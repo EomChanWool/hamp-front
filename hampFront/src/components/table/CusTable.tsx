@@ -10,7 +10,7 @@ export interface CusColumnMeta {
 type CusTableProps<T> = {
   data: T[]
   columns: ColumnDef<T>[]
-  onRowClick?: (row: T) => void
+  onRowClick?: (row: T, event: React.MouseEvent<HTMLTableRowElement>) => void;
   noDataMessage?: string
   sorting?: SortingState // 정렬 상태 (예: [{ id: 'defCode', desc: false }])
   onSortingChange?: (sorting: SortingState) => void // 정렬 변경 핸들러
@@ -119,7 +119,7 @@ export function CusTable<T>({
             table.getRowModel().rows.map((row) => (
               <tr
                 key={row.id}
-                onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                onClick={onRowClick ? (event) => onRowClick(row.original, event) : undefined}
                 style={{ cursor: onRowClick ? 'pointer' : 'default' }}
                 className={onRowClick ? "hover:bg-gray-50 transition-colors" : ""}
               >
