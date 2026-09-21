@@ -278,7 +278,7 @@ export function FoodWorkOrdersPage() {
   const handleRowClick = (workId: string) => {
     const queryString = searchParams.toString();
     navigate(
-      `/food/work-order/${encodeURIComponent(workId)}${
+      `/food/work-orders/${encodeURIComponent(workId)}${
         queryString ? `?${queryString}` : ""
       }`
     );
@@ -431,7 +431,7 @@ export function FoodWorkOrdersPage() {
         onAction={() => {
           const queryString = searchParams.toString();
           navigate(
-            `/food/work-order/create${
+            `/food/work-orders/create${
               queryString ? `?${queryString}` : ""
             }`
           );
