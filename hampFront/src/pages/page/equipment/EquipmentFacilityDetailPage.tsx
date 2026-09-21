@@ -19,6 +19,7 @@ import { useImageGallery } from "@/hooks/useImageGallery";
 import ImageGallery from "@components/common/ImageGallery";
 import ImageModal from "@components/modal/ImageModal";
 import UserMultiSelect from "@components/common/UserMultiSelect";
+import { LabelPrintModal } from "@/components/modal/LabelPrintModal";
 import Barcode from 'react-barcode';
 import "@/pages/layout/Layout.css";
 
@@ -52,6 +53,9 @@ export function EquipmentFacilityDetailPage() {
   const [form, setForm] = useState<Record<string, any>>({});
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // 라벨프린터 모달 오픈 상태 추가
+  const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
 
   const [equipmentOptions, setEquipmentOptions] = useState<any[]>([]);
   const [factoryZoneOptions, setFactoryZoneOptions] = useState<any[]>([]);
@@ -295,6 +299,7 @@ export function EquipmentFacilityDetailPage() {
 
       setForm({
         fcltCode: facility.fcltCode,
+        barcode: facility.barcode || "",
         eqCode: facility.eqCode || "",
         eqNm: facility.eqNm || "",
         eqType: facility.eqType || "",
@@ -446,11 +451,11 @@ export function EquipmentFacilityDetailPage() {
   const currentManagerUserIds: string[] = form.managerUserIds || [];
   const displayManagerNames = currentManagerUserIds.length > 0
     ? currentManagerUserIds
-      .map((id) => {
-        const userObj = userOptions.find((u) => u.userId === id);
-        return userObj ? `${userObj.userNm} (${userObj.userId})` : id;
-      })
-      .join(", ")
+        .map((id) => {
+          const userObj = userOptions.find((u) => u.userId === id);
+          return userObj ? `${userObj.userNm} (${userObj.userId})` : id;
+        })
+        .join(", ")
     : "-";
 
   return (
@@ -504,7 +509,7 @@ export function EquipmentFacilityDetailPage() {
               {`${form.eqNm || "장비 미지정"} · ${form.facNm || "공장 미지정"}`}
             </div>
 
-            {/* 바코드 정보 영역 (적용하신 .barcodeSection 스타일 적용) */}
+            {/* 바코드 정보 영역 (적용하신 .barcodeSection 스타일 적용 및 라벨프린터 모달 연결) */}
             <div className="barcodeSection">
               <div className="barcodeInfo">
                 <span className="barcodeLabel">설비 바코드 정보</span>
@@ -519,7 +524,8 @@ export function EquipmentFacilityDetailPage() {
                 className="barcodeActionBtn"
                 disabled={isBusy}
                 onClick={() => {
-                  alert(`바코드 출력: ${form.barcode}`);
+                  // alert 대신 라벨프린터 모달을 띄우도록 변경
+                  setIsLabelModalOpen(true);
                 }}
               >
                 바코드 출력
@@ -657,11 +663,34 @@ export function EquipmentFacilityDetailPage() {
         </div>
       </div>
 
+      {/* 이미지 미리보기 모달 */}
       {isModalOpen && (
         <ImageModal
           images={gallery.images}
           initialIndex={gallery.activeIndex}
           onClose={() => setIsModalOpen(false)}
+        />
+      )}
+
+      {/* 라벨프린터 출력 모달 */}
+      {isLabelModalOpen && (
+        <LabelPrintModal
+          isOpen={isLabelModalOpen}
+          onClose={() => setIsLabelModalOpen(false)}
+          workOrderNo={form.fcltCode}
+          selectedLines={[
+            {
+              id: form.fcltCode,
+              salesOrderLineId: 0,
+              orderCode: form.eqCode || "",
+              lineId: "1",
+              itemCode: form.eqCode || "",
+              itemNm: form.fcltNm || "",
+              unit: "",
+              instructQty: 1,
+              barcode: form.barcode || form.fcltCode,
+            },
+          ]}
         />
       )}
     </section>
