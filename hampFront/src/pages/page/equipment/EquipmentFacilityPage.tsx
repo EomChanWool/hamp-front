@@ -305,7 +305,6 @@ export function EquipmentFacilityPage() {
         meta: { width: '50px' },
       },
       { accessorKey: "fcltCode", header: "설비코드" },
-      { accessorKey: "barcode", header: "바코드" }, // 필요시 화면 테이블에도 바코드 컬럼 추가 가능
       {
         accessorKey: "fcltNm",
         header: "설비명",
