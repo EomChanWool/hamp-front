@@ -256,7 +256,7 @@ export function EquipmentFacilityCreatePage() {
                             <h2 className="createSectionTitle">장비/공장 정보</h2>
                             <div className="createGrid2Cols">
                                 <div className="createField">
-                                    <label>장비코드</label>
+                                    <label>장비명</label>
                                     <select
                                         className="tableInput"
                                         value={form.eqCode}
@@ -266,14 +266,14 @@ export function EquipmentFacilityCreatePage() {
                                         <option value="">장비를 선택해주세요</option>
                                         {equipmentOptions.map((option) => (
                                             <option key={option.eqCode} value={option.eqCode}>
-                                                {option.eqCode} ({option.eqNm})
+                                                {option.eqNm} ({option.eqCode})
                                             </option>
                                         ))}
                                     </select>
                                 </div>
 
                                 <div className="createField">
-                                    <label>공장코드</label>
+                                    <label>공장명</label>
                                     <select
                                         className="tableInput"
                                         value={form.facCode}
@@ -283,7 +283,7 @@ export function EquipmentFacilityCreatePage() {
                                         <option value="">공장을 선택해주세요</option>
                                         {factoryZoneOptions.map((option) => (
                                             <option key={option.facCode} value={option.facCode}>
-                                                {option.facCode} ({option.facNm})
+                                                {option.facNm} ({option.facCode})
                                             </option>
                                         ))}
                                     </select>

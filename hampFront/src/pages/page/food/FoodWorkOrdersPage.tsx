@@ -120,7 +120,7 @@ export function FoodWorkOrdersPage() {
     },
     {
       type: "input",
-      label: "담당자ID",
+      label: "담당자",
       ref: managerIdRef,
       name: "managerId",
     },
@@ -357,7 +357,7 @@ export function FoodWorkOrdersPage() {
     () => [
       {
         accessorKey: "workId",
-        header: "작업지시코드",
+        header: "작업지시ID",
         cell: ({ getValue }) => <span className="food-table-code-cell">{getValue<string>() || "-"}</span>,
       },
       {

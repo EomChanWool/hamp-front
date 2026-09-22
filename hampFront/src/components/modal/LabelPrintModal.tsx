@@ -38,9 +38,12 @@ export function LabelPrintModal({
 }: LabelPrintModalProps) {
   if (!isOpen) return null;
 
+  // 선택된 항목이 1개인지 여부 확인
+  const isSingle = selectedLines.length === 1;
+
   return (
     <div className="food-label-modal-overlay">
-      <div className="food-label-modal-container">
+      <div className={`food-label-modal-container ${isSingle ? 'single-item-modal' : ''}`}>
         <div className="food-label-modal-header">
           <div>
             <h2 className="food-label-modal-title">라벨 인쇄 미리보기</h2>
@@ -57,7 +60,7 @@ export function LabelPrintModal({
         </div>
 
         <div className="food-label-modal-body">
-          <div className="food-label-modal-grid">
+          <div className={`food-label-modal-grid ${isSingle ? 'single-item' : ''}`}>
             {selectedLines.map((line) => (
               <div key={line.id} className="food-label-card">
                 <div className="food-card-header-meta">
