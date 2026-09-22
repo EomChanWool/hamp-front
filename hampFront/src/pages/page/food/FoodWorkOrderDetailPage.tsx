@@ -372,7 +372,7 @@ export function FoodWorkOrderDetailPage() {
                 onChange={(e) => setEditForm({ ...editForm, managerId: e.target.value })}
                 className="food-edit-input"
               >
-                <option value="">담당자 선택</option>
+                <option value="" disabled>담당자 선택</option>
                 {userOptions.map((user) => (
                   <option key={user.userId} value={user.userId}>
                     {user.userNm} ({user.userId})
