@@ -539,12 +539,6 @@ button {
   transition: box-shadow 0.15s;
 }
 
-/* 클릭 가능한 페이지에서 선택되었을 때만 발동 */
-.metricCard.is-selected {
-  background-color: var(--card-selected-bg, #fffbeb);
-  border-color: var(--card-selected-border, #d97706);
-}
-
 .metricCard:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
@@ -625,14 +619,6 @@ button {
 
 [data-theme="dark"] .metricCard.muted .metricIcon {
   background: #1e293b;
-}
-
-/* 다크모드: 클릭 가능한 페이지에서 선택된 메트릭 카드 */
-[data-theme="dark"] .metricCard.is-selected {
-  background-color: #451a03;
-  /* 어두운 주황빛 배경 */
-  border-color: #d97706;
-  /* 강조 테두리선 */
 }
 
 .contentGrid {
