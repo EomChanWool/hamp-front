@@ -82,7 +82,7 @@ export function EquipmentFacilityDetailPage() {
               disabled={disabled}
               onChange={(e) => onChange(e.target.value)}
             >
-              <option value="">장비를 선택해주세요</option>
+              <option value="" disabled>장비를 선택해주세요</option>
               {equipmentOptions.map((opt) => (
                 <option key={opt.eqCode} value={opt.eqCode}>
                   {opt.eqCode} ({opt.eqNm ?? "-"})
@@ -109,7 +109,7 @@ export function EquipmentFacilityDetailPage() {
               disabled={disabled}
               onChange={(e) => onChange(e.target.value)}
             >
-              <option value="">공장을 선택해주세요</option>
+              <option value="" disabled>공장을 선택해주세요</option>
               {factoryZoneOptions.map((opt) => (
                 <option key={opt.facCode} value={opt.facCode}>
                   {opt.facCode} ({opt.facNm ?? "-"})

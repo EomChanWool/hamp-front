@@ -46,7 +46,7 @@ export function SalesOrderDetailPage() {
               disabled={disabled}
               onChange={(e) => onChange(e.target.value)}
             >
-              <option value="">거래처를 선택해주세요</option>
+              <option value="" disabled>거래처를 선택해주세요</option>
               {businessPartnerOptions.map((opt) => (
                 <option key={opt.bpCode} value={opt.bpCode}>
                   {opt.bpCode} ({opt.bpNm ?? "-"})
@@ -318,7 +318,7 @@ export function SalesOrderDetailPage() {
                           disabled={isBusy}
                           onChange={(e) => handleLineChange(idx, "itemCode", e.target.value)}
                         >
-                          <option value="">품목을 선택해주세요</option>
+                          <option value="" disabled>품목을 선택해주세요</option>
                           {itemOptions.map((opt) => (
                             <option key={opt.itemCode} value={opt.itemCode}>
                               {opt.itemCode} ({opt.itemNm ?? "-"})
