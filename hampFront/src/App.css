@@ -259,9 +259,9 @@
 
 label {
   display: grid;
-  gap: 8px; 
+  gap: 8px;
   color: #475569;
-  font-size: 14px; 
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -289,7 +289,7 @@ select {
 
 /* textarea 전용 (여러 줄 입력에 맞게 조정) */
 textarea {
-  min-height: 100px; 
+  min-height: 100px;
   padding: 12px 14px;
   resize: vertical;
   line-height: 1.5;
@@ -319,7 +319,7 @@ button {
   border-radius: 8px !important;
   padding: 0 20px;
   white-space: nowrap;
-  font-size: 14px; 
+  font-size: 14px;
 }
 
 .primaryButton {
@@ -380,7 +380,7 @@ button {
 .paginationBtns {
   display: flex;
   align-items: center;
-  gap: 4px; 
+  gap: 4px;
   position: absolute;
   top: 50%;
   left: 50%;
@@ -394,7 +394,7 @@ button {
   border-radius: 8px;
   border: 1px solid var(--border);
   background: none;
-  font-size: 13px; 
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-muted);
   display: grid;
@@ -465,10 +465,10 @@ button {
   min-width: 0;
   min-height: 0;
   height: 100%;
-  padding: 18px 18px 40px; 
+  padding: 18px 18px 40px;
   display: flex;
   flex-direction: column;
-  gap: 20px; 
+  gap: 20px;
   background: var(--bg-app);
   overflow-y: auto;
   overflow-x: hidden;
@@ -478,8 +478,8 @@ button {
 }
 
 /* workspace 내부의 가장 마지막에 오는 요소가 잘리지 않도록 밀어줌 */
-.workspace > *:last-child {
-  margin-bottom: 40px; 
+.workspace>*:last-child {
+  margin-bottom: 40px;
 }
 
 /* ================================
@@ -491,7 +491,7 @@ button {
   gap: 18px;
 }
 
-.screenStack > * {
+.screenStack>* {
   min-width: 0;
 }
 
@@ -504,11 +504,11 @@ button {
 .metricGrid {
   display: flex;
   align-items: stretch;
-  gap: 16px; 
+  gap: 16px;
 }
 
 /* 첫 번째 카드(인덱스 0, 차트 카드)를 제외한 나머지 카드들만 높이와 내부 정렬 맞춤 */
-.metricGrid > article:not(:first-child) {
+.metricGrid>article:not(:first-child) {
   min-height: 110px;
   display: flex;
   flex-direction: column;
@@ -528,7 +528,8 @@ button {
 
 .metricCard {
   flex: 1;
-  padding: 22px; 
+  min-width: 0;
+  padding: 22px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -540,7 +541,7 @@ button {
 
 /* 클릭 가능한 페이지에서 선택되었을 때만 발동 */
 .metricCard.is-selected {
-  background-color: var(--card-selected-bg, #fffbeb); 
+  background-color: var(--card-selected-bg, #fffbeb);
   border-color: var(--card-selected-border, #d97706);
 }
 
@@ -549,7 +550,7 @@ button {
 }
 
 .metricCard .metricIcon {
-  width: 42px; 
+  width: 42px;
   height: 42px;
   border-radius: 10px;
   display: flex;
@@ -562,18 +563,18 @@ button {
   align-items: center;
   gap: 6px;
   color: var(--text-muted);
-  font-size: 14px; 
+  font-size: 14px;
   font-weight: 500;
   margin-bottom: 4px;
 }
 
 .metricCard span svg {
-  width: 16px; 
+  width: 16px;
   height: 16px;
 }
 
 .metricCard strong {
-  font-size: 30px; 
+  font-size: 30px;
   font-weight: 700;
   color: var(--text-heading);
   letter-spacing: -0.5px;
@@ -628,8 +629,10 @@ button {
 
 /* 다크모드: 클릭 가능한 페이지에서 선택된 메트릭 카드 */
 [data-theme="dark"] .metricCard.is-selected {
-  background-color: #451a03; /* 어두운 주황빛 배경 */
-  border-color: #d97706; /* 강조 테두리선 */
+  background-color: #451a03;
+  /* 어두운 주황빛 배경 */
+  border-color: #d97706;
+  /* 강조 테두리선 */
 }
 
 .contentGrid {
@@ -643,12 +646,12 @@ button {
 
 .panel {
   min-width: 0;
-  padding: 22px; 
+  padding: 22px;
   display: grid;
   gap: 18px;
 }
 
-.panel > * {
+.panel>* {
   min-width: 0;
 }
 
@@ -666,7 +669,7 @@ button {
 }
 
 .miniButton {
-  height: 36px; 
+  height: 36px;
   line-height: 34px;
   box-sizing: border-box;
   border-radius: 8px;
@@ -674,7 +677,7 @@ button {
   border: 1px solid #e2e8f0;
   color: #475569;
   padding: 0 14px;
-  font-size: 13px; 
+  font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
   display: inline-flex;
@@ -716,21 +719,21 @@ button {
 .tableInput {
   width: 100%;
   border: 1px solid #d1d5db;
-  border-radius: 8px; 
-  font-size: 15px; 
+  border-radius: 8px;
+  font-size: 15px;
   font-family: inherit;
   box-sizing: border-box;
 }
 
 /* input 전용 */
 input.tableInput {
-  height: 42px; 
+  height: 42px;
   padding: 0 14px;
 }
 
 /* textarea 전용 */
 textarea.tableInput {
-  min-height: 90px; 
+  min-height: 90px;
   padding: 12px 14px;
   resize: vertical;
   line-height: 1.5;
@@ -746,12 +749,12 @@ textarea.tableInput {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 44px; 
+  min-height: 44px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg-subtle);
   padding: 0 14px;
-  font-size: 15px; 
+  font-size: 15px;
 }
 
 .checkRow input {
@@ -770,7 +773,7 @@ textarea.tableInput {
 .panelHeader h2 {
   width: 100%;
   margin: 0;
-  font-size: 18px; 
+  font-size: 18px;
   font-weight: 600;
   color: var(--text-heading);
 }
@@ -796,7 +799,7 @@ textarea.tableInput {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  height: 42px; 
+  height: 42px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg-subtle);
@@ -838,7 +841,8 @@ textarea.tableInput {
   border-radius: 50%;
   transform: scale(0);
   transition: transform 0.15s ease-in-out;
-  background: #00a6a6; /* 포인트 컬러 */
+  background: #00a6a6;
+  /* 포인트 컬러 */
 }
 
 .radioRow input[type="radio"]:checked::before {
@@ -876,11 +880,11 @@ textarea.tableInput {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 64px; 
-  height: 28px; 
+  min-width: 64px;
+  height: 28px;
   padding: 0 12px;
   border-radius: 9999px;
-  font-size: 13px; 
+  font-size: 13px;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -962,12 +966,12 @@ textarea.tableInput {
 .progressRow span,
 .progressRow em {
   color: var(--text-muted);
-  font-size: 13px; 
+  font-size: 13px;
   font-style: normal;
 }
 
 .progressBar {
-  height: 10px; 
+  height: 10px;
   background: var(--bg-subtle);
   border-radius: 999px;
   overflow: hidden;
@@ -987,13 +991,13 @@ textarea.tableInput {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: 20px; 
+  padding: 20px;
 }
 
 .searchBand .searchBandTop {
   display: flex;
   justify-content: space-between;
-  align-items: center; 
+  align-items: center;
 }
 
 .resetButton {
@@ -1001,8 +1005,8 @@ textarea.tableInput {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 14px; 
-  height: 38px; 
+  font-size: 14px;
+  height: 38px;
   padding: 0 16px;
   background: #ffffff;
   color: #475569;
@@ -1071,15 +1075,15 @@ textarea.tableInput {
   top: -8px;
   left: 10px;
   color: #999;
-  font-size: 11px; 
+  font-size: 11px;
   font-weight: 500;
   margin: 0;
 }
 
 .searchBand .serchItem select,
 .searchBand .serchItem input {
-  height: 42px; 
-  font-size: 15px; 
+  height: 42px;
+  font-size: 15px;
 }
 
 .searchBand .serchItem select {
@@ -1134,7 +1138,8 @@ textarea.tableInput {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px; /* 간격 확대 */
+  gap: 8px;
+  /* 간격 확대 */
   width: 100%;
 }
 
@@ -1207,7 +1212,7 @@ textarea.tableInput {
 .sensorPanel {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px; 
+  gap: 14px;
 }
 
 .locationGrid span,
@@ -1218,7 +1223,7 @@ textarea.tableInput {
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 16px; 
+  padding: 16px;
 }
 
 .detailList div {
@@ -1305,7 +1310,7 @@ textarea.tableInput {
 }
 
 .equipmentCard {
-  padding: 24px; 
+  padding: 24px;
   display: grid;
   gap: 22px;
   border-top: 4px solid #22c55e;
@@ -1313,7 +1318,7 @@ textarea.tableInput {
 
 .equipmentCard h2 {
   margin: 4px 0 0;
-  font-size: 26px; 
+  font-size: 26px;
 }
 
 .equipmentCard span,
@@ -1324,7 +1329,7 @@ textarea.tableInput {
 }
 
 .equipmentCard strong {
-  font-size: 34px; 
+  font-size: 34px;
 }
 
 .equipmentCard.warn {
@@ -1365,7 +1370,7 @@ textarea.tableInput {
 
   transform: translate(-50%, -50%);
 
-  width: min(740px, 92vw); 
+  width: min(740px, 92vw);
   max-height: 85vh;
 
   overflow: hidden;
@@ -1387,14 +1392,14 @@ textarea.tableInput {
   justify-content: space-between;
   align-items: center;
 
-  padding: 24px 30px; 
+  padding: 24px 30px;
 
   border-bottom: 1px solid var(--border);
 }
 
 .detailModalHeader h3 {
   margin: 0;
-  font-size: 20px; 
+  font-size: 20px;
   font-weight: 700;
   color: var(--text-heading);
 }
@@ -1408,7 +1413,7 @@ textarea.tableInput {
 }
 
 .detailModalClose {
-  width: 40px; 
+  width: 40px;
   height: 40px;
 
   border-radius: 10px;
@@ -1440,17 +1445,17 @@ textarea.tableInput {
 .detailField {
   display: flex;
   flex-direction: column;
-  gap: 8px; 
+  gap: 8px;
 }
 
 .detailField label {
-  font-size: 13px; 
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-muted);
 }
 
 .detailValue {
-  min-height: 42px; 
+  min-height: 42px;
 
   display: flex;
   align-items: center;
@@ -1464,7 +1469,7 @@ textarea.tableInput {
   border-radius: 8px;
 
   color: var(--text-body);
-  font-size: 15px; 
+  font-size: 15px;
 }
 
 .detailModalFooter {
@@ -1525,7 +1530,7 @@ textarea.tableInput {
 }
 
 .modalListItem {
-  padding: 12px 14px; 
+  padding: 12px 14px;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
   display: flex;
@@ -1547,11 +1552,11 @@ textarea.tableInput {
 .modalListItemTitle {
   font-weight: 500;
   color: var(--text-body);
-  font-size: 15px; 
+  font-size: 15px;
 }
 
 .modalListItemCode {
-  font-size: 13px; 
+  font-size: 13px;
   color: var(--text-muted);
 }
 
@@ -1624,16 +1629,16 @@ textarea.tableInput {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px 16px; 
+  padding: 12px 16px;
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: 8px;
-  font-size: 14px; 
+  font-size: 14px;
 }
 
 .timelineItem span:first-child {
   flex-shrink: 0;
-  width: 26px; 
+  width: 26px;
   height: 26px;
   border-radius: 50%;
   background: var(--primary);
@@ -1732,12 +1737,10 @@ textarea.tableInput {
 
 /* ---- ~1180px : 소형 데스크탑 / 큰 태블릿 가로 ---- */
 @container content (max-width: 1180px) {
-  .metricGrid,
   .equipmentGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .searchBand,
   .formGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1745,6 +1748,7 @@ textarea.tableInput {
 
 /* ---- ~1024px : 태블릿 공용 ---- */
 @container content (max-width: 1024px) {
+
   .contentGrid.two,
   .fieldBoard {
     grid-template-columns: 1fr;
@@ -1767,9 +1771,12 @@ textarea.tableInput {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .searchBand .serchItem .dateRangeLabel,
-  .searchBand .serchItem .searchActions {
+  .searchBand .serchItem .dateRangeLabel {
     grid-column: span 2;
+  }
+
+  .searchBand .serchItem .searchActions {
+    grid-column: 2;
   }
 
   .permissionGrid {
@@ -1792,20 +1799,14 @@ textarea.tableInput {
 
 /* ---- ~860px : 작은 태블릿 · 큰 폰 (세로 모드 태블릿 포함) ---- */
 @container content (max-width: 860px) {
-  .metricGrid,
+
   .equipmentGrid,
-  .searchBand,
   .formGrid {
     grid-template-columns: 1fr;
   }
 
-  .searchBand .serchItem {
-    grid-template-columns: 1fr;
-  }
-
-  .searchBand .serchItem .dateRangeLabel,
-  .searchBand .serchItem .searchActions {
-    grid-column: 1;
+  .metricGrid {
+    flex-direction: column;
   }
 
   .panelHeader {

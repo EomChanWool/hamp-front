@@ -15,6 +15,7 @@
   --card-selected-bg: var(--bg-subtle, #f1f5f9);
   --card-selected-border: #64748b;
 }
+
 [data-theme="dark"] .screenStack .metricCard.is-selected {
   --card-selected-bg: #1e293b;
   --card-selected-border: #64748b;
@@ -98,11 +99,12 @@
 
 .inventorySummaryCard__stats {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .inventorySummaryCard__statChip {
-  flex: 1;
+  flex: 1 1 110px;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -293,6 +295,10 @@
 }
 
 .seedTableHeader span:not(:first-child) {
+  text-align: center;
+}
+
+.seedTableHeader span:last-child {
   text-align: right;
 }
 
@@ -389,7 +395,7 @@
 .seedCategoryBadge {
   width: fit-content;
   display: inline-flex;
-  justify-self: end;
+  justify-self: center;
   align-items: center;
   font-size: 11px;
   font-weight: 500;
@@ -431,7 +437,7 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-heading, #0f172a);
-  text-align: right;
+  text-align: center;
 }
 
 .seedItemRow__time {
@@ -608,14 +614,14 @@
 
 /* 증가수량 (빨강) */
 .qtyIncreaseText {
-    color: #ef4444;
-    font-weight: 500;
+  color: #ef4444;
+  font-weight: 500;
 }
 
 /* 감소수량 (파랑) */
 .qtyDecreaseText {
-    color: #3b82f6;
-    font-weight: 500;
+  color: #3b82f6;
+  font-weight: 500;
 }
 
 /* =========================================================================
@@ -643,6 +649,10 @@
 
 /* ---- ~900px : KPI 3열 → 1열 ---- */
 @container content (max-width: 900px) {
+   .screenStack .metricGrid {
+    flex-direction: column;
+  }
+
   .screenStack .kpiGrid,
   .screenStack [class*="kpiGrid"] {
     grid-template-columns: 1fr !important;
@@ -654,6 +664,7 @@
   .seedTableHeader {
     display: none;
   }
+
   .seedItemRow {
     grid-template-columns: 1fr auto;
     grid-template-areas:
@@ -661,10 +672,22 @@
       "identity time";
     row-gap: 4px;
   }
-  .seedItemRow__identity { grid-area: identity; }
-  .seedItemRow__stock { grid-area: stock; }
-  .seedItemRow__time { grid-area: time; }
-  .inventorySummaryCard__badgeIcon { display: none; }
+
+  .seedItemRow__identity {
+    grid-area: identity;
+  }
+
+  .seedItemRow__stock {
+    grid-area: stock;
+  }
+
+  .seedItemRow__time {
+    grid-area: time;
+  }
+
+  .inventorySummaryCard__badgeIcon {
+    display: none;
+  }
 
   .seedChartWrapper {
     gap: 8px;
