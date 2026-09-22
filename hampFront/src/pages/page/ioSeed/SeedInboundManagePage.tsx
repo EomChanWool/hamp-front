@@ -145,13 +145,13 @@ export function SeedInboundManagePage() {
     () => [
       {
         type: 'select',
-        label: '품목코드',
+        label: '품목명',
         ref: itemCodeRef,
         name: 'itemCode',
         options: [
           { label: '전체', value: '' },
           ...itemOptions.map((opt) => ({
-            label: `${opt.itemCode} (${opt.itemNm ?? '-'})`,
+            label: `${opt.itemNm} (${opt.itemCode ?? '-'})`,
             value: opt.itemCode,
           })),
         ],

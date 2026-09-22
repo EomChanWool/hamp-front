@@ -125,7 +125,7 @@ export function MasterEquipmentCreatePage() {
                 </div>
 
                 <div className="createField">
-                  <label>공정코드</label>
+                  <label>공정명</label>
                   <select
                     className="tableInput"
                     value={form.operCode}
@@ -135,7 +135,7 @@ export function MasterEquipmentCreatePage() {
                     <option value="">공정을 선택해주세요</option>
                     {operationOptions.map((option) => (
                       <option key={option.operCode} value={option.operCode}>
-                        {option.operCode} ({option.operNm})
+                        {option.operNm} ({option.operCode})
                       </option>
                     ))}
                   </select>

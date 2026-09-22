@@ -127,7 +127,7 @@ export function SalesOrderCreatePage() {
 
                 <div className="createField">
                   <label className="requiredLabel">
-                    거래처코드 <span className="required">*</span>
+                    거래처명 <span className="required">*</span>
                   </label>
                   <select
                     className="tableInput"
@@ -138,7 +138,7 @@ export function SalesOrderCreatePage() {
                     <option value="">거래처를 선택해주세요</option>
                     {businessPartnerOptions.map((opt) => (
                       <option key={opt.bpCode} value={opt.bpCode}>
-                        {opt.bpCode} ({opt.bpNm ?? "-"})
+                        {opt.bpNm} ({opt.bpCode ?? "-"})
                       </option>
                     ))}
                   </select>
