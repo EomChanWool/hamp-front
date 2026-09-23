@@ -267,6 +267,7 @@
   border-bottom: 1px solid var(--border);
   background: var(--bg-card);
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 
@@ -447,12 +448,15 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  /* --check-col × 권한 컬럼 개수 + 라벨 폭이 화면보다 넓어질 때,
-     헤더/행이 이 박스 밖으로 흘러넘치지 않고 안에서만 가로 스크롤
-     되도록 하는 안전망. 헤더(.permMatrixHeader)와 행(.permSubRow)이
-     같은 스크롤 컨테이너 안에 있어야 좌우로 같이 움직이며 정렬이
-     유지된다 */
-  overflow-x: auto;
+  min-height: 0;
+  /* 가로 스크롤은 더 이상 이 요소가 직접 처리하지 않음.
+     예전엔 여기에 overflow-x:auto를 주고, 그 안의 .permGroupListScroll이
+     세로 스크롤용 overflow-y:auto를 따로 갖고 있었는데, "세로 overflow가
+     auto면 가로 overflow도 자동으로 auto가 된다"는 CSS 규칙 때문에
+     .permGroupListScroll이 자기만의 독립된 가로 스크롤 컨테이너가
+     되어버려 헤더(.permMatrixHeader)와 목록이 서로 다른 스크롤 위치를
+     갖고 어긋나던 문제가 있었음. 지금은 헤더+목록을 하나로 묶은
+     .permMatrixScroll 한 곳에서만 가로/세로 스크롤을 처리함 */
 }
 
 .permDetailEmpty {
@@ -465,16 +469,43 @@
   color: var(--text-muted);
 }
 
+/* ── 컬럼 헤더 + 하위 메뉴 목록을 함께 담는 단일 스크롤 컨테이너 ──
+   가로 스크롤(체크 컬럼이 넓어서 넘칠 때)과 세로 스크롤(항목이 많을 때)을
+   이 컨테이너 하나가 전담하고, 헤더는 position:sticky로 위쪽에 고정해서
+   기존과 같은 "헤더 고정 + 목록 스크롤" 느낌을 내면서도 가로 스크롤은
+   항상 헤더와 목록이 같이 움직이도록 함 */
+.permMatrixScroll {
+  flex: 1;
+  min-height: 0;
+  max-height: min(620px, 65vh);
+  overflow: auto;
+}
+
+.permMatrixScroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.permMatrixScroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
 .permMatrixHeader {
   display: flex;
   align-items: center;
   padding: 14px 20px;
   background: #eceff4;
   border-bottom: 1px solid var(--border);
-  /* 부모(.permMenuDetail)가 가로 스크롤될 때 이 행 자체는 줄어들지
-     않고 내용(라벨+체크컬럼) 폭만큼 그대로 유지되어야 정렬이 안 깨짐 */
+  /* .permMatrixScroll 안에서 내용(라벨+체크컬럼) 폭만큼 그대로 유지되어야
+     세로 스크롤 시에도 정렬이 안 깨짐 */
   width: fit-content;
   min-width: 100%;
+  /* 세로로 스크롤해도 항상 위쪽에 붙어있고, 가로로 스크롤할 땐 목록과
+     같이 움직이도록 top만 고정 (left는 고정하지 않음) */
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .permMatrixHeaderLabel {
@@ -497,17 +528,8 @@
 }
 
 .permGroupListScroll {
-  max-height: min(580px, 60vh);
-  overflow-y: auto;
-}
-
-.permGroupListScroll::-webkit-scrollbar {
-  width: 8px;
-}
-
-.permGroupListScroll::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 999px;
+  /* 세로/가로 스크롤은 이제 부모(.permMatrixScroll)가 전담하므로 여기엔 overflow 관련 속성을 두지 않음 */
+  display: contents; /* 자식 요소들의 레이아웃에 영향을 주지 않고 자신을 없는 것처럼 감싸는 속성 */
 }
 
 .permEmptyState {
@@ -699,8 +721,11 @@
 
 /* ── 반응형 ──
    1024 : 태블릿 — nav/check 컬럼 폭 1차 축소
-   860  : 작은 태블릿 — nav/check 컬럼 폭 2차 축소 (기존 nav-col만 있던 것 보강)
-   640  : 완전 세로 스택 (기존)
+   860  : 작은 태블릿 — nav/check 컬럼 폭 2차 축소
+   640  : 완전 세로 스택 + 대메뉴를 가로 칩 목록으로 전환
+          (세로 스택 시 --nav-col이 flex-basis(높이)로 잘못 적용되어
+          대메뉴 영역이 과도하게 커지던 문제, 가로 칩 자체가 불필요하게
+          크던 문제 수정)
 */
 
 @container content (max-width: 1024px) {
@@ -731,7 +756,12 @@
     flex-direction: column;
   }
 
+  /* --nav-col은 원래 '가로 폭'을 위한 값인데, 부모(.permMatrixBody)가
+     세로 스택으로 바뀌면서 .permMenuNav의 flex-basis가 '세로 높이'로
+     해석되어 대메뉴 영역이 200px 안팎의 높이를 통째로 차지해버리는
+     문제가 있었음. flex를 auto로 되돌려 내용물 높이만큼만 차지하게 함 */
   .permMenuNav {
+    flex: 0 0 auto;
     flex-direction: row;
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -751,17 +781,38 @@
     overflow-y: visible;
   }
 
+  /* 가로로 나열되는 대메뉴 칩을 더 작고 촘촘하게 (기존엔 패딩/폰트가
+     세로 목록용 그대로라 칩 하나하나가 불필요하게 컸음) */
   .permMenuNavItem {
     flex-shrink: 0;
     width: auto;
+    padding: 8px 12px;
+    gap: 6px;
+    font-size: 13px;
   }
 
   .permMenuNavLabel {
     white-space: nowrap;
   }
 
+  .permMenuNavCount {
+    font-size: 11px;
+    padding: 1px 6px;
+  }
+
+  /* active가 아닐 때도 opacity:0 상태로 15px 폭을 계속 차지하고 있어서
+     칩이 그만큼 더 커 보였음 — 가로 칩 목록에서는 아예 렌더링하지 않음 */
+  .permMenuNavArrow {
+    display: none;
+  }
+
   .permDetailHeader {
     align-items: flex-start;
+  }
+
+  .permMatrixHeaderLabel,
+  .permSubLabel {
+    min-width: 120px;
   }
 
   .permissionBoard {
