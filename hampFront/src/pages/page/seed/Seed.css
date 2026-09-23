@@ -639,23 +639,35 @@
   }
 
   .inventorySummaryCard__valueArea span:first-child {
-    font-size: 24px;
+    font-size: 22px;
+  }
+
+  .inventorySummaryCard {
+    padding: 4px 2px;
+  }
+
+  .inventorySummaryCard__stats {
+    gap: 6px;
+  }
+
+  /* 3열(1줄)을 유지한 채로 카드 폭이 줄어들기 때문에,
+     입고/출고 칩 최소폭과 폰트를 함께 줄여서 줄바꿈/잘림을 방지 */
+  .inventorySummaryCard__statChip {
+    flex: 1 1 90px;
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .inventorySummaryCard__statLabel {
+    font-size: 9px;
+  }
+
+  .inventorySummaryCard__statValue {
+    font-size: 11px;
   }
 
   .seedTrendPanel {
     gap: 16px;
-  }
-}
-
-/* ---- ~900px : KPI 3열 → 1열 ---- */
-@container content (max-width: 900px) {
-   .screenStack .metricGrid {
-    flex-direction: column;
-  }
-
-  .screenStack .kpiGrid,
-  .screenStack [class*="kpiGrid"] {
-    grid-template-columns: 1fr !important;
   }
 }
 
@@ -669,12 +681,21 @@
     grid-template-columns: 1fr auto;
     grid-template-areas:
       "identity stock"
-      "identity time";
-    row-gap: 4px;
+      "badge time";
+    row-gap: 6px;
+    align-items: center;
   }
 
   .seedItemRow__identity {
     grid-area: identity;
+  }
+
+  /* 구분 뱃지(원료/반제품/완제품)에 grid-area가 지정되어 있지 않아
+     identity/stock/time 영역과 무관하게 혼자 튀어나오던 문제 수정.
+     이제 2번째 행 왼쪽(badge)에 자리를 잡고, 오른쪽엔 최근 갱신 시간이 옴 */
+  .seedCategoryBadge {
+    grid-area: badge;
+    justify-self: start;
   }
 
   .seedItemRow__stock {
@@ -696,6 +717,19 @@
   .seedChartYAxis {
     min-width: 28px;
     font-size: 10px;
+  }
+}
+
+
+/* ---- ~640px : KPI 3열 → 1열 ---- */
+@container content (max-width: 640px) {
+   .screenStack .metricGrid {
+    flex-direction: column;
+  }
+
+  .screenStack .kpiGrid,
+  .screenStack [class*="kpiGrid"] {
+    grid-template-columns: 1fr !important;
   }
 }
 
