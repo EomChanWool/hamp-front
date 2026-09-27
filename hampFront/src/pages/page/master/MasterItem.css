@@ -316,7 +316,7 @@
 }
 
 /* ========================================================
-   공정 라우팅 설정 영역 (신규 품목 등록)
+   공정 라우팅 설정 영역 (신규 품목 등록 / 품목 상세 공용)
 ======================================================== */
 
 /* 헤더 및 안내 문구 */
@@ -346,13 +346,13 @@
 .routing-list-item.is-drag-over { background: #d1fae5; border: 2px dashed #059669; }
 .routing-list-item.is-selected { background: #ecfdf5; border: 2px solid #10b981; }
 
-.routing-item-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.routing-drag-handle { color: #9ca3af; font-size: 16px; letter-spacing: 1px; padding: 2px 4px; display: inline-block; }
+.routing-item-left { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 auto; }
+.routing-drag-handle { color: #9ca3af; font-size: 16px; letter-spacing: 1px; padding: 2px 4px; display: inline-block; flex-shrink: 0; }
 .routing-drag-handle.is-dragging { cursor: grabbing; }
 .routing-drag-handle:not(.is-dragging) { cursor: grab; }
 
-.routing-seq { font-weight: 600; color: #374151; min-width: 24px; }
-.routing-oper-nm { font-weight: 500; color: #1f2937; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.routing-seq { font-weight: 600; color: #374151; min-width: 24px; flex-shrink: 0; }
+.routing-oper-nm { font-weight: 500; color: #1f2937; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1 1 auto; }
 .routing-item-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: auto; }
 
 /* 공정 타입 배지 (일반/최종) */
