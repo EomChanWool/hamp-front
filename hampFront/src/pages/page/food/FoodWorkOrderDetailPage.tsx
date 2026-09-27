@@ -74,11 +74,11 @@ export function FoodWorkOrderDetailPage() {
           id: l.workOrderLineId ? String(l.workOrderLineId) : `line-${idx}`,
           salesOrderLineId: l.salesOrderLineId || 0,
           orderCode: l.orderCode || "",
-          lineId: `#${101 + idx}`,
+          lineId: `#${l.workOrderLineId}`,
           itemCode: l.itemCode || "",
           itemNm: l.itemNm || "",
           instructQty: Number(l.instructQty || 0),
-          barcode: l.barcode || `${data.workId || workId}-${101 + idx}`,
+          barcode: l.barcode || `\({data.workId || workId}-\){l.workOrderLineId || (101 + idx)}`,
         })),
       };
 
@@ -183,11 +183,11 @@ export function FoodWorkOrderDetailPage() {
       id: newId,
       salesOrderLineId: selectedLine.salesOrderLineId,
       orderCode: selectedLine.orderCode,
-      lineId: `#${101 + activeLinesCount}`,
+      lineId: `#NEW-${activeLinesCount + 1}`,
       itemCode: selectedLine.itemCode,
       itemNm: selectedLine.itemNm,
       instructQty: defaultQty,
-      barcode: `${editForm.workOrderNo}-${101 + activeLinesCount}`,
+      barcode: `${editForm.workOrderNo}-NEW`,
       unit: (selectedLine as any).unit || "",
     };
 
