@@ -10,8 +10,9 @@ import { UserApi, type UserOptionResponse } from "@/api/User";
 import { type SalesOrderStatusLineResponse } from "@/api/sales/SalesOrder"; 
 
 import { SalesOrderModal } from "@/components/modal/SalesOrderModal"; 
-import { LabelPrintModal, type WorkOrderLineDetail, type WorkOrderMaster } from "@/components/modal/LabelPrintModal";
+import { type WorkOrderLineDetail, type WorkOrderMaster } from "@/components/modal/LabelPrintModal";
 import '@/pages/page/food/Food.css';
+import { WorkOrderPrintModal } from "@/components/modal/WorkOrderPrintModal";
 
 // ==========================================
 // 메인 상세 페이지 컴포넌트
@@ -483,11 +484,11 @@ export function FoodWorkOrderDetailPage() {
         onClose={() => setIsSalesOrderModalOpen(false)}
         onSelect={handleSelectSalesOrderLine}
       />
-      <LabelPrintModal
+      <WorkOrderPrintModal
         isOpen={isLabelModalOpen}
         onClose={() => setIsLabelModalOpen(false)}
         selectedLines={workOrder.lines.filter(l => selectedLines.includes(l.id))}
-        workOrderNo={workOrder.workOrderNo}
+        workOrder={workOrder}
       />
     </section>
   );
