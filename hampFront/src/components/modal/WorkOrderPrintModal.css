@@ -1,0 +1,653 @@
+/* =========================================================
+   작업지시서 인쇄 모달
+========================================================= */
+
+.work-order-print-root {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+.work-order-print-modal {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  justify-content: center;
+
+  background: rgba(15, 23, 42, 0.68);
+}
+
+/* A4와 동일한 폭을 사용하는 전체 프레임 */
+.work-order-print-frame {
+  width: min(210mm, calc(100vw - 40px));
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================================================
+   Toolbar
+========================================================= */
+
+.work-order-print-toolbar {
+  flex: 0 0 auto;
+
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 14px 18px;
+
+  background: #ffffff;
+
+  border: 1px solid #dbe3ec;
+  border-bottom: 0;
+
+  border-radius: 10px 10px 0 0;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 16px;
+}
+
+.work-order-print-toolbar-info {
+  min-width: 0;
+}
+
+.work-order-print-toolbar-info h2 {
+  margin: 0;
+
+  color: #334155;
+
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.work-order-print-toolbar-info p {
+  margin: 3px 0 0;
+
+  color: #64748b;
+
+  font-size: 11px;
+}
+
+.work-order-print-toolbar-actions {
+  display: flex;
+
+  flex-shrink: 0;
+
+  gap: 7px;
+}
+
+/* =========================================================
+   Preview Scroll
+========================================================= */
+
+.work-order-print-scroll {
+  flex: 1 1 auto;
+
+  min-height: 0;
+
+  overflow: auto;
+
+  padding: 25px 20px 50px;
+
+  background: #e2e8f0;
+
+  border-radius: 0 0 10px 10px;
+}
+
+/* =========================================================
+   A4
+========================================================= */
+
+.work-order-print-sheet {
+  width: 210mm;
+  min-height: 297mm;
+
+  box-sizing: border-box;
+
+  margin: 0 auto;
+
+  padding: 16mm;
+
+  background: #ffffff;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+
+  box-shadow:
+    0 15px 40px rgba(15, 23, 42, 0.2);
+
+  color: #1e293b;
+}
+
+/* =========================================================
+   Header
+========================================================= */
+
+.work-order-print-header {
+  display: flex;
+
+  justify-content: space-between;
+  align-items: flex-start;
+
+  padding-bottom: 14px;
+  margin-bottom: 20px;
+
+  border-bottom: 2px solid #166534;
+}
+
+.work-order-print-department {
+  display: inline-block;
+
+  padding: 4px 9px;
+
+  background: #f0fdf4;
+
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+
+  color: #166534;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  letter-spacing: 0.08em;
+}
+
+.work-order-print-header h1 {
+  margin: 8px 0 0;
+
+  color: #0f172a;
+
+  font-size: 25px;
+  font-weight: 800;
+
+  letter-spacing: 0.16em;
+}
+
+.work-order-print-header p {
+  margin: 4px 0 0;
+
+  color: #64748b;
+
+  font-size: 9px;
+}
+
+.work-order-print-header-right {
+  display: flex;
+  flex-direction: column;
+
+  align-items: flex-end;
+}
+
+.work-order-document-barcode {
+  padding: 7px 10px;
+
+  background: #ffffff;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+}
+
+.work-order-print-meta {
+  margin-top: 7px;
+
+  color: #475569;
+
+  font-size: 9px;
+
+  line-height: 1.7;
+
+  text-align: right;
+}
+
+/* =========================================================
+   Section
+========================================================= */
+
+.work-order-print-section {
+  margin-bottom: 18px;
+}
+
+.work-order-print-section-title {
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  margin: 0 0 7px;
+
+  color: #334155;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.work-order-print-section-title > span {
+  width: 5px;
+  height: 14px;
+
+  display: inline-block;
+
+  background: #166534;
+
+  border-radius: 3px;
+}
+
+/* =========================================================
+   Table
+========================================================= */
+
+.work-order-print-table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  font-size: 9px;
+}
+
+.work-order-print-table th,
+.work-order-print-table td {
+  padding: 7px 8px;
+
+  border: 1px solid #cbd5e1;
+
+  vertical-align: middle;
+}
+
+.work-order-print-table th {
+  background: #f8fafc;
+
+  color: #475569;
+
+  font-weight: 600;
+
+  text-align: left;
+}
+
+.work-order-print-table td {
+  color: #334155;
+}
+
+.work-order-print-table .bold {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.work-order-print-table .mono {
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+.text-center {
+  text-align: center !important;
+}
+
+/* =========================================================
+   Line
+========================================================= */
+
+.line-table th,
+.line-table td {
+  padding: 6px 5px;
+}
+
+.line-table .col-no {
+  width: 30px;
+  text-align: center;
+}
+
+.line-table .col-order {
+  width: 76px;
+}
+
+.line-table .col-item-code {
+  width: 82px;
+}
+
+.line-table .col-qty {
+  width: 70px;
+
+  text-align: center;
+}
+
+.line-table .col-barcode {
+  width: 125px;
+
+  text-align: center;
+}
+
+.line-table .item-name {
+  color: #0f172a;
+
+  font-weight: 600;
+}
+
+.line-table .qty {
+  color: #166534;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  text-align: right;
+}
+
+.order-code {
+  font-weight: 600;
+}
+
+.order-line {
+  margin-top: 2px;
+
+  color: #64748b;
+
+  font-size: 8px;
+}
+
+.barcode-cell {
+  text-align: center;
+}
+
+.barcode-cell svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.empty-row {
+  height: 60px;
+
+  color: #94a3b8 !important;
+
+  text-align: center;
+}
+
+/* =========================================================
+   Checklist
+========================================================= */
+
+.checklist-table .col-check-no {
+  width: 35px;
+}
+
+.checklist-table .col-check-result {
+  width: 45px;
+}
+
+.checkbox-cell {
+  text-align: center;
+}
+
+.print-checkbox {
+  display: inline-block;
+
+  width: 14px;
+  height: 14px;
+
+  border: 1px solid #94a3b8;
+}
+
+/* =========================================================
+   Notice
+========================================================= */
+
+.work-order-print-notice {
+  box-sizing: border-box;
+
+  margin-bottom: 18px;
+
+  padding: 10px 12px;
+
+  background: #fffbeb;
+
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+
+  color: #92400e;
+
+  font-size: 9px;
+}
+
+.work-order-print-notice strong {
+  display: block;
+
+  margin-bottom: 5px;
+}
+
+.work-order-print-notice-body {
+  color: #a16207;
+
+  line-height: 1.7;
+}
+
+/* =========================================================
+   Signature
+========================================================= */
+
+.work-order-print-sign-area {
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 8px;
+
+  padding-top: 12px;
+
+  border-top: 1px solid #cbd5e1;
+}
+
+.work-order-sign-box {
+  min-height: 65px;
+
+  padding: 8px;
+
+  background: #f8fafc;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+}
+
+.work-order-sign-title {
+  margin-bottom: 22px;
+
+  color: #475569;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  text-align: center;
+}
+
+.work-order-sign-row {
+  display: flex;
+
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 0 7px;
+
+  font-size: 8px;
+}
+
+.signature-space {
+  display: inline-block;
+
+  width: 60px;
+  height: 15px;
+}
+
+/* =========================================================
+   Footer
+========================================================= */
+
+.work-order-print-footer {
+  margin-top: 12px;
+
+  color: #94a3b8;
+
+  font-size: 7px;
+
+  text-align: center;
+}
+
+/* =========================================================
+   Responsive
+========================================================= */
+
+@media screen and (max-width: 900px) {
+  .work-order-print-frame {
+    width: calc(100vw - 24px);
+  }
+
+  .work-order-print-toolbar {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+  .work-order-print-toolbar-actions {
+    width: 100%;
+  }
+
+  .work-order-print-toolbar-actions button {
+    flex: 1;
+  }
+
+  .work-order-print-scroll {
+    padding: 16px 8px 30px;
+  }
+
+  /*
+   * A4 원본 크기는 유지.
+   * 화면이 좁으면 가로 스크롤.
+   */
+  .work-order-print-sheet {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+/* =========================================================
+   PRINT
+========================================================= */
+
+@page {
+  size: A4;
+  margin: 10mm;
+}
+
+@media print {
+
+  /*
+   * 핵심:
+   * body의 다른 직계 자식은 전부 숨기고
+   * Portal로 생성된 작업지시서만 출력
+   */
+  body > * {
+    display: none !important;
+  }
+
+  body > #work-order-print-root {
+    display: block !important;
+
+    position: static !important;
+
+    width: 100% !important;
+    height: auto !important;
+
+    background: #ffffff !important;
+  }
+
+  html,
+  body {
+    width: 100% !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    background: #ffffff !important;
+
+    overflow: visible !important;
+  }
+
+  .work-order-print-root {
+    position: static !important;
+
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .work-order-print-modal {
+    position: static !important;
+
+    display: block !important;
+
+    width: 100% !important;
+
+    background: #ffffff !important;
+  }
+
+  .work-order-print-frame {
+    display: block !important;
+
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .work-order-print-toolbar {
+    display: none !important;
+  }
+
+  .work-order-print-scroll {
+    display: block !important;
+
+    width: 100% !important;
+
+    padding: 0 !important;
+
+    overflow: visible !important;
+
+    background: #ffffff !important;
+  }
+
+  .work-order-print-sheet {
+    display: block !important;
+
+    width: 100% !important;
+    min-height: auto !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    background: #ffffff !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+
+    box-shadow: none !important;
+
+    color: #000000 !important;
+  }
+
+  .work-order-print-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .work-order-print-header {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .work-order-print-sign-area {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

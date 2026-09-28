@@ -35,6 +35,7 @@ export interface WorkOrderLineResponse {
     instructQty: number;
     createdAt: string;
     updatedAt: string;
+    barcode: string;
 }
 
 /** 작업지시 목록 조회 아이템 응답 (요약 정보 포함) */
