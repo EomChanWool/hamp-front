@@ -144,6 +144,12 @@ export const SeedGoodsReceiptReturnApi = {
     return res.data;
   },
 
+  /** 씨드 입고 신고처리 등록 (태블릿 신고처리 화면 전용, 로그인 없이 호출) */
+  createByScan: async (receiptId: number, data: SeedGoodsReceiptReturnCreateRequest): Promise<ApiResponseSeedGoodsReceiptReturnResponse> => {
+    const res = await apiClient.post(`/seed-goods-receipts/${receiptId}/returns/scan`, data);
+    return res.data;
+  },
+
   /** 씨드 입고 신고처리 수정 */
   update: async (receiptId: number, returnId: number, data: SeedGoodsReceiptReturnUpdateRequest): Promise<ApiResponseSeedGoodsReceiptReturnResponse> => {
     const res = await apiClient.put(`/seed-goods-receipts/${receiptId}/returns/${returnId}`, data);

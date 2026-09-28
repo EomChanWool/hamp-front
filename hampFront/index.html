@@ -6,6 +6,17 @@
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>hampfront</title>
+
+    <!-- /work 태블릿 키오스크 화면을 홈 화면에 설치해서 주소줄 없이 전체화면으로 쓸 수 있게 하는 PWA 설정.
+         manifest의 start_url/scope가 /work로 좁혀져 있어 설치된 앱은 그 태블릿 화면만 연다. -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="HEMP 현장 스캔" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
   </head>
   <body>
