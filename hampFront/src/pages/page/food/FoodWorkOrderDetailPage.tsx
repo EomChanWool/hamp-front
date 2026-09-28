@@ -10,7 +10,7 @@ import { UserApi, type UserOptionResponse } from "@/api/User";
 import { type SalesOrderStatusLineResponse } from "@/api/sales/SalesOrder"; 
 
 import { SalesOrderModal } from "@/components/modal/SalesOrderModal"; 
-import { type WorkOrderLineDetail, type WorkOrderMaster } from "@/components/modal/LabelPrintModal";
+import { LabelPrintModal, type WorkOrderLineDetail, type WorkOrderMaster } from "@/components/modal/LabelPrintModal";
 import '@/pages/page/food/Food.css';
 import { WorkOrderPrintModal } from "@/components/modal/WorkOrderPrintModal";
 
@@ -38,6 +38,7 @@ export function FoodWorkOrderDetailPage() {
   const [editForm, setEditForm] = useState<WorkOrderMaster>(workOrder);
   const [selectedLines, setSelectedLines] = useState<string[]>([]);
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
+  const [isWorkOrderPrintModalOpen, setIsWorkOrderPrintModalOpen] = useState(false);
   const [isSalesOrderModalOpen, setIsSalesOrderModalOpen] = useState(false);
 
   // --- useRef 기반 지시수량 임시 저장소 (lineId를 키로 관리) ---
@@ -304,6 +305,17 @@ export function FoodWorkOrderDetailPage() {
     setIsLabelModalOpen(true);
   };
 
+  // 전체 라벨 인쇄 핸들러 추가
+  const handleOpenAllLabelModal = () => {
+    if (workOrder.lines.length === 0) {
+      alert("인쇄할 라인이 없습니다.");
+      return;
+    }
+    // 전체 라인의 id 목록을 selectedLines로 설정
+    setSelectedLines(workOrder.lines.map((l) => l.id));
+    setIsWorkOrderPrintModalOpen(true);
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "DONE": return <Badge tone="good">완료</Badge>;
@@ -408,13 +420,25 @@ export function FoodWorkOrderDetailPage() {
                 </button>
               )}
               {!isEditing && (
+                <>
                 <button
                   type="button"
                   className="ghostButton food-label-print-btn"
                   onClick={handleOpenLabelModal}
                 >
                   선택 라벨 인쇄
+                  
                 </button>
+
+                <button
+                  type="button"
+                  className="ghostButton food-label-print-btn"
+                  onClick={handleOpenAllLabelModal}
+                >
+                  전체 라벨 인쇄
+                  
+                </button>
+                </>
               )}
             </div>
           </div>
@@ -489,6 +513,12 @@ export function FoodWorkOrderDetailPage() {
         onClose={() => setIsLabelModalOpen(false)}
         selectedLines={workOrder.lines.filter(l => selectedLines.includes(l.id))}
         workOrder={workOrder}
+      />
+      <LabelPrintModal
+        isOpen={isWorkOrderPrintModalOpen}
+        onClose={() => setIsWorkOrderPrintModalOpen(false)}
+        selectedLines={workOrder.lines.filter(l => selectedLines.includes(l.id))}
+        workOrderNo={workOrder.workOrderNo}
       />
     </section>
   );

@@ -544,110 +544,76 @@
 }
 
 @media print {
-
-  /*
-   * 핵심:
-   * body의 다른 직계 자식은 전부 숨기고
-   * Portal로 생성된 작업지시서만 출력
-   */
-  body > * {
-    display: none !important;
-  }
-
-  body > #work-order-print-root {
-    display: block !important;
-
-    position: static !important;
-
-    width: 100% !important;
-    height: auto !important;
-
-    background: #ffffff !important;
-  }
-
-  html,
-  body {
-    width: 100% !important;
-
-    margin: 0 !important;
-    padding: 0 !important;
-
-    background: #ffffff !important;
-
-    overflow: visible !important;
-  }
-
-  .work-order-print-root {
-    position: static !important;
-
-    width: 100% !important;
-    height: auto !important;
-  }
-
-  .work-order-print-modal {
-    position: static !important;
-
-    display: block !important;
-
-    width: 100% !important;
-
-    background: #ffffff !important;
-  }
-
-  .work-order-print-frame {
-    display: block !important;
-
-    width: 100% !important;
-    height: auto !important;
-  }
-
+  /* 1. 일반 웹 UI 요소들 숨기기 */
+  .no-print,
   .work-order-print-toolbar {
     display: none !important;
   }
 
-  .work-order-print-scroll {
-    display: block !important;
-
+  /* 2. fixed 모달 배경/레이아웃 해제 */
+  html,
+  body {
     width: 100% !important;
-
-    padding: 0 !important;
-
-    overflow: visible !important;
-
-    background: #ffffff !important;
-  }
-
-  .work-order-print-sheet {
-    display: block !important;
-
-    width: 100% !important;
-    min-height: auto !important;
-
+    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
-
     background: #ffffff !important;
+    overflow: visible !important;
+  }
 
+  /* Portal 루트 및 모달 컨테이너를 일반 흐름으로 변경 */
+  .work-order-print-root,
+  .work-order-print-modal,
+  .work-order-print-frame {
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    background: transparent !important;
+    display: block !important;
+  }
+
+  /* 3. 스크롤 영역 해제 */
+  .work-order-print-scroll {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  /* 4. A4 용지 서식 출력 맞춤 */
+  .work-order-print-sheet {
+    width: 100% !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
     border: 0 !important;
     border-radius: 0 !important;
-
     box-shadow: none !important;
-
     color: #000000 !important;
+    
+    /* 장수가 여러 장일 경우 시트 단위로 페이지 분할 */
+    page-break-after: always;
+    break-after: page;
   }
 
-  .work-order-print-section {
-    break-inside: avoid;
-    page-break-inside: avoid;
+  .work-order-print-sheet:last-child {
+    page-break-after: avoid;
+    break-after: avoid;
   }
 
-  .work-order-print-header {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
+  /* 5. 페이지 내부 잘림 방지 */
+  .work-order-print-section,
+  .work-order-print-header,
   .work-order-print-sign-area {
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+
+  body.modal-open > *:not(#work-order-print-root) {
+    display: none !important;
   }
 }
