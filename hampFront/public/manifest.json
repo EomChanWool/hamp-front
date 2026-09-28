@@ -1,0 +1,24 @@
+{
+  "name": "HEMP 현장 스캔",
+  "short_name": "HEMP 스캔",
+  "description": "현장 태블릿에서 작업지시/신고처리 바코드를 스캔하는 화면",
+  "start_url": "/work",
+  "scope": "/work",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

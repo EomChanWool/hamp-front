@@ -113,6 +113,8 @@ import { WorkTabletGuard } from '@/pages/work/WorkTabletGuard'
 import { WorkTabletLoginPage } from '@/pages/work/WorkTabletLoginPage'
 import { WorkTabletHome } from '@/pages/work/WorkTabletHome'
 import { WorkSeedReportScanPage } from '@/pages/work/WorkSeedReportScanPage'
+import { WorkOrderScanPage } from '@/pages/work/WorkOrderScanPage'
+import { WorkOutboundScanPage } from '@/pages/work/WorkOutboundScanPage'
 
 
 const RootRouter = () => {
@@ -351,12 +353,14 @@ export const routeObj: RouteObject[] = [
     path: '/work/login',
     element: <WorkTabletLoginPage />,
   },
+  // 신고처리는 로그인 없이 바로 사용 가능, 작업지시/출고처리는 로그인이 필요해서 그 라우트만 가드로 감싼다
+  { path: '/work', element: <WorkTabletHome /> },
+  { path: '/work/seed-report-scan', element: <WorkSeedReportScanPage /> },
   {
-    path: '/work',
     element: <WorkTabletGuard />,
     children: [
-      { index: true, element: <WorkTabletHome /> },
-      { path: 'seed-report-scan', element: <WorkSeedReportScanPage /> },
+      { path: '/work/work-order-scan', element: <WorkOrderScanPage /> },
+      { path: '/work/outbound-scan', element: <WorkOutboundScanPage /> },
     ],
   },
   {

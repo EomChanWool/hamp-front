@@ -3,10 +3,11 @@
 ================================ */
 .workTabletLoginContainer {
   width: 100%;
+  min-height: 620px; /* 홈/스캔 화면이랑 항상 같은 높이가 되도록 최소 높이를 맞춰둠 */
   padding: 48px 40px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 32px; /* 홈으로 버튼 - 본문 사이 간격만. 본문 자체는 .workTabletLoginMain이 남는 공간에서 알아서 가운데 정렬됨 */
   background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -14,6 +15,30 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-sizing: border-box;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.workTabletHomeBtn {
+  align-self: flex-start;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #f0f0f0;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 홈으로 버튼은 위쪽에 고정되고, 로고/제목/입력폼/로그인버튼은 그 아래 남는 공간에서
+   세로로 가운데 정렬됨 - 홈 화면(.workTabletMain)/스캔 화면(.workScanMain)과 같은 방식 */
+.workTabletLoginMain {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
 }
 
 .workTabletLoginFields {
@@ -57,9 +82,42 @@
   transition: background-color 5000s ease-in-out 0s;
 }
 
+.workTabletLoginSubmitBtn {
+  width: 100%;
+  height: 64px;
+  border-radius: 14px;
+  background: var(--primary);
+  border: 1px solid var(--primary-light);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workTabletLoginSubmitBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.workTabletLoginSubmitBtn:active {
+  transform: translateY(0);
+}
+
+.workTabletLoginSubmitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 @media (max-width: 480px) {
   .workTabletLoginContainer {
     padding: 28px 20px;
+    gap: 20px;
+  }
+
+  .workTabletLoginMain {
     gap: 20px;
   }
 
@@ -67,11 +125,21 @@
     height: 56px;
     font-size: 18px;
   }
+
+  .workTabletLoginSubmitBtn {
+    height: 56px;
+    font-size: 17px;
+  }
 }
 
 @media (max-height: 600px) {
   .workTabletLoginContainer {
+    min-height: 0; /* 세로 공간이 부족한 화면에선 강제 최소높이를 풀어서 내용만큼만 차지하게 함 */
     padding: 24px 32px;
+    gap: 16px;
+  }
+
+  .workTabletLoginMain {
     gap: 16px;
   }
 
@@ -82,5 +150,10 @@
   .workTabletLoginInput {
     height: 52px;
     font-size: 17px;
+  }
+
+  .workTabletLoginSubmitBtn {
+    height: 52px;
+    font-size: 16px;
   }
 }

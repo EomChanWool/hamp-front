@@ -55,33 +55,46 @@ export function WorkTabletLoginPage() {
     <div className="workTabletPage">
       <div className="workTabletPanel">
         <form className="workTabletLoginContainer" onSubmit={handleLogin}>
-          <div className="workTabletHeader">
-            <h1>현장 태블릿 로그인</h1>
-            <p>업무를 시작하려면 로그인해 주세요.</p>
-          </div>
-
-          <div className="workTabletLoginFields">
-            <input
-              type="text"
-              className="workTabletLoginInput"
-              placeholder="아이디"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              autoComplete="username"
-            />
-            <input
-              type="password"
-              className="workTabletLoginInput"
-              placeholder="비밀번호"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-            />
-          </div>
-
-          <button type="submit" className="workTabletBtn" disabled={isSubmitting}>
-            {isSubmitting ? '로그인 중...' : '로그인'}
+          <button
+            type="button"
+            className="workTabletHomeBtn"
+            onClick={() => navigate('/work')}
+          >
+            ← 홈으로
           </button>
+
+          <div className="workTabletLoginMain">
+            {/* TODO: 헴프 로고 자리 - 지금은 자리만 잡아둔 임시 표시 */}
+            <div className="workTabletLogoPlaceholder workTabletLogoPlaceholder--center">로고</div>
+
+            <div className="workTabletHeader">
+              <h1>현장 태블릿 로그인</h1>
+              <p>업무를 시작하려면 로그인해 주세요.</p>
+            </div>
+
+            <div className="workTabletLoginFields">
+              <input
+                type="text"
+                className="workTabletLoginInput"
+                placeholder="아이디"
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                autoComplete="username"
+              />
+              <input
+                type="password"
+                className="workTabletLoginInput"
+                placeholder="비밀번호"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
+
+            <button type="submit" className="workTabletLoginSubmitBtn" disabled={isSubmitting}>
+              {isSubmitting ? '로그인 중...' : '로그인'}
+            </button>
+          </div>
         </form>
       </div>
     </div>

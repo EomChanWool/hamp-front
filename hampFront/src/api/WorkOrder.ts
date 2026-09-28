@@ -1,5 +1,6 @@
 import { apiClient } from '@/api/apiClient';
 import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
+import type { EquipmentOptionResponse } from '@/api/master/Equipment';
 
 /** 작업지시 라인 요청 (등록/수정 시) */
 export interface WorkOrderLineRequest {
@@ -76,18 +77,58 @@ export interface WorkOrderStatusSummaryResponse {
     byStatus: WorkOrderStatusCount[];
 }
 
+/** 작업지시 라인 바코드 스캔 조회 응답의 공정순서도 단계 */
+export interface WorkOrderRoutingStepResponse {
+    operCode: string;
+    operNm: string;
+    operSeq: number;
+    finalYn: string; // "Y" | "N"
+    done: boolean; // 이 작업지시라인에서 이미 종료 처리된 공정인지 (DB 기준)
+    inProgress: boolean; // 이 작업지시라인에서 지금 진행 중인 공정인지 (시작O, 종료X) (DB 기준)
+    inputQty: number | null; // 이 공정을 시작할 때 기록한 투입수량 (시작 전이면 null)
+    equipments: EquipmentOptionResponse[]; // 이 공정용으로 등록된 설비 목록 (실제 사용 설비가 아니라 매칭된 설비)
+}
+
 /** 작업지시 라인 바코드 스캔 조회 응답 타입 */
 export interface WorkOrderLineScanResponse {
     workId: string;
     workDate: string; // "2026-09-16"
     status: string;
+    managerId: string | null;
+    managerNm: string | null;
     workOrderLineId: number;
     salesOrderLineId: number;
     orderCode: string;
+    bpCode: string | null;
+    bpNm: string | null;
     itemCode: string;
     itemNm: string;
     unit: string;
     instructQty: number;
+    routingSteps: WorkOrderRoutingStepResponse[];
+}
+
+/** 설비 바코드 스캔 결과 - START_READY/FINISH_READY 둘 다 아직 아무것도 기록 안 된 "확인 대기"
+ *  상태이고, 태블릿에서 사용자가 진행/종료를 확인해야 각각 startPerformance/finishPerformance로
+ *  확정해야 실제로 기록된다 */
+export interface WorkOrderPerformanceScanResponse {
+    action: 'START_READY' | 'FINISH_READY';
+    workOrderLineId: number;
+    operCode: string;
+    operNm: string;
+    operSeq: number;
+    perfId: number | null;
+}
+
+/** 설비 스캔으로 받은 공정을 투입수량과 함께 시작 확정할 때 보내는 요청 */
+export interface WorkOrderPerformanceStartRequest {
+    operCode: string;
+    qty: number;
+}
+
+/** 설비 스캔으로 받은 공정을 종료 확정할 때 보내는 요청 */
+export interface WorkOrderPerformanceFinishRequest {
+    operCode: string;
 }
 
 /** 작업지시 공정 시작 요청 */
@@ -181,6 +222,18 @@ export const WorkOrderApi = {
         const res = await apiClient.get('/work-orders/scan', {
             params: { code },
         });
+        return res.data;
+    },
+
+    /** 설비 스캔으로 받은 공정을 투입수량과 함께 시작 확정 */
+    startPerformance: async (data: WorkOrderPerformanceStartRequest): Promise<ApiResponse<null>> => {
+        const res = await apiClient.post('/work-orders/performance/start', data);
+        return res.data;
+    },
+
+    /** 설비 스캔으로 받은 공정을 종료 확정 */
+    finishPerformance: async (data: WorkOrderPerformanceFinishRequest): Promise<ApiResponse<null>> => {
+        const res = await apiClient.post('/work-orders/performance/finish', data);
         return res.data;
     },
 

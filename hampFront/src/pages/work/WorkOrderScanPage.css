@@ -1,0 +1,534 @@
+/* ================================
+   WORK ORDER SCAN (작업지시 스캔 화면)
+   조회 전용 화면이라 workScanPanel/workScanContainer/workScanTopBar/
+   workScanWaiting/workScanFailure/workScanCancelBtn/workScanInfoGrid 등
+   공통 스캔 스타일은 WorkSeedReportScanPage.css를 그대로 가져다 쓰고,
+   여기서는 결과 표시(품목/지시수량 + 공정순서도)에 필요한 스타일만 추가한다.
+================================ */
+
+.workOrderResult {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.workOrderItemCard {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.workOrderCardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.workOrderId {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--primary-light, #93c5fd);
+}
+
+.workOrderStatusChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(148, 163, 184, 0.18);
+  color: #cbd5e1;
+}
+
+.workOrderStatusChip--PROGRESS {
+  background: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+}
+
+.workOrderStatusChip--DONE {
+  background: rgba(34, 197, 94, 0.18);
+  color: #4ade80;
+}
+
+.workOrderStatusChip--DELAY {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+}
+
+.workOrderItemCard h2 {
+  margin: 0 0 14px;
+  color: #f0f0f0;
+  font-size: 22px;
+  font-weight: 700;
+  word-break: keep-all;
+}
+
+.workOrderItemCard .workScanInfoGrid {
+  margin-bottom: 14px;
+}
+
+.workOrderQtyRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 13.5px;
+  color: #94a3b8;
+}
+
+.workOrderQtyRow strong {
+  color: var(--primary-light, #93c5fd);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 19px;
+}
+
+/* ── "다음 뭐 해야 하는지" 안내 배너 ─────────────────────
+   작업지시 스캔만으로는 "설비 바코드를 찍어야 시작/종료된다"는 게 화면에서
+   전혀 안 드러나서, 지금 상태에 따라 다음 행동을 문장으로 짚어준다 ───*/
+.workOrderNextStepBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  word-break: keep-all;
+}
+
+.workOrderNextStepBanner--next {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: var(--primary-light, #93c5fd);
+}
+
+.workOrderNextStepBanner--inprogress {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #f59e0b;
+}
+
+.workOrderNextStepBanner--complete {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #4ade80;
+}
+
+.workOrderNextStepBanner--complete::before {
+  content: '';
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+}
+
+.workOrderNextStepBanner--error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+.workOrderNextStepBanner--error::before {
+  content: '';
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f87171;
+}
+
+/* --next/--inprogress 배너 안의 미니 스캔 프레임 - "지금도 스캐너가 계속 듣고 있다"를
+   대기 화면의 뷰파인더(모서리 브라켓+스캔라인)와 같은 언어로 축약해서 보여준다.
+   색은 currentColor를 그대로 써서 배너 상태(파랑/주황)에 맞춰 자동으로 바뀐다 */
+.workOrderNextStepBannerIcon {
+  position: relative;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.workOrderNextStepBannerCorner {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border: 2px solid currentColor;
+  opacity: 0.9;
+}
+
+.workOrderNextStepBannerCorner--tl {
+  top: 2px;
+  left: 2px;
+  border-right: none;
+  border-bottom: none;
+  border-radius: 3px 0 0 0;
+}
+
+.workOrderNextStepBannerCorner--tr {
+  top: 2px;
+  right: 2px;
+  border-left: none;
+  border-bottom: none;
+  border-radius: 0 3px 0 0;
+}
+
+.workOrderNextStepBannerCorner--bl {
+  bottom: 2px;
+  left: 2px;
+  border-right: none;
+  border-top: none;
+  border-radius: 0 0 0 3px;
+}
+
+.workOrderNextStepBannerCorner--br {
+  bottom: 2px;
+  right: 2px;
+  border-left: none;
+  border-top: none;
+  border-radius: 0 0 3px 0;
+}
+
+.workOrderNextStepBannerScanLine {
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  box-shadow: 0 0 4px 1px currentColor;
+  animation: workOrderBannerScanLineMove 2.2s ease-in-out infinite;
+}
+
+@keyframes workOrderBannerScanLineMove {
+  0%, 100% { top: 20%; opacity: 0; }
+  15% { opacity: 1; }
+  50% { top: 75%; opacity: 1; }
+  85% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workOrderNextStepBannerScanLine {
+    animation: none;
+    top: 50%;
+    opacity: 0.7;
+  }
+}
+
+/* ── 공정순서도 (세로 타임라인) ─────────────────────── */
+.workOrderRoutingSection {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.workOrderRoutingLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 16px;
+}
+
+.workOrderRoutingLabel::before {
+  content: '';
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--primary);
+}
+
+.workOrderRoutingEmpty {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.workOrderRoutingList {
+  position: relative;
+  padding-left: 34px;
+}
+
+.workOrderRoutingList::before {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 14px;
+  bottom: 14px;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.workOrderRoutingStep {
+  position: relative;
+  padding-bottom: 32px;
+}
+
+.workOrderRoutingStep:last-child {
+  padding-bottom: 0;
+}
+
+.workOrderRoutingMarker {
+  position: absolute;
+  left: -34px;
+  top: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.workOrderRoutingStep--final .workOrderRoutingMarker {
+  background: #16a34a;
+}
+
+.workOrderRoutingStep--done .workOrderRoutingMarker {
+  background: #16a34a;
+}
+
+.workOrderRoutingStep--done .workOrderRoutingOperNm {
+  color: #94a3b8;
+  text-decoration: line-through;
+}
+
+.workOrderRoutingStep--pending .workOrderRoutingMarker {
+  background: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.workOrderRoutingStep--pending .workOrderRoutingOperNm {
+  color: var(--primary-light, #93c5fd);
+}
+
+/* 다음에 설비 바코드를 찍어야 할 공정 - 타임라인 안에서도 눈에 띄게 배경을 얹는다.
+   padding으로 배경을 넣으면 텍스트가 아래로 밀리면서 옆 마커(절대위치라 안 밀림)랑
+   높이가 안 맞아 보여서, 레이아웃에 영향 안 주는 장식용 ::before로 배경만 확장해서 깐다.
+   은은하게 빛이 도는 느낌을 주려고 그림자를 살살 키웠다 줄였다 하는 글로우 애니메이션을 건다 */
+.workOrderRoutingStep--next .workOrderRoutingInfo {
+  position: relative;
+}
+
+.workOrderRoutingStep--next .workOrderRoutingInfo::before {
+  content: '';
+  position: absolute;
+  inset: -8px -10px;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.08);
+  z-index: -1;
+  pointer-events: none;
+  animation: workOrderNextGlow 2.4s ease-in-out infinite;
+  transition: inset 0.25s ease; /* 화살표로 투입수량 줄을 펼치면 이 박스 높이가 늘어나는데,
+                                    순간 튀지 않고 부드럽게 커지도록 */
+}
+
+@keyframes workOrderNextGlow {
+  0%, 100% {
+    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.3), 0 0 0 0 rgba(59, 130, 246, 0.2);
+  }
+  50% {
+    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.5), 0 0 16px 3px rgba(59, 130, 246, 0.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workOrderRoutingStep--next .workOrderRoutingInfo::before {
+    animation: none;
+    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.3);
+  }
+}
+
+.workOrderRoutingStep--next .workOrderRoutingMarker {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+/* 지금 진행 중인 공정도 "다음" 공정과 똑같은 방식(장식용 ::before + 글로우)으로 강조하되
+   색만 진행중 테마인 주황으로 맞춘다 */
+.workOrderRoutingStep--inprogress .workOrderRoutingInfo {
+  position: relative;
+}
+
+.workOrderRoutingStep--inprogress .workOrderRoutingInfo::before {
+  content: '';
+  position: absolute;
+  inset: -8px -10px;
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.08);
+  z-index: -1;
+  pointer-events: none;
+  animation: workOrderInProgressGlow 2.4s ease-in-out infinite;
+  transition: inset 0.25s ease; /* 화살표로 투입수량 줄을 펼치면 이 박스 높이가 늘어나는데,
+                                    순간 튀지 않고 부드럽게 커지도록 */
+}
+
+@keyframes workOrderInProgressGlow {
+  0%, 100% {
+    box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3), 0 0 0 0 rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.5), 0 0 16px 3px rgba(245, 158, 11, 0.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workOrderRoutingStep--inprogress .workOrderRoutingInfo::before {
+    animation: none;
+    box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3);
+  }
+}
+
+.workOrderRoutingNextTag {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  color: var(--primary-light, #93c5fd);
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.workOrderRoutingStep--inprogress .workOrderRoutingMarker {
+  background: #f59e0b;
+}
+
+/* 공정명/코드는 왼쪽, 진행중·최종공정 뱃지는 오른쪽으로 갈라서 배치 */
+.workOrderRoutingHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.workOrderRoutingText {
+  min-width: 0;
+  flex: 1;
+}
+
+.workOrderRoutingTags {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.workOrderRoutingNameRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.workOrderRoutingChevronBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  margin: -4px -4px -4px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workOrderRoutingChevron {
+  width: 20px;
+  height: 20px;
+  color: #64748b;
+  stroke-width: 2.5;
+  transition: transform 0.15s ease;
+}
+
+.workOrderRoutingChevron--open {
+  transform: rotate(180deg);
+}
+
+.workOrderRoutingOperNm {
+  color: #f0f0f0;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.workOrderRoutingOperCode {
+  color: #94a3b8;
+  font-size: 13.5px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+.workOrderRoutingInputQty {
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  margin-top: 3px;
+}
+
+.workOrderRoutingInputQty--active {
+  color: var(--primary-light, #93c5fd);
+}
+
+.workOrderRoutingProgressTag,
+.workOrderRoutingFinalTag {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.workOrderRoutingProgressTag {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.workOrderRoutingFinalTag {
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.15);
+}
+
+/* ── 설비 스캔 후 투입수량 입력 폼 (신고처리 화면의 키패드/버튼 스타일 재사용)
+   해당 공정 항목 바로 아래에 끼워넣는 형태라 margin-top으로 띄우고, 타임라인의
+   좁은 폭에 맞춰 패딩을 살짝 줄인다 ─── */
+.workOrderPerformanceForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(147, 197, 253, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.workOrderPerformanceLabel {
+  color: #f0f0f0;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .workOrderItemCard,
+  .workOrderRoutingSection {
+    padding: 16px;
+  }
+}

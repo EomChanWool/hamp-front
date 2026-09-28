@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArchiveBoxIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { apiClient } from '@/api/apiClient';
 import {
@@ -21,6 +22,13 @@ const isScanFailure = (data: unknown): data is ScanFailure =>
   !!data && typeof data === 'object' && (data as { status?: string }).status === 'NG';
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
+
+// 신고 진행상태 문자열(백엔드가 그대로 라벨을 내려줌)에 따라 상태칩 색을 다르게 보여주기 위한 매핑
+const REPORT_STATUS_VARIANT: Record<string, string> = {
+  미신고: 'none',
+  부분신고: 'partial',
+  신고완료: 'done',
+};
 
 const KEYPAD_KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', 'back'];
 
@@ -132,7 +140,7 @@ export function WorkSeedReportScanPage() {
     setIsSubmitting(true);
     setErrorMsg(null);
     try {
-      await SeedGoodsReceiptReturnApi.create(scanResult.receiptId, {
+      await SeedGoodsReceiptReturnApi.createByScan(scanResult.receiptId, {
         returnQty: qty,
         reportDate: todayStr(),
         returnDueDate,
@@ -153,7 +161,7 @@ export function WorkSeedReportScanPage() {
     connectionStatus === 'open'
       ? '실시간 연결됨 · 스캔 대기 중'
       : connectionStatus === 'connecting'
-        ? '연결 중...'
+        ? '연결 중'
         : '연결 끊김 · 재연결 시도 중';
 
   return (
@@ -167,12 +175,20 @@ export function WorkSeedReportScanPage() {
             <span className={`workScanStatus workScanStatus--${connectionStatus}`}>
               <span className="workScanStatusDot" />
               {statusLabel}
+              {connectionStatus === 'connecting' && (
+                <span className="workScanConnectingDots" aria-hidden="true">
+                  <span>.</span>
+                  <span>.</span>
+                  <span>.</span>
+                </span>
+              )}
             </span>
           </div>
 
+          <div className="workScanMain">
           {scanFailure ? (
             <div className="workScanWaiting workScanFailure">
-              <div className="workScanWaitingIcon">⚠️</div>
+              <ExclamationTriangleIcon className="workScanWaitingIconSvg" />
               <h1>스캔한 라벨을 확인할 수 없습니다</h1>
               <p>{scanFailure.message}</p>
               <button
@@ -185,13 +201,30 @@ export function WorkSeedReportScanPage() {
             </div>
           ) : !scanResult ? (
             <div className="workScanWaiting">
-              <div className="workScanWaitingIcon">📷</div>
+              <div className="workScanTarget">
+                <span className="workScanTargetCorner workScanTargetCorner--tl" />
+                <span className="workScanTargetCorner workScanTargetCorner--tr" />
+                <span className="workScanTargetCorner workScanTargetCorner--bl" />
+                <span className="workScanTargetCorner workScanTargetCorner--br" />
+                <span className="workScanTargetLine" />
+                <ArchiveBoxIcon className="workScanWaitingIconSvg" />
+              </div>
               <h1>스캔 대기 중</h1>
               <p>입고 라벨을 스캐너로 찍으면 이 화면에 자동으로 표시됩니다.</p>
             </div>
           ) : (
             <div className="workScanEntry">
               <div className="workScanItemCard">
+                <div className="workScanCardHead">
+                  <span className="workScanBarcode">{scanResult.barcode}</span>
+                  <span
+                    className={`workScanStatusChip workScanStatusChip--${
+                      REPORT_STATUS_VARIANT[scanResult.reportStatus] ?? 'none'
+                    }`}
+                  >
+                    {scanResult.reportStatus}
+                  </span>
+                </div>
                 <h2>{scanResult.itemNm}</h2>
                 <div className="workScanInfoGrid">
                   <div className="workScanInfoItem">
@@ -207,8 +240,8 @@ export function WorkSeedReportScanPage() {
                     <strong>{scanResult.returnedQty} {scanResult.unit}</strong>
                   </div>
                   <div className="workScanInfoItem">
-                    <span>신고 상태</span>
-                    <strong>{scanResult.reportStatus}</strong>
+                    <span>입고일자</span>
+                    <strong>{scanResult.receivedAt?.slice(0, 10)}</strong>
                   </div>
                 </div>
                 <div className="workScanRemainingBanner">
@@ -256,6 +289,7 @@ export function WorkSeedReportScanPage() {
               </div>
             </div>
           )}
+          </div>
 
           {successMsg && <div className="workScanSuccessToast">{successMsg}</div>}
         </div>

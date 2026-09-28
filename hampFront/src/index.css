@@ -17,10 +17,18 @@
   margin: 0;
 }
 
+/* 크롬(특히 안드로이드)에서 맨 위 상태로 아래로 당기면 페이지가 새로고침되는 기본 제스처를 막는다 -
+   body에만 걸면 실제 문서 스크롤러로 안 잡히는 경우가 있어서 html에도 같이 걸어야 확실히 먹힌다.
+   contain보다 강한 none으로 아예 오버스크롤 자체를 없앤다 */
+html {
+  overscroll-behavior-y: none;
+}
+
 body {
   min-width: 320px;
   background: #fff;
   box-sizing: border-box;
+  overscroll-behavior-y: none;
 }
 
 li {
