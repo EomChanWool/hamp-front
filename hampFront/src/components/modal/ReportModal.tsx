@@ -289,7 +289,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
 
                     return (
                         <span style={{ color: isCompleted ? '#2b8a3e' : '#e67700', fontWeight: 500 }}>
-                            {isCompleted ? '처리완료' : '신고대기'}
+                            {isCompleted ? '신고완료' : '신고대기'}
                         </span>
                     );
                 },
