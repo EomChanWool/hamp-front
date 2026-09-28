@@ -284,7 +284,7 @@ export function FoodWorkOrderDetailPage() {
                 <button
                   type="button"
                   onClick={() => handleDeleteLine(row.original.id)}
-                  className="food-line-delete-btn-sm"
+                  className="miniButton danger"
                 >
                   삭제
                 </button>

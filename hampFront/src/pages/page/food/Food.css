@@ -399,17 +399,6 @@
   font-weight: 700;
 }
 
-.food-line-delete-btn-sm {
-  background: #fee2e2;
-  color: #dc2626;
-  border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-}
-
 
 /* ================================================
    반응형
@@ -634,14 +623,4 @@
 
 [data-theme="dark"] .food-cell-qty {
   color: var(--text-main);
-}
-
-[data-theme="dark"] .food-line-delete-btn-sm {
-  background: #451a1a;
-  color: #fca5a5;
-}
-
-[data-theme="dark"] .food-line-delete-btn-sm:hover {
-  background: #7f1d1d;
-  color: #ffffff;
 }
