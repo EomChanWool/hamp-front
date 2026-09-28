@@ -276,22 +276,38 @@ export function FoodWorkOrderDetailPage() {
       },
       {
         accessorKey: "barcode",
-        header: "바코드",
-        cell: ({ row }) => (
-          <div className="food-cell-center">
-            <Barcode value={row.original.barcode || "NO-BARCODE"} width={1.2} height={38} fontSize={11} displayValue={true} margin={0} />
-            {isEditing && (
-              <button
-                type="button"
-                onClick={() => handleDeleteLine(row.original.id)}
-                className="food-line-delete-btn-sm"
-              >
-                삭제
-              </button>
-            )}
-          </div>
-        ),
-        meta: { width: '450px' },
+        header: isEditing ? "관리" : "바코드",
+        cell: ({ row }) => {
+          if (isEditing) {
+            return (
+              <div className="food-cell-center">
+                <button
+                  type="button"
+                  onClick={() => handleDeleteLine(row.original.id)}
+                  className="food-line-delete-btn-sm"
+                >
+                  삭제
+                </button>
+              </div>
+            );
+          }
+
+          return (
+            <div className="food-cell-center">
+              <Barcode
+                value={row.original.barcode || "NO-BARCODE"}
+                width={1.2}
+                height={38}
+                fontSize={11}
+                displayValue={true}
+                margin={0}
+              />
+            </div>
+          );
+        },
+        meta: {
+          width: isEditing ? "250px" : "450px",
+        },
       },
     ],
     [selectedLines, activeLines, isEditing]
