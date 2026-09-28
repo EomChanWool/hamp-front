@@ -5,11 +5,11 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { CusTable } from "@/components/table/CusTable";
 import { Badge } from "@/components/common/Badge";
 import Spinner from "@/components/common/Spinner";
-import { WorkOrderApi } from "@/api/WorkOrder"; 
+import { WorkOrderApi } from "@/api/WorkOrder";
 import { UserApi, type UserOptionResponse } from "@/api/User";
-import { type SalesOrderStatusLineResponse } from "@/api/sales/SalesOrder"; 
+import { type SalesOrderStatusLineResponse } from "@/api/sales/SalesOrder";
 
-import { SalesOrderModal } from "@/components/modal/SalesOrderModal"; 
+import { SalesOrderModal } from "@/components/modal/SalesOrderModal";
 import { type WorkOrderLineDetail, type WorkOrderMaster } from "@/components/modal/LabelPrintModal";
 import '@/pages/page/food/Food.css';
 import { WorkOrderPrintModal } from "@/components/modal/WorkOrderPrintModal";
@@ -37,7 +37,8 @@ export function FoodWorkOrderDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<WorkOrderMaster>(workOrder);
   const [selectedLines, setSelectedLines] = useState<string[]>([]);
-  const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
+  const [printLines, setPrintLines] = useState<WorkOrderLineDetail[]>([]);
+  const [isWorkOrderPrintModalOpen, setIsWorkOrderPrintModalOpen] = useState(false);
   const [isSalesOrderModalOpen, setIsSalesOrderModalOpen] = useState(false);
 
   // --- useRef 기반 지시수량 임시 저장소 (lineId를 키로 관리) ---
@@ -62,8 +63,8 @@ export function FoodWorkOrderDetailPage() {
     setIsLoading(true);
     try {
       const response = await WorkOrderApi.getDetail(workId);
-      const data = response.data as any; 
-      
+      const data = response.data as any;
+
       const mappedData: WorkOrderMaster = {
         workOrderNo: data.workId || workId,
         title: data.title || data.workName || "작업 지시 상세",
@@ -204,32 +205,32 @@ export function FoodWorkOrderDetailPage() {
     () => [
       ...(!isEditing
         ? [
-            {
-              id: "select",
-              header: () => (
-                <input 
-                  type="checkbox" 
-                  onChange={(e) => {
-                    if (e.target.checked) setSelectedLines(activeLines.map(l => l.id));
-                    else setSelectedLines([]);
-                  }}
-                  checked={selectedLines.length === activeLines.length && activeLines.length > 0}
-                  style={{ cursor: 'pointer', width: '16px', height: '16px' }}
-                />
-              ),
-              cell: ({ row }: { row: any }) => (
-                <input 
-                  type="checkbox" 
-                  checked={selectedLines.includes(row.original.id)}
-                  onChange={() => {
-                    setSelectedLines(prev => prev.includes(row.original.id) ? prev.filter(i => i !== row.original.id) : [...prev, row.original.id]);
-                  }}
-                  style={{ cursor: 'pointer', width: '16px', height: '16px' }}
-                />
-              ),
-              meta: { width: '50px' },
-            },
-          ]
+          {
+            id: "select",
+            header: () => (
+              <input
+                type="checkbox"
+                onChange={(e) => {
+                  if (e.target.checked) setSelectedLines(activeLines.map(l => l.id));
+                  else setSelectedLines([]);
+                }}
+                checked={selectedLines.length === activeLines.length && activeLines.length > 0}
+                style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+              />
+            ),
+            cell: ({ row }: { row: any }) => (
+              <input
+                type="checkbox"
+                checked={selectedLines.includes(row.original.id)}
+                onChange={() => {
+                  setSelectedLines(prev => prev.includes(row.original.id) ? prev.filter(i => i !== row.original.id) : [...prev, row.original.id]);
+                }}
+                style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+              />
+            ),
+            meta: { width: '50px' },
+          },
+        ]
         : []),
       {
         accessorKey: "orderCode",
@@ -248,7 +249,7 @@ export function FoodWorkOrderDetailPage() {
         header: "품목",
         cell: ({ row }) => (
           <div className="food-cell-item-name">
-            {row.original.itemNm} 
+            {row.original.itemNm}
             {row.original.itemCode && <span className="food-cell-item-code">({row.original.itemCode})</span>}
           </div>
         ),
@@ -260,7 +261,7 @@ export function FoodWorkOrderDetailPage() {
           const item = row.original;
           if (isEditing) {
             return (
-              <input 
+              <input
                 type="number"
                 className="food-line-input"
                 defaultValue={editQuantitiesRef.current[item.id] ?? item.instructQty}
@@ -275,22 +276,38 @@ export function FoodWorkOrderDetailPage() {
       },
       {
         accessorKey: "barcode",
-        header: "바코드",
-        cell: ({ row }) => (
-          <div className="food-cell-center">
-            <Barcode value={row.original.barcode || "NO-BARCODE"} width={1.2} height={38} fontSize={11} displayValue={true} margin={0} />
-            {isEditing && (
-              <button 
-                type="button" 
-                onClick={() => handleDeleteLine(row.original.id)}
-                className="food-line-delete-btn-sm"
-              >
-                삭제
-              </button>
-            )}
-          </div>
-        ),
-        meta: { width: '450px' },
+        header: isEditing ? "관리" : "바코드",
+        cell: ({ row }) => {
+          if (isEditing) {
+            return (
+              <div className="food-cell-center">
+                <button
+                  type="button"
+                  onClick={() => handleDeleteLine(row.original.id)}
+                  className="food-line-delete-btn-sm"
+                >
+                  삭제
+                </button>
+              </div>
+            );
+          }
+
+          return (
+            <div className="food-cell-center">
+              <Barcode
+                value={row.original.barcode || "NO-BARCODE"}
+                width={1.2}
+                height={38}
+                fontSize={11}
+                displayValue={true}
+                margin={0}
+              />
+            </div>
+          );
+        },
+        meta: {
+          width: isEditing ? "250px" : "450px",
+        },
       },
     ],
     [selectedLines, activeLines, isEditing]
@@ -301,7 +318,23 @@ export function FoodWorkOrderDetailPage() {
       alert("인쇄할 라인을 최소 1개 이상 선택해주세요.");
       return;
     }
-    setIsLabelModalOpen(true);
+
+    const linesToPrint = workOrder.lines.filter((l) =>
+      selectedLines.includes(l.id)
+    );
+
+    setPrintLines(linesToPrint);
+    setIsWorkOrderPrintModalOpen(true);
+  };
+
+  const handleOpenAllLabelModal = () => {
+    if (workOrder.lines.length === 0) {
+      alert("인쇄할 라인이 없습니다.");
+      return;
+    }
+
+    setPrintLines(workOrder.lines);
+    setIsWorkOrderPrintModalOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -322,7 +355,7 @@ export function FoodWorkOrderDetailPage() {
       )}
 
       <div className="createCard food-detail-card">
-        
+
         <div className="food-detail-header">
           <div>
             <h1 className="food-detail-title">
@@ -338,7 +371,7 @@ export function FoodWorkOrderDetailPage() {
           <div>
             <div className="food-summary-label">작업일자</div>
             {isEditing ? (
-              <input 
+              <input
                 type="date"
                 value={editForm.workDate}
                 onChange={(e) => setEditForm({ ...editForm, workDate: e.target.value })}
@@ -408,13 +441,25 @@ export function FoodWorkOrderDetailPage() {
                 </button>
               )}
               {!isEditing && (
-                <button
-                  type="button"
-                  className="ghostButton food-label-print-btn"
-                  onClick={handleOpenLabelModal}
-                >
-                  선택 라벨 인쇄
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="ghostButton food-label-print-btn"
+                    onClick={handleOpenLabelModal}
+                  >
+                    선택 라벨 인쇄
+
+                  </button>
+
+                  <button
+                    type="button"
+                    className="ghostButton food-label-print-btn"
+                    onClick={handleOpenAllLabelModal}
+                  >
+                    전체 라벨 인쇄
+
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -441,9 +486,9 @@ export function FoodWorkOrderDetailPage() {
           <div className="food-footer-btn-group">
             {isEditing ? (
               <>
-                <button 
-                  type="button" 
-                  className="ghostButton" 
+                <button
+                  type="button"
+                  className="ghostButton"
                   onClick={handleCancelEdit}
                 >
                   취소
@@ -458,9 +503,9 @@ export function FoodWorkOrderDetailPage() {
               </>
             ) : (
               <>
-                <button 
-                  type="button" 
-                  className="ghostButton" 
+                <button
+                  type="button"
+                  className="ghostButton"
                   onClick={() => navigate(-1)}
                 >
                   목록
@@ -485,9 +530,9 @@ export function FoodWorkOrderDetailPage() {
         onSelect={handleSelectSalesOrderLine}
       />
       <WorkOrderPrintModal
-        isOpen={isLabelModalOpen}
-        onClose={() => setIsLabelModalOpen(false)}
-        selectedLines={workOrder.lines.filter(l => selectedLines.includes(l.id))}
+        isOpen={isWorkOrderPrintModalOpen}
+        onClose={() => setIsWorkOrderPrintModalOpen(false)}
+        selectedLines={printLines}
         workOrder={workOrder}
       />
     </section>
