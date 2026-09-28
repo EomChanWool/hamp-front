@@ -1215,57 +1215,6 @@
     color: var(--text-muted, #9aa3b0);
 }
 
-/* ==========================================
-     바코드 정보 영역 (Barcode Section)
-   - 설비의 바코드 번호 표시/수정 및 출력 버튼 영역
-   ========================================== */
-.barcodeSection {
-    margin-top: 4px;
-    padding: 16px 20px;
-    background: var(--bg-subtle, #fcfcfb);
-    border: 2px dashed var(--border-strong, #c7cdd5);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    transition: border-color 0.15s ease;
-}
-
-.barcodeSection:hover {
-    border-color: var(--text-muted, #9aa3b0);
-}
-
-.barcodeInfo {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    flex: 1;
-    min-width: 0;
-}
-
-.barcodeLabel {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-body, #5b6472);
-}
-
-.barcodeValue {
-    font-family: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, monospace;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-heading, #14181f);
-    word-break: break-all;
-}
-
-/* 바코드 편집용 입력 필드 (기존 tableInput 스타일을 컴팩트하게 오버라이드) */
-.barcodeSection .tableInput {
-    height: 40px;
-    font-size: 14px;
-    padding: 0 12px;
-    max-width: 280px;
-}
-
 /* 바코드 영역 내 액션 버튼 (출력 버튼) */
 .barcodeActionBtn {
     height: 38px;
@@ -1278,6 +1227,8 @@
     color: var(--text-body, #5b6472);
     cursor: pointer;
     white-space: nowrap;
+    flex-shrink: 0;           
+    margin-left: auto;   
     transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
@@ -1506,10 +1457,25 @@
    (설비 상세 수정모드 / 설비 등록 화면 공용, --dl-* 토큰 사용)
 ================================================================ */
 .userMultiSelect {
+  --ums-bg: var(--dl-bg, var(--bg-subtle, #fcfcfb));
+  --ums-panel: var(--dl-panel, var(--bg-card, #ffffff));
+  --ums-ink: var(--dl-ink, var(--text-heading, #14181f));
+  --ums-ink-faint: var(--dl-ink-faint, var(--text-muted, #9aa3b0));
+  --ums-line-strong: var(--dl-line-strong, var(--border-strong, #c7cdd5));
+  --ums-accent: var(--dl-accent, var(--primary, #0052cc));
+  --ums-accent-soft: var(--dl-accent-soft, var(--primary-light, #dff7ec));
+  --ums-accent-ink: var(--dl-accent-ink, #0a4a3e);
+  --ums-focus-ring: var(--dl-accent-soft, rgba(0, 82, 204, 0.12));
+
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
+}
+
+[data-theme="dark"] .userMultiSelect {
+  --ums-accent-ink: var(--dl-accent-ink, #57d3a1);
 }
 
 /* 선택된 담당자 태그 목록 */
@@ -1524,8 +1490,8 @@
   align-items: center;
   gap: 6px;
   padding: 4px 6px 4px 12px;
-  background: var(--dl-accent-soft);
-  color: var(--dl-accent-ink);
+  background: var(--ums-accent-soft);
+  color: var(--ums-accent-ink);
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
@@ -1563,32 +1529,41 @@
   z-index: 30;
 }
 
-.userMultiSelectSearchInput {
+/* [수정] 선택자를 .userMultiSelect .… 로 한 단계 높여서
+   전역 input 스타일(다크모드 [data-theme="dark"] input 등)에 덮이지 않게 함
+   (.facilityHeaderCard .tableInput 과 동일한 우선순위) */
+.userMultiSelect .userMultiSelectSearchInput {
   width: 100%;
+  box-sizing: border-box; /* [수정] width:100% + padding + border 로 폭이 넘치지 않게 */
   height: 60px;
   padding: 0 20px;
   font-size: 19px;
-  color: var(--dl-ink);
-  background: var(--dl-bg);
-  border: 2px solid var(--dl-line-strong);
+  font-family: inherit;
+  color: var(--ums-ink);
+  background: var(--ums-bg);
+  border: 2px solid var(--ums-line-strong);
   border-radius: 12px;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
-.userMultiSelectSearchInput::placeholder {
-  color: var(--dl-ink-faint);
+.userMultiSelect .userMultiSelectSearchInput::placeholder {
+  color: var(--ums-ink-faint);
 }
 
-.userMultiSelectSearchInput:focus {
-  background: var(--dl-panel);
-  border-color: var(--dl-accent);
-  box-shadow: 0 0 0 4px var(--dl-accent-soft);
+.userMultiSelect .userMultiSelectSearchInput:hover:not(:disabled) {
+  border-color: var(--ums-ink-faint);
 }
 
-.userMultiSelectSearchInput:disabled {
-  background: var(--dl-line);
-  color: var(--dl-ink-faint);
+.userMultiSelect .userMultiSelectSearchInput:focus {
+  background: var(--ums-panel);
+  border-color: var(--ums-accent);
+  box-shadow: 0 0 0 4px var(--ums-focus-ring);
+}
+
+.userMultiSelect .userMultiSelectSearchInput:disabled {
+  background: var(--dl-line, var(--border, #e3e6ea));
+  color: var(--ums-ink-faint);
   cursor: not-allowed;
 }
 
@@ -1599,8 +1574,8 @@
   right: 0;
   max-height: 220px;
   overflow-y: auto;
-  background: var(--dl-panel, #ffffff);
-  border: 1px solid var(--dl-line-strong);
+  background: var(--ums-panel);
+  border: 1px solid var(--ums-line-strong);
   border-radius: 10px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* 그림자를 더 진하게 주어 선과 분리 */
   z-index: 999; /* 다른 UI 요소들보다 확실히 위에 오도록 설정 */
@@ -1615,22 +1590,22 @@
   padding: 10px 12px;
   border-radius: 8px;
   font-size: 14px;
-  color: var(--dl-ink);
+  color: var(--ums-ink);
   cursor: pointer;
 }
 
 .userMultiSelectOption:hover {
-  background: var(--dl-bg);
+  background: var(--ums-bg);
 }
 
 .userMultiSelectOption.selected {
-  background: var(--dl-accent-soft);
-  color: var(--dl-accent-ink);
+  background: var(--ums-accent-soft);
+  color: var(--ums-accent-ink);
   font-weight: 600;
 }
 
 .userMultiSelectCheck {
-  color: var(--dl-accent-ink);
+  color: var(--ums-accent-ink);
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -1638,8 +1613,29 @@
 .userMultiSelectEmpty {
   padding: 14px 12px;
   font-size: 13px;
-  color: var(--dl-ink-faint);
+  color: var(--ums-ink-faint);
   text-align: center;
+}
+
+/* ── UserMultiSelect 다크모드 ─────────────────────────────────────  */
+[data-theme="dark"] .userMultiSelectDropdown {
+  color: var(--ums-ink);
+  border-color: var(--dl-line-strong, #334155);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  color-scheme: dark; /* 스크롤바 등 브라우저 기본 UI도 다크로 */
+}
+
+[data-theme="dark"] .userMultiSelectOption:hover {
+  background: #1e2130;
+}
+
+[data-theme="dark"] .userMultiSelectOption.selected {
+  background: var(--ums-accent-soft);
+  color: var(--ums-accent-ink);
+}
+
+[data-theme="dark"] .userMultiSelectTagRemove:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
 }
 
 /* ================================================================
@@ -1796,19 +1792,9 @@
         grid-template-columns: 1fr;
     }
 
-    .barcodeSection {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 12px;
-        padding: 14px 16px;
-    }
-
-    .barcodeSection .tableInput {
-        max-width: 100%; /* 편집 모드일 때 인풋이 꽉 차게 조정 */
-    }
-
     .barcodeActionBtn {
         width: 100%; /* 모바일/작은 태블릿에서 버튼을 누르기 쉽게 풀 폭으로 전환 */
+        margin-left: 0;
     }
 }
 
@@ -1868,10 +1854,5 @@
 
   .facilityTitle {
     font-size: 20px;
-  }
-
-  /* 초소형 뷰포트에서 바코드 글자 크기 살짝 조정 */
-  .barcodeValue {
-    font-size: 15px;
   }
 }

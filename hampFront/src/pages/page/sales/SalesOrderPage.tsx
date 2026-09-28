@@ -92,12 +92,12 @@ export function SalesOrderPage() {
         },
         {
             type: "select",
-            label: "거래처코드",
+            label: "거래처명",
             ref: bpCodeRef as any,
             options: [
                 { label: "전체", value: "" },
                 ...businessPartnerOptions.map((opt) => ({
-                    label: `${opt.bpCode} (${opt.bpNm ?? '-'})`,
+                    label: `${opt.bpNm} (${opt.bpCode ?? '-'})`,
                     value: opt.bpCode,
                 })),
             ],

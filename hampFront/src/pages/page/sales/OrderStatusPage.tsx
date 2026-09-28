@@ -111,12 +111,12 @@ export function OrderStatusPage() {
         },
         {
             type: "select",
-            label: "거래처코드",
+            label: "거래처명",
             ref: bpCodeRef as any,
             options: [
                 { label: "전체", value: "" },
                 ...businessPartnerOptions.map((opt) => ({
-                    label: `${opt.bpCode} (${opt.bpNm ?? '-'})`,
+                    label: `${opt.bpNm} (${opt.bpCode ?? '-'})`,
                     value: opt.bpCode,
                 })),
             ],
@@ -128,7 +128,7 @@ export function OrderStatusPage() {
             options: [
                 { label: "전체", value: "" },
                 ...itemOptions.map((opt) => ({
-                    label: `${opt.itemCode} (${opt.itemNm ?? '-'})`,
+                    label: `${opt.itemNm} (${opt.itemCode ?? '-'})`,
                     value: opt.itemCode,
                 })),
             ],

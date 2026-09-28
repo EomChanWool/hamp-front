@@ -120,7 +120,7 @@ export function FoodWorkOrdersPage() {
     },
     {
       type: "input",
-      label: "담당자ID",
+      label: "담당자",
       ref: managerIdRef,
       name: "managerId",
     },
@@ -278,7 +278,7 @@ export function FoodWorkOrdersPage() {
   const handleRowClick = (workId: string) => {
     const queryString = searchParams.toString();
     navigate(
-      `/food/work-order/${encodeURIComponent(workId)}${
+      `/food/work-orders/${encodeURIComponent(workId)}${
         queryString ? `?${queryString}` : ""
       }`
     );
@@ -357,7 +357,7 @@ export function FoodWorkOrdersPage() {
     () => [
       {
         accessorKey: "workId",
-        header: "작업지시코드",
+        header: "작업지시ID",
         cell: ({ getValue }) => <span className="food-table-code-cell">{getValue<string>() || "-"}</span>,
       },
       {
@@ -431,7 +431,7 @@ export function FoodWorkOrdersPage() {
         onAction={() => {
           const queryString = searchParams.toString();
           navigate(
-            `/food/work-order/create${
+            `/food/work-orders/create${
               queryString ? `?${queryString}` : ""
             }`
           );

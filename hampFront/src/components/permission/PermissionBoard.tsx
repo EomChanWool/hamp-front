@@ -563,7 +563,7 @@ export function PermissionBoard() {
                             <div className="permDetailEmpty">좌측에서 메뉴를 선택하세요.</div>
                         ) : (
                             <>
-                                {/* 1단: 제목 + 변경사항/선택 요약 뱃지 + 액션 버튼 */}
+                                {/* 1단: 제목 + 변경사항/선택 요약 뱃지 + 액션 버튼 (가로 스크롤 대상 아님) */}
                                 <div className="permDetailHeader">
                                     <div className="permDetailHeaderLeft">
                                         <span className="permDetailTitle">{activeTopMenu.menuNm}</span>
@@ -604,24 +604,32 @@ export function PermissionBoard() {
                                     </div>
                                 </div>
 
-                                {/* 2단: 컬럼 라벨 (메뉴명 / 조회 / 등록 / 수정 / 삭제 / 승인) */}
-                                <div className="permMatrixHeader">
-                                    <span className="permMatrixHeaderLabel">메뉴명</span>
-                                    <div className="permCheckGroup">
-                                        {PERMISSIONS.map((p) => (
-                                            <div key={p.key} className="permCheckCell permCheckCellHeader">
-                                                <span>{p.label}</span>
-                                            </div>
-                                        ))}
+                                {/*
+                                    2단(컬럼 라벨) + 하위 메뉴 목록을 하나의 스크롤 컨테이너(permMatrixScroll)로
+                                    묶음. 예전엔 이 둘이 서로 다른 스크롤 컨테이너에 있어서 좁은 화면에서
+                                    가로 스크롤 시 헤더와 목록이 따로 움직였는데, 지금은 항상 같이 움직임.
+                                    헤더는 CSS에서 position:sticky로 위쪽에 붙어 있어 세로 스크롤 시에도
+                                    계속 보임
+                                */}
+                                <div className="permMatrixScroll">
+                                    <div className="permMatrixHeader">
+                                        <span className="permMatrixHeaderLabel">메뉴명</span>
+                                        <div className="permCheckGroup">
+                                            {PERMISSIONS.map((p) => (
+                                                <div key={p.key} className="permCheckCell permCheckCellHeader">
+                                                    <span>{p.label}</span>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div className="permGroupListScroll">
-                                    {activeTopMenu.children && activeTopMenu.children.length > 0 ? (
-                                        renderSubTree(activeTopMenu.children, 1)
-                                    ) : (
-                                        <div className="permEmptyState">하위 메뉴가 없습니다.</div>
-                                    )}
+                                    <div className="permGroupListScroll">
+                                        {activeTopMenu.children && activeTopMenu.children.length > 0 ? (
+                                            renderSubTree(activeTopMenu.children, 1)
+                                        ) : (
+                                            <div className="permEmptyState">하위 메뉴가 없습니다.</div>
+                                        )}
+                                    </div>
                                 </div>
                             </>
                         )}

@@ -174,8 +174,8 @@ export function SystemUserPermissionsCreatePage() {
                                                     hasChildren
                                                         ? getCheckState(menu, p.key)
                                                         : permState[menu.menuId]?.[p.key]
-                                                        ? "checked"
-                                                        : "unchecked"
+                                                            ? "checked"
+                                                            : "unchecked"
                                                 }
                                                 disabled={isSubmitting}
                                                 onToggle={() => handleToggle(menu.menuId, p.key)}
@@ -355,23 +355,25 @@ export function SystemUserPermissionsCreatePage() {
                                                 ) : (
                                                     <>
                                                         {/* 컬럼 라벨만 표시 — 열 단위 일괄 토글은 제공하지 않음 */}
-                                                        <div className="permMatrixHeader">
-                                                            <span className="permMatrixHeaderLabel">{activeTopMenu.menuNm}</span>
-                                                            <div className="permCheckGroup">
-                                                                {PERMISSIONS.map((p) => (
-                                                                    <div key={p.key} className="permCheckCell permCheckCellHeader">
-                                                                        <span>{p.label}</span>
-                                                                    </div>
-                                                                ))}
+                                                        <div className="permMatrixScroll">
+                                                            <div className="permMatrixHeader">
+                                                                <span className="permMatrixHeaderLabel">메뉴명</span>
+                                                                <div className="permCheckGroup">
+                                                                    {PERMISSIONS.map((p) => (
+                                                                        <div key={p.key} className="permCheckCell permCheckCellHeader">
+                                                                            <span>{p.label}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
                                                             </div>
-                                                        </div>
 
-                                                        <div className="permGroupListScroll">
-                                                            {activeTopMenu.children && activeTopMenu.children.length > 0 ? (
-                                                                renderSubTree(activeTopMenu.children, 1)
-                                                            ) : (
-                                                                <div className="permEmptyState">하위 메뉴가 없습니다.</div>
-                                                            )}
+                                                            <div className="permGroupListScroll">
+                                                                {activeTopMenu.children && activeTopMenu.children.length > 0 ? (
+                                                                    renderSubTree(activeTopMenu.children, 1)
+                                                                ) : (
+                                                                    <div className="permEmptyState">하위 메뉴가 없습니다.</div>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </>
                                                 )}

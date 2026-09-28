@@ -97,13 +97,13 @@ export function SeedInventoryManagePage() {
             },
             {
                 type: 'select',
-                label: '품목코드',
+                label: '품목명',
                 ref: itemCodeRef,
                 name: 'itemCode',
                 options: [
                     { label: '전체', value: '' },
                     ...itemOptions.map((opt) => ({
-                        label: `${opt.itemCode} (${opt.itemNm ?? '-'})`,
+                        label: `${opt.itemNm} (${opt.itemCode ?? '-'})`,
                         value: opt.itemCode,
                     })),
                 ],
@@ -305,7 +305,7 @@ export function SeedInventoryManagePage() {
             },
             {
                 accessorKey: 'itemCode',
-                header: '품목코드',
+                header: '품목명',
                 cell: ({ row }) => {
                     const isNew = row.original.sthiId === -999999;
                     const isEditing = row.original.sthiId === editingId;

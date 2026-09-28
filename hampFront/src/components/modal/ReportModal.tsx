@@ -125,7 +125,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
         try {
             const payload: SeedGoodsReceiptReturnUpdateRequest = {
                 returnQty: qty,
-                processStatus: 0,
+                processStatus: item.processStatus ?? 0, // 기존 상태 유지 또는 필요에 따라 처리
                 reportDate: editFormRef.current.reportDate,
                 returnDueDate: editFormRef.current.returnDueDate,
             };
@@ -190,7 +190,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
         try {
             const payload: SeedGoodsReceiptReturnCreateRequest = {
                 returnQty: qty,
-                processStatus: 0,
+                processStatus: 0, // 신규 등록 시 기본값 (신고대기)
                 reportDate: newReportDateInput,
                 returnDueDate: newReturnDueDateInput,
             };
@@ -280,9 +280,19 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
             },
             {
                 id: 'processStatus',
+                accessorKey: 'processStatus',
                 header: '상태',
                 enableSorting: false,
-                cell: () => '신고대기',
+                cell: ({ row }) => {
+                    const status = row.original.processStatus;
+                    const isCompleted = status === 1; 
+
+                    return (
+                        <span style={{ color: isCompleted ? '#2b8a3e' : '#e67700', fontWeight: 500 }}>
+                            {isCompleted ? '처리완료' : '신고대기'}
+                        </span>
+                    );
+                },
             },
             {
                 id: 'actions',

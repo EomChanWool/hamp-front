@@ -73,7 +73,7 @@ export function SeedReportReturnManagePage() {
         options: [
           { label: '전체', value: '' },
           ...itemOptions.map((opt) => ({
-            label: `${opt.itemCode} (${opt.itemNm ?? '-'})`,
+            label: `${opt.itemNm} (${opt.itemCode ?? '-'})`,
             value: opt.itemCode,
           })),
         ],

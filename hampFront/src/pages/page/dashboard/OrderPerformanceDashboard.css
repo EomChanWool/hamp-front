@@ -160,6 +160,16 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
+.orderPerfDashboard__detailTable th,
+.orderPerfDashboard__detailTable td {
+  text-align: left;
+}
+
+.orderPerfDashboard__detailTable th:nth-child(n + 3),
+.orderPerfDashboard__detailTable td:nth-child(n + 3) {
+  text-align: right;
+}
+
 /* =========================================================================
    반응형 (컨테이너 쿼리 — .workspace 기준)
    ========================================================================= */

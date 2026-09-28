@@ -108,24 +108,24 @@ export function EquipmentFacilityPage() {
     { type: "input", label: "설비명", ref: fcltNmRef, name: "fcltNm" },
     {
       type: "select",
-      label: "장비코드",
+      label: "설비종류",
       ref: eqCodeRef,
       options: [
         { label: "전체", value: "" },
         ...equipmentOptions.map((opt) => ({
-          label: `${opt.eqCode} (${opt.eqNm ?? '-'})`,
+          label: `${opt.eqNm} (${opt.eqCode ?? '-'})`,
           value: opt.eqCode,
         })),
       ],
     },
     {
       type: "select",
-      label: "공장코드",
+      label: "설비위치",
       ref: facCodeRef,
       options: [
         { label: "전체", value: "" },
         ...factoryZoneOptions.map((opt) => ({
-          label: `${opt.facCode} (${opt.facNm ?? '-'})`,
+          label: `${opt.facNm} (${opt.facCode ?? '-'})`,
           value: opt.facCode,
         })),
       ],

@@ -24,6 +24,12 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: width 0.2s ease;
+}
+
+/* 라벨이 1개일 때 모달 전체 너비를 컴팩트하게 줄임 */
+.food-label-modal-container.single-item-modal {
+  width: 480px;
 }
 
 .food-label-modal-header {
@@ -79,8 +85,17 @@
 
 .food-label-modal-grid {
   display: grid;
+  /* 기본적으로 2열 구조를 갖되, 항목이 1개이거나 공간에 따라 유연하게 조절 */
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
+  justify-content: center;
+}
+
+/* 선택된 라벨이 딱 1개일 때 카드가 너무 넓게 퍼지지 않고 컴팩트하게 보이도록 처리 */
+.food-label-modal-grid.single-item {
+  grid-template-columns: 1fr;
+  max-width: 400px;
+  margin: 0 auto;
 }
 
 .food-label-card {
@@ -257,9 +272,6 @@
   /* 6. 인쇄 페이지 여백 최소화 */
   @page {
     size: auto;  /* TODO: 실측 라벨 규격으로 교체 */
-    margin: 15mm; /* 라벨은 보통 여백 없이 꽉 채움. 프린터 자체의
-                  비인쇄 영역(하드웨어 마진)이 있다면 그만큼은
-                  @page margin이 아니라 아래 .food-label-card의
-                  padding으로 대신 확보할 것 */
+    margin: 15mm; 
   }
 }

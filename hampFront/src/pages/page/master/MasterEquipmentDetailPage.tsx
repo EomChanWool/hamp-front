@@ -67,7 +67,7 @@ export function MasterEquipmentDetailPage() {
               disabled={disabled}
               onChange={(e) => onChange(e.target.value)}
             >
-              <option value="">공정을 선택해주세요</option>
+              <option value="" disabled>공정을 선택해주세요</option>
               {operationOptions.map((opt) => (
                 <option key={opt.operCode} value={opt.operCode}>
                   {opt.operCode} ({opt.operNm})

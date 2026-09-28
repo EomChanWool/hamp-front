@@ -311,7 +311,7 @@ export function FoodWorkOrderCreatePage() {
                     disabled={isSubmitting}
                     onChange={(e) => handleChange("managerId", e.target.value)}
                   >
-                    <option value="">담당자 선택</option>
+                    <option value="" disabled>담당자 선택</option>
                     {userOptions.map((user) => (
                       <option key={user.userId} value={user.userId}>
                         {user.userNm} ({user.userId})
