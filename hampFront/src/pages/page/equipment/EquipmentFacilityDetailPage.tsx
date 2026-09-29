@@ -469,7 +469,37 @@ export function EquipmentFacilityDetailPage() {
                 <Spinner />
               </div>
             ) : gallery.isEmpty && !isEditing ? (
-              <p className="text-gray-500 text-sm">등록된 첨부파일이 없습니다.</p>
+              <div className="facilityEmptyImageCard">
+                <div className="facilityEmptyImageIcon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="28"
+                    height="28"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="3" y="4" width="18" height="16" rx="3" />
+                    <circle cx="9" cy="10" r="1.6" />
+                    <path d="M21 16l-5-5-8 8" />
+                  </svg>
+                </div>
+                <div className="facilityEmptyImageTitle">등록된 설비 이미지가 없습니다</div>
+                <p className="facilityEmptyImageDesc">
+                  설비 사진을 등록하면 이곳에 표시됩니다.
+                </p>
+                {/* 클릭하면 바로 수정 모드로 전환되어 이미지 업로드 영역이 열림 */}
+                <button
+                  type="button"
+                  className="facilityEmptyImageBtn"
+                  disabled={isBusy}
+                  onClick={() => setIsEditing(true)}
+                >
+                  + 이미지 등록하기
+                </button>
+              </div>
             ) : (
               <ImageGallery
                 images={gallery.images}
