@@ -30,6 +30,11 @@ const REPORT_STATUS_VARIANT: Record<string, string> = {
   신고완료: 'done',
 };
 
+const ZONE = {
+  FOOD: 1,
+  INPI: 2,
+} as const;
+
 const KEYPAD_KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', 'back'];
 
 function NumericKeypad({ onPress }: { onPress: (key: string) => void }) {
@@ -61,10 +66,12 @@ export function WorkSeedReportScanPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  const zone = ZONE.FOOD
+
   // 신고처리 화면 진입 시 SSE 연결, 이탈 시 반드시 연결 종료
   useEffect(() => {
     const eventSource = new EventSource(
-      `${apiClient.defaults.baseURL}/seed-goods-receipts/scan/stream`,
+      `${apiClient.defaults.baseURL}/seed-goods-receipts/scan/stream?zone=${zone}`,
     );
 
     eventSource.onopen = () => setConnectionStatus('open');
