@@ -644,7 +644,7 @@
   flex-direction: column;
   background: var(--dl-panel);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
@@ -731,14 +731,14 @@
 .detailCard .detailBody {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 26px;
-  padding: 32px;
+  gap: 18px;
+  padding: 24px;
 }
 
 .detailCard .detailSection {
   border: 1px solid var(--dl-line);
-  border-radius: 14px;
-  padding: 28px 30px;
+  border-radius: 10px;
+  padding: 22px;
   background: var(--dl-panel);
 }
 
@@ -753,20 +753,20 @@
   font-size: 20px;
   font-weight: 700;
   color: var(--dl-ink);
-  margin: 0 0 20px;
-  padding-bottom: 18px;
+  margin: 0 0 16px;
+  padding-bottom: 14px;
   border-bottom: 1px solid var(--dl-line);
 }
 
 .detailCard .detailSectionIcon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   background: var(--dl-accent-soft);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 18px;
   color: var(--dl-accent-ink);
   flex-shrink: 0;
 }
@@ -780,19 +780,19 @@
 ================================ */
 .detailCard .detailGrid {
   display: flex;
-  gap: 20px;
+  gap: 16px;
 }
 
 .detailCard .detailSection:not(:has(.detailField--full)) .detailGrid {
   grid-template-columns: 1fr;
-  gap: 18px;
+  gap: 16px;
 }
 
 .detailCard .detailField {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -801,10 +801,10 @@
 }
 
 .detailCard .detailField label {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--dl-ink-soft);
-  padding-left: 4px;
+  padding-left: 2px;
 }
 
 .detailCard .detailField label.requiredLabel {
@@ -819,14 +819,14 @@
 
 /* 읽기 전용 값 */
 .detailCard .detailValue {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--dl-ink);
-  min-height: 36px;
+  min-height: 42px;
   display: flex;
   align-items: center;
   word-break: break-word;
-  padding: 14px 18px;
+  padding: 0 12px;
 }
 
 /* ================================
@@ -834,10 +834,10 @@
 ================================ */
 
 .detailCard .detailBadge {
-  font-size: 18px;
-  font-weight: 700;
-  padding: 8px 16px;
-  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 9999px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -899,13 +899,13 @@
 
 /* 입력 필드 (edit 모드) */
 .detailCard .tableInput {
-  height: 60px;
-  padding: 0 20px;
-  font-size: 19px;
+  height: 42px;
+  padding: 0 14px;
+  font-size: 15px;
   color: var(--dl-ink);
   background: var(--dl-bg);
-  border: 2px solid var(--dl-line-strong);
-  border-radius: 12px;
+  border: 1px solid var(--dl-line-strong);
+  border-radius: 8px;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
@@ -921,7 +921,7 @@
 .detailCard .tableInput:focus {
   background: var(--dl-panel);
   border-color: var(--dl-accent);
-  box-shadow: 0 0 0 4px var(--dl-accent-soft);
+  box-shadow: 0 0 0 3px var(--dl-accent-soft);
 }
 
 .detailCard .tableInput:disabled {
@@ -937,12 +937,12 @@
 .sectionTitleUnderline {
   display: flex;
   align-items: center;
-  gap: 16px;
-  font-size: 20px;
+  gap: 12px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-heading, #14181f);
-  margin: 0 0 20px;
-  padding-bottom: 18px;
+  margin: 0 0 16px;
+  padding-bottom: 14px;
   border-bottom: 1px solid var(--border, #e3e6ea);
 }
 
@@ -957,23 +957,23 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 28px 38px;
+  padding: 18px 24px;
   border-top: 1px solid var(--dl-line-strong);
   background: var(--dl-bg);
 }
 
 .detailCard .detailFooterActions {
   display: flex;
-  gap: 16px;
+  gap: 10px;
   align-items: center;
 }
 
 .detailCard .detailFooter button {
   height: 42px;
   padding: 0 20px;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid var(--dl-line-strong);
   background: var(--dl-panel);
   color: var(--dl-ink-soft);
@@ -1035,7 +1035,7 @@
 .createCard {
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border, #e2e8f0);
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1064,26 +1064,26 @@
 .createBody {
   display: flex;
   flex-direction: column;
-  gap: 26px;
-  padding: 32px;
+  gap: 18px;
+  padding: 24px;
 }
 
 .createSection {
   border: 1px solid var(--border, #e3e6ea);
-  border-radius: 14px;
-  padding: 28px 30px;
+  border-radius: 10px;
+  padding: 22px;
   background: var(--bg-card, #ffffff);
 }
 
 .createSectionTitle {
   display: flex;
   align-items: center;
-  gap: 16px;
-  font-size: 20px;
+  gap: 12px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-heading, #14181f);
-  margin: 0 0 20px;
-  padding-bottom: 18px;
+  margin: 0 0 16px;
+  padding-bottom: 14px;
   border-bottom: 1px solid var(--border, #e3e6ea);
 }
 
@@ -1091,13 +1091,13 @@
 .createGrid2Cols {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px 24px;
+  gap: 16px 20px;
 }
 
 .createField {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -1107,10 +1107,10 @@
 }
 
 .createField label {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-body, #5b6472);
-  padding-left: 4px;
+  padding-left: 2px;
 }
 
 .createField label.requiredLabel {
@@ -1127,8 +1127,8 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 16px;
-  padding: 28px 38px;
+  gap: 10px;
+  padding: 18px 24px;
   border-top: 1px solid var(--border, #e3e6ea);
   background: var(--bg-subtle, #fcfcfb);
 }
@@ -1143,13 +1143,13 @@
 .facilityHeaderCard {
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border, #e3e6ea);
-  border-radius: 16px;
-  padding: 32px;
+  border-radius: 12px;
+  padding: 24px;
 }
 
 .facilityHeaderTop {
   display: flex;
-  gap: 32px;
+  gap: 24px;
   align-items: flex-start;
 }
 
@@ -1295,12 +1295,12 @@
 }
 
 .facilityTitleInput {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
-  height: 46px;
+  height: 42px;
   padding: 0 14px;
-  border-radius: 10px;
-  border: 2px solid var(--border-strong, #c7cdd5);
+  border-radius: 8px;
+  border: 1px solid var(--border-strong, #c7cdd5);
   color: var(--text-heading, #14181f);
   background: var(--bg-subtle, #fcfcfb);
   outline: none;
@@ -1313,13 +1313,13 @@
 }
 
 .facilitySubtitle {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-muted, #9aa3b0);
 }
 
 /* 바코드 영역 내 액션 버튼 (출력 버튼) */
 .barcodeActionBtn {
-  height: 38px;
+  height: 36px;
   padding: 0 16px;
   border-radius: 8px;
   font-size: 13px;
@@ -1358,14 +1358,14 @@
 .facilityHeaderCard .detailGrid {
   display: flex;
   flex-wrap: wrap;
-  gap: 20px 24px;
+  gap: 16px 20px;
 }
 
 .facilityHeaderCard .detailField {
   flex: 1 1 150px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   min-width: 150px;
 }
 
@@ -1405,15 +1405,21 @@
 
 .facilityHeaderCard .tableInput {
   width: 100%;
-  height: 60px;
-  padding: 0 20px;
-  font-size: 19px;
+  height: 42px;
+  padding: 0 14px;
+  font-size: 15px;
   color: var(--text-heading, #14181f);
   background: var(--bg-subtle, #fcfcfb);
-  border: 2px solid var(--border-strong, #c7cdd5);
-  border-radius: 12px;
+  border: 1px solid var(--border-strong, #c7cdd5);
+  border-radius: 8px;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.facilityHeaderCard textarea.tableInput {
+    height: auto;
+    min-height: 90px;
+    padding: 12px 14px;
 }
 
 .facilityHeaderCard .tableInput::placeholder {
@@ -1427,7 +1433,7 @@
 .facilityHeaderCard .tableInput:focus {
   background: var(--bg-card, #ffffff);
   border-color: var(--primary, #0052cc);
-  box-shadow: 0 0 0 4px rgba(0, 82, 204, 0.12);
+  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.12);
 }
 
 .facilityHeaderCard .tableInput:disabled {
@@ -1437,10 +1443,10 @@
 }
 
 .facilityHeaderCard .detailBadge {
-  font-size: 18px;
+  font-size: 13px;
   font-weight: 700;
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 4px 12px;
+  border-radius: 9999px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1489,9 +1495,9 @@
 }
 
 .facilityActionBtn {
-  height: 40px;
+  height: 42px;
   padding: 0 18px;
-  border-radius: 10px;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   border: 1px solid var(--border-strong, #c7cdd5);
@@ -1539,19 +1545,19 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
 .facilityCreateFieldFull {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .facilityCreateFieldGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 18px 20px;
+  gap: 16px 20px;
 }
 
 /* ================================================================
@@ -1631,21 +1637,21 @@
   z-index: 30;
 }
 
-/* [수정] 선택자를 .userMultiSelect .… 로 한 단계 높여서
+/* 선택자를 .userMultiSelect .… 로 한 단계 높여서
    전역 input 스타일(다크모드 [data-theme="dark"] input 등)에 덮이지 않게 함
    (.facilityHeaderCard .tableInput 과 동일한 우선순위) */
 .userMultiSelect .userMultiSelectSearchInput {
   width: 100%;
   box-sizing: border-box;
-  /* [수정] width:100% + padding + border 로 폭이 넘치지 않게 */
-  height: 60px;
-  padding: 0 20px;
-  font-size: 19px;
+  /* width:100% + padding + border 로 폭이 넘치지 않게 */
+  height: 42px;
+  padding: 0 14px;
+  font-size: 15px;
   font-family: inherit;
   color: var(--ums-ink);
   background: var(--ums-bg);
-  border: 2px solid var(--ums-line-strong);
-  border-radius: 12px;
+  border: 1px solid var(--ums-line-strong);
+  border-radius: 8px;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
@@ -1661,7 +1667,7 @@
 .userMultiSelect .userMultiSelectSearchInput:focus {
   background: var(--ums-panel);
   border-color: var(--ums-accent);
-  box-shadow: 0 0 0 4px var(--ums-focus-ring);
+  box-shadow: 0 0 0 3px var(--ums-focus-ring);
 }
 
 .userMultiSelect .userMultiSelectSearchInput:disabled {

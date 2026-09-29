@@ -60,7 +60,14 @@ export function SalesOrderDetailPage() {
     {
       title: "처리 정보",
       fields: [
-        { label: "납기일자", key: "dueDate", editable: true },
+        {
+          label: "납기일자", key: "dueDate", editable: true, renderEditor: (value, onchange, disabled) => (
+            <input 
+            type="date" 
+            className="tableInput" 
+            value={value ?? ""} onChange={(e) => onchange(e.target.value)} disabled={disabled} />
+          )
+        },
         { label: "상태", key: "status", editable: true },
         { label: "비고", key: "note", editable: true },
       ],
