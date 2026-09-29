@@ -347,6 +347,19 @@ export function WorkOrderPrintModal({
                                 className="primaryButton"
                                 onClick={() => {
                                     window.focus();
+
+                                    const originalTitle = document.title;
+
+                                    const WorkDate = workOrder.workDate.replace(/-/g, "");
+                                    document.title = `작업지시서_${WorkDate}_${workOrder.workOrderNo}`;
+
+                                    const restoreTitle = () => {
+                                        document.title = originalTitle;
+                                        window.removeEventListener("afterprint", restoreTitle);
+                                    }
+
+                                    window.addEventListener("afterprint", restoreTitle);
+
                                     window.print();
                                 }}
                             >

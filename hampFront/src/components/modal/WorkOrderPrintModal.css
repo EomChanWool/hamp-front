@@ -541,9 +541,9 @@
     }
 
     /*
-   * A4 원본 크기는 유지.
-   * 화면이 좁으면 가로 스크롤.
-   */
+     * A4 원본 크기는 유지.
+     * 화면이 좁으면 가로 스크롤.
+     */
     .work-order-print-sheet {
         width: 100%;
         max-width: 210mm;
@@ -558,7 +558,12 @@
     display: none;
 }
 
-@page {
+/*
+ * [변경] 전역 @page { size: A4 } 를 "이름 있는 @page" 로 변경.
+ * 전역 @page 는 라벨 인쇄에까지 A4/7mm 여백을 강제하던 원인.
+ * 아래 print 블록의 .work-order-print-sheet 에서 page: work-order 로 적용한다.
+ */
+@page work-order {
     size: A4;
     margin: 7mm;
 }
@@ -582,9 +587,11 @@
 
     /* =====================================================
      기존 화면 UI 전부 숨김
+     [변경] 라벨 인쇄 root(#label-print-root)는 예외 처리.
+     (이 규칙이 라벨 모달까지 숨겨서 흰 화면이 나오던 원인)
   ===================================================== */
 
-    body>*:not(#work-order-print-root) {
+    body>*:not(#work-order-print-root):not(#label-print-root) {
         display: none !important;
     }
 
@@ -639,6 +646,8 @@
   ===================================================== */
 
     .work-order-print-pages .work-order-print-sheet {
+        page: work-order; /* 위에서 정의한 A4 용지 설정 적용 */
+
         display: block !important;
 
         position: static !important;
