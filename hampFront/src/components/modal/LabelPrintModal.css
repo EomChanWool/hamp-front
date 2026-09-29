@@ -221,57 +221,110 @@
 
 /* ================================================
    라벨 인쇄 전용 스타일 (Print Styles)
-   - 뒤쪽 메인 페이지와 모달 헤더/버튼을 숨기고 라벨 카드만 출력
+
+   [작업지시서 인쇄 CSS와 공존하기 위한 규칙]
+   1) 전역 "body * { visibility: hidden }" 규칙은 제거했다.
+      (작업지시서 CSS의 display:none 규칙과 충돌하여 흰 화면이 되던 원인)
+   2) 전역 @page 대신 "이름 있는 @page(label)"를 사용한다.
+      → 작업지시서(A4)와 라벨이 서로의 용지 설정을 덮어쓰지 않는다.
+   3) 라벨 모달은 body 직계 #label-print-root 로 렌더링되며,
+      body 의 다른 요소만 숨긴다.
    ================================================ */
+
+/* 라벨 전용 용지 설정: 라벨 프린터 규격이 정해지면 size 를 교체하세요.
+   예) size: 100mm 60mm;  */
+@page label {
+  size: auto;
+  /* TODO: 실측 라벨 규격으로 교체 */
+  margin: 10mm;
+}
 
 @media print {
 
-  /* 1. 기본적으로 페이지 내 모든 요소를 숨깁니다 */
-  body * {
-    visibility: hidden;
+  /* 1. 라벨/작업지시서 root 를 제외한 body 직계 요소 모두 숨김 */
+  body>*:not(#label-print-root):not(#work-order-print-root) {
+    display: none !important;
   }
 
-  /* 2. 모달 컨테이너와 그 내부의 라벨 카드 영역만 다시 보이게 설정합니다 */
-  .food-label-modal-container,
-  .food-label-modal-container * {
-    visibility: visible;
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    background: #ffffff !important;
   }
 
-  /* 3. 모달 배경(오버레이) 및 전체 레이아웃 초기화 */
+  /* 2. 라벨 root: 화면용 fixed 구조를 해제하고 일반 문서 흐름으로 */
+  #label-print-root {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
   .food-label-modal-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
     background: transparent !important;
   }
 
   .food-label-modal-container {
-    position: absolute;
-    top: 0;
-    left: 0;
+    page: label; /* 위에서 정의한 @page label 적용 */
+    position: static !important;
+    display: block !important;
     width: 100% !important;
     max-width: 100% !important;
     max-height: none !important;
     box-shadow: none !important;
     border: none !important;
+    border-radius: 0 !important;
     background-color: #ffffff !important;
     overflow: visible !important;
   }
 
-  /* 4. 모달 상단 헤더(제목, 닫기/인쇄 버튼 등)는 인쇄에서 제외합니다 */
+  /* 3. 모달 헤더(제목/버튼)는 인쇄 제외 */
   .food-label-modal-header {
     display: none !important;
   }
 
-  /* 5. 모달 바디 스크롤 및 여백 제거 */
+  /* 4. 스크롤/여백 제거 */
   .food-label-modal-body {
     padding: 0 !important;
     overflow: visible !important;
   }
 
-  /* 6. 인쇄 페이지 여백 최소화 */
-  @page {
-    size: auto;  /* TODO: 실측 라벨 규격으로 교체 */
-    margin: 15mm; 
+  .food-label-modal-grid {
+    gap: 8px !important;
+  }
+
+  /* 5. 라벨 카드: 페이지 중간에서 잘리지 않게 + 다크모드여도 흰 배경/검정 글씨 */
+  .food-label-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    background-color: #ffffff !important;
+    border: 1px dashed #94a3b8 !important;
+    color: #000000 !important;
+  }
+
+  .food-label-card .food-card-header-meta,
+  .food-label-card .food-card-body-meta,
+  .food-label-card .food-card-qty-meta {
+    color: #000000 !important;
+  }
+
+  .food-label-card .food-card-barcode-wrap {
+    border-top-color: #94a3b8 !important;
+  }
+
+  .food-label-card .food-card-barcode-wrap svg {
+    display: block !important;
+    visibility: visible !important;
   }
 }

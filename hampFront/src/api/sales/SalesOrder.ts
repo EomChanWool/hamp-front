@@ -47,6 +47,7 @@ export interface SalesOrderDetailResponse {
 
 /** 수주라인 등록 요청 */
 export interface SalesOrderLineRequest {
+    salesOrderLineId?: number;
     itemCode: string;
     orderQty: number;
     orderAmount: number;
