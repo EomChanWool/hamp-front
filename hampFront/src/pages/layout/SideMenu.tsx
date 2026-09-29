@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FolderIcon, FolderOpenIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
+import {
+  FolderIcon,
+  FolderOpenIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "@heroicons/react/24/outline";
 import { menuRoutes } from "@/router";
 import { MenuApi } from "@/api/Menu"; 
 import type { MenuResponse } from "@/api/Menu"; 
@@ -9,9 +16,11 @@ import './Layout.css';
 
 type SideMenuProps = {
   collapsed: boolean;
+  onToggleCollapsed: () => void;
+  onLogoClick: () => void;
 };
 
-export function SideMenu({ collapsed }: SideMenuProps) {
+export function SideMenu({ collapsed, onToggleCollapsed, onLogoClick }: SideMenuProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -139,9 +148,47 @@ export function SideMenu({ collapsed }: SideMenuProps) {
     setOpenGroup((current) => (current === title ? null : title));
   };
 
+  // 헤더에서 이동해 온 브랜드 + 접기/펼치기 영역
+  const brandArea = (
+    <div className="brand">
+      <div
+        className="brandInfo"
+        onClick={onLogoClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onLogoClick();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="메인 대시보드로 이동"
+      >
+        <div className="brandMark">H</div>
+        {!collapsed && (
+          <div className="brandText">
+            <strong>HEMP-MES</strong>
+            <small>Production Control</small>
+          </div>
+        )}
+      </div>
+
+      <button
+        type="button"
+        className={`sidebarToggle ${collapsed ? "collapsedToggle" : ""}`}
+        onClick={onToggleCollapsed}
+        aria-label={collapsed ? "사이드바 펼치기" : "사이드바 접기"}
+        aria-expanded={!collapsed}
+      >
+        {collapsed ? <ChevronRightIcon className="h-4 w-4" /> : <ChevronLeftIcon className="h-4 w-4" />}
+      </button>
+    </div>
+  );
+
   if (isLoading) {
     return (
       <aside className="sidebar">
+        {brandArea}
         <div> <Spinner/> </div>
       </aside>
     );
@@ -149,6 +196,8 @@ export function SideMenu({ collapsed }: SideMenuProps) {
 
   return (
     <aside className="sidebar" ref={sidebarRef}>
+      {brandArea}
+
       {/* 내부 스크롤과 플라이아웃 메뉴 잘림 방지를 위해 Wrapper 추가 */}
       <div className="sidebarMenuWrapper">
         <nav className="navMenu" aria-label="주 메뉴">

@@ -465,7 +465,7 @@ button {
   min-width: 0;
   min-height: 0;
   height: 100%;
-  padding: 18px 18px 40px;
+  padding: 0 18px 18px 18px;
   display: flex;
   flex-direction: column;
   gap: 20px;

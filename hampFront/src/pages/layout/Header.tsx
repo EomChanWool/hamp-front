@@ -7,7 +7,6 @@ import {
   ArrowRightStartOnRectangleIcon,
   HomeIcon,
   XMarkIcon,
-  ChevronLeftIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "@/context/AuthContext";
@@ -18,8 +17,6 @@ type HeaderProps = {
   activeTitle: string;
   theme: "dark" | "light";
   onToggleTheme: () => void;
-  collapsed: boolean;
-  onToggleCollapsed: () => void;
   onLogoClick: () => void;
   onUserClick?: () => void; // 유저 페이지로 이동하는 핸들러 추가
 };
@@ -42,8 +39,6 @@ export function Header({
   activeTitle,
   theme,
   onToggleTheme,
-  collapsed,
-  onToggleCollapsed,
   onLogoClick,
   onUserClick,
 }: HeaderProps) {
@@ -61,28 +56,6 @@ export function Header({
 
   return (
     <header className="header">
-      <div className="brand" style={{ width: collapsed ? "100px" : "252px", transition: "width 0.3s ease" }}>
-        <div
-          className="brandInfo"
-          onClick={onLogoClick}
-          role="button"
-          aria-label="메인 대시보드로 이동"
-          style={{ cursor: "pointer" }}
-        >
-          <div className="brandMark">H</div>
-          {!collapsed && (
-            <div className="brandText">
-              <strong>HEMP-MES</strong>
-              <small>Production Control</small>
-            </div>
-          )}
-        </div>
-
-        <button className={`sidebarToggle ${collapsed ? "collapsedToggle" : ""}`} onClick={onToggleCollapsed}>
-          {collapsed ? <ChevronRightIcon className="h-4 w-4" /> : <ChevronLeftIcon className="h-4 w-4" />}
-        </button>
-      </div>
-
       <div className="headerRight">
         <div className="topbar">
           <div>
@@ -163,10 +136,10 @@ export function Header({
           </button>
 
           <div className="headerDivider" />
-          
-          {/* 유저 정보 영역 (클릭 가능하도록 수정) */}
-          <div 
-            className="headerUser" 
+
+          {/* 유저 정보 영역 */}
+          <div
+            className="headerUser"
             onClick={onUserClick}
             role="button"
             tabIndex={0}
