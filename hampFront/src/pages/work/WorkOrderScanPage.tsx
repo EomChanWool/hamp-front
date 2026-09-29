@@ -27,6 +27,11 @@ const STATUS_LABEL: Record<string, string> = {
   DELAY: '지연',
 };
 
+const ZONE = {
+  FOOD: 1,
+  INPI: 2,
+} as const;
+
 const KEYPAD_KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', 'back'];
 
 function NumericKeypad({ onPress }: { onPress: (key: string) => void }) {
@@ -80,10 +85,14 @@ export function WorkOrderScanPage() {
   // 투입수량을 아코디언으로 펼쳐서 보고 있는 공정 코드들
   const [expandedOperCodes, setExpandedOperCodes] = useState<Set<string>>(new Set());
 
+  const zone = ZONE.FOOD
+
   // 작업지시 스캔 화면 진입 시 SSE 연결, 이탈 시 반드시 연결 종료
   useEffect(() => {
+
     const eventSource = new EventSource(
-      `${apiClient.defaults.baseURL}/work-orders/scan/stream`,
+      
+      `${apiClient.defaults.baseURL}/work-orders/scan/stream?zone=${zone}`,
     );
 
     eventSource.onopen = () => setConnectionStatus('open');
