@@ -18,6 +18,8 @@ interface ReportModalProps {
     onChanged: () => void;
 }
 
+const isReportCompleted = (item: SeedGoodsReceiptReturnResponse) => item.processStatus === 1;
+
 export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
     const [returns, setReturns] = useState<SeedGoodsReceiptReturnResponse[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +28,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
 
     // --- 1. 수정 모드 상태 ---
     const [editingReturnId, setEditingReturnId] = useState<number | null>(null);
-    
+
     const editFormRef = useRef<{
         returnQty: number | '';
         reportDate: string;
@@ -84,6 +86,9 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
     }, [isLoading, goodQty, reportedTotal, editingReturnId]);
 
     const handleStartEditReturn = (item: SeedGoodsReceiptReturnResponse) => {
+        /* 신고완료 항목은 수정 모드로 진입할 수 없음 (방어 코드) */
+        if (isReportCompleted(item)) return;
+
         setEditingReturnId(item.returnId);
         editFormRef.current = {
             returnQty: item.returnQty ?? '',
@@ -98,6 +103,11 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
 
     const handleUpdateReturn = async (item: SeedGoodsReceiptReturnResponse) => {
         if (isSaving) return;
+
+        if (isReportCompleted(item)) {
+            window.alert('신고완료된 이력은 수정할 수 없습니다.');
+            return;
+        }
 
         const qty = Number(editFormRef.current.returnQty) || 0;
         if (qty <= 0) {
@@ -147,6 +157,12 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
 
     const handleDeleteReturn = async (item: SeedGoodsReceiptReturnResponse) => {
         if (isDeletingId) return;
+
+        if (isReportCompleted(item)) {
+            window.alert('신고완료된 이력은 삭제할 수 없습니다.');
+            return;
+        }
+
         const confirmed = window.confirm('이 신고 이력을 삭제하시겠습니까?');
         if (!confirmed) return;
 
@@ -218,7 +234,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                 enableSorting: false,
                 cell: ({ row }) => {
                     const item = row.original;
-                    const isEditing = editingReturnId === item.returnId;
+                    const isEditing = editingReturnId === item.returnId && !isReportCompleted(item);
                     if (isEditing) {
                         return (
                             <input
@@ -240,7 +256,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                 enableSorting: false,
                 cell: ({ row }) => {
                     const item = row.original;
-                    const isEditing = editingReturnId === item.returnId;
+                    const isEditing = editingReturnId === item.returnId && !isReportCompleted(item);
                     if (isEditing) {
                         return (
                             <input
@@ -262,7 +278,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                 enableSorting: false,
                 cell: ({ row }) => {
                     const item = row.original;
-                    const isEditing = editingReturnId === item.returnId;
+                    const isEditing = editingReturnId === item.returnId && isReportCompleted(item);
                     if (isEditing) {
                         return (
                             <input
@@ -284,8 +300,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                 header: '상태',
                 enableSorting: false,
                 cell: ({ row }) => {
-                    const status = row.original.processStatus;
-                    const isCompleted = status === 1; 
+                    const isCompleted = isReportCompleted(row.original);
 
                     return (
                         <span style={{ color: isCompleted ? '#2b8a3e' : '#e67700', fontWeight: 500 }}>
@@ -300,6 +315,20 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                 enableSorting: false,
                 cell: ({ row }) => {
                     const item = row.original;
+
+                    if (isReportCompleted(item)) {
+                        return (
+                            <div className='rowActions' onClick={(e) => e.stopPropagation}>
+                                <span
+                                    style={{ color: '#94a3b8', fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap' }}
+                                    title="신고완료된 이력은 수정/삭제할 수 없습니다."
+                                >
+                                    읽기전용
+                                </span>
+                            </div>
+                        )
+                    }
+
                     const isEditing = editingReturnId === item.returnId;
 
                     return (
@@ -356,7 +385,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
     return (
         <div className="reportModalOverlay" onClick={onClose}>
             <div className="reportModalContent" onClick={(e) => e.stopPropagation()} style={{ position: 'relative' }}>
-                
+
                 {/* 모달 전체 스피너 오버레이 */}
                 {(isLoading || isSaving) && (
                     <div style={{
@@ -391,10 +420,10 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
 
                 {/* 본문 레이아웃 (좌우 2단 분할) */}
                 <div className="reportModalBody">
-                    
+
                     {/* 좌측 영역: 잔여 수량 카드 + 입력 폼 또는 완료 안내 */}
                     <div className="reportModalLeftCol">
-                        
+
                         {/* 1. 잔여 수량 표시 카드 */}
                         <div className="remainingQtyCard">
                             <div className="remainingQtyCardHeader">
@@ -404,7 +433,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                                 </span>
                             </div>
                             <div className="remainingQtyValueArea">
-                                {Math.max(goodQty - reportedTotal, 0).toLocaleString()} 
+                                {Math.max(goodQty - reportedTotal, 0).toLocaleString()}
                                 <span className="remainingQtyTotal"> / {goodQty.toLocaleString()}{unitText ? ` ${unitText}` : ''}</span>
                             </div>
                             {/* 프로그레스 바 */}
@@ -420,15 +449,15 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                                 <h4 className="completeNoticeTitle">모든 신고 처리가 완료되었습니다</h4>
                                 <p className="completeNoticeDesc">
                                     입고된 양품 {goodQty.toLocaleString()}{unitText ? ` ${unitText}` : ''}에 대한 신고 내역이 모두 등록되었습니다.<br />
-                                    수정이나 삭제는 우측 이력 목록에서 가능합니다.
+                                    수정이나 삭제는 우측 이력 목록의 신고대기 항목에서만 가능합니다.
                                 </p>
                             </div>
                         ) : (
                             <div className="reportForm">
                                 <div className="reportFormHeader">
                                     <label className="reportFormLabel">이번 신고 수량 *</label>
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         className="setMaxBtn"
                                         onClick={() => setNewReturnQtyInput(Math.max(goodQty - reportedTotal, 0))}
                                     >
@@ -498,7 +527,9 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
 
                         {/* 안내 문구 */}
                         <div className="historyTipBox">
-                         신고 내역 수정 및 삭제 시 <strong>신고가능 잔여수량</strong>이 즉시 재계산되어 업데이트됩니다.
+                            신고 내역 수정 및 삭제 시 <strong>신고가능 잔여수량</strong>이 즉시 재계산되어 업데이트됩니다.
+                            <br />
+                            <strong>신고완료</strong>된 이력은 읽기전용이며 수정/삭제할 수 없습니다.
                         </div>
                     </div>
                 </div>
