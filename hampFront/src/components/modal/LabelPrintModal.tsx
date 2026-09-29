@@ -1,9 +1,10 @@
 import Barcode from "react-barcode";
-import '@/components/modal/LabelPrintModal.css'; 
+import '@/components/modal/LabelPrintModal.css';
+import { createPortal } from "react-dom";
 
 export interface WorkOrderLineDetail {
   id: string;
-  salesOrderLineId: number; 
+  salesOrderLineId: number;
   orderCode: string;
   lineId: string;
   itemCode: string;
@@ -17,7 +18,7 @@ export interface WorkOrderMaster {
   workOrderNo: string;
   title: string;
   workDate: string;
-  status: "WAIT" | "PROGRESS" | "DONE" | "DELAY"; 
+  status: "WAIT" | "PROGRESS" | "DONE" | "DELAY";
   managerId: string;
   managerNm: string;
   lines: WorkOrderLineDetail[];
@@ -30,56 +31,60 @@ export interface LabelPrintModalProps {
   workOrderNo: string;
 }
 
-export function LabelPrintModal({ 
-  isOpen, 
-  onClose, 
-  selectedLines, 
-  workOrderNo 
+export function LabelPrintModal({
+  isOpen,
+  onClose,
+  selectedLines,
+  workOrderNo
 }: LabelPrintModalProps) {
   if (!isOpen) return null;
 
   // 선택된 항목이 1개인지 여부 확인
   const isSingle = selectedLines.length === 1;
 
-  return (
-    <div className="food-label-modal-overlay">
-      <div className={`food-label-modal-container ${isSingle ? 'single-item-modal' : ''}`}>
-        <div className="food-label-modal-header">
-          <div>
-            <h2 className="food-label-modal-title">라벨 인쇄 미리보기</h2>
-            <p className="food-label-modal-subtitle">선택한 라인만 라벨로 출력됩니다. (총 {selectedLines.length}건)</p>
+  const modal = (
+    <div id="label-print-root" className="label-print-root">
+      <div className="food-label-modal-overlay">
+        <div className={`food-label-modal-container ${isSingle ? 'single-item-modal' : ''}`}>
+          <div className="food-label-modal-header">
+            <div>
+              <h2 className="food-label-modal-title">라벨 인쇄 미리보기</h2>
+              <p className="food-label-modal-subtitle">선택한 라인만 라벨로 출력됩니다. (총 {selectedLines.length}건)</p>
+            </div>
+            <div className="food-label-modal-actions">
+              <button type="button" className="ghostButton food-label-modal-btn-close" onClick={onClose}>
+                닫기
+              </button>
+              <button type="button" className="primaryButton food-label-modal-btn-print" onClick={() => {window.focus(); window.print();}}>
+                인쇄
+              </button>
+            </div>
           </div>
-          <div className="food-label-modal-actions">
-            <button type="button" className="ghostButton food-label-modal-btn-close" onClick={onClose}>
-              닫기
-            </button>
-            <button type="button" className="primaryButton food-label-modal-btn-print" onClick={() => window.print()}>
-              인쇄
-            </button>
-          </div>
-        </div>
 
-        <div className="food-label-modal-body">
-          <div className={`food-label-modal-grid ${isSingle ? 'single-item' : ''}`}>
-            {selectedLines.map((line) => (
-              <div key={line.id} className="food-label-card">
-                <div className="food-card-header-meta">
-                  {workOrderNo}
+          <div className="food-label-modal-body">
+            <div className={`food-label-modal-grid ${isSingle ? 'single-item' : ''}`}>
+              {selectedLines.map((line) => (
+                <div key={line.id} className="food-label-card">
+                  <div className="food-card-header-meta">
+                    {workOrderNo}
+                  </div>
+                  <div className="food-card-body-meta">
+                    {line.itemNm} <span className="food-cell-item-code">({line.orderCode})</span>
+                  </div>
+                  <div className="food-card-qty-meta">
+                    지시수량 <span style={{ fontWeight: 700 }}>{line.instructQty}{line.unit ?? ''}</span>
+                  </div>
+                  <div className="food-card-barcode-wrap">
+                    <Barcode value={line.barcode || workOrderNo} width={1.6} height={40} fontSize={11} displayValue={true} margin={0} />
+                  </div>
                 </div>
-                <div className="food-card-body-meta">
-                  {line.itemNm} <span className="food-cell-item-code">({line.orderCode})</span>
-                </div>
-                <div className="food-card-qty-meta">
-                  지시수량 <span style={{ fontWeight: 700 }}>{line.instructQty}{line.unit ?? ''}</span>
-                </div>
-                <div className="food-card-barcode-wrap">
-                  <Barcode value={line.barcode || workOrderNo} width={1.6} height={40} fontSize={11} displayValue={true} margin={0} />
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
+
+  return createPortal (modal, document.body)
 }
