@@ -7,9 +7,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 14px 20px;
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  background: transparent;
   flex-shrink: 0;
   z-index: 10;
 }
@@ -18,29 +17,33 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   flex-shrink: 0;
   position: relative;
+  padding: 4px 4px 16px;
 }
 
 .brandInfo {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   overflow: hidden;
   min-width: 0;
+  cursor: pointer;
+  border-radius: 10px;
 }
 
 .brandMark {
   flex-shrink: 0;
-  width: 52px;
-  height: 52px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, #57d3a1, #78e1b8);
+  background: var(--primary);
   color: #fff;
-  border-radius: 12px;
-  font-weight: 900;
-  font-size: 21px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 18px;
   font-family: "Montserrat", sans-serif;
 }
 
@@ -180,12 +183,12 @@
 }
 
 .headerIconBtn:hover {
-  background: var(--bg-subtle);
+  background: var(--bg-card);
   color: var(--text-heading);
 }
 
 .headerIconBtn svg {
-  width: 30px;
+  width: 26px;
 }
 
 .headerBadgeDot {
@@ -196,7 +199,7 @@
   height: 12px;
   border-radius: 999px;
   background: #ff5757;
-  border: 2px solid var(--bg-card);
+  border: 2px solid var(--bg-app, var(--bg-subtle));
 }
 
 .headerNotificationPopup {
@@ -325,7 +328,7 @@
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: var(--bg-subtle);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   display: grid;
   place-items: center;
@@ -351,7 +354,7 @@
 }
 
 .headerUserInfo strong {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--text-heading);
   font-weight: 600;
 }
@@ -371,39 +374,52 @@
 
 .mainContent {
   display: grid;
-  grid-template-columns: 310px minmax(0, 1fr);
-  transition: grid-template-columns 0.3s ease;
+  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   flex: 1;
   min-height: 0;
   overflow: hidden;
 }
 
 .mainContent.collapsed {
-  grid-template-columns: 84px 1fr;
+  grid-template-columns: 96px minmax(0, 1fr);
+}
+
+.contentArea {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* ================================
     SIDEBAR
 ================================ */
 .sidebar {
+  --nav-hover: rgba(15, 23, 42, 0.04);
+  --nav-active: rgba(15, 23, 42, 0.07);
+
   color: var(--text-main);
   background: var(--bg-card);
-  border-right: 1px solid var(--border);
-  padding: 20px 16px;
+  border: 1px solid var(--border);
+  /* border-radius: 16px; */
+  /* margin: 12px 0 12px 12px; */
+  padding: 16px 12px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  height: 100%;
+  min-height: 0;
   overflow-y: auto;
-  /* 사이드바 전체에 스크롤 부여 */
   overflow-x: visible !important;
-  /* 가로축은 절대 잘리지 않도록 강제 */
   box-sizing: border-box;
-
   scrollbar-width: thin;
-  /* 파이어폭스용 얇은 스크롤바 */
   scrollbar-color: #e2e8f0 transparent;
-  /* (막대 색상, 트랙 색상) */
+}
+
+[data-theme="dark"] .sidebar {
+  --nav-hover: rgba(255, 255, 255, 0.06);
+  --nav-active: rgba(255, 255, 255, 0.1);
 }
 
 .sidebarMenuWrapper {
@@ -412,7 +428,6 @@
   gap: 10px;
   width: 100%;
   overflow: visible !important;
-  /* 내부 래퍼도 가로축 잘림 방지 */
 }
 
 /* ================================
@@ -421,7 +436,7 @@
 
 .navMenu {
   display: grid;
-  gap: 4px;
+  gap: 2px;
 }
 
 .navGroup {
@@ -430,20 +445,22 @@
 
 .navGroupHeader {
   width: 100%;
-  padding: 13px 16px;
-  border-radius: 12px;
+  min-height: 42px;
+  padding: 10px 12px;
+  border-radius: 10px;
   background: transparent;
   color: var(--text-main);
-  border: none;
+  border: 1px solid transparent;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 12px;
   text-align: left;
   transition:
-    background 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease;
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    color 0.15s ease;
 }
 
 .navGroupHeader .groupLabel {
@@ -455,12 +472,14 @@
 
 .navGroupHeader .groupLabel svg {
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
+  color: var(--text-sub);
+  transition: color 0.15s ease;
 }
 
 .navGroupHeader .groupLabel span {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -469,28 +488,38 @@
 
 .navGroupHeader .chevron {
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   color: inherit;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .navGroupHeader svg {
   width: 16px;
 }
 
-.navGroup.current .navGroupHeader,
 .navGroupHeader:hover {
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 4px 14px rgba(87, 211, 161, 0.3);
+  background: var(--nav-hover);
+}
+
+.navGroup.current .navGroupHeader {
+  background: var(--nav-active);
+  color: var(--text-heading);
+}
+
+.navGroup.current .navGroupHeader .groupLabel svg {
+  color: var(--primary);
+}
+
+.navGroup.current .navGroupHeader .groupLabel span {
+  font-weight: 600;
 }
 
 /* collapsed */
 .mainContent.collapsed .navGroupHeader {
   justify-content: center;
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   padding: 0;
 }
 
@@ -508,7 +537,7 @@
 
 .navItems {
   display: grid;
-  gap: 4px;
+  gap: 2px;
   padding-left: 16px;
   margin-top: 4px;
   max-height: 0;
@@ -532,8 +561,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 9px 14px;
-  border-radius: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
   background: transparent;
   color: var(--text-sub);
   text-align: left;
@@ -543,24 +572,28 @@
 }
 
 .navItems button:hover {
-  background: #eef7f1;
+  background: var(--nav-hover);
   color: var(--text-main);
 }
 
 .navItems button.active {
-  background: var(--primary-light);
-  color: #17875f;
+  background: transparent;
+  color: var(--text-heading);
+}
+
+.navItems button.active span {
+  font-weight: 600;
 }
 
 .navItems button svg {
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  color: #7d8a91;
+  width: 17px;
+  height: 17px;
+  color: var(--text-muted);
 }
 
 .navItems button.active svg {
-  color: #3ec58c;
+  color: var(--primary);
 }
 
 .navItems button span {
@@ -593,10 +626,6 @@
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   z-index: 9999;
-  /* 가장 위로 오도록 높게 설정 */
-  /* JS(getBoundingClientRect 기반)가 화면 하단을 넘지 않도록 top을
-     보정해주지만, 하위 메뉴 항목이 아주 많아 화면 전체 높이보다도
-     길어지는 극단적인 경우를 위한 안전망으로 최대높이+스크롤 추가 */
   max-height: calc(100vh - 16px);
   overflow-y: auto;
   opacity: 0;
@@ -618,6 +647,24 @@
   border-radius: 8px;
 }
 
+.mainContent.collapsed .navItems button.active {
+  background: var(--nav-active);
+}
+
+.mainContent.collapsed .navMenu {
+  justify-items: center;
+}
+
+.mainContent.collapsed .brand {
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 12px;
+}
+
+.mainContent.collapsed .brandInfo {
+  justify-content: center;
+}
+
 /* ================================
    DetailLayout — Card Grid 
 ================================ */
@@ -631,7 +678,6 @@
   --dl-line-strong: #c7cdd5;
 
   --dl-accent: #00a6a6;
-  /* 포인트 컬러 통일 */
   --dl-accent-soft: #e7f3f0;
   --dl-accent-ink: #0a4a3e;
 
@@ -648,7 +694,6 @@
   overflow: hidden;
 }
 
-/* 다크모드 색상 변수 오버라이딩 (프로젝트 전역 변수 기준 연동) */
 [data-theme="dark"] .detailCard {
   --dl-bg: var(--bg-subtle);
   --dl-panel: var(--bg-card);
@@ -817,7 +862,6 @@
   margin-left: 2px;
 }
 
-/* 읽기 전용 값 */
 .detailCard .detailValue {
   font-size: 15px;
   font-weight: 500;
@@ -830,7 +874,7 @@
 }
 
 /* ================================
-   DETAIL BADGE (상세 화면 전용 뱃지)
+   DETAIL BADGE
 ================================ */
 
 .detailCard .detailBadge {
@@ -844,37 +888,31 @@
   width: fit-content;
 }
 
-/* 1: 작동 (성공/정상) */
 .detailCard .detailBadge.success {
   background: #d1fae5;
   color: #065f46;
 }
 
-/* 0: 정지 (위험/중단) */
 .detailCard .detailBadge.danger {
   background: #fde8e8;
   color: #991b1b;
 }
 
-/* 2: 고장 (경고) */
 .detailCard .detailBadge.warn {
   background: #fef3c7;
   color: #92400e;
 }
 
-/* 사용 / 기본 */
 .detailCard .detailBadge.good {
   background: #d1fae5;
   color: #065f46;
 }
 
-/* 미사용 / 기본 */
 .detailCard .detailBadge.muted {
   background: #f1f5f9;
   color: #475569;
 }
 
-/* 상태를 나타내는 뱃지(작동, 정지, 고장) 앞에만 자동으로 작은 점(dot) 추가 */
 .detailCard .detailBadge.success::before,
 .detailCard .detailBadge.danger::before,
 .detailCard .detailBadge.warn::before {
@@ -887,7 +925,6 @@
   margin-right: 6px;
 }
 
-/* 뱃지가 들어있는 필드의 네모난 인풋창 박스(배경/테두리) 제거 */
 .detailCard .detailField:has(.detailBadge),
 .detailCard .detailValue:has(.detailBadge) {
   background: transparent !important;
@@ -1030,7 +1067,7 @@
 }
 
 /* ================================
-   신규 등록 페이지 전용 스타일 (Create Page Only)
+   신규 등록 페이지 전용 스타일
 ================================ */
 .createCard {
   background: var(--bg-card, #ffffff);
@@ -1087,7 +1124,6 @@
   border-bottom: 1px solid var(--border, #e3e6ea);
 }
 
-/* 기본 정보 및 분류 정보 모두 2열로 배치하는 공용 그리드 */
 .createGrid2Cols {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1101,7 +1137,6 @@
   min-width: 0;
 }
 
-/* 만약 전체 너비를 써야 하는 특수 필드가 있다면 사용 */
 .createField.fullWidth {
   grid-column: 1 / -1;
 }
@@ -1133,11 +1168,8 @@
   background: var(--bg-subtle, #fcfcfb);
 }
 
-
 /* ==========================================
    FacilityHeaderCard — 설비 상세보기 / 설비 등록 상단 카드
-   - DetailLayout(Layout.css)이 다른 화면에서도 공용으로 쓰이기 때문에
-     그 컴포넌트/스타일은 건드리지 않고, 이 화면 전용 상단 레이아웃만 별도 파일로 분리.
    ========================================== */
 
 .facilityHeaderCard {
@@ -1154,14 +1186,10 @@
 }
 
 /* ---------- 좌측: 이미지 영역 ---------- */
-/* 기존 flex: 0 0 700px 와 width: 260px 가 서로 충돌해서
-   실제로는 이미지 칼럼이 700px로 고정되어 태블릿(≤1024px)에서
-   레이아웃이 깨지던 문제를 수정 — 460px 기준으로 통일 */
 .facilityImageCol {
   flex: 0 0 460px;
   width: 460px;
 }
-
 
 .facilityEmptyImageCard {
   display: flex;
@@ -1227,7 +1255,6 @@
   cursor: not-allowed;
 }
 
-/* 다크모드 */
 [data-theme="dark"] .facilityEmptyImageCard {
   background: var(--bg-subtle);
   border-color: var(--border);
@@ -1249,13 +1276,11 @@
   color: #57d3a1;
 }
 
-/* 좁은 화면(이미지 칼럼이 전체 폭이 되는 구간)에서는 카드가 너무 커지지 않도록 비율 완화 */
 @container content (max-width: 720px) {
   .facilityEmptyImageCard {
     aspect-ratio: 2 / 1;
   }
 }
-
 
 /* ---------- 우측: 상세보기 정보 영역 ---------- */
 .facilityInfoCol {
@@ -1317,7 +1342,6 @@
   color: var(--text-muted, #9aa3b0);
 }
 
-/* 바코드 영역 내 액션 버튼 (출력 버튼) */
 .barcodeActionBtn {
   height: 36px;
   padding: 0 16px;
@@ -1346,14 +1370,7 @@
 }
 
 /* ==========================================
-   상단 헤더 카드(FacilityHeaderCard) 필드 —
-   더 이상 별도의 컴팩트한 카드형(facilityQuickGrid)을 쓰지 않고,
-   하단 "장비 정보" / "공장 정보" / "장비·공장 정보" 섹션과
-   완전히 동일한 크기·간격의 인풋 폼(detailField/detailGrid/detailValue/
-   detailBadge/tableInput)을 그대로 재사용한다.
-   (이 클래스들은 원래 .detailCard 안에서만 스타일이 적용되도록
-   스코프돼 있어서, .detailCard 밖에 있는 .facilityHeaderCard 안에서도
-   똑같이 동작하도록 동일한 수치로 별도 정의함)
+   상단 헤더 카드(FacilityHeaderCard) 필드
    ========================================== */
 .facilityHeaderCard .detailGrid {
   display: flex;
@@ -1369,8 +1386,6 @@
   min-width: 150px;
 }
 
-/* 담당자(UserMultiSelect)처럼 태그가 줄바꿈되며 세로로 늘어날 수 있는
-   필드는 2열 그리드 전체 폭을 차지하도록 예외 처리 */
 .facilityHeaderCard .detailField--full {
   flex: 1 1 100%;
   min-width: 100%;
@@ -1417,9 +1432,9 @@
 }
 
 .facilityHeaderCard textarea.tableInput {
-    height: auto;
-    min-height: 90px;
-    padding: 12px 14px;
+  height: auto;
+  min-height: 90px;
+  padding: 12px 14px;
 }
 
 .facilityHeaderCard .tableInput::placeholder {
@@ -1562,7 +1577,6 @@
 
 /* ================================================================
    UserMultiSelect — 담당자 검색+태그 다중선택 컴포넌트
-   (설비 상세 수정모드 / 설비 등록 화면 공용, --dl-* 토큰 사용)
 ================================================================ */
 .userMultiSelect {
   --ums-bg: var(--dl-bg, var(--bg-subtle, #fcfcfb));
@@ -1586,7 +1600,6 @@
   --ums-accent-ink: var(--dl-accent-ink, #57d3a1);
 }
 
-/* 선택된 담당자 태그 목록 */
 .userMultiSelectTags {
   display: flex;
   flex-wrap: wrap;
@@ -1631,19 +1644,14 @@
   opacity: 0.5;
 }
 
-/* 검색창 + 드롭다운을 감싸는 영역 (드롭다운 absolute 기준점) */
 .userMultiSelectSearchWrap {
   position: relative;
   z-index: 30;
 }
 
-/* 선택자를 .userMultiSelect .… 로 한 단계 높여서
-   전역 input 스타일(다크모드 [data-theme="dark"] input 등)에 덮이지 않게 함
-   (.facilityHeaderCard .tableInput 과 동일한 우선순위) */
 .userMultiSelect .userMultiSelectSearchInput {
   width: 100%;
   box-sizing: border-box;
-  /* width:100% + padding + border 로 폭이 넘치지 않게 */
   height: 42px;
   padding: 0 14px;
   font-size: 15px;
@@ -1687,9 +1695,7 @@
   border: 1px solid var(--ums-line-strong);
   border-radius: 10px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-  /* 그림자를 더 진하게 주어 선과 분리 */
   z-index: 999;
-  /* 다른 UI 요소들보다 확실히 위에 오도록 설정 */
   padding: 6px;
 }
 
@@ -1728,13 +1734,11 @@
   text-align: center;
 }
 
-/* ── UserMultiSelect 다크모드 ─────────────────────────────────────  */
 [data-theme="dark"] .userMultiSelectDropdown {
   color: var(--ums-ink);
   border-color: var(--dl-line-strong, #334155);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
   color-scheme: dark;
-  /* 스크롤바 등 브라우저 기본 UI도 다크로 */
 }
 
 [data-theme="dark"] .userMultiSelectOption:hover {
@@ -1752,22 +1756,12 @@
 
 /* ================================================================
    반응형
-   ─ 헤더/사이드바 자체는 뷰포트 전체 폭 기준(@media)이 맞음
-   ─ 디테일·등록·설비 카드류는 .workspace 컨테이너 기준(@container)으로 전환
 ================================================================ */
-
-/* ── 헤더 / 사이드바 (뷰포트 기준 유지) ───────────────────────────── */
 
 @media (max-width: 1024px) {
   .header {
     padding: 12px 16px;
     gap: 16px;
-  }
-
-  .brandMark {
-    width: 44px;
-    height: 44px;
-    font-size: 18px;
   }
 
   .brandText strong {
@@ -1782,17 +1776,16 @@
     margin: 0 12px;
   }
 
-  /* 사이드바 폭 축소 (완전 스택은 860px 이하에서) */
   .mainContent {
-    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-columns: 256px minmax(0, 1fr);
   }
 
   .mainContent.collapsed {
-    grid-template-columns: 72px 1fr;
+    grid-template-columns: 92px minmax(0, 1fr);
   }
 
   .sidebar {
-    padding: 16px 12px;
+    padding: 14px 10px;
   }
 }
 
@@ -1818,13 +1811,6 @@
     display: none;
   }
 }
-
-/* ── 디테일·등록·설비 카드 (컨테이너 쿼리) ──────────────────────────
-   1024 : 태블릿
-   720  : 작은 태블릿 (facilityHeaderTop 세로 전환)
-   640  : 폰 (디테일/등록 카드 1열)
-   600  : 폰 (타이틀/코드 축소)
-──────────────────────────────────────────────────────────────── */
 
 @container content (max-width: 1024px) {
   .detailCard .detailHeader {
@@ -1906,7 +1892,6 @@
 
   .barcodeActionBtn {
     width: 100%;
-    /* 모바일/작은 태블릿에서 버튼을 누르기 쉽게 풀 폭으로 전환 */
     margin-left: 0;
   }
 }

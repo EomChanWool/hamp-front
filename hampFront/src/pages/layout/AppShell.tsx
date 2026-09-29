@@ -22,6 +22,14 @@ export function AppShell({
   const location = useLocation();
   const navigate = useNavigate();
 
+  const handleToggleCollapsed = () => {
+    setCollapsed((prev) => !prev);
+  };
+
+  const handleLogoClick = () => {
+    navigate("/");
+  };
+
   // 유저 정보 페이지로 이동하는 핸들러 추가
   const handleUserClick = () => {
     navigate("/system/users/info");
@@ -52,23 +60,27 @@ export function AppShell({
 
   return (
     <div className={`appShell ${collapsed ? "collapsed" : ""}`}>
-      <Header
-        activeGroup={activeGroup}
-        activeTitle={activeTitle}
-        theme={theme}
-        onToggleTheme={onToggleTheme}
-        collapsed={collapsed}
-        onToggleCollapsed={() => setCollapsed((prev) => !prev)}
-        onLogoClick={() => navigate("/")}
-        onUserClick={handleUserClick} // [추가] 유저 클릭 핸들러 연결
-      />
-
       <div className={`mainContent ${collapsed ? "collapsed" : ""}`}>
-        <SideMenu collapsed={collapsed} />
+        <SideMenu
+          collapsed={collapsed}
+          onToggleCollapsed={handleToggleCollapsed}
+          onLogoClick={handleLogoClick}
+        />
 
-        <main className="workspace">
-          {children}
-        </main>
+        <div className="contentArea">
+          <Header
+            activeGroup={activeGroup}
+            activeTitle={activeTitle}
+            theme={theme}
+            onToggleTheme={onToggleTheme}
+            onLogoClick={handleLogoClick}
+            onUserClick={handleUserClick}
+          />
+
+          <main className="workspace">
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );
