@@ -31,3 +31,7 @@ export const paginate = <T,>(data: T[], page: number, pageSize = 10) => ({
     totalPages: Math.ceil(data.length / pageSize),
     pagedData: data.slice(page * pageSize, (page + 1) * pageSize)
 });
+
+export function isValidWorkZone(zone: string | null): zone is '1' | '2' {
+  return zone === '1' || zone === '2';
+}
