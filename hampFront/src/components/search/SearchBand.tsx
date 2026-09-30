@@ -1,9 +1,16 @@
-import { useState, type RefObject } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type RefObject,
+} from "react";
 import {
   AdjustmentsHorizontalIcon,
   ArrowPathIcon,
+  CheckIcon,
   ChevronDownIcon,
-  ChevronUpIcon,
 } from "@heroicons/react/16/solid";
 
 type BaseField = {
@@ -51,79 +58,271 @@ type Props = {
   fields: SearchField[];
   onSearch: () => void;
   onReset?: () => void;
-
-  // 필요할 때만 상세검색을 처음부터 열어둘 수 있음
   initialExpanded?: boolean;
 };
 
-export function SearchBand({
-  fields,
-  onSearch,
-  onReset,
-  initialExpanded = false,
-}: Props) {
-  const [isExpanded, setIsExpanded] = useState(initialExpanded);
+type SearchSelectProps = {
+  label: string;
+  selectRef: RefObject<HTMLSelectElement | null>;
+  options: { value: string; label: string }[];
+  resetKey: number;
+};
 
-  const handleToggleExpand = () => {
-    setIsExpanded((prev) => !prev);
-  };
+function SearchSelect({
+  label,
+  selectRef,
+  options,
+  resetKey,
+}: SearchSelectProps) {
+  const uid = useId();
+  const labelId = `${uid}-label`;
+  const listId = `${uid}-list`;
 
-  const getInitialVisibleFields = () => {
-    const primaryFields = fields.filter((f) => f.isPrimary);
+  const initialValue = options.some((option) => option.value === "")
+    ? ""
+    : (options[0]?.value ?? "");
 
-    if (primaryFields.length > 0) {
-      return primaryFields;
-    }
+  const [value, setValue] = useState(initialValue);
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
-    let currentSpan = 0;
-    const visibleList: SearchField[] = [];
+  const selectedIndex = Math.max(
+    0,
+    options.findIndex((option) => option.value === value),
+  );
+  const selectedLabel = options[selectedIndex]?.label ?? "";
 
-    for (const field of fields) {
-      const fieldSpan = field.type === "date" ? 2 : 1;
+  useEffect(() => {
+    if (resetKey === 0) return;
+    setValue(selectRef.current?.value ?? initialValue);
+  }, [resetKey, selectRef, initialValue]);
 
-      if (currentSpan + fieldSpan <= 3) {
-        visibleList.push(field);
-        currentSpan += fieldSpan;
-      } else {
-        break;
+  useEffect(() => {
+    if (!open) return;
+
+    const handleOutside = (e: MouseEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) {
+        setOpen(false);
       }
-    }
+    };
 
-    return visibleList;
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    document
+      .getElementById(`${listId}-${activeIndex}`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [open, activeIndex, listId]);
+
+  const openList = () => {
+    setActiveIndex(selectedIndex);
+    setOpen(true);
   };
 
-  const baseVisibleFields = getInitialVisibleFields();
-  const hasMoreFields = fields.length > baseVisibleFields.length;
-  const visibleFields = isExpanded ? fields : baseVisibleFields;
+  const choose = (index: number) => {
+    const option = options[index];
+    if (!option) return;
+
+    setValue(option.value);
+    if (selectRef.current) {
+      selectRef.current.value = option.value;
+    }
+    setOpen(false);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        if (open) {
+          setActiveIndex((i) => Math.min(i + 1, options.length - 1));
+        } else {
+          openList();
+        }
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        if (open) {
+          setActiveIndex((i) => Math.max(i - 1, 0));
+        } else {
+          openList();
+        }
+        break;
+      case "Home":
+        if (open) {
+          e.preventDefault();
+          setActiveIndex(0);
+        }
+        break;
+      case "End":
+        if (open) {
+          e.preventDefault();
+          setActiveIndex(options.length - 1);
+        }
+        break;
+      case "Enter":
+      case " ":
+        e.preventDefault();
+        if (open) {
+          choose(activeIndex);
+        } else {
+          openList();
+        }
+        break;
+      case "Escape":
+        if (open) {
+          e.preventDefault();
+          setOpen(false);
+        }
+        break;
+      case "Tab":
+        setOpen(false);
+        break;
+    }
+  };
 
   return (
-    <div className="searchBand">
-      <div className="searchBandTop">
-        <h2>
-          <AdjustmentsHorizontalIcon className="w-5 h-5" />
-          Search
-        </h2>
+    <div className="searchSelectField" ref={wrapRef}>
+      <p id={labelId}>{label}</p>
 
-        {onReset && (
-          <button
-            type="button"
-            className="resetButton"
-            onClick={onReset}
-          >
-            <ArrowPathIcon className="w-5 h-5" />
-            초기화
+      <select
+        ref={selectRef}
+        className="selectNative"
+        defaultValue={initialValue}
+        tabIndex={-1}
+        aria-hidden="true"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+
+      <button
+        type="button"
+        role="combobox"
+        className="selectTrigger"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-labelledby={labelId}
+        aria-activedescendant={open ? `${listId}-${activeIndex}` : undefined}
+        onClick={() => (open ? setOpen(false) : openList())}
+        onKeyDown={handleKeyDown}
+        onKeyUp={(e) => {
+          if (e.key === " ") e.preventDefault();
+        }}
+      >
+        <span className="selectValue">{selectedLabel}</span>
+        <ChevronDownIcon />
+      </button>
+
+      {open && (
+        <div
+          id={listId}
+          role="listbox"
+          aria-labelledby={labelId}
+          className="selectList"
+        >
+          {options.map((option, index) => {
+            const isSelected = option.value === value;
+
+            return (
+              <div
+                key={option.value}
+                id={`${listId}-${index}`}
+                role="option"
+                aria-selected={isSelected}
+                className={[
+                  "selectOption",
+                  index === activeIndex ? "active" : "",
+                  isSelected ? "selected" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onMouseDown={(e) => e.preventDefault()}
+                onMouseEnter={() => setActiveIndex(index)}
+                onClick={() => choose(index)}
+              >
+                <span>{option.label}</span>
+                {isSelected && <CheckIcon />}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function SearchBand({ fields, onSearch, onReset }: Props) {
+  const [resetKey, setResetKey] = useState(0);
+
+  const handleReset = () => {
+    onReset?.();
+    setResetKey((prev) => prev + 1);
+  };
+
+  const handleInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      onSearch();
+    }
+  };
+
+  return (
+    <section className="searchBand">
+      <div className="searchBandTop">
+        <div className="searchTitle">
+          <div className="searchTitleIcon">
+            <AdjustmentsHorizontalIcon />
+          </div>
+          <div>
+            <h2>Search</h2>
+          </div>
+        </div>
+
+        <div className="searchHeaderActions">
+          {onReset && (
+            <button type="button" className="resetButton" onClick={handleReset}>
+              <ArrowPathIcon />
+              <span>초기화</span>
+            </button>
+          )}
+          <button type="button" className="primaryButton" onClick={onSearch}>
+            <span>조회</span>
           </button>
-        )}
+        </div>
       </div>
 
-      <div className="serchItem">
-        {visibleFields.map((field, index) => {
+      <div className="searchFields">
+        {fields.map((field, index) => {
+          if (field.type === "select") {
+            return (
+              <SearchSelect
+                key={`${field.label}-${index}`}
+                label={field.label}
+                selectRef={field.ref}
+                options={field.options}
+                resetKey={resetKey}
+              />
+            );
+          }
+
           return (
             <label
               key={`${field.label}-${index}`}
-              className={
-                field.type === "date" ? "dateRangeLabel" : ""
-              }
+              className={[
+                "searchField",
+                field.type === "date" ? "dateRangeField" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
             >
               <p>{field.label}</p>
 
@@ -132,14 +331,9 @@ export function SearchBand({
                   ref={field.ref}
                   type="text"
                   defaultValue=""
-                  placeholder={
-                    field.placeholder ?? `${field.label} 입력`
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      onSearch();
-                    }
-                  }}
+                  name={field.name}
+                  placeholder={field.placeholder ?? `${field.label} 입력`}
+                  onKeyDown={handleInputKeyDown}
                 />
               )}
 
@@ -148,11 +342,8 @@ export function SearchBand({
                   ref={field.ref}
                   type="date"
                   defaultValue=""
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      onSearch();
-                    }
-                  }}
+                  name={field.name}
+                  onKeyDown={handleInputKeyDown}
                 />
               )}
 
@@ -162,67 +353,21 @@ export function SearchBand({
                     ref={field.startRef}
                     type="date"
                     defaultValue=""
+                    name={field.name ? `${field.name}Start` : undefined}
                   />
-
-                  <span>~</span>
-
+                  <span aria-hidden="true">~</span>
                   <input
                     ref={field.endRef}
                     type="date"
                     defaultValue=""
+                    name={field.name ? `${field.name}End` : undefined}
                   />
                 </div>
-              )}
-
-              {field.type === "select" && (
-                <select
-                  ref={field.ref}
-                  defaultValue=""
-                >
-                  {field.options.map((option) => (
-                    <option
-                      key={option.value}
-                      value={option.value}
-                    >
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
               )}
             </label>
           );
         })}
-
-        <div className="searchActions">
-          {hasMoreFields && (
-            <button
-              type="button"
-              className="expandButton"
-              onClick={handleToggleExpand}
-            >
-              {isExpanded ? (
-                <>
-                  접기
-                  <ChevronUpIcon className="w-4 h-4" />
-                </>
-              ) : (
-                <>
-                  상세검색
-                  <ChevronDownIcon className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          )}
-
-          <button
-            type="button"
-            className="primaryButton"
-            onClick={onSearch}
-          >
-            <span>조회</span>
-          </button>
-        </div>
       </div>
-    </div>
+    </section>
   );
 }

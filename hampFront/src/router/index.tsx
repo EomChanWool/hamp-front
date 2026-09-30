@@ -2,14 +2,16 @@ import type { ComponentType, SVGProps } from 'react'
 import { createBrowserRouter, Navigate, RouterProvider, type RouteObject } from 'react-router-dom'
 import {
   AdjustmentsHorizontalIcon,
+  ArchiveBoxIcon,
+  ArrowsRightLeftIcon,
+  BeakerIcon,
+  BriefcaseIcon,
   BuildingOffice2Icon,
+  CheckBadgeIcon,
   CircleStackIcon,
-  ClipboardDocumentCheckIcon,
   Cog6ToothIcon,
-  CpuChipIcon,
-  CubeIcon,
-  RectangleStackIcon,
   ShieldCheckIcon,
+  Square3Stack3DIcon,
   WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline'
 
@@ -210,7 +212,7 @@ export const menuRoutes: MenuRouteGroup[] = [
   },
   {
     title: '기준정보 관리',
-    icon: RectangleStackIcon,
+    icon: CircleStackIcon,
     path: '/master',
     items: [
       { path: 'factory-zones', name: '공장관리', element: <MasterFactoryZonePage /> },
@@ -227,7 +229,7 @@ export const menuRoutes: MenuRouteGroup[] = [
   },
   {
     title: '설비관리',
-    icon: CpuChipIcon,
+    icon: WrenchScrewdriverIcon,
     path: '/equipment',
     items: [
       { path: 'facility', name: '설비목록', element: <EquipmentFacilityPage /> },
@@ -241,7 +243,7 @@ export const menuRoutes: MenuRouteGroup[] = [
   },
   {
     title: '영업관리',
-    icon: ClipboardDocumentCheckIcon,
+    icon: BriefcaseIcon,
     path: '/sales',
     items: [
       { path: 'sales-order', name: '수주관리', element: <SalesOrderPage /> },
@@ -258,7 +260,7 @@ export const menuRoutes: MenuRouteGroup[] = [
   },
   {
     title: '씨드관리',
-    icon: CubeIcon,
+    icon: ArchiveBoxIcon,
     path: '/seed',
     items: [
       { path: 'inv-status', name: '재고현황', element: <SeedInventoryStatusPage /> },
@@ -268,7 +270,7 @@ export const menuRoutes: MenuRouteGroup[] = [
   },
   {
     title: '식품생산관리',
-    icon: WrenchScrewdriverIcon,
+    icon: BeakerIcon,
     path: '/food',
     items: [
       { path: 'work-orders', name: '작업지시관리', element: <FoodWorkOrdersPage /> },
@@ -291,7 +293,7 @@ export const menuRoutes: MenuRouteGroup[] = [
   },
   {
     title: '인피관리',
-    icon: CircleStackIcon,
+    icon: Square3Stack3DIcon,
     path: '/inpi',
     items: [
       { path: 'inv-status', name: '재고현황', element: <InpiInventoryStatusPage /> },
@@ -311,7 +313,7 @@ export const menuRoutes: MenuRouteGroup[] = [
   },
   {
     title: '인피품질관리',
-    icon: ClipboardDocumentCheckIcon,
+    icon: CheckBadgeIcon,
     path: '/inpi',
     items: [
       { path: 'insp-standards', name: '검사기준서', element: <InpiInspectionStandardsPage /> },
@@ -321,7 +323,7 @@ export const menuRoutes: MenuRouteGroup[] = [
   },
   {
     title: '출고관리',
-    icon: CubeIcon,
+    icon: ArrowsRightLeftIcon,
     path: '/io',
     items: [
       { path: 'seed-inbound-manage', name: '씨드입고관리', element: <SeedInboundManagePage /> },

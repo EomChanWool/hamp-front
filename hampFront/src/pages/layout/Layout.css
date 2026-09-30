@@ -140,30 +140,52 @@
   position: relative;
 }
 
-.sidebarToggle {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+.sidebarWrap {
+  position: relative;
+  z-index: 20;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.sidebarWrap > .sidebar {
+  flex: 1;
+}
+
+.sidebarToggle {
+  position: absolute;
+  top: 29px;
+  right: 0;
+  transform: translateX(50%);
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
   border: 1px solid var(--border);
-  background: none;
+  background: var(--bg-card);
   color: var(--text-muted);
+  cursor: pointer;
   transition:
-    background 0.2s ease,
-    color 0.2s ease;
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .sidebarToggle svg {
-  width: 19px;
-  height: 19px;
+  width: 14px;
+  height: 14px;
 }
 
 .sidebarToggle:hover {
   background: var(--bg-subtle);
   color: var(--text-heading);
+}
+
+.sidebarToggle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .headerIconBtn {
@@ -205,7 +227,7 @@
 .headerNotificationPopup {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
+  left: 0;
   width: 260px;
   padding: 12px;
   background: var(--bg-card);
@@ -376,6 +398,7 @@
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
+  transition: grid-template-columns 0.3s ease;
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -508,7 +531,7 @@
 }
 
 .navGroup.current .navGroupHeader .groupLabel svg {
-  color: var(--primary);
+  color: var(--text-heading);
 }
 
 .navGroup.current .navGroupHeader .groupLabel span {
@@ -593,7 +616,7 @@
 }
 
 .navItems button.active svg {
-  color: var(--primary);
+  color: var(--text-heading);
 }
 
 .navItems button span {
@@ -656,9 +679,8 @@
 }
 
 .mainContent.collapsed .brand {
-  flex-direction: column;
-  gap: 12px;
-  padding-bottom: 12px;
+  justify-content: center;
+  padding-bottom: 16px;
 }
 
 .mainContent.collapsed .brandInfo {
@@ -1786,6 +1808,10 @@
 
   .sidebar {
     padding: 14px 10px;
+  }
+
+  .sidebarToggle {
+    top: 27px;
   }
 }
 
