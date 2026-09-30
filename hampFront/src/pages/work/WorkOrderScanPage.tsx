@@ -12,6 +12,7 @@ import type { WorkOrderLineScanResponse, WorkOrderPerformanceScanResponse } from
 import '@/pages/work/WorkTabletHome.css';
 import '@/pages/work/WorkSeedReportScanPage.css';
 import '@/pages/work/WorkOrderScanPage.css';
+import { useSearchParams } from 'react-router-dom';
 
 type ConnectionStatus = 'connecting' | 'open' | 'closed';
 
@@ -26,11 +27,6 @@ const STATUS_LABEL: Record<string, string> = {
   DONE: '완료',
   DELAY: '지연',
 };
-
-const ZONE = {
-  FOOD: 1,
-  INPI: 2,
-} as const;
 
 const KEYPAD_KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', 'back'];
 
@@ -62,6 +58,10 @@ const isPerformanceScanResult = (data: unknown): data is WorkOrderPerformanceSca
 export function WorkOrderScanPage() {
   const navigate = useNavigate();
 
+  const [searchParams] = useSearchParams();
+
+  const zone = searchParams.get('zone') ?? '';
+
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const [scanResult, setScanResult] = useState<WorkOrderLineScanResponse | null>(null);
   const [scanFailure, setScanFailure] = useState<ScanFailure | null>(null);
@@ -85,14 +85,11 @@ export function WorkOrderScanPage() {
   // 투입수량을 아코디언으로 펼쳐서 보고 있는 공정 코드들
   const [expandedOperCodes, setExpandedOperCodes] = useState<Set<string>>(new Set());
 
-  const zone = ZONE.FOOD
-
   // 작업지시 스캔 화면 진입 시 SSE 연결, 이탈 시 반드시 연결 종료
   useEffect(() => {
 
     const eventSource = new EventSource(
-      
-      `${apiClient.defaults.baseURL}/work-orders/scan/stream?zone=${zone}`,
+      `${apiClient.defaults.baseURL}/work-orders/scan/stream?zone=${encodeURIComponent(zone)}`,
     );
 
     eventSource.onopen = () => setConnectionStatus('open');
@@ -154,7 +151,7 @@ export function WorkOrderScanPage() {
     return () => {
       eventSource.close();
     };
-  }, []);
+  }, [zone]);
 
   useEffect(() => {
     if (!scanFailure) return;
@@ -275,227 +272,227 @@ export function WorkOrderScanPage() {
           </div>
 
           <div className="workScanMain">
-          {scanFailure && !scanResult ? (
-            // 작업지시 라벨 자체를 아직 못 읽은 경우 - 보여줄 결과 화면이 없으니 전체 화면으로 안내
-            <div className="workScanWaiting workScanFailure">
-              <ExclamationTriangleIcon className="workScanWaitingIconSvg" />
-              <h1>스캔한 라벨을 확인할 수 없습니다</h1>
-              <p>{scanFailure.message}</p>
-              <button
-                type="button"
-                className="workScanCancelBtn"
-                onClick={() => setScanFailure(null)}
-              >
-                다시 스캔하기
-              </button>
-            </div>
-          ) : !scanResult ? (
-            <div className="workScanWaiting">
-              <div className="workScanTarget">
-                <span className="workScanTargetCorner workScanTargetCorner--tl" />
-                <span className="workScanTargetCorner workScanTargetCorner--tr" />
-                <span className="workScanTargetCorner workScanTargetCorner--bl" />
-                <span className="workScanTargetCorner workScanTargetCorner--br" />
-                <span className="workScanTargetLine" />
-                <ClipboardDocumentListIcon className="workScanWaitingIconSvg" />
+            {scanFailure && !scanResult ? (
+              // 작업지시 라벨 자체를 아직 못 읽은 경우 - 보여줄 결과 화면이 없으니 전체 화면으로 안내
+              <div className="workScanWaiting workScanFailure">
+                <ExclamationTriangleIcon className="workScanWaitingIconSvg" />
+                <h1>스캔한 라벨을 확인할 수 없습니다</h1>
+                <p>{scanFailure.message}</p>
+                <button
+                  type="button"
+                  className="workScanCancelBtn"
+                  onClick={() => setScanFailure(null)}
+                >
+                  다시 스캔하기
+                </button>
               </div>
-              <h1>스캔 대기 중</h1>
-              <p>작업지시 라벨을 스캐너로 찍으면 이 화면에 자동으로 표시됩니다.</p>
-            </div>
-          ) : (
-            <div className="workOrderResult">
-              <div className="workOrderItemCard">
-                <div className="workOrderCardHead">
-                  <span className="workOrderId">{scanResult.workId}</span>
-                  <span className={`workOrderStatusChip workOrderStatusChip--${scanResult.status}`}>
-                    {STATUS_LABEL[scanResult.status] ?? scanResult.status}
-                  </span>
+            ) : !scanResult ? (
+              <div className="workScanWaiting">
+                <div className="workScanTarget">
+                  <span className="workScanTargetCorner workScanTargetCorner--tl" />
+                  <span className="workScanTargetCorner workScanTargetCorner--tr" />
+                  <span className="workScanTargetCorner workScanTargetCorner--bl" />
+                  <span className="workScanTargetCorner workScanTargetCorner--br" />
+                  <span className="workScanTargetLine" />
+                  <ClipboardDocumentListIcon className="workScanWaitingIconSvg" />
                 </div>
-                <h2>{scanResult.itemNm}</h2>
-                <div className="workScanInfoGrid">
-                  <div className="workScanInfoItem">
-                    <span>담당자</span>
-                    <strong>{scanResult.managerNm ?? '미지정'}</strong>
-                  </div>
-                  <div className="workScanInfoItem">
-                    <span>거래처</span>
-                    <strong>{scanResult.bpNm ?? '-'}</strong>
-                  </div>
-                </div>
-                <div className="workOrderQtyRow">
-                  <span>지시수량</span>
-                  <strong>
-                    {scanResult.instructQty.toLocaleString()} {scanResult.unit}
-                  </strong>
-                </div>
+                <h1>스캔 대기 중</h1>
+                <p>작업지시 라벨을 스캐너로 찍으면 이 화면에 자동으로 표시됩니다.</p>
               </div>
-
-              {scanFailure ? (
-                // 작업지시는 이미 정상 스캔된 상태라 화면을 통째로 날리지 않고,
-                // 다음 행동 안내 자리에 빨간 오류로만 짚어준다 (5초 뒤 자동으로 사라짐)
-                <div className="workOrderNextStepBanner workOrderNextStepBanner--error">
-                  스캔한 라벨을 확인할 수 없습니다 — {scanFailure.message}
-                </div>
-              ) : (
-                !pendingStart && (
-                  <div
-                    className={[
-                      'workOrderNextStepBanner',
-                      inProgressStep
-                        ? 'workOrderNextStepBanner--inprogress'
-                        : nextStep
-                          ? 'workOrderNextStepBanner--next'
-                          : 'workOrderNextStepBanner--complete',
-                    ].join(' ')}
-                  >
-                    {/* 진행중/다음 상태는 "지금도 스캐너가 계속 듣고 있다"는 걸 대기 화면과
-                        같은 뷰파인더 모양으로 보여준다 - 완료/오류 상태엔 의미가 없어 뺀다 */}
-                    {(inProgressStep || nextStep) && (
-                      <span className="workOrderNextStepBannerIcon">
-                        <span className="workOrderNextStepBannerCorner workOrderNextStepBannerCorner--tl" />
-                        <span className="workOrderNextStepBannerCorner workOrderNextStepBannerCorner--tr" />
-                        <span className="workOrderNextStepBannerCorner workOrderNextStepBannerCorner--bl" />
-                        <span className="workOrderNextStepBannerCorner workOrderNextStepBannerCorner--br" />
-                        <span className="workOrderNextStepBannerScanLine" />
-                      </span>
-                    )}
-                    <span>
-                      {inProgressStep
-                        ? `진행 중: ${inProgressStep.operNm} — 종료하려면 ${inProgressStepEquipment ? `${inProgressStepEquipment} ` : ''}바코드를 다시 스캔하세요`
-                        : nextStep
-                          ? `다음 공정: ${nextStep.operNm} — ${nextStepEquipment ? `${nextStepEquipment} ` : ''} 바코드를 스캔해주세요`
-                          : '모든 공정이 완료되었습니다'}
+            ) : (
+              <div className="workOrderResult">
+                <div className="workOrderItemCard">
+                  <div className="workOrderCardHead">
+                    <span className="workOrderId">{scanResult.workId}</span>
+                    <span className={`workOrderStatusChip workOrderStatusChip--${scanResult.status}`}>
+                      {STATUS_LABEL[scanResult.status] ?? scanResult.status}
                     </span>
                   </div>
-                )
-              )}
+                  <h2>{scanResult.itemNm}</h2>
+                  <div className="workScanInfoGrid">
+                    <div className="workScanInfoItem">
+                      <span>담당자</span>
+                      <strong>{scanResult.managerNm ?? '미지정'}</strong>
+                    </div>
+                    <div className="workScanInfoItem">
+                      <span>거래처</span>
+                      <strong>{scanResult.bpNm ?? '-'}</strong>
+                    </div>
+                  </div>
+                  <div className="workOrderQtyRow">
+                    <span>지시수량</span>
+                    <strong>
+                      {scanResult.instructQty.toLocaleString()} {scanResult.unit}
+                    </strong>
+                  </div>
+                </div>
 
-              <div className="workOrderRoutingSection">
-                <div className="workOrderRoutingLabel">공정순서도</div>
-                {scanResult.routingSteps.length === 0 ? (
-                  <div className="workOrderRoutingEmpty">등록된 공정순서가 없습니다.</div>
+                {scanFailure ? (
+                  // 작업지시는 이미 정상 스캔된 상태라 화면을 통째로 날리지 않고,
+                  // 다음 행동 안내 자리에 빨간 오류로만 짚어준다 (5초 뒤 자동으로 사라짐)
+                  <div className="workOrderNextStepBanner workOrderNextStepBanner--error">
+                    스캔한 라벨을 확인할 수 없습니다 — {scanFailure.message}
+                  </div>
                 ) : (
-                  <div className="workOrderRoutingList">
-                    {scanResult.routingSteps.map((step) => {
-                      // done: 작업지시 라벨을 스캔한 시점의 DB 기준값(재스캔해도 유지됨)
-                      // completedOperCodes: 지금 이 화면에서 방금 종료된 공정(다음 재스캔 전 즉시 반영용)
-                      const isDone = step.done || completedOperCodes.has(step.operCode);
-                      const isPending = pendingStart?.operCode === step.operCode;
-                      // inProgress: 시작은 했는데 아직 종료(완료) 전인 상태 - done이면 더 이상 진행중이 아니므로 제외
-                      const isInProgress = !isDone && (step.inProgress || startedOperCode === step.operCode);
-                      // 투입수량: 재스캔 후엔 서버가 DB 기준으로 내려주지만, 방금 이 화면에서 시작한
-                      // 공정은 아직 재스캔 전이라 서버 값이 없어 직전에 입력한 값을 그대로 보여준다
-                      const displayInputQty =
-                        step.inputQty ?? (startedOperCode === step.operCode ? startedInputQty : null);
-                      const hasInputQty = displayInputQty !== null;
-                      const isExpanded = expandedOperCodes.has(step.operCode);
-                      const isNext = !isPending && nextStep?.operCode === step.operCode;
-                      return (
-                        <div
-                          key={step.operCode}
-                          className={[
-                            'workOrderRoutingStep',
-                            step.finalYn === 'Y' ? 'workOrderRoutingStep--final' : '',
-                            isDone ? 'workOrderRoutingStep--done' : '',
-                            isInProgress ? 'workOrderRoutingStep--inprogress' : '',
-                            isPending ? 'workOrderRoutingStep--pending' : '',
-                            isNext ? 'workOrderRoutingStep--next' : '',
-                          ].filter(Boolean).join(' ')}
-                        >
-                          <span className="workOrderRoutingMarker">{isDone ? '✓' : step.operSeq}</span>
-                          <div className="workOrderRoutingInfo">
-                            <div className="workOrderRoutingHead">
-                              <div className="workOrderRoutingText">
-                                <div className="workOrderRoutingNameRow">
-                                  <span className="workOrderRoutingOperNm">{step.operNm}</span>
-                                  <span className="workOrderRoutingOperCode">
-                                    ({step.operCode}
-                                    {step.equipments.length > 0
-                                      ? ` · ${step.equipments.map((eq) => eq.eqNm).join(', ')}`
-                                      : ''}
-                                    )
-                                  </span>
+                  !pendingStart && (
+                    <div
+                      className={[
+                        'workOrderNextStepBanner',
+                        inProgressStep
+                          ? 'workOrderNextStepBanner--inprogress'
+                          : nextStep
+                            ? 'workOrderNextStepBanner--next'
+                            : 'workOrderNextStepBanner--complete',
+                      ].join(' ')}
+                    >
+                      {/* 진행중/다음 상태는 "지금도 스캐너가 계속 듣고 있다"는 걸 대기 화면과
+                        같은 뷰파인더 모양으로 보여준다 - 완료/오류 상태엔 의미가 없어 뺀다 */}
+                      {(inProgressStep || nextStep) && (
+                        <span className="workOrderNextStepBannerIcon">
+                          <span className="workOrderNextStepBannerCorner workOrderNextStepBannerCorner--tl" />
+                          <span className="workOrderNextStepBannerCorner workOrderNextStepBannerCorner--tr" />
+                          <span className="workOrderNextStepBannerCorner workOrderNextStepBannerCorner--bl" />
+                          <span className="workOrderNextStepBannerCorner workOrderNextStepBannerCorner--br" />
+                          <span className="workOrderNextStepBannerScanLine" />
+                        </span>
+                      )}
+                      <span>
+                        {inProgressStep
+                          ? `진행 중: ${inProgressStep.operNm} — 종료하려면 ${inProgressStepEquipment ? `${inProgressStepEquipment} ` : ''}바코드를 다시 스캔하세요`
+                          : nextStep
+                            ? `다음 공정: ${nextStep.operNm} — ${nextStepEquipment ? `${nextStepEquipment} ` : ''} 바코드를 스캔해주세요`
+                            : '모든 공정이 완료되었습니다'}
+                      </span>
+                    </div>
+                  )
+                )}
+
+                <div className="workOrderRoutingSection">
+                  <div className="workOrderRoutingLabel">공정순서도</div>
+                  {scanResult.routingSteps.length === 0 ? (
+                    <div className="workOrderRoutingEmpty">등록된 공정순서가 없습니다.</div>
+                  ) : (
+                    <div className="workOrderRoutingList">
+                      {scanResult.routingSteps.map((step) => {
+                        // done: 작업지시 라벨을 스캔한 시점의 DB 기준값(재스캔해도 유지됨)
+                        // completedOperCodes: 지금 이 화면에서 방금 종료된 공정(다음 재스캔 전 즉시 반영용)
+                        const isDone = step.done || completedOperCodes.has(step.operCode);
+                        const isPending = pendingStart?.operCode === step.operCode;
+                        // inProgress: 시작은 했는데 아직 종료(완료) 전인 상태 - done이면 더 이상 진행중이 아니므로 제외
+                        const isInProgress = !isDone && (step.inProgress || startedOperCode === step.operCode);
+                        // 투입수량: 재스캔 후엔 서버가 DB 기준으로 내려주지만, 방금 이 화면에서 시작한
+                        // 공정은 아직 재스캔 전이라 서버 값이 없어 직전에 입력한 값을 그대로 보여준다
+                        const displayInputQty =
+                          step.inputQty ?? (startedOperCode === step.operCode ? startedInputQty : null);
+                        const hasInputQty = displayInputQty !== null;
+                        const isExpanded = expandedOperCodes.has(step.operCode);
+                        const isNext = !isPending && nextStep?.operCode === step.operCode;
+                        return (
+                          <div
+                            key={step.operCode}
+                            className={[
+                              'workOrderRoutingStep',
+                              step.finalYn === 'Y' ? 'workOrderRoutingStep--final' : '',
+                              isDone ? 'workOrderRoutingStep--done' : '',
+                              isInProgress ? 'workOrderRoutingStep--inprogress' : '',
+                              isPending ? 'workOrderRoutingStep--pending' : '',
+                              isNext ? 'workOrderRoutingStep--next' : '',
+                            ].filter(Boolean).join(' ')}
+                          >
+                            <span className="workOrderRoutingMarker">{isDone ? '✓' : step.operSeq}</span>
+                            <div className="workOrderRoutingInfo">
+                              <div className="workOrderRoutingHead">
+                                <div className="workOrderRoutingText">
+                                  <div className="workOrderRoutingNameRow">
+                                    <span className="workOrderRoutingOperNm">{step.operNm}</span>
+                                    <span className="workOrderRoutingOperCode">
+                                      ({step.operCode}
+                                      {step.equipments.length > 0
+                                        ? ` · ${step.equipments.map((eq) => eq.eqNm).join(', ')}`
+                                        : ''}
+                                      )
+                                    </span>
+                                  </div>
+                                  {hasInputQty && isExpanded && (
+                                    <div
+                                      className={[
+                                        'workOrderRoutingInputQty',
+                                        isInProgress ? 'workOrderRoutingInputQty--active' : '',
+                                      ].filter(Boolean).join(' ')}
+                                    >
+                                      투입 {displayInputQty.toLocaleString()} {scanResult.unit}
+                                    </div>
+                                  )}
                                 </div>
-                                {hasInputQty && isExpanded && (
-                                  <div
-                                    className={[
-                                      'workOrderRoutingInputQty',
-                                      isInProgress ? 'workOrderRoutingInputQty--active' : '',
-                                    ].filter(Boolean).join(' ')}
-                                  >
-                                    투입 {displayInputQty.toLocaleString()} {scanResult.unit}
+                                {(isInProgress || isNext || step.finalYn === 'Y') && (
+                                  <div className="workOrderRoutingTags">
+                                    {isInProgress && (
+                                      <span className="workOrderRoutingProgressTag">진행중</span>
+                                    )}
+                                    {isNext && (
+                                      <span className="workOrderRoutingNextTag">다음</span>
+                                    )}
+                                    {step.finalYn === 'Y' && (
+                                      <span className="workOrderRoutingFinalTag">최종공정</span>
+                                    )}
                                   </div>
                                 )}
+                                {hasInputQty && (
+                                  <button
+                                    type="button"
+                                    className="workOrderRoutingChevronBtn"
+                                    onClick={() => toggleExpandedOperCode(step.operCode)}
+                                  >
+                                    <ChevronDownIcon
+                                      className={[
+                                        'workOrderRoutingChevron',
+                                        isExpanded ? 'workOrderRoutingChevron--open' : '',
+                                      ].filter(Boolean).join(' ')}
+                                    />
+                                  </button>
+                                )}
                               </div>
-                              {(isInProgress || isNext || step.finalYn === 'Y') && (
-                                <div className="workOrderRoutingTags">
-                                  {isInProgress && (
-                                    <span className="workOrderRoutingProgressTag">진행중</span>
-                                  )}
-                                  {isNext && (
-                                    <span className="workOrderRoutingNextTag">다음</span>
-                                  )}
-                                  {step.finalYn === 'Y' && (
-                                    <span className="workOrderRoutingFinalTag">최종공정</span>
-                                  )}
+
+                              {isPending && (
+                                <div className="workOrderPerformanceForm">
+                                  <div className="workOrderPerformanceLabel">투입수량 입력</div>
+                                  <div className="workScanQtyDisplay">
+                                    {qtyInput || '0'} <span>{scanResult.unit}</span>
+                                  </div>
+
+                                  <NumericKeypad onPress={handleKeypadPress} />
+
+                                  {startError && <div className="workScanErrorMsg">{startError}</div>}
+
+                                  <div className="workScanActionRow">
+                                    <button
+                                      type="button"
+                                      className="workScanCancelBtn"
+                                      onClick={handleCancelStart}
+                                      disabled={isSubmitting}
+                                    >
+                                      취소
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="workScanSubmitBtn"
+                                      onClick={handleConfirmStart}
+                                      disabled={isSubmitting}
+                                    >
+                                      {isSubmitting ? '등록 중...' : '공정 시작'}
+                                    </button>
+                                  </div>
                                 </div>
-                              )}
-                              {hasInputQty && (
-                                <button
-                                  type="button"
-                                  className="workOrderRoutingChevronBtn"
-                                  onClick={() => toggleExpandedOperCode(step.operCode)}
-                                >
-                                  <ChevronDownIcon
-                                    className={[
-                                      'workOrderRoutingChevron',
-                                      isExpanded ? 'workOrderRoutingChevron--open' : '',
-                                    ].filter(Boolean).join(' ')}
-                                  />
-                                </button>
                               )}
                             </div>
-
-                            {isPending && (
-                              <div className="workOrderPerformanceForm">
-                                <div className="workOrderPerformanceLabel">투입수량 입력</div>
-                                <div className="workScanQtyDisplay">
-                                  {qtyInput || '0'} <span>{scanResult.unit}</span>
-                                </div>
-
-                                <NumericKeypad onPress={handleKeypadPress} />
-
-                                {startError && <div className="workScanErrorMsg">{startError}</div>}
-
-                                <div className="workScanActionRow">
-                                  <button
-                                    type="button"
-                                    className="workScanCancelBtn"
-                                    onClick={handleCancelStart}
-                                    disabled={isSubmitting}
-                                  >
-                                    취소
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="workScanSubmitBtn"
-                                    onClick={handleConfirmStart}
-                                    disabled={isSubmitting}
-                                  >
-                                    {isSubmitting ? '등록 중...' : '공정 시작'}
-                                  </button>
-                                </div>
-                              </div>
-                            )}
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
           </div>
 
           {completedBanner && <div className="workScanSuccessToast">{completedBanner}</div>}
