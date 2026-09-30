@@ -2,6 +2,11 @@ import { apiClient } from '@/api/apiClient';
 import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 import type { EquipmentOptionResponse } from '@/api/master/Equipment';
 
+// 도메인 상수 및 타입 (Literal Types)
+
+/** 종류 (1: 식품동, 2: 작물동) */
+export type ZoneType = 1 | 2;
+
 /** 작업지시 라인 요청 (등록/수정 시) */
 export interface WorkOrderLineRequest {
     salesOrderLineId: number;
@@ -30,6 +35,9 @@ export interface WorkOrderLineResponse {
     workId: string;
     salesOrderLineId: number;
     orderCode: string;
+    bpCode: string;
+    bpNm: string;
+    dueDate: string;
     itemCode: string;
     itemNm: string;
     instructQty: number;
@@ -218,9 +226,9 @@ export const WorkOrderApi = {
     },
 
     /** 작업지시 라인 바코드 스캔 조회 */
-    scan: async (code: string): Promise<ApiResponseWorkOrderLineScanResponse> => {
+    scan: async (code: string, zone: ZoneType): Promise<ApiResponseWorkOrderLineScanResponse> => {
         const res = await apiClient.get('/work-orders/scan', {
-            params: { code },
+            params: { code, zone },
         });
         return res.data;
     },
