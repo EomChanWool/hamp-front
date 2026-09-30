@@ -8,7 +8,9 @@ export function WorkTabletGuard() {
   const location = useLocation();
 
   if (!isAuthenticated) {
-    return <Navigate to="/work/login" replace state={{ from: location.pathname }} />;
+    return <Navigate to="/work/login" replace state={{
+      from: `${location.pathname}${location.search}`,
+    }} />;
   }
 
   return <Outlet />;
