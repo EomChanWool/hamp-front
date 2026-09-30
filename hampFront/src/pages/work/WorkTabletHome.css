@@ -179,9 +179,28 @@
   gap: 18px;
 }
 
+.workTabletZoneLabel {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
+  vertical-align: middle;
+  background: #f1f5f9;
+  color: #334155;
+}
+
 .workTabletMenuButtons {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+.workTabletTypeButtons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   width: 100%;
 }
@@ -212,6 +231,11 @@
   color: #fff;
   stroke-width: 1.5;
   flex-shrink: 0;
+}
+
+.workTabletBtn svg {
+  width: 38px;
+  height: 38px;
 }
 
 .workTabletBtnText {
