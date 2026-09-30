@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ChevronDownIcon,
   ClipboardDocumentListIcon,
@@ -9,10 +9,10 @@ import axios from 'axios';
 import { apiClient } from '@/api/apiClient';
 import { WorkOrderApi } from '@/api/WorkOrder';
 import type { WorkOrderLineScanResponse, WorkOrderPerformanceScanResponse } from '@/api/WorkOrder';
+import { isValidWorkZone } from '@/utils/common';
 import '@/pages/work/WorkTabletHome.css';
 import '@/pages/work/WorkSeedReportScanPage.css';
 import '@/pages/work/WorkOrderScanPage.css';
-import { useSearchParams } from 'react-router-dom';
 
 type ConnectionStatus = 'connecting' | 'open' | 'closed';
 
@@ -57,9 +57,7 @@ const isPerformanceScanResult = (data: unknown): data is WorkOrderPerformanceSca
 
 export function WorkOrderScanPage() {
   const navigate = useNavigate();
-
   const [searchParams] = useSearchParams();
-
   const zone = searchParams.get('zone') ?? '';
 
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
@@ -87,7 +85,8 @@ export function WorkOrderScanPage() {
 
   // 작업지시 스캔 화면 진입 시 SSE 연결, 이탈 시 반드시 연결 종료
   useEffect(() => {
-
+    if (!isValidWorkZone(zone)) return;
+    
     const eventSource = new EventSource(
       `${apiClient.defaults.baseURL}/work-orders/scan/stream?zone=${encodeURIComponent(zone)}`,
     );
@@ -250,13 +249,21 @@ export function WorkOrderScanPage() {
   const nextStepEquipment = equipmentLabel(nextStep);
   const inProgressStepEquipment = equipmentLabel(inProgressStep);
 
+  if (!isValidWorkZone(zone)) {
+    return <Navigate to="/work" replace />;
+  }
+
   return (
     <div className="workTabletPage">
       <div className="workScanPanel">
         <div className="workScanContainer">
           <div className="workScanTopBar">
-            <button type="button" className="workScanHomeBtn" onClick={() => navigate('/work')}>
-              ← 홈으로
+            <button
+              type="button"
+              className="workScanHomeBtn"
+              onClick={() => navigate(`/work/home?zone=${encodeURIComponent(zone)}`)}
+            >
+              ← 돌아가기
             </button>
             <span className={`workScanStatus workScanStatus--${connectionStatus}`}>
               <span className="workScanStatusDot" />
