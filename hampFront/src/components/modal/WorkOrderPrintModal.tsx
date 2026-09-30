@@ -8,6 +8,9 @@ export interface WorkOrderLineDetail {
     salesOrderLineId: number;
     orderCode: string;
     lineId: string;
+    bpCode?: string;
+    bpNm?: string;
+    dueDate?: string;
     itemCode: string;
     itemNm: string;
     instructQty: number;
@@ -181,8 +184,8 @@ export function WorkOrderPrintModal({
                                             순번
                                         </th>
 
-                                        <th className="col-order">
-                                            연결 수주
+                                        <th className="col-bp">
+                                            거래처
                                         </th>
 
                                         <th className="col-item-code">
@@ -191,6 +194,10 @@ export function WorkOrderPrintModal({
 
                                         <th className="col-qty">
                                             지시수량
+                                        </th>
+
+                                        <th className="dueDate">
+                                            납기일자
                                         </th>
                                     </tr>
                                 </thead>
@@ -201,14 +208,11 @@ export function WorkOrderPrintModal({
                                             {index + 1}
                                         </td>
 
-                                        <td>
-                                            <div className="order-code">
-                                                {line.orderCode || "-"}
-                                            </div>
-
-                                            <div className="order-line">
-                                                {line.lineId || "-"}
-                                            </div>
+                                        <td className="bp-name">
+                                            {line.bpNm || "-"}
+                                            <span className="bp-code">
+                                                ({line.bpCode || "-"})
+                                            </span>
                                         </td>
 
                                         <td className="item-name">
@@ -223,6 +227,10 @@ export function WorkOrderPrintModal({
                                             {line.unit
                                                 ? ` ${line.unit}`
                                                 : ""}
+                                        </td>
+
+                                        <td className="text-center">
+                                            {line.dueDate || "-"}
                                         </td>
                                     </tr>
                                 </tbody>
