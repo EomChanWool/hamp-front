@@ -284,7 +284,7 @@
     text-align: center;
 }
 
-.line-table .col-order {
+.line-table .col-bp {
     width: 200px;
     text-align: center;
 }
@@ -323,8 +323,24 @@
     text-align: center;
 }
 
-.order-code {
+.line-table .dueDate {
+    width: 35px;
+    text-align: center;
+}
+
+.bp-name {
+    color: #0f172a;
+
     font-weight: 600;
+
+}
+
+.bp-code {
+    margin-left: 6px;
+    color: #64748b;
+    font-size: 8px;
+    font-weight: 400;
+    font-family: "Courier New", monospace;
 }
 
 .order-line {
@@ -646,7 +662,8 @@
   ===================================================== */
 
     .work-order-print-pages .work-order-print-sheet {
-        page: work-order; /* 위에서 정의한 A4 용지 설정 적용 */
+        page: work-order;
+        /* 위에서 정의한 A4 용지 설정 적용 */
 
         display: block !important;
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArchiveBoxIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { apiClient } from '@/api/apiClient';
@@ -7,6 +7,7 @@ import {
   SeedGoodsReceiptReturnApi,
   type SeedGoodsReceiptResponse,
 } from '@/api/ioSeed/SeedGoodsReceipt';
+import { isValidWorkZone } from '@/utils/common';
 import '@/pages/work/WorkTabletHome.css';
 import '@/pages/work/WorkSeedReportScanPage.css';
 
@@ -30,11 +31,6 @@ const REPORT_STATUS_VARIANT: Record<string, string> = {
   신고완료: 'done',
 };
 
-const ZONE = {
-  FOOD: 1,
-  INPI: 2,
-} as const;
-
 const KEYPAD_KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', 'back'];
 
 function NumericKeypad({ onPress }: { onPress: (key: string) => void }) {
@@ -57,6 +53,10 @@ function NumericKeypad({ onPress }: { onPress: (key: string) => void }) {
 export function WorkSeedReportScanPage() {
   const navigate = useNavigate();
 
+  const [searchParams] = useSearchParams();
+
+  const zone = searchParams.get('zone') ?? '';
+
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const [scanResult, setScanResult] = useState<SeedGoodsReceiptResponse | null>(null);
   const [scanFailure, setScanFailure] = useState<ScanFailure | null>(null);
@@ -66,12 +66,12 @@ export function WorkSeedReportScanPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const zone = ZONE.FOOD
-
   // 신고처리 화면 진입 시 SSE 연결, 이탈 시 반드시 연결 종료
   useEffect(() => {
+    if (!isValidWorkZone(zone)) return;
+
     const eventSource = new EventSource(
-      `${apiClient.defaults.baseURL}/seed-goods-receipts/scan/stream?zone=${zone}`,
+      `${apiClient.defaults.baseURL}/seed-goods-receipts/scan/stream?zone=${encodeURIComponent(zone)}`,
     );
 
     eventSource.onopen = () => setConnectionStatus('open');
@@ -99,7 +99,7 @@ export function WorkSeedReportScanPage() {
     return () => {
       eventSource.close();
     };
-  }, []);
+  }, [zone]);
 
   useEffect(() => {
     if (!successMsg) return;
@@ -171,13 +171,21 @@ export function WorkSeedReportScanPage() {
         ? '연결 중'
         : '연결 끊김 · 재연결 시도 중';
 
+  if (!isValidWorkZone(zone)) {
+    return <Navigate to="/work" replace />;
+  }
+
   return (
     <div className="workTabletPage">
       <div className="workScanPanel">
         <div className="workScanContainer">
           <div className="workScanTopBar">
-            <button type="button" className="workScanHomeBtn" onClick={() => navigate('/work')}>
-              ← 홈으로
+            <button
+              type="button"
+              className="workScanHomeBtn"
+              onClick={() => navigate(`/work/home?zone=${encodeURIComponent(zone)}`)}
+            >
+              ← 돌아가기
             </button>
             <span className={`workScanStatus workScanStatus--${connectionStatus}`}>
               <span className="workScanStatusDot" />
@@ -193,109 +201,108 @@ export function WorkSeedReportScanPage() {
           </div>
 
           <div className="workScanMain">
-          {scanFailure ? (
-            <div className="workScanWaiting workScanFailure">
-              <ExclamationTriangleIcon className="workScanWaitingIconSvg" />
-              <h1>스캔한 라벨을 확인할 수 없습니다</h1>
-              <p>{scanFailure.message}</p>
-              <button
-                type="button"
-                className="workScanCancelBtn"
-                onClick={() => setScanFailure(null)}
-              >
-                다시 스캔하기
-              </button>
-            </div>
-          ) : !scanResult ? (
-            <div className="workScanWaiting">
-              <div className="workScanTarget">
-                <span className="workScanTargetCorner workScanTargetCorner--tl" />
-                <span className="workScanTargetCorner workScanTargetCorner--tr" />
-                <span className="workScanTargetCorner workScanTargetCorner--bl" />
-                <span className="workScanTargetCorner workScanTargetCorner--br" />
-                <span className="workScanTargetLine" />
-                <ArchiveBoxIcon className="workScanWaitingIconSvg" />
+            {scanFailure ? (
+              <div className="workScanWaiting workScanFailure">
+                <ExclamationTriangleIcon className="workScanWaitingIconSvg" />
+                <h1>스캔한 라벨을 확인할 수 없습니다</h1>
+                <p>{scanFailure.message}</p>
+                <button
+                  type="button"
+                  className="workScanCancelBtn"
+                  onClick={() => setScanFailure(null)}
+                >
+                  다시 스캔하기
+                </button>
               </div>
-              <h1>스캔 대기 중</h1>
-              <p>입고 라벨을 스캐너로 찍으면 이 화면에 자동으로 표시됩니다.</p>
-            </div>
-          ) : (
-            <div className="workScanEntry">
-              <div className="workScanItemCard">
-                <div className="workScanCardHead">
-                  <span className="workScanBarcode">{scanResult.barcode}</span>
-                  <span
-                    className={`workScanStatusChip workScanStatusChip--${
-                      REPORT_STATUS_VARIANT[scanResult.reportStatus] ?? 'none'
-                    }`}
-                  >
-                    {scanResult.reportStatus}
-                  </span>
+            ) : !scanResult ? (
+              <div className="workScanWaiting">
+                <div className="workScanTarget">
+                  <span className="workScanTargetCorner workScanTargetCorner--tl" />
+                  <span className="workScanTargetCorner workScanTargetCorner--tr" />
+                  <span className="workScanTargetCorner workScanTargetCorner--bl" />
+                  <span className="workScanTargetCorner workScanTargetCorner--br" />
+                  <span className="workScanTargetLine" />
+                  <ArchiveBoxIcon className="workScanWaitingIconSvg" />
                 </div>
-                <h2>{scanResult.itemNm}</h2>
-                <div className="workScanInfoGrid">
-                  <div className="workScanInfoItem">
-                    <span>입고수량</span>
-                    <strong>{scanResult.receiptQty} {scanResult.unit}</strong>
+                <h1>스캔 대기 중</h1>
+                <p>입고 라벨을 스캐너로 찍으면 이 화면에 자동으로 표시됩니다.</p>
+              </div>
+            ) : (
+              <div className="workScanEntry">
+                <div className="workScanItemCard">
+                  <div className="workScanCardHead">
+                    <span className="workScanBarcode">{scanResult.barcode}</span>
+                    <span
+                      className={`workScanStatusChip workScanStatusChip--${REPORT_STATUS_VARIANT[scanResult.reportStatus] ?? 'none'
+                        }`}
+                    >
+                      {scanResult.reportStatus}
+                    </span>
                   </div>
-                  <div className="workScanInfoItem">
-                    <span>양품수량</span>
-                    <strong>{scanResult.goodQty} {scanResult.unit}</strong>
+                  <h2>{scanResult.itemNm}</h2>
+                  <div className="workScanInfoGrid">
+                    <div className="workScanInfoItem">
+                      <span>입고수량</span>
+                      <strong>{scanResult.receiptQty} {scanResult.unit}</strong>
+                    </div>
+                    <div className="workScanInfoItem">
+                      <span>양품수량</span>
+                      <strong>{scanResult.goodQty} {scanResult.unit}</strong>
+                    </div>
+                    <div className="workScanInfoItem">
+                      <span>기존 신고수량</span>
+                      <strong>{scanResult.returnedQty} {scanResult.unit}</strong>
+                    </div>
+                    <div className="workScanInfoItem">
+                      <span>입고일자</span>
+                      <strong>{scanResult.receivedAt?.slice(0, 10)}</strong>
+                    </div>
                   </div>
-                  <div className="workScanInfoItem">
-                    <span>기존 신고수량</span>
-                    <strong>{scanResult.returnedQty} {scanResult.unit}</strong>
-                  </div>
-                  <div className="workScanInfoItem">
-                    <span>입고일자</span>
-                    <strong>{scanResult.receivedAt?.slice(0, 10)}</strong>
+                  <div className="workScanRemainingBanner">
+                    신고 가능 잔여 {scanResult.remainingQty} {scanResult.unit}
                   </div>
                 </div>
-                <div className="workScanRemainingBanner">
-                  신고 가능 잔여 {scanResult.remainingQty} {scanResult.unit}
+
+                <div className="workScanForm">
+                  <div className="workScanQtyDisplay">
+                    {qtyInput || '0'} <span>{scanResult.unit}</span>
+                  </div>
+
+                  <NumericKeypad onPress={handleKeypadPress} />
+
+                  <div className="workScanDueDateRow">
+                    <label htmlFor="returnDueDate">반납예정일</label>
+                    <input
+                      id="returnDueDate"
+                      type="date"
+                      value={returnDueDate}
+                      onChange={(e) => setReturnDueDate(e.target.value)}
+                    />
+                  </div>
+
+                  {errorMsg && <div className="workScanErrorMsg">{errorMsg}</div>}
+
+                  <div className="workScanActionRow">
+                    <button
+                      type="button"
+                      className="workScanCancelBtn"
+                      onClick={handleCancel}
+                      disabled={isSubmitting}
+                    >
+                      취소
+                    </button>
+                    <button
+                      type="button"
+                      className="workScanSubmitBtn"
+                      onClick={handleSubmit}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? '등록 중...' : '신고 등록'}
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              <div className="workScanForm">
-                <div className="workScanQtyDisplay">
-                  {qtyInput || '0'} <span>{scanResult.unit}</span>
-                </div>
-
-                <NumericKeypad onPress={handleKeypadPress} />
-
-                <div className="workScanDueDateRow">
-                  <label htmlFor="returnDueDate">반납예정일</label>
-                  <input
-                    id="returnDueDate"
-                    type="date"
-                    value={returnDueDate}
-                    onChange={(e) => setReturnDueDate(e.target.value)}
-                  />
-                </div>
-
-                {errorMsg && <div className="workScanErrorMsg">{errorMsg}</div>}
-
-                <div className="workScanActionRow">
-                  <button
-                    type="button"
-                    className="workScanCancelBtn"
-                    onClick={handleCancel}
-                    disabled={isSubmitting}
-                  >
-                    취소
-                  </button>
-                  <button
-                    type="button"
-                    className="workScanSubmitBtn"
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? '등록 중...' : '신고 등록'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+            )}
           </div>
 
           {successMsg && <div className="workScanSuccessToast">{successMsg}</div>}

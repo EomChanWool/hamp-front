@@ -75,7 +75,7 @@ import { InpiOutboundManagePage } from '@pages/page/ioInpi/InpiOutboundManagePag
 
 // 식품생산관리 + 식품품질검사
 import { FoodWorkOrdersPage } from '@pages/page/food/FoodWorkOrdersPage'
-import { FoodWorkOrderCreatePage } from '@/pages/page/food/FoodWorkOrderCreatePage'  
+import { FoodWorkOrderCreatePage } from '@/pages/page/food/FoodWorkOrderCreatePage'
 import { FoodWorkOrderDetailPage } from '@/pages/page/food/FoodWorkOrderDetailPage'
 import { FoodProductionResultsPage } from '@pages/page/food/FoodProductionResultsPage'
 import { FoodProductionStatusPage } from '@pages/page/food/FoodProductionStatusPage'
@@ -115,6 +115,7 @@ import { WorkTabletHome } from '@/pages/work/WorkTabletHome'
 import { WorkSeedReportScanPage } from '@/pages/work/WorkSeedReportScanPage'
 import { WorkOrderScanPage } from '@/pages/work/WorkOrderScanPage'
 import { WorkOutboundScanPage } from '@/pages/work/WorkOutboundScanPage'
+import { WorkTabletType } from '@/pages/work/WorkTabletType'
 
 
 const RootRouter = () => {
@@ -353,8 +354,13 @@ export const routeObj: RouteObject[] = [
     path: '/work/login',
     element: <WorkTabletLoginPage />,
   },
+  {
+    path: '/work',
+    element: <WorkTabletType />,
+  },
+
   // 신고처리는 로그인 없이 바로 사용 가능, 작업지시/출고처리는 로그인이 필요해서 그 라우트만 가드로 감싼다
-  { path: '/work', element: <WorkTabletHome /> },
+  { path: '/work/home', element: <WorkTabletHome /> },
   { path: '/work/seed-report-scan', element: <WorkSeedReportScanPage /> },
   {
     element: <WorkTabletGuard />,

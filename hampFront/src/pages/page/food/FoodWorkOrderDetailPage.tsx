@@ -77,6 +77,9 @@ export function FoodWorkOrderDetailPage() {
           salesOrderLineId: l.salesOrderLineId || 0,
           orderCode: l.orderCode || "",
           lineId: `#${l.workOrderLineId}`,
+          bpCode: l.bpCode || "",
+          bpNm: l.bpNm || "",
+          dueDate: l.dueDate || "",
           itemCode: l.itemCode || "",
           itemNm: l.itemNm || "",
           instructQty: Number(l.instructQty || 0),
@@ -245,12 +248,35 @@ export function FoodWorkOrderDetailPage() {
         ),
       },
       {
+        accessorKey: "bpNm",
+        header: "거래처",
+        cell: ({ row }) => (
+          <div className="food-cell-item-name">
+            <span>{row.original.bpNm || "-"}</span>
+            {row.original.bpCode && (
+              <span className="food-cell-item-code">
+                ({row.original.bpCode})
+              </span>
+            )}
+          </div>
+        ),
+      },
+      {
         accessorKey: "itemNm",
         header: "품목",
         cell: ({ row }) => (
           <div className="food-cell-item-name">
             {row.original.itemNm}
             {row.original.itemCode && <span className="food-cell-item-code">({row.original.itemCode})</span>}
+          </div>
+        ),
+      },
+       {
+        accessorKey: "dueDate",
+        header: "납기일자",
+        cell: ({ row }) => (
+          <div className="food-cell-item-name">
+            {row.original.dueDate}
           </div>
         ),
       },

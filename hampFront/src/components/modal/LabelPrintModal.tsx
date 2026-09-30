@@ -7,6 +7,9 @@ export interface WorkOrderLineDetail {
   salesOrderLineId: number;
   orderCode: string;
   lineId: string;
+  bpCode?: string;
+  bpNm?: string;
+  dueDate?: string;
   itemCode: string;
   itemNm: string;
   unit?: string;
@@ -55,7 +58,7 @@ export function LabelPrintModal({
               <button type="button" className="ghostButton food-label-modal-btn-close" onClick={onClose}>
                 닫기
               </button>
-              <button type="button" className="primaryButton food-label-modal-btn-print" onClick={() => {window.focus(); window.print();}}>
+              <button type="button" className="primaryButton food-label-modal-btn-print" onClick={() => { window.focus(); window.print(); }}>
                 인쇄
               </button>
             </div>
@@ -86,5 +89,5 @@ export function LabelPrintModal({
     </div>
   );
 
-  return createPortal (modal, document.body)
+  return createPortal(modal, document.body)
 }

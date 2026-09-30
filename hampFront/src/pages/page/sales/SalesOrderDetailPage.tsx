@@ -173,6 +173,7 @@ export function SalesOrderDetailPage() {
         status: form.status || null,
         note: form.note || null,
         lines: (form.lines || []).map((line: any) => ({
+          salesOrderLineId: line.salesOrderLineId,
           itemCode: line.itemCode,
           orderQty: Number(line.orderQty) || 0,
           orderAmount: Number(line.orderAmount) || 0,
