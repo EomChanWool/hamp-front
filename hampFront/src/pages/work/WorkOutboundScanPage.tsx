@@ -15,7 +15,7 @@ export function WorkOutboundScanPage() {
         <div className="workScanContainer">
           <div className="workScanTopBar">
             <button type="button" className="workScanHomeBtn" onClick={() => navigate('/work')}>
-              ← 홈으로
+              ← 돌아가기
             </button>
           </div>
 
