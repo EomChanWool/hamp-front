@@ -16,7 +16,7 @@
        4) 오른쪽 끝에 옅은 그림자
      스크롤이 끝(맨 왼쪽/맨 오른쪽)에 도달하면 background-attachment:local
      덕분에 해당 쪽 그림자가 자연스럽게 사라짐 */
-  background:
+  /* background:
     linear-gradient(to right, var(--bg-card, #fff) 30%, rgba(255, 255, 255, 0)) 0 0,
     linear-gradient(to left, var(--bg-card, #fff) 30%, rgba(255, 255, 255, 0)) 100% 0,
     linear-gradient(to right, rgba(15, 23, 42, 0.12), rgba(15, 23, 42, 0)) 0 0,
@@ -24,7 +24,7 @@
   background-repeat: no-repeat;
   background-color: var(--bg-card, #fff);
   background-size: 32px 100%, 32px 100%, 12px 100%, 12px 100%;
-  background-attachment: local, local, scroll, scroll;
+  background-attachment: local, local, scroll, scroll; */
 }
 
 table {
@@ -149,7 +149,7 @@ tbody tr:hover td {
 /* 다크모드에서는 스크롤 그림자 배경도 카드색(--bg-card, 다크 팔레트)에
    맞춰 자동으로 바뀜 — var(--bg-card)를 그대로 쓰고 있어서 별도
    오버라이드 불필요. 그림자 자체의 진하기만 살짝 보정 */
-[data-theme="dark"] .tableWrap {
+/* [data-theme="dark"] .tableWrap {
   background:
     linear-gradient(to right, var(--bg-card) 30%, rgba(26, 29, 39, 0)) 0 0,
     linear-gradient(to left, var(--bg-card) 30%, rgba(26, 29, 39, 0)) 100% 0,
@@ -159,7 +159,7 @@ tbody tr:hover td {
   background-color: var(--bg-card);
   background-size: 32px 100%, 32px 100%, 12px 100%, 12px 100%;
   background-attachment: local, local, scroll, scroll;
-}
+} */
 
 /* ================================
    TABLE - 반응형 (좁은 화면 밀도 축소)
