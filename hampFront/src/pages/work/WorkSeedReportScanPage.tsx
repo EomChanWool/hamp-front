@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArchiveBoxIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { apiClient } from '@/api/apiClient';
@@ -7,6 +7,7 @@ import {
   SeedGoodsReceiptReturnApi,
   type SeedGoodsReceiptResponse,
 } from '@/api/ioSeed/SeedGoodsReceipt';
+import { isValidWorkZone } from '@/utils/common';
 import '@/pages/work/WorkTabletHome.css';
 import '@/pages/work/WorkSeedReportScanPage.css';
 
@@ -67,6 +68,8 @@ export function WorkSeedReportScanPage() {
 
   // 신고처리 화면 진입 시 SSE 연결, 이탈 시 반드시 연결 종료
   useEffect(() => {
+    if (!isValidWorkZone(zone)) return;
+
     const eventSource = new EventSource(
       `${apiClient.defaults.baseURL}/seed-goods-receipts/scan/stream?zone=${encodeURIComponent(zone)}`,
     );
@@ -168,13 +171,21 @@ export function WorkSeedReportScanPage() {
         ? '연결 중'
         : '연결 끊김 · 재연결 시도 중';
 
+  if (!isValidWorkZone(zone)) {
+    return <Navigate to="/work" replace />;
+  }
+
   return (
     <div className="workTabletPage">
       <div className="workScanPanel">
         <div className="workScanContainer">
           <div className="workScanTopBar">
-            <button type="button" className="workScanHomeBtn" onClick={() => navigate('/work')}>
-              ← 홈으로
+            <button
+              type="button"
+              className="workScanHomeBtn"
+              onClick={() => navigate(`/work/home?zone=${encodeURIComponent(zone)}`)}
+            >
+              ← 돌아가기
             </button>
             <span className={`workScanStatus workScanStatus--${connectionStatus}`}>
               <span className="workScanStatusDot" />
