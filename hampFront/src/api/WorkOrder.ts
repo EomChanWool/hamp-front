@@ -130,12 +130,14 @@ export interface WorkOrderPerformanceScanResponse {
 
 /** 설비 스캔으로 받은 공정을 투입수량과 함께 시작 확정할 때 보내는 요청 */
 export interface WorkOrderPerformanceStartRequest {
+    zone: ZoneType;
     operCode: string;
     qty: number;
 }
 
 /** 설비 스캔으로 받은 공정을 종료 확정할 때 보내는 요청 */
 export interface WorkOrderPerformanceFinishRequest {
+    zone: ZoneType;
     operCode: string;
 }
 

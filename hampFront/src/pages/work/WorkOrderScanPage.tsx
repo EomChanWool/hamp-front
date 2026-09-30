@@ -8,7 +8,7 @@ import {
 import axios from 'axios';
 import { apiClient } from '@/api/apiClient';
 import { WorkOrderApi } from '@/api/WorkOrder';
-import type { WorkOrderLineScanResponse, WorkOrderPerformanceScanResponse } from '@/api/WorkOrder';
+import type { WorkOrderLineScanResponse, WorkOrderPerformanceScanResponse, ZoneType } from '@/api/WorkOrder';
 import { isValidWorkZone } from '@/utils/common';
 import '@/pages/work/WorkTabletHome.css';
 import '@/pages/work/WorkSeedReportScanPage.css';
@@ -122,7 +122,7 @@ export function WorkOrderScanPage() {
         // FINISH_READY - 아직 아무것도 기록 안 된 상태라, 정말 종료할지 확인받고 나서야
         // performance/finish를 호출해 실제로 기록한다
         if (window.confirm(`${data.operNm} 공정을 종료하시겠습니까?`)) {
-          WorkOrderApi.finishPerformance({ operCode: data.operCode })
+          WorkOrderApi.finishPerformance({ zone: Number(zone) as ZoneType, operCode: data.operCode })
             .then(() => {
               setCompletedOperCodes((prev) => new Set(prev).add(data.operCode));
               setStartedOperCode(null);
@@ -211,7 +211,7 @@ export function WorkOrderScanPage() {
     setIsSubmitting(true);
     setStartError(null);
     try {
-      await WorkOrderApi.startPerformance({ operCode: pendingStart.operCode, qty });
+      await WorkOrderApi.startPerformance({ zone: Number(zone) as ZoneType, operCode: pendingStart.operCode, qty });
       setStartedOperCode(pendingStart.operCode);
       setStartedInputQty(qty);
       setPendingStart(null);
