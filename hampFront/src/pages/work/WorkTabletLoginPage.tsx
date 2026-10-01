@@ -58,9 +58,9 @@ export function WorkTabletLoginPage() {
           <button
             type="button"
             className="workTabletHomeBtn"
-            onClick={() => navigate('/work')}
+            onClick={() => navigate(-1)}
           >
-            ← 홈으로
+            ← 뒤로가기
           </button>
 
           <div className="workTabletLoginMain">
