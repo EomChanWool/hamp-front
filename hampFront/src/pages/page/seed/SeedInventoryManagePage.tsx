@@ -67,6 +67,8 @@ export function SeedInventoryManagePage() {
     const categoryRef = useRef<HTMLSelectElement>(null);
     const itemCodeRef = useRef<HTMLSelectElement>(null);
     const ioTypeRef = useRef<HTMLSelectElement>(null);
+    const itemCodeInputRef = useRef<HTMLInputElement>(null);
+    const ioTypeInputRef = useRef<HTMLInputElement>(null);
 
     const fetchItemOptions = useCallback(async () => {
         try {
@@ -83,6 +85,18 @@ export function SeedInventoryManagePage() {
 
     const searchFields: SearchField[] = useMemo(
         () => [
+            {
+                type: 'input',
+                label: '품목코드',
+                ref: itemCodeInputRef,
+                name: 'itemCode',
+            },
+            {
+                type: 'input',
+                label: '처리구분',
+                ref: ioTypeInputRef,
+                name: 'ioType',
+            },
             {
                 type: 'select',
                 label: '구분',
@@ -160,11 +174,23 @@ export function SeedInventoryManagePage() {
 
     const handleSearch = () => {
         setPage(0);
+
+        const itemCode =
+            itemCodeInputRef.current?.value.trim() ||
+            itemCodeRef.current?.value.trim() ||
+            '';
+
+        const ioType =
+            ioTypeInputRef.current?.value.trim() ||
+            ioTypeRef.current?.value.trim() ||
+            '';
+
         setSearchFilters({
             category: categoryRef.current?.value || '',
-            itemCode: itemCodeRef.current?.value.trim() || '',
-            ioType: ioTypeRef.current?.value || '',
+            itemCode,
+            ioType,
         });
+
         setEditingId(null);
         setIsCreatingNewRow(false);
     };
@@ -173,6 +199,9 @@ export function SeedInventoryManagePage() {
         if (categoryRef.current) categoryRef.current.value = '';
         if (itemCodeRef.current) itemCodeRef.current.value = '';
         if (ioTypeRef.current) ioTypeRef.current.value = '';
+
+        if (itemCodeInputRef.current) itemCodeInputRef.current.value = '';
+        if (ioTypeInputRef.current) ioTypeInputRef.current.value = '';
 
         setPage(0);
         setSearchFilters({ category: '', itemCode: '', ioType: '' });
