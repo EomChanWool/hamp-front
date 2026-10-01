@@ -2,7 +2,8 @@
    WORK TABLET HOME (현장 태블릿 메뉴)
 ================================ */
 .workTabletPage {
-  width: 100%; /* 100vw는 세로 스크롤바 폭까지 포함해 계산될 수 있어
+  width: 100%;
+  /* 100vw는 세로 스크롤바 폭까지 포함해 계산될 수 있어
                   콘텐츠가 늘어났을 때 우측에 미세한 가로 여백/스크롤이
                   생길 수 있음. 100%로 변경 */
   min-height: 100vh;
@@ -21,18 +22,21 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 880px; /* 세로 태블릿 기준으로 폭을 넓게 잡되, 가로모드/데스크톱에선 이 값에서 멈춰 가운데 정렬됨 */
+  max-width: 880px;
+  /* 세로 태블릿 기준으로 폭을 넓게 잡되, 가로모드/데스크톱에선 이 값에서 멈춰 가운데 정렬됨 */
   box-sizing: border-box;
 }
 
 .workTabletContainer {
   width: 100%;
-  min-height: 620px; /* 스캔 화면(.workScanContainer)이랑 항상 같은 높이가 되도록 최소 높이를 맞춰둠 -
+  min-height: 620px;
+  /* 스캔 화면(.workScanContainer)이랑 항상 같은 높이가 되도록 최소 높이를 맞춰둠 -
                         내용 높이로 서로 맞추려고 하면 뷰포트 폭에 따라 줄바꿈이 달라져서 매번 어긋남 */
   padding: 40px;
   display: flex;
   flex-direction: column;
-  gap: 32px; /* 상단바 - 본문 사이 간격 */
+  gap: 32px;
+  /* 상단바 - 본문 사이 간격 */
   background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -40,7 +44,8 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-sizing: border-box;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-  position: relative; /* 로그아웃 링크를 absolute로 맨 아래 고정하기 위한 기준 */
+  position: relative;
+  /* 로그아웃 링크를 absolute로 맨 아래 고정하기 위한 기준 */
 }
 
 .workTabletTopBar {
@@ -48,7 +53,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 40px; /* 로그인 상태(아바타+이름)와 비로그인 상태(로그인 버튼)의 실제 높이가 서로 달라서
+  min-height: 40px;
+  /* 로그인 상태(아바타+이름)와 비로그인 상태(로그인 버튼)의 실제 높이가 서로 달라서
                        (아바타 36px vs 버튼 40px) 상단바 자체 높이가 미묘하게 바뀌고, 그게 아래 .workTabletMain의
                        남는 공간 크기에 영향을 줘서 본문이 살짝씩 밀리는 원인이었음. 높이를 고정해서 해결 */
 }
@@ -155,13 +161,15 @@
   text-align: center;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 8px;
 }
 
 .workTabletHeader h1 {
   margin: 0;
   color: #f0f0f0;
-  font-size: 32px; /* 대화면용 시원한 제목 크기 */
+  font-size: 32px;
+  /* 대화면용 시원한 제목 크기 */
   font-weight: 700;
   word-break: keep-all;
 }
@@ -172,23 +180,62 @@
   font-size: 15px;
 }
 
+.workTabletScanHeader {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.workTabletScanHeader h1 {
+  margin: 0;
+  color: #f0f0f0;
+  font-size: 32px;
+  /* 대화면용 시원한 제목 크기 */
+  font-weight: 700;
+  word-break: keep-all;
+}
+
+/* ── 생산동(식품동/작물동) 배지 ────────────────────── */
+.workTabletZoneBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 10px 28px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  word-break: keep-all;
+}
+
+.workTabletZoneBadge svg {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+}
+
+.workTabletZoneBadge--food {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #fbbf24;
+}
+
+.workTabletZoneBadge--crop {
+  background: rgba(34, 197, 94, 0.18);
+  border-color: rgba(34, 197, 94, 0.5);
+  color: #4ade80;
+}
+
 .workTabletMenuSection {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 18px;
-}
-
-.workTabletZoneLabel {
-  display: inline-block;
-  margin-left: 12px;
-  padding: 5px 12px;
-  border-radius: 999px;
-  font-size: 15px;
-  font-weight: 700;
-  vertical-align: middle;
-  background: #f1f5f9;
-  color: #334155;
 }
 
 .workTabletMenuButtons {
@@ -208,7 +255,8 @@
 /* 대화면 터치 최적화 버튼 스타일 - 아이콘 + 제목 + 설명이 위아래로 쌓인 카드형 */
 .workTabletBtn {
   width: 100%;
-  min-height: 168px; /* 대화면에서 누르기 좋게 큼직한 높이 */
+  min-height: 168px;
+  /* 대화면에서 누르기 좋게 큼직한 높이 */
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -247,7 +295,8 @@
 }
 
 .workTabletBtnTitle {
-  font-size: 22px; /* 대화면용 큼직한 글씨 */
+  font-size: 22px;
+  /* 대화면용 큼직한 글씨 */
   font-weight: 700;
 }
 
@@ -313,7 +362,8 @@
   }
 
   .workTabletContainer {
-    min-height: 0; /* 세로 공간이 부족한 화면에선 강제 최소높이를 풀어서 내용만큼만 차지하게 함 */
+    min-height: 0;
+    /* 세로 공간이 부족한 화면에선 강제 최소높이를 풀어서 내용만큼만 차지하게 함 */
     padding: 24px 32px;
     gap: 32px;
   }
@@ -334,6 +384,25 @@
     font-size: 13px;
   }
 
+  .workTabletScanHeader {
+    gap: 4px;
+  }
+
+  .workTabletScanHeader h1 {
+    font-size: 24px;
+  }
+
+  .workTabletZoneBadge {
+    margin-bottom: 4px;
+    padding: 6px 20px;
+    font-size: 22px;
+  }
+
+  .workTabletZoneBadge svg {
+    width: 26px;
+    height: 26px;
+  }
+
   .workTabletMenuButtons {
     gap: 12px;
   }
@@ -348,6 +417,12 @@
     width: 28px;
     height: 28px;
   }
+
+  .workTabletBtn svg {
+    width: 28px;
+    height: 28px;
+  }
+
 
   .workTabletBtnTitle {
     font-size: 18px;
@@ -371,7 +446,8 @@
   }
 
   .workTabletPanel {
-    max-width: 400px; /* 모바일에서는 박스 폭 축소 */
+    max-width: 400px;
+    /* 모바일에서는 박스 폭 축소 */
   }
 
   .workTabletContainer {
@@ -384,11 +460,28 @@
   }
 
   .workTabletHeader h1 {
-    font-size: 24px; /* 모바일용 작은 제목 */
+    font-size: 24px;
+    /* 모바일용 작은 제목 */
   }
 
   .workTabletHeader p {
     font-size: 13px;
+  }
+
+  .workTabletScanHeader h1 {
+    font-size: 24px;
+    /* 모바일용 작은 제목 */
+  }
+
+  .workTabletZoneBadge {
+    gap: 8px;
+    padding: 8px 20px;
+    font-size: 22px;
+  }
+
+  .workTabletZoneBadge svg {
+    width: 26px;
+    height: 26px;
   }
 
   .workTabletUserAvatar {
@@ -408,7 +501,12 @@
   }
 
   .workTabletMenuButtons {
-    grid-template-columns: 1fr; /* 좁은 화면에서는 카드를 세로로 한 줄씩 */
+    grid-template-columns: 1fr;
+    /* 좁은 화면에서는 카드를 세로로 한 줄씩 */
+  }
+
+  .workTabletTypeButtons {
+    grid-template-columns: 1fr;
   }
 
   .workTabletBtn {
@@ -424,12 +522,18 @@
     height: 30px;
   }
 
+  .workTabletBtn svg {
+    width: 30px;
+    height: 30px;
+  }
+
   .workTabletBtnText {
     align-items: flex-start;
     text-align: left;
   }
 
   .workTabletBtnTitle {
-    font-size: 18px; /* 모바일용 버튼 글씨 */
+    font-size: 18px;
+    /* 모바일용 버튼 글씨 */
   }
 }

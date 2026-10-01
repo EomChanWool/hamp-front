@@ -1,23 +1,30 @@
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { ClipboardDocumentListIcon, ArchiveBoxIcon, TruckIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/context/AuthContext';
+import { FoodIcon, PlantIcon } from '@/components/icons/CustomIcons';
 import { isValidWorkZone } from '@/utils/common';
 import '@/pages/work/WorkTabletHome.css';
 
 export function WorkTabletHome() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const zone = searchParams.get('zone');
-  if (!isValidWorkZone(zone)) {
-    navigate('/work', { replace: true });
-    return null;
-  }
+
   const { user, logout, isAuthenticated } = useAuth();
+  const zone = searchParams.get('zone');
 
   const handleLogout = async () => {
     if (!window.confirm('로그아웃하시겠습니까?')) return;
     await logout();
   };
+
+  if (!isValidWorkZone(zone)) {
+    return <Navigate to="/work" replace />;
+  }
+
+  const isFoodZone = zone === '1';
+  const zoneLabel = isFoodZone ? '식품동' : '작물동';
+  const zoneVariant = isFoodZone ? 'food' : 'crop';
+  const ZoneIcon = isFoodZone ? FoodIcon : PlantIcon;
 
   return (
     <div className="workTabletPage">
@@ -56,11 +63,12 @@ export function WorkTabletHome() {
 
           <div className="workTabletMain">
             <div className="workTabletHeader">
+              <span className={`workTabletZoneBadge workTabletZoneBadge--${zoneVariant}`}>
+                <ZoneIcon aria-hidden="true" />
+                {zoneLabel}
+              </span>
               <h1>
                 HEMP 현장 스캔 메뉴
-                <span className="workTabletZoneLabel">
-                  {zone === '1' ? '식품동' : '작물동'}
-                </span>
               </h1>
               <p>원하시는 업무를 선택해 주세요.</p>
             </div>

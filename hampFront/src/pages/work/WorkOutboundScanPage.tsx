@@ -20,6 +20,15 @@ export function WorkOutboundScanPage() {
           </div>
 
           <div className="workScanMain">
+            <div className="workTabletScanHeader">
+              {/* <span className={`workTabletZoneBadge workTabletZoneBadge--${zoneVariant}`}>
+                <ZoneIcon aria-hidden="true" />
+                {zoneLabel}
+              </span> */}
+              <h1>
+                출고처리
+              </h1>
+            </div>
             <div className="workScanWaiting">
               <div className="workScanTarget">
                 <span className="workScanTargetCorner workScanTargetCorner--tl" />

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArchiveBoxIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { FoodIcon, PlantIcon } from '@/components/icons/CustomIcons';
 import axios from 'axios';
 import { apiClient } from '@/api/apiClient';
 import {
@@ -175,6 +176,10 @@ export function WorkSeedReportScanPage() {
     return <Navigate to="/work" replace />;
   }
 
+  const isFoodZone = zone === '1';
+  const zoneLabel = isFoodZone ? '식품동' : '작물동';
+  const ZoneIcon = isFoodZone ? FoodIcon : PlantIcon;
+
   return (
     <div className="workTabletPage">
       <div className="workScanPanel">
@@ -201,6 +206,15 @@ export function WorkSeedReportScanPage() {
           </div>
 
           <div className="workScanMain">
+            <div className="workTabletScanHeader">
+              <span className={`workTabletZoneBadge workTabletZoneBadge--food`}>
+                <ZoneIcon aria-hidden="true" />
+                {zoneLabel}
+              </span>
+              <h1>
+                신고처리
+              </h1>
+            </div>
             {scanFailure ? (
               <div className="workScanWaiting workScanFailure">
                 <ExclamationTriangleIcon className="workScanWaitingIconSvg" />
