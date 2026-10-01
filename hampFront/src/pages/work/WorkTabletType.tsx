@@ -55,7 +55,7 @@ export function WorkTabletType() {
               {/* 식품동 버튼 -> 태블릿 식품동 업무 화면 연결 */}
               <button
                 type="button"
-                className="workTabletBtn"
+                className="workTabletBtn workTabletBtn--food"
                 onClick={() => navigate('/work/home?zone=1')}
               >
                 <FoodIcon aria-hidden="true" />
@@ -72,7 +72,7 @@ export function WorkTabletType() {
               {/* 작물동 버튼 -> 태블릿 작물동 업무 화면 연결 */}
               <button
                 type="button"
-                className="workTabletBtn"
+                className="workTabletBtn workTabletBtn--crop"
                 onClick={() => navigate('/work/home?zone=2')}
               >
                 <PlantIcon aria-hidden="true" />
