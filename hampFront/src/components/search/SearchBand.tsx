@@ -260,10 +260,59 @@ function SearchSelect({
   );
 }
 
-export function SearchBand({ fields, onSearch, onReset }: Props) {
+const SCOPE_LIMIT = 2;
+
+export function SearchBand({
+  fields,
+  onSearch,
+  onReset,
+  initialExpanded = false,
+}: Props) {
+  const panelId = useId();
   const [resetKey, setResetKey] = useState(0);
+  const [expanded, setExpanded] = useState(initialExpanded);
+  const keywordRef = useRef<HTMLInputElement>(null);
+  const scopeRef = useRef<HTMLSelectElement>(null);
+
+  const textFields = fields.filter(
+    (field): field is SearchInputField => field.type === "input",
+  );
+  const scopeFields = textFields.slice(0, SCOPE_LIMIT);
+  const unified = scopeFields.length > 1;
+  const single = scopeFields.length === 1 ? scopeFields[0] : null;
+  const hasKeywordRow = scopeFields.length > 0;
+  const panelFields = fields.filter(
+    (field) =>
+      field.type === "select" ||
+      (field.type === "input" && !scopeFields.includes(field)),
+  );
+  const dateFields = fields.filter(
+    (field) => field.type === "date" || field.type === "single-date",
+  );
+  const hasFilters = panelFields.length + dateFields.length > 0;
+
+  const scopeOptions = scopeFields.map((field, index) => ({
+    value: String(index),
+    label: field.label,
+  }));
+
+  const handleSearch = () => {
+    if (unified) {
+      const keyword = keywordRef.current?.value ?? "";
+      const scope = scopeRef.current?.value ?? "0";
+
+      scopeFields.forEach((field, index) => {
+        if (field.ref.current) {
+          field.ref.current.value = String(index) === scope ? keyword : "";
+        }
+      });
+    }
+    onSearch();
+  };
 
   const handleReset = () => {
+    if (keywordRef.current) keywordRef.current.value = "";
+    if (scopeRef.current) scopeRef.current.value = "0";
     onReset?.();
     setResetKey((prev) => prev + 1);
   };
@@ -271,9 +320,102 @@ export function SearchBand({ fields, onSearch, onReset }: Props) {
   const handleInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      onSearch();
+      handleSearch();
     }
   };
+
+  const renderField = (field: SearchField, index: number) => {
+    if (field.type === "select") {
+      return (
+        <SearchSelect
+          key={`${field.label}-${index}`}
+          label={field.label}
+          selectRef={field.ref}
+          options={field.options}
+          resetKey={resetKey}
+        />
+      );
+    }
+
+    return (
+      <label
+        key={`${field.label}-${index}`}
+        className={[
+          "searchField",
+          field.type === "date" ? "dateRangeField" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
+        <p>{field.label}</p>
+
+        {field.type === "input" && (
+          <input
+            ref={field.ref}
+            type="text"
+            defaultValue=""
+            name={field.name}
+            placeholder={field.placeholder ?? `${field.label} 입력`}
+            onKeyDown={handleInputKeyDown}
+          />
+        )}
+
+        {field.type === "single-date" && (
+          <input
+            ref={field.ref}
+            type="date"
+            defaultValue=""
+            name={field.name}
+            onKeyDown={handleInputKeyDown}
+          />
+        )}
+
+        {field.type === "date" && (
+          <div className="dateRangeGroup">
+            <input
+              ref={field.startRef}
+              type="date"
+              defaultValue=""
+              name={field.name ? `${field.name}Start` : undefined}
+            />
+            <span aria-hidden="true">~</span>
+            <input
+              ref={field.endRef}
+              type="date"
+              defaultValue=""
+              name={field.name ? `${field.name}End` : undefined}
+            />
+          </div>
+        )}
+      </label>
+    );
+  };
+
+  const actions = (
+    <div className="searchHeaderActions">
+      {hasFilters && (
+        <button
+          type="button"
+          className="resetButton detailToggle"
+          aria-expanded={expanded}
+          aria-controls={panelId}
+          onClick={() => setExpanded((prev) => !prev)}
+        >
+          <span>상세검색</span>
+          <ChevronDownIcon />
+        </button>
+      )}
+      {onReset && (
+        <button type="button" className="resetButton" onClick={handleReset}>
+          <ArrowPathIcon />
+          <span>초기화</span>
+        </button>
+      )}
+      <button type="button" className="primaryButton" onClick={handleSearch}>
+        <span>조회</span>
+      </button>
+    </div>
+  );
 
   return (
     <section className="searchBand">
@@ -286,88 +428,62 @@ export function SearchBand({ fields, onSearch, onReset }: Props) {
             <h2>Search</h2>
           </div>
         </div>
+      </div>
 
-        <div className="searchHeaderActions">
-          {onReset && (
-            <button type="button" className="resetButton" onClick={handleReset}>
-              <ArrowPathIcon />
-              <span>초기화</span>
-            </button>
+      <div className="searchKeywordRow">
+        {unified && (
+          <SearchSelect
+            label="검색 조건"
+            selectRef={scopeRef}
+            options={scopeOptions}
+            resetKey={resetKey}
+          />
+        )}
+
+        {hasKeywordRow && (
+          <label className="searchField keywordField">
+            <p>{single ? single.label : "검색어"}</p>
+            <input
+              ref={single ? single.ref : keywordRef}
+              type="text"
+              defaultValue=""
+              name={single?.name}
+              placeholder={
+                single
+                  ? (single.placeholder ?? `${single.label} 입력`)
+                  : "검색어 입력"
+              }
+              onKeyDown={handleInputKeyDown}
+            />
+          </label>
+        )}
+
+        {unified &&
+          scopeFields.map((field, index) => (
+            <input
+              key={`${field.name}-${index}`}
+              ref={field.ref}
+              type="text"
+              name={field.name}
+              defaultValue=""
+              hidden
+            />
+          ))}
+
+        {actions}
+      </div>
+
+      {hasFilters && (
+        <div id={panelId} className="searchFilterPanel" hidden={!expanded}>
+          {panelFields.map(renderField)}
+
+          {dateFields.length > 0 && (
+            <div className="searchDateGroup">
+              {dateFields.map(renderField)}
+            </div>
           )}
-          <button type="button" className="primaryButton" onClick={onSearch}>
-            <span>조회</span>
-          </button>
         </div>
-      </div>
-
-      <div className="searchFields">
-        {fields.map((field, index) => {
-          if (field.type === "select") {
-            return (
-              <SearchSelect
-                key={`${field.label}-${index}`}
-                label={field.label}
-                selectRef={field.ref}
-                options={field.options}
-                resetKey={resetKey}
-              />
-            );
-          }
-
-          return (
-            <label
-              key={`${field.label}-${index}`}
-              className={[
-                "searchField",
-                field.type === "date" ? "dateRangeField" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              <p>{field.label}</p>
-
-              {field.type === "input" && (
-                <input
-                  ref={field.ref}
-                  type="text"
-                  defaultValue=""
-                  name={field.name}
-                  placeholder={field.placeholder ?? `${field.label} 입력`}
-                  onKeyDown={handleInputKeyDown}
-                />
-              )}
-
-              {field.type === "single-date" && (
-                <input
-                  ref={field.ref}
-                  type="date"
-                  defaultValue=""
-                  name={field.name}
-                  onKeyDown={handleInputKeyDown}
-                />
-              )}
-
-              {field.type === "date" && (
-                <div className="dateRangeGroup">
-                  <input
-                    ref={field.startRef}
-                    type="date"
-                    defaultValue=""
-                    name={field.name ? `${field.name}Start` : undefined}
-                  />
-                  <span aria-hidden="true">~</span>
-                  <input
-                    ref={field.endRef}
-                    type="date"
-                    defaultValue=""
-                    name={field.name ? `${field.name}End` : undefined}
-                  />
-                </div>
-              )}
-            </label>
-          );
-        })}
-      </div>
+      )}
     </section>
   );
 }
