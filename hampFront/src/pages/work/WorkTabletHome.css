@@ -180,6 +180,23 @@
   font-size: 15px;
 }
 
+.workTabletScanHeader {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.workTabletScanHeader h1 {
+  margin: 0;
+  color: #f0f0f0;
+  font-size: 32px;
+  /* 대화면용 시원한 제목 크기 */
+  font-weight: 700;
+  word-break: keep-all;
+}
+
 /* ── 생산동(식품동/작물동) 배지 ────────────────────── */
 .workTabletZoneBadge {
   display: inline-flex;
@@ -367,6 +384,14 @@
     font-size: 13px;
   }
 
+  .workTabletScanHeader {
+    gap: 4px;
+  }
+
+  .workTabletScanHeader h1 {
+    font-size: 24px;
+  }
+
   .workTabletZoneBadge {
     margin-bottom: 4px;
     padding: 6px 20px;
@@ -441,6 +466,11 @@
 
   .workTabletHeader p {
     font-size: 13px;
+  }
+
+  .workTabletScanHeader h1 {
+    font-size: 24px;
+    /* 모바일용 작은 제목 */
   }
 
   .workTabletZoneBadge {

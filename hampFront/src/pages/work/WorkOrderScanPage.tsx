@@ -5,6 +5,7 @@ import {
   ClipboardDocumentListIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
+import { FoodIcon, PlantIcon } from '@/components/icons/CustomIcons';
 import axios from 'axios';
 import { apiClient } from '@/api/apiClient';
 import { WorkOrderApi } from '@/api/WorkOrder';
@@ -86,7 +87,7 @@ export function WorkOrderScanPage() {
   // 작업지시 스캔 화면 진입 시 SSE 연결, 이탈 시 반드시 연결 종료
   useEffect(() => {
     if (!isValidWorkZone(zone)) return;
-    
+
     const eventSource = new EventSource(
       `${apiClient.defaults.baseURL}/work-orders/scan/stream?zone=${encodeURIComponent(zone)}`,
     );
@@ -253,6 +254,11 @@ export function WorkOrderScanPage() {
     return <Navigate to="/work" replace />;
   }
 
+  const isFoodZone = zone === '1';
+  const zoneLabel = isFoodZone ? '식품동' : '작물동';
+  const zoneVariant = isFoodZone ? 'food' : 'crop';
+  const ZoneIcon = isFoodZone ? FoodIcon : PlantIcon;
+
   return (
     <div className="workTabletPage">
       <div className="workScanPanel">
@@ -279,6 +285,15 @@ export function WorkOrderScanPage() {
           </div>
 
           <div className="workScanMain">
+            <div className="workTabletScanHeader">
+              <span className={`workTabletZoneBadge workTabletZoneBadge--${zoneVariant}`}>
+                <ZoneIcon aria-hidden="true" />
+                {zoneLabel}
+              </span>
+              <h1>
+                작업지시
+              </h1>
+            </div>
             {scanFailure && !scanResult ? (
               // 작업지시 라벨 자체를 아직 못 읽은 경우 - 보여줄 결과 화면이 없으니 전체 화면으로 안내
               <div className="workScanWaiting workScanFailure">
