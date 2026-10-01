@@ -1123,13 +1123,6 @@ textarea.tableInput {
 
 /* ---------- Fields ---------- */
 
-.searchFields {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: flex-end;
-  gap: 14px;
-}
-
 .searchField,
 .searchSelectField {
   position: relative;
@@ -1144,6 +1137,89 @@ textarea.tableInput {
 .searchField.dateRangeField {
   flex: 0 0 260px;
   width: 260px;
+}
+
+.searchKeywordRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.searchKeywordRow > .searchSelectField {
+  flex: 0 0 160px;
+}
+
+.searchKeywordRow .searchField.keywordField {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.searchKeywordRow .searchHeaderActions {
+  margin-left: auto;
+}
+
+.searchKeywordRow .searchHeaderActions button {
+  height: 40px;
+}
+
+.detailToggle svg {
+  transition: transform 0.18s ease;
+}
+
+.detailToggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.searchHeaderActions .detailToggle[aria-expanded="true"] {
+  border-color: var(--primary);
+  color: var(--text-body);
+}
+
+[data-theme="dark"] .searchHeaderActions .detailToggle[aria-expanded="true"] {
+  border-color: var(--primary);
+  color: var(--text-main);
+}
+
+.searchFilterPanel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  animation: searchPanelIn 0.18s ease;
+}
+
+.searchFilterPanel[hidden] {
+  display: none;
+}
+
+.searchFilterPanel .searchField,
+.searchFilterPanel .searchSelectField,
+.searchFilterPanel .searchField.dateRangeField {
+  flex: 0 0 260px;
+  width: 260px;
+}
+
+.searchDateGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+  margin-left: auto;
+}
+
+@keyframes searchPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .searchField p,
@@ -1206,6 +1282,7 @@ textarea.tableInput {
 
 .dateRangeGroup input {
   min-width: 0;
+  padding: 0 8px;
 }
 
 .dateRangeGroup span {
@@ -1408,10 +1485,6 @@ textarea.tableInput {
   .searchBandTop {
     align-items: flex-start;
   }
-
-  .searchFields {
-    flex-wrap: wrap;
-  }
 }
 
 @container content (max-width: 520px) {
@@ -1434,16 +1507,29 @@ textarea.tableInput {
     flex: 1;
   }
 
-  .searchFields {
+  .searchFilterPanel {
     flex-direction: column;
     align-items: stretch;
   }
 
+  .searchDateGroup {
+    flex-direction: column;
+    align-items: stretch;
+    margin-left: 0;
+  }
+
   .searchField,
   .searchSelectField,
-  .searchField.dateRangeField {
+  .searchFilterPanel .searchField,
+  .searchFilterPanel .searchSelectField,
+  .searchFilterPanel .searchField.dateRangeField {
     flex: none;
     width: 100%;
+  }
+
+  .searchKeywordRow > .searchSelectField,
+  .searchKeywordRow .searchField.keywordField {
+    flex: 1 1 100%;
   }
 
   .dateRangeGroup {
@@ -1465,7 +1551,6 @@ textarea.tableInput {
     transition: none !important;
   }
 }
-
 
 /* ================================
    INFO PANELS
