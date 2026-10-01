@@ -5,10 +5,10 @@ import { SearchBand, type SearchField } from '@components/search/SearchBand';
 import { CusTable } from '@components/table/CusTable';
 import { CusPagination } from '@components/table/CusPagination';
 import Spinner from '@/components/common/Spinner';
-import { 
-  SeedGoodsReceiptReturnApi, 
-  type SeedGoodsReceiptReturnItemResponse, 
-  type SeedGoodsReceiptReturnUpdateRequest 
+import {
+  SeedGoodsReceiptReturnApi,
+  type SeedGoodsReceiptReturnItemResponse,
+  type SeedGoodsReceiptReturnUpdateRequest
 } from '@/api/seed/SeedGoodsReceiptReturn';
 import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
 
@@ -34,20 +34,23 @@ export function SeedReportReturnManagePage() {
 
   // 현재 수정 중인 행의 ID
   const [editingId, setEditingId] = useState<number | null>(null);
-  
+
   // 상태 변경 및 날짜 수정용 폼 상태
   const [editForm, setEditForm] = useState<Partial<SeedGoodsReceiptReturnUpdateRequest>>({});
-  
+
   // --- useRef 기반 수량 임시 저장소 (returnId를 키로 관리하여 포커스 튀김 방지) ---
   const editQuantitiesRef = useRef<Record<number, number | ''>>({});
 
   const [searchFilters, setSearchFilters] = useState({
     itemCode: '',
     processStatus: '',
+    processStatusKeyword: '',
   });
 
   const itemCodeRef = useRef<HTMLSelectElement>(null);
+  const itemCodeInputRef = useRef<HTMLInputElement>(null);
   const processStatusRef = useRef<HTMLSelectElement>(null);
+  const processStatusInputRef = useRef<HTMLInputElement>(null);
 
   // 품목 옵션 조회
   const fetchItemOptions = useCallback(async () => {
@@ -65,6 +68,18 @@ export function SeedReportReturnManagePage() {
 
   const searchFields: SearchField[] = useMemo(
     () => [
+      {
+        type: "input",
+        label: "품목코드",
+        ref: itemCodeInputRef,
+        name: "itemCode",
+      },
+      {
+        type: "input",
+        label: "처리상태",
+        ref: processStatusInputRef,
+        name: "processStatus",
+      },
       {
         type: 'select',
         label: '품목',
@@ -109,6 +124,14 @@ export function SeedReportReturnManagePage() {
         params.itemCode = searchFilters.itemCode;
       }
 
+      if (searchFilters.processStatusKeyword === '__INVALID__') {
+        setDataList([]);
+        setTotalElements(0);
+        setTotalPages(0);
+        setIsLoading(false);
+        return;
+      }
+
       if (searchFilters.processStatus !== '') {
         params.processStatus = Number(searchFilters.processStatus);
       }
@@ -137,18 +160,65 @@ export function SeedReportReturnManagePage() {
 
   const handleSearch = () => {
     setPage(0);
+
+    const itemCode =
+      itemCodeInputRef.current?.value.trim() ||
+      itemCodeRef.current?.value.trim() ||
+      '';
+
+    const processStatusInput =
+      processStatusInputRef.current?.value.trim() || '';
+
+    const normalizedStatus = processStatusInput.replace(/\s/g, '');
+
+    let processStatus = '';
+    let processStatusKeyword = '';
+
+    if (!normalizedStatus) {
+      // 상단 input이 비어 있으면 기존 상세 select 사용
+      processStatus = processStatusRef.current?.value.trim() || '';
+    } else if (normalizedStatus === '신고') {
+      // 신고 = 신고대기 + 신고완료
+      processStatusKeyword = '신고';
+    } else if (
+      normalizedStatus === '대기' ||
+      normalizedStatus === '신고대기' ||
+      normalizedStatus === '0'
+    ) {
+      processStatus = '0';
+    } else if (
+      normalizedStatus === '완료' ||
+      normalizedStatus === '신고완료' ||
+      normalizedStatus === '1'
+    ) {
+      processStatus = '1';
+    } else {
+      // 알 수 없는 검색어
+      processStatusKeyword = '__INVALID__';
+    }
+
     setSearchFilters({
-      itemCode: itemCodeRef.current?.value || '',
-      processStatus: processStatusRef.current?.value || '',
+      itemCode,
+      processStatus,
+      processStatusKeyword,
     });
   };
 
   const handleReset = () => {
+    if (itemCodeInputRef.current) itemCodeInputRef.current.value = '';
+    if (processStatusInputRef.current) processStatusInputRef.current.value = '';
+
     if (itemCodeRef.current) itemCodeRef.current.value = '';
     if (processStatusRef.current) processStatusRef.current.value = '';
 
     setPage(0);
-    setSearchFilters({ itemCode: '', processStatus: '' });
+
+    setSearchFilters({
+      itemCode: '',
+      processStatus: '',
+      processStatusKeyword: '',
+    });
+
     setSorting([]);
   };
 
@@ -179,7 +249,7 @@ export function SeedReportReturnManagePage() {
   const handleSaveEdit = async (item: SeedGoodsReceiptReturnItemResponse) => {
     try {
       const finalReturnQty = editQuantitiesRef.current[item.returnId];
-      
+
       // 타입 단언(as SeedGoodsReceiptReturnUpdateRequest)을 통해 필수값 누락 타입 에러 방지
       const payload: SeedGoodsReceiptReturnUpdateRequest = {
         returnQty: finalReturnQty === '' ? 0 : Number(finalReturnQty),
@@ -190,7 +260,7 @@ export function SeedReportReturnManagePage() {
 
       await SeedGoodsReceiptReturnApi.update(item.returnId, payload);
       window.alert('성공적으로 수정되었습니다.');
-      
+
       delete editQuantitiesRef.current[item.returnId];
       setEditingId(null);
       setEditForm({});
@@ -238,7 +308,7 @@ export function SeedReportReturnManagePage() {
         cell: ({ row }) => {
           const item = row.original;
           const isEditing = editingId === item.returnId;
-          
+
           if (isEditing) {
             return (
               <input

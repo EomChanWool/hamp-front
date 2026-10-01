@@ -42,12 +42,12 @@ export function SeedInboundManagePage() {
 
   const [refreshKey, setRefreshKey] = useState(0);
   const [page, setPage] = useState(0);
-  
+
   const [searchFilters, setSearchFilters] = useState({
     itemCode: '',
     receivedAtFrom: '',
     receivedAtTo: '',
-    reportProgress: '', 
+    reportProgress: '',
   });
 
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -124,9 +124,11 @@ export function SeedInboundManagePage() {
   };
 
   const itemCodeRef = useRef<HTMLSelectElement>(null);
+  const itemCodeInputRef = useRef<HTMLInputElement>(null);
   const receivedAtStartRef = useRef<HTMLInputElement>(null);
   const receivedAtEndRef = useRef<HTMLInputElement>(null);
   const reportProgressRef = useRef<HTMLSelectElement>(null);
+  const reportProgressInputRef = useRef<HTMLInputElement>(null);
 
   const fetchItemOptions = useCallback(async () => {
     try {
@@ -143,6 +145,18 @@ export function SeedInboundManagePage() {
 
   const searchFields: SearchField[] = useMemo(
     () => [
+      {
+        type: 'input',
+        label: '품목코드',
+        ref: itemCodeInputRef,
+        name: 'itemCode',
+      },
+      {
+        type: 'input',
+        label: '진행상태',
+        ref: reportProgressInputRef,
+        name: 'reportProgress',
+      },
       {
         type: 'select',
         label: '품목명',
@@ -180,6 +194,14 @@ export function SeedInboundManagePage() {
   );
 
   const loadReceipts = useCallback(async () => {
+    if (searchFilters.reportProgress === '__INVALID__') {
+      setReceipts([]);
+      setTotalElements(0);
+      setTotalPages(0);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const params: Record<string, any> = {
@@ -189,7 +211,9 @@ export function SeedInboundManagePage() {
       if (searchFilters.itemCode) params.itemCode = searchFilters.itemCode;
       if (searchFilters.receivedAtFrom) params.receivedAtFrom = searchFilters.receivedAtFrom;
       if (searchFilters.receivedAtTo) params.receivedAtTo = searchFilters.receivedAtTo;
-      if (searchFilters.reportProgress !== '') params.reportProgress = searchFilters.reportProgress;
+      if (searchFilters.reportProgress !== '') {
+        params.reportProgress = Number(searchFilters.reportProgress);
+      }
 
       if (sortParams.length > 0) {
         params.sort = sortParams;
@@ -215,12 +239,50 @@ export function SeedInboundManagePage() {
 
   const handleSearch = () => {
     setPage(0);
+
+    const itemCode =
+      itemCodeInputRef.current?.value.trim() ||
+      itemCodeRef.current?.value.trim() ||
+      '';
+
+    const reportProgressInput =
+      reportProgressInputRef.current?.value.trim() || '';
+
+    const normalizedProgress = reportProgressInput.replace(/\s/g, '');
+
+    let reportProgress = '';
+
+    if (!normalizedProgress) {
+      // 상단 입력이 비어 있으면 상세 select 사용
+      reportProgress = reportProgressRef.current?.value || '';
+    } else if (
+      normalizedProgress === '미신고' ||
+      normalizedProgress === '0'
+    ) {
+      reportProgress = '0';
+    } else if (
+      normalizedProgress === '부분신고' ||
+      normalizedProgress === '부분신고진행중' ||
+      normalizedProgress === '1'
+    ) {
+      reportProgress = '1';
+    } else if (
+      normalizedProgress === '신고완료' ||
+      normalizedProgress === '2'
+    ) {
+      reportProgress = '2';
+    } else {
+      // 잘못된 진행상태 입력
+      reportProgress = '__INVALID__';
+    }
+
     setSearchFilters({
-      itemCode: itemCodeRef.current?.value.trim() || '',
+      itemCode,
       receivedAtFrom: receivedAtStartRef.current?.value || '',
       receivedAtTo: receivedAtEndRef.current?.value || '',
-      reportProgress: reportProgressRef.current?.value || '',
+      reportProgress,
     });
+
     setEditingReceiptId(null);
     setIsCreatingNewRow(false);
     setSelectedReceiptIds([]);
@@ -228,9 +290,15 @@ export function SeedInboundManagePage() {
 
   const handleReset = () => {
     if (itemCodeRef.current) itemCodeRef.current.value = '';
+    if (itemCodeInputRef.current) {
+      itemCodeInputRef.current.value = '';
+    }
     if (receivedAtStartRef.current) receivedAtStartRef.current.value = '';
     if (receivedAtEndRef.current) receivedAtEndRef.current.value = '';
-    if (reportProgressRef.current) reportProgressRef.current.value = ''; 
+    if (reportProgressRef.current) reportProgressRef.current.value = '';
+    if (reportProgressInputRef.current) {
+      reportProgressInputRef.current.value = '';
+    }
 
     setPage(0);
     setSearchFilters({
@@ -439,8 +507,8 @@ export function SeedInboundManagePage() {
       {
         id: 'select',
         header: () => (
-          <input 
-            type="checkbox" 
+          <input
+            type="checkbox"
             onChange={(e) => {
               if (e.target.checked) {
                 setSelectedReceiptIds(receipts.map(r => r.receiptId));
@@ -457,13 +525,13 @@ export function SeedInboundManagePage() {
           if (isNewRow) return null;
 
           return (
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               checked={selectedReceiptIds.includes(row.original.receiptId)}
               onChange={() => {
-                setSelectedReceiptIds(prev => 
-                  prev.includes(row.original.receiptId) 
-                    ? prev.filter(id => id !== row.original.receiptId) 
+                setSelectedReceiptIds(prev =>
+                  prev.includes(row.original.receiptId)
+                    ? prev.filter(id => id !== row.original.receiptId)
                     : [...prev, row.original.receiptId]
                 );
               }}
@@ -780,8 +848,8 @@ export function SeedInboundManagePage() {
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel 
-        title="씨드 입고관리 목록" 
+      <Panel
+        title="씨드 입고관리 목록"
         action={
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <button

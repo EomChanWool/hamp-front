@@ -78,10 +78,12 @@ export function EquipmentFacilityPage() {
 
   const currentPage = Number(searchParams.get("page") || "0");
   const queryFcltNm = searchParams.get("fcltNm") || "";
+  const queryFcltCode = searchParams.get("fcltCode") || "";
   const queryEqCode = searchParams.get("eqCode") || "";
   const queryFacCode = searchParams.get("facCode") || "";
   const queryCurrentStatus = searchParams.get("currentStatus") || "";
 
+  const fcltCodeRef = useRef<HTMLInputElement>(null);
   const fcltNmRef = useRef<HTMLInputElement>(null);
   const eqCodeRef = useRef<HTMLSelectElement>(null);
   const facCodeRef = useRef<HTMLSelectElement>(null);
@@ -106,6 +108,7 @@ export function EquipmentFacilityPage() {
 
   const searchFields: SearchField[] = [
     { type: "input", label: "설비명", ref: fcltNmRef, name: "fcltNm" },
+    { type: "input", label: "설비코드", ref: fcltCodeRef, name: "fcltCode" },
     {
       type: "select",
       label: "설비종류",
@@ -145,11 +148,13 @@ export function EquipmentFacilityPage() {
 
   useEffect(() => {
     if (fcltNmRef.current) fcltNmRef.current.value = queryFcltNm;
+    if (fcltCodeRef.current) fcltCodeRef.current.value = queryFcltCode;
     if (eqCodeRef.current) eqCodeRef.current.value = queryEqCode;
     if (facCodeRef.current) facCodeRef.current.value = queryFacCode;
     if (currentStatusRef.current) currentStatusRef.current.value = queryCurrentStatus;
   }, [
     queryFcltNm,
+    queryFcltCode,
     queryEqCode,
     queryFacCode,
     queryCurrentStatus,
@@ -168,6 +173,7 @@ export function EquipmentFacilityPage() {
         page: currentPage,
         size: 10,
         fcltNm: queryFcltNm || undefined,
+        fcltCode: queryFcltCode || undefined,
         eqCode: queryEqCode || undefined,
         facCode: queryFacCode || undefined,
         currentStatus: queryCurrentStatus ? Number(queryCurrentStatus) as StatusType : undefined,
@@ -194,6 +200,7 @@ export function EquipmentFacilityPage() {
     isReady,
     currentPage,
     queryFcltNm,
+    queryFcltCode,
     queryEqCode,
     queryFacCode,
     queryCurrentStatus,
@@ -209,12 +216,16 @@ export function EquipmentFacilityPage() {
     nextParams.set("page", "0");
 
     const fcltNm = fcltNmRef.current?.value.trim() || "";
+    const fcltCode = fcltCodeRef.current?.value.trim() || "";
     const eqCode = eqCodeRef.current?.value.trim() || "";
     const facCode = facCodeRef.current?.value.trim() || "";
     const currentStatus = currentStatusRef.current?.value.trim() || "";
 
     if (fcltNm) nextParams.set("fcltNm", fcltNm);
     else nextParams.delete("fcltNm");
+
+    if (fcltCode) nextParams.set("fcltCode", fcltCode);
+    else nextParams.delete("fcltCode");
 
     if (eqCode) nextParams.set("eqCode", eqCode);
     else nextParams.delete("eqCode");
@@ -230,7 +241,7 @@ export function EquipmentFacilityPage() {
   };
 
   const handleReset = () => {
-    [fcltNmRef].forEach((ref) => {
+    [fcltNmRef, fcltCodeRef].forEach((ref) => {
       if (ref.current) ref.current.value = "";
     });
     [eqCodeRef, facCodeRef, currentStatusRef].forEach((ref) => {

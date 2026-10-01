@@ -82,6 +82,7 @@ export function OrderStatusPage() {
     const orderCodeRef = useRef<HTMLInputElement>(null);
     const bpCodeRef = useRef<HTMLSelectElement>(null);
     const itemCodeRef = useRef<HTMLInputElement>(null);
+    const itemCodeInputRef = useRef<HTMLInputElement>(null);
 
     // 거래처 옵션 API 호출
     const fetchOptions = useCallback(async () => {
@@ -108,6 +109,12 @@ export function OrderStatusPage() {
             label: "수주코드",
             ref: orderCodeRef,
             name: "orderCode",
+        },
+        {
+            type: "input",
+            label: "품목코드",
+            ref: itemCodeInputRef,
+            name: "itemCode",
         },
         {
             type: "select",
@@ -139,8 +146,11 @@ export function OrderStatusPage() {
     useEffect(() => {
         if (orderCodeRef.current) orderCodeRef.current.value = queryOrderCode;
         if (bpCodeRef.current) bpCodeRef.current.value = queryBpCode;
+        if (itemCodeInputRef.current) {
+            itemCodeInputRef.current.value = queryItemCode;
+        }
         if (itemCodeRef.current) itemCodeRef.current.value = queryItemCode;
-    }, [queryOrderCode, queryBpCode, queryItemCode, businessPartnerOptions]);
+    }, [queryOrderCode, queryBpCode, queryItemCode, businessPartnerOptions, itemOptions]);
 
     // 수주현황 목록 조회 API
     const fetchStatusList = useCallback(async () => {
@@ -222,7 +232,10 @@ export function OrderStatusPage() {
 
         const orderCode = orderCodeRef.current?.value.trim() || "";
         const bpCode = bpCodeRef.current?.value.trim() || "";
-        const itemCode = itemCodeRef.current?.value.trim() || "";
+        const itemCode =
+            itemCodeInputRef.current?.value.trim() ||
+            itemCodeRef.current?.value.trim() ||
+            "";
 
         if (orderCode) nextParams.set("orderCode", orderCode);
         else nextParams.delete("orderCode");
@@ -240,6 +253,7 @@ export function OrderStatusPage() {
     const handleReset = () => {
         if (orderCodeRef.current) orderCodeRef.current.value = "";
         if (bpCodeRef.current) bpCodeRef.current.value = "";
+        if (itemCodeInputRef.current) itemCodeInputRef.current.value = "";
         if (itemCodeRef.current) itemCodeRef.current.value = "";
 
         setSearchParams({ page: "0" }, { replace: true });
