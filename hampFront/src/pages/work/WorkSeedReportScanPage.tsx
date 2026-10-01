@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArchiveBoxIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
-import { FoodIcon, PlantIcon } from '@/components/icons/CustomIcons';
+import { ArchiveBoxIcon, ExclamationTriangleIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { apiClient } from '@/api/apiClient';
 import {
@@ -178,7 +177,6 @@ export function WorkSeedReportScanPage() {
 
   const isFoodZone = zone === '1';
   const zoneLabel = isFoodZone ? '식품동' : '작물동';
-  const ZoneIcon = isFoodZone ? FoodIcon : PlantIcon;
 
   return (
     <div className="workTabletPage">
@@ -207,13 +205,10 @@ export function WorkSeedReportScanPage() {
 
           <div className="workScanMain">
             <div className="workTabletScanHeader">
-              <span className={`workTabletZoneBadge workTabletZoneBadge--food`}>
-                <ZoneIcon aria-hidden="true" />
+              <span className="workTabletZone">
+                <MapPinIcon aria-hidden="true" />
                 {zoneLabel}
               </span>
-              <h1>
-                신고처리
-              </h1>
             </div>
             {scanFailure ? (
               <div className="workScanWaiting workScanFailure">
@@ -230,13 +225,16 @@ export function WorkSeedReportScanPage() {
               </div>
             ) : !scanResult ? (
               <div className="workScanWaiting">
-                <div className="workScanTarget">
+                <div className={`workScanTarget workScanTarget--food`}>
                   <span className="workScanTargetCorner workScanTargetCorner--tl" />
                   <span className="workScanTargetCorner workScanTargetCorner--tr" />
                   <span className="workScanTargetCorner workScanTargetCorner--bl" />
                   <span className="workScanTargetCorner workScanTargetCorner--br" />
                   <span className="workScanTargetLine" />
-                  <ArchiveBoxIcon className="workScanWaitingIconSvg" />
+                  <div className="workScanTargetLabel">
+                    <strong>신고처리</strong>
+                     <ArchiveBoxIcon className="workScanWaitingIconSvg" />
+                  </div>
                 </div>
                 <h1>스캔 대기 중</h1>
                 <p>입고 라벨을 스캐너로 찍으면 이 화면에 자동으로 표시됩니다.</p>

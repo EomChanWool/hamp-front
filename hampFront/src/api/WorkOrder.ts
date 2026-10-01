@@ -135,10 +135,18 @@ export interface WorkOrderPerformanceStartRequest {
     qty: number;
 }
 
+/** 설비 스캔으로 받은 공정을 종료 확정할 때 불량수량을 보내는 요청 */
+export interface WorkOrderPerformanceDefectRequest {
+    defCode: string;
+    qty: number;
+}
+
 /** 설비 스캔으로 받은 공정을 종료 확정할 때 보내는 요청 */
 export interface WorkOrderPerformanceFinishRequest {
     zone: ZoneType;
     operCode: string;
+    qty: number;
+    defects?: WorkOrderPerformanceDefectRequest[];
 }
 
 /** 작업지시 공정 시작 요청 */

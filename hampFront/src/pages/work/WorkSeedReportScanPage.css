@@ -5,17 +5,20 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 880px; /* 세로 태블릿 기준으로 폭을 넓게 잡되, 가로모드/데스크톱에선 이 값에서 멈춰 가운데 정렬됨 */
+  max-width: 880px;
+  /* 세로 태블릿 기준으로 폭을 넓게 잡되, 가로모드/데스크톱에선 이 값에서 멈춰 가운데 정렬됨 */
   box-sizing: border-box;
 }
 
 .workScanContainer {
   width: 100%;
-  min-height: 620px; /* 홈 화면(.workTabletContainer)이랑 항상 같은 높이가 되도록 최소 높이를 맞춰둠 */
+  min-height: 620px;
+  /* 홈 화면(.workTabletContainer)이랑 항상 같은 높이가 되도록 최소 높이를 맞춰둠 */
   padding: 32px;
   display: flex;
   flex-direction: column;
-  gap: 20px; /* 상단바 - 본문 사이 간격만. 본문 자체는 .workScanMain이 남는 공간에서 알아서 가운데 정렬됨 */
+  gap: 20px;
+  /* 상단바 - 본문 사이 간격만. 본문 자체는 .workScanMain이 남는 공간에서 알아서 가운데 정렬됨 */
   background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -99,18 +102,42 @@
 }
 
 @keyframes workScanDot1 {
-  0%, 24% { opacity: 0; }
-  25%, 100% { opacity: 1; }
+
+  0%,
+  24% {
+    opacity: 0;
+  }
+
+  25%,
+  100% {
+    opacity: 1;
+  }
 }
 
 @keyframes workScanDot2 {
-  0%, 49% { opacity: 0; }
-  50%, 100% { opacity: 1; }
+
+  0%,
+  49% {
+    opacity: 0;
+  }
+
+  50%,
+  100% {
+    opacity: 1;
+  }
 }
 
 @keyframes workScanDot3 {
-  0%, 74% { opacity: 0; }
-  75%, 100% { opacity: 1; }
+
+  0%,
+  74% {
+    opacity: 0;
+  }
+
+  75%,
+  100% {
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -145,6 +172,50 @@
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.04);
   overflow: hidden;
+}
+
+.workScanTarget--food {
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.workScanTarget--food .workScanWaitingIconSvg,
+.workScanTarget--food svg {
+  color: #fbbf24;
+}
+
+.workScanTarget--crop {
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.workScanTarget--crop .workScanWaitingIconSvg,
+.workScanTarget--crop svg {
+  color: #4ade80;
+}
+
+.workScanTargetLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.workScanTarget--food .workScanTargetLabel {
+  color: #fbbf24;
+}
+
+.workScanTarget--crop .workScanTargetLabel {
+  color: #4ade80;
+}
+
+.workScanTargetLabel strong {
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.workScanTargetLabel .workScanWaitingIconSvg {
+  width: 48px;
+  height: 48px;
 }
 
 .workScanWaitingIconSvg {
@@ -204,6 +275,30 @@
   border-radius: 0 0 8px 0;
 }
 
+.workScanTarget--food .workScanTargetCorner {
+  border-color: rgba(245, 158, 11, 0.7);
+}
+
+.workScanTarget--food .workScanTargetLine {
+  background: #fbbf24;
+}
+
+.workScanTarget--food .workScanWaitingIconSvg {
+  color: #fbbf24;
+}
+
+.workScanTarget--crop .workScanTargetCorner {
+  border-color: rgba(34, 197, 94, 0.7);
+}
+
+.workScanTarget--crop .workScanTargetLine {
+  background: #4ade80;
+}
+
+.workScanTarget--crop .workScanWaitingIconSvg {
+  color: #4ade80;
+}
+
 .workScanTargetLine {
   position: absolute;
   left: 12%;
@@ -216,10 +311,25 @@
 }
 
 @keyframes workScanLineMove {
-  0%, 100% { top: 20%; opacity: 0; }
-  15% { opacity: 1; }
-  50% { top: 80%; opacity: 1; }
-  85% { opacity: 1; }
+
+  0%,
+  100% {
+    top: 20%;
+    opacity: 0;
+  }
+
+  15% {
+    opacity: 1;
+  }
+
+  50% {
+    top: 80%;
+    opacity: 1;
+  }
+
+  85% {
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -283,6 +393,7 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
   padding: 20px;
+  margin-top: 20px;
 }
 
 .workScanCardHead {
@@ -515,7 +626,8 @@
 
 @media (max-height: 600px) {
   .workScanContainer {
-    min-height: 0; /* 세로 공간이 부족한 화면에선 강제 최소높이를 풀어서 내용만큼만 차지하게 함 */
+    min-height: 0;
+    /* 세로 공간이 부족한 화면에선 강제 최소높이를 풀어서 내용만큼만 차지하게 함 */
   }
 
   .workScanWaiting {

@@ -231,6 +231,22 @@
   color: #4ade80;
 }
 
+.workTabletZone {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.workTabletZone svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
 .workTabletMenuSection {
   display: flex;
   flex-direction: column;
@@ -315,6 +331,16 @@
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
+.workTabletBtn--food:hover {
+  background: rgba(245, 158, 11, 0.28);
+  border-color: rgba(245, 158, 11, 0.7);
+}
+
+.workTabletBtn--crop:hover {
+  background: rgba(34, 197, 94, 0.28);
+  border-color: rgba(34, 197, 94, 0.7);
+}
+
 .workTabletBtn:hover .workTabletBtnDesc {
   color: rgba(255, 255, 255, 0.85);
 }
@@ -322,6 +348,25 @@
 .workTabletBtn:active {
   transform: translateY(0);
 }
+
+.workTabletBtn--food {
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.workTabletBtn--food .workTabletBtnIcon,
+.workTabletBtn--food svg {
+  color: #fbbf24;
+}
+
+.workTabletBtn--crop {
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.workTabletBtn--crop .workTabletBtnIcon,
+.workTabletBtn--crop svg {
+  color: #4ade80;
+}
+
 
 /* 상단바는 "지금 누가 로그인했는지"만 보여주는 정보 영역으로 두고,
    로그아웃은 카드 맨 아래에 눈에 덜 띄는 텍스트 링크로 분리해둔다.
