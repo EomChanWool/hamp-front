@@ -82,7 +82,7 @@ export function WorkTabletHome() {
                 {/* 작업지시 버튼 -> 태블릿 작업지시 스캔 화면 연결 */}
                 <button
                   type="button"
-                  className="workTabletBtn"
+                  className={`workTabletBtn workTabletBtn--${zoneVariant}`}
                   onClick={() => navigate(`/work/work-order-scan?zone=${zone}`)}
                 >
                   <ClipboardDocumentListIcon className="workTabletBtnIcon" aria-hidden="true" />
@@ -100,7 +100,7 @@ export function WorkTabletHome() {
                 {zone === '1' && (
                   <button
                     type="button"
-                    className="workTabletBtn"
+                    className={`workTabletBtn workTabletBtn--${zoneVariant}`}
                     onClick={() => navigate(`/work/seed-report-scan?zone=${zone}`)}
                   >
                     <ArchiveBoxIcon className="workTabletBtnIcon" aria-hidden="true" />
@@ -118,7 +118,7 @@ export function WorkTabletHome() {
                 {/* 출고처리 버튼 -> 태블릿 출고 스캔 화면 연결 (로그인 필요, 작업지시와 동일) */}
                 <button
                   type="button"
-                  className="workTabletBtn"
+                  className={`workTabletBtn workTabletBtn--${zoneVariant}`}
                   onClick={() => navigate(`/work/outbound-scan?zone=${zone}`)}
                 >
                   <TruckIcon className="workTabletBtnIcon" aria-hidden="true" />
