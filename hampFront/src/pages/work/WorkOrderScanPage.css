@@ -209,10 +209,25 @@
 }
 
 @keyframes workOrderBannerScanLineMove {
-  0%, 100% { top: 20%; opacity: 0; }
-  15% { opacity: 1; }
-  50% { top: 75%; opacity: 1; }
-  85% { opacity: 1; }
+
+  0%,
+  100% {
+    top: 20%;
+    opacity: 0;
+  }
+
+  15% {
+    opacity: 1;
+  }
+
+  50% {
+    top: 75%;
+    opacity: 1;
+  }
+
+  85% {
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -335,14 +350,18 @@
   z-index: -1;
   pointer-events: none;
   animation: workOrderNextGlow 2.4s ease-in-out infinite;
-  transition: inset 0.25s ease; /* 화살표로 투입수량 줄을 펼치면 이 박스 높이가 늘어나는데,
+  transition: inset 0.25s ease;
+  /* 화살표로 투입수량 줄을 펼치면 이 박스 높이가 늘어나는데,
                                     순간 튀지 않고 부드럽게 커지도록 */
 }
 
 @keyframes workOrderNextGlow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.3), 0 0 0 0 rgba(59, 130, 246, 0.2);
   }
+
   50% {
     box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.5), 0 0 16px 3px rgba(59, 130, 246, 0.35);
   }
@@ -374,14 +393,18 @@
   z-index: -1;
   pointer-events: none;
   animation: workOrderInProgressGlow 2.4s ease-in-out infinite;
-  transition: inset 0.25s ease; /* 화살표로 투입수량 줄을 펼치면 이 박스 높이가 늘어나는데,
+  transition: inset 0.25s ease;
+  /* 화살표로 투입수량 줄을 펼치면 이 박스 높이가 늘어나는데,
                                     순간 튀지 않고 부드럽게 커지도록 */
 }
 
 @keyframes workOrderInProgressGlow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3), 0 0 0 0 rgba(245, 158, 11, 0.2);
   }
+
   50% {
     box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.5), 0 0 16px 3px rgba(245, 158, 11, 0.35);
   }
@@ -528,8 +551,457 @@
 }
 
 @media (max-width: 480px) {
+
   .workOrderItemCard,
   .workOrderRoutingSection {
     padding: 16px;
   }
+}
+
+/* ── 공정 종료 실적 입력 ───────────────────────── */
+
+.workOrderFinishForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 16px;
+}
+
+.workOrderFinishTabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.workOrderFinishTabs button {
+  height: 48px;
+  border-radius: 10px;
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+
+  color: #94a3b8;
+  font-size: 15px;
+  font-weight: 700;
+
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workOrderFinishTabs button.active {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.45);
+  color: var(--primary-light, #93c5fd);
+}
+
+.workOrderFinishTabs button:active {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.workOrderFinishLabel {
+  color: #f0f0f0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.workOrderDefectSelector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workOrderDefectSelector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workOrderDefectDropdown {
+  position: relative;
+}
+
+.workOrderDefectDropdownTrigger {
+  width: 100%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 14px;
+
+  box-sizing: border-box;
+
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 10px;
+
+  background: rgba(0, 0, 0, 0.22);
+  color: #f1f5f9;
+
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workOrderDefectDropdownTrigger:hover {
+  border-color: rgba(148, 163, 184, 0.45);
+}
+
+.workOrderDefectDropdownTrigger.isOpen {
+  border-color: rgba(16, 185, 129, 0.7);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.workOrderDefectDropdownIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #94a3b8;
+  transition: transform 0.15s ease;
+}
+
+.workOrderDefectDropdownIcon.isOpen {
+  transform: rotate(180deg);
+  color: #34d399;
+}
+
+.workOrderDefectDropdownMenu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+
+  overflow: hidden;
+
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 10px;
+
+  background: #18221f;
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.workOrderDefectDropdownOption {
+  width: 100%;
+  min-height: 46px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 14px;
+
+  border: 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+
+  background: transparent;
+  color: #cbd5e1;
+
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.workOrderDefectDropdownOption:last-child {
+  border-bottom: 0;
+}
+
+.workOrderDefectDropdownOption:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.workOrderDefectDropdownOption.selected {
+  background: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+}
+
+.workOrderDefectDropdownCheck {
+  color: #34d399;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.workOrderAddDefectBtn {
+  width: 100%;
+  height: 46px;
+
+  border-radius: 9px;
+  border: 1px solid rgba(16, 185, 129, 0.45);
+
+  background: rgba(16, 185, 129, 0.08);
+  color: #34d399;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workOrderAddDefectBtn:hover {
+  background: rgba(16, 185, 129, 0.14);
+}
+
+.workOrderAddDefectBtn:active {
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.workOrderAddDefectBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.workOrderAddDefectBtn:active {
+  background: rgba(245, 158, 11, 0.22);
+}
+
+.workOrderAddDefectBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── 실적 요약 ───────────────────────── */
+
+.workOrderDefectSummary {
+  display: flex;
+  flex-direction: column;
+  margin-top: 2px;
+}
+
+.workOrderDefectSummaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  min-height: 42px;
+  padding: 0;
+
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.workOrderDefectSummaryRow span {
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.workOrderDefectSummaryRow strong {
+  color: #f8fafc;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+
+/* ── 불량 내역 헤더 ───────────────────── */
+
+.workOrderDefectSummaryHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  min-height: 42px;
+}
+
+.workOrderDefectSummaryHead>span {
+  color: #f1f5f9;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.workOrderDefectSummaryHead>strong {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+
+/* ── 불량 내역 없음 ───────────────────── */
+
+.workOrderDefectEmpty {
+  padding: 8px 0 12px;
+
+  color: #64748b;
+  font-size: 13px;
+}
+
+
+/* ── 불량 내역 한 줄 ──────────────────── */
+
+.workOrderDefectItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  min-height: 46px;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.workOrderDefectItemName {
+  min-width: 0;
+
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+
+  color: #e2e8f0;
+  font-size: 14px;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+.workOrderDefectItemQty {
+  color: #94a3b8;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── 삭제 ─────────────────────────────── */
+
+.workOrderDefectDeleteBtn {
+  width: 34px;
+  height: 32px;
+
+  padding: 0;
+
+  border: 0;
+  background: transparent;
+
+  color: #94a3b8;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workOrderDefectDeleteBtn:hover {
+  color: #f87171;
+}
+
+.workOrderDefectDeleteBtn:active {
+  color: #fca5a5;
+}
+
+.workOrderDefectDeleteBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.workOrderDefectDeleteBtn {
+  flex-shrink: 0;
+
+  height: 30px;
+  padding: 0 6px;
+
+  border: 0;
+  background: transparent;
+
+  color: #f87171;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workOrderDefectDeleteBtn:hover {
+  color: #fca5a5;
+}
+
+.workOrderDefectDeleteBtn:active {
+  opacity: 0.7;
+}
+
+.workOrderDefectDeleteBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.workOrderDefectEmpty {
+  padding: 10px 0;
+
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
+}
+
+.workOrderDefectItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  padding: 10px 0;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.workOrderDefectItemInfo {
+  min-width: 0;
+  flex: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workOrderDefectItemInfo span {
+  min-width: 0;
+
+  color: #cbd5e1;
+  font-size: 14px;
+  font-weight: 600;
+
+  word-break: keep-all;
+}
+
+.workOrderDefectItemInfo strong {
+  flex-shrink: 0;
+
+  color: #f0f0f0;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 14px;
+}
+
+.workOrderDefectDeleteBtn {
+  flex-shrink: 0;
+
+  min-width: 52px;
+  height: 34px;
+  padding: 0 10px;
+
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workOrderDefectDeleteBtn:active {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.workOrderDefectDeleteBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
