@@ -25,18 +25,18 @@ export function WorkOutboundScanPage() {
                 <ZoneIcon aria-hidden="true" />
                 {zoneLabel}
               </span> */}
-              <h1>
-                출고처리
-              </h1>
             </div>
             <div className="workScanWaiting">
-              <div className="workScanTarget">
+              <div className={`workScanTarget workScanTarget--food`}>
                 <span className="workScanTargetCorner workScanTargetCorner--tl" />
                 <span className="workScanTargetCorner workScanTargetCorner--tr" />
                 <span className="workScanTargetCorner workScanTargetCorner--bl" />
                 <span className="workScanTargetCorner workScanTargetCorner--br" />
                 <span className="workScanTargetLine" />
-                <TruckIcon className="workScanWaitingIconSvg" />
+                <div className="workScanTargetLabel">
+                  <strong>출고처리</strong>
+                  <TruckIcon className="workScanWaitingIconSvg" />
+                </div>
               </div>
               <h1>스캔 대기 중</h1>
               <p>출고 라벨을 스캐너로 찍으면 이 화면에 자동으로 표시됩니다.</p>

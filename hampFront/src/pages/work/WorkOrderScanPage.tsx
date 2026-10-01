@@ -4,8 +4,8 @@ import {
   ChevronDownIcon,
   ClipboardDocumentListIcon,
   ExclamationTriangleIcon,
+  MapPinIcon,
 } from '@heroicons/react/24/outline';
-import { FoodIcon, PlantIcon } from '@/components/icons/CustomIcons';
 import axios from 'axios';
 import { apiClient } from '@/api/apiClient';
 import { WorkOrderApi } from '@/api/WorkOrder';
@@ -471,7 +471,6 @@ export function WorkOrderScanPage() {
   const isFoodZone = zone === '1';
   const zoneLabel = isFoodZone ? '식품동' : '작물동';
   const zoneVariant = isFoodZone ? 'food' : 'crop';
-  const ZoneIcon = isFoodZone ? FoodIcon : PlantIcon;
 
   return (
     <div className="workTabletPage">
@@ -500,13 +499,11 @@ export function WorkOrderScanPage() {
 
           <div className="workScanMain">
             <div className="workTabletScanHeader">
-              <span className={`workTabletZoneBadge workTabletZoneBadge--${zoneVariant}`}>
-                <ZoneIcon aria-hidden="true" />
+              <span className="workTabletZone">
+                <MapPinIcon aria-hidden="true" />
                 {zoneLabel}
               </span>
-              <h1>
-                작업지시
-              </h1>
+
             </div>
             {scanFailure && !scanResult ? (
               // 작업지시 라벨 자체를 아직 못 읽은 경우 - 보여줄 결과 화면이 없으니 전체 화면으로 안내
@@ -524,13 +521,17 @@ export function WorkOrderScanPage() {
               </div>
             ) : !scanResult ? (
               <div className="workScanWaiting">
-                <div className="workScanTarget">
+                <div className={`workScanTarget workScanTarget--${zoneVariant}`}>
                   <span className="workScanTargetCorner workScanTargetCorner--tl" />
                   <span className="workScanTargetCorner workScanTargetCorner--tr" />
                   <span className="workScanTargetCorner workScanTargetCorner--bl" />
                   <span className="workScanTargetCorner workScanTargetCorner--br" />
                   <span className="workScanTargetLine" />
-                  <ClipboardDocumentListIcon className="workScanWaitingIconSvg" />
+                  <div className="workScanTargetLabel">
+                    <strong>작업지시</strong>
+                    <ClipboardDocumentListIcon className="workScanWaitingIconSvg" />
+                    
+                  </div>
                 </div>
                 <h1>스캔 대기 중</h1>
                 <p>작업지시 라벨을 스캐너로 찍으면 이 화면에 자동으로 표시됩니다.</p>

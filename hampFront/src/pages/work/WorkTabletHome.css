@@ -231,6 +231,22 @@
   color: #4ade80;
 }
 
+.workTabletZone {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.workTabletZone svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
 .workTabletMenuSection {
   display: flex;
   flex-direction: column;
