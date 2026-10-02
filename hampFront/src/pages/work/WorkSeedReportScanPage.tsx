@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArchiveBoxIcon, ExclamationTriangleIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import { ArchiveBoxIcon, ExclamationTriangleIcon, MapPinIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { apiClient } from '@/api/apiClient';
 import {
@@ -212,9 +212,20 @@ export function WorkSeedReportScanPage() {
 
           <div className="workScanMain">
             <div className="workTabletScanHeader">
-              <span className="workTabletZone">
+              <span
+                className={`workTabletScanZoneBadge workTabletScanZoneBadge--${zoneVariant}`}
+              >
                 <MapPinIcon aria-hidden="true" />
                 {zoneLabel}
+              </span>
+              <ChevronRightIcon
+                className="workTabletScanArrow"
+                aria-hidden="true"
+              />
+              <span
+                className={`workTabletScanProcessBadge workTabletScanProcessBadge--${zoneVariant}`}
+              >
+                신고처리
               </span>
             </div>
             {scanFailure ? (
@@ -239,8 +250,7 @@ export function WorkSeedReportScanPage() {
                   <span className="workScanTargetCorner workScanTargetCorner--br" />
                   <span className="workScanTargetLine" />
                   <div className="workScanTargetLabel">
-                    <strong>신고처리</strong>
-                     <ArchiveBoxIcon className="workScanWaitingIconSvg" />
+                    <ArchiveBoxIcon className="workScanWaitingIconSvg" />
                   </div>
                 </div>
                 <h1>스캔 대기 중</h1>

@@ -1,5 +1,5 @@
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { MapPinIcon, TruckIcon } from '@heroicons/react/24/outline';
+import { ChevronRightIcon, MapPinIcon, TruckIcon } from '@heroicons/react/24/outline';
 import { isValidWorkZone } from '@/utils/common';
 import '@/pages/work/WorkTabletHome.css';
 import '@/pages/work/WorkSeedReportScanPage.css';
@@ -37,9 +37,20 @@ export function WorkOutboundScanPage() {
 
           <div className="workScanMain">
             <div className="workTabletScanHeader">
-              <span className="workTabletZone">
+              <span
+                className={`workTabletScanZoneBadge workTabletScanZoneBadge--${zoneVariant}`}
+              >
                 <MapPinIcon aria-hidden="true" />
                 {zoneLabel}
+              </span>
+              <ChevronRightIcon
+                className="workTabletScanArrow"
+                aria-hidden="true"
+              />
+              <span
+                className={`workTabletScanProcessBadge workTabletScanProcessBadge--${zoneVariant}`}
+              >
+                출고처리
               </span>
             </div>
             <div className="workScanWaiting">
@@ -50,7 +61,6 @@ export function WorkOutboundScanPage() {
                 <span className="workScanTargetCorner workScanTargetCorner--br" />
                 <span className="workScanTargetLine" />
                 <div className="workScanTargetLabel">
-                  <strong>출고처리</strong>
                   <TruckIcon className="workScanWaitingIconSvg" />
                 </div>
               </div>

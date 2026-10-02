@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ChevronDownIcon,
+  ChevronRightIcon,
   ClipboardDocumentListIcon,
   ExclamationTriangleIcon,
   MapPinIcon,
@@ -326,6 +327,44 @@ export function WorkOrderScanPage() {
     });
   };
 
+  const updateFinishedStepPerformance = useCallback(
+    ({
+      operCode,
+      inputQty,
+      outputQty,
+      defectQty,
+      yieldRate,
+    }: {
+      operCode: string;
+      inputQty: number | null;
+      outputQty: number;
+      defectQty: number;
+      yieldRate: number;
+    }) => {
+      setScanResult((prev) => {
+        if (!prev) return prev;
+
+        return {
+          ...prev,
+          routingSteps: prev.routingSteps.map((step) =>
+            step.operCode === operCode
+              ? {
+                ...step,
+                done: true,
+                inProgress: false,
+                inputQty,
+                outputQty,
+                defectQty,
+                yieldRate,
+              }
+              : step,
+          ),
+        };
+      });
+    },
+    [],
+  );
+
   const handleConfirmStart = async () => {
     if (!pendingStart) return;
 
@@ -405,11 +444,49 @@ export function WorkOrderScanPage() {
         operCode: pendingFinish.operCode,
         qty: good,
         ...(defectEntries.length > 0
-          ? { defects: defectEntries.map((entry) => ({ defCode: entry.defCode, qty: entry.qty })) }
+          ? {
+            defects: defectEntries.map((entry) => ({
+              defCode: entry.defCode,
+              qty: entry.qty,
+            })),
+          }
           : {}),
       });
 
-      setCompletedOperCodes((prev) => new Set(prev).add(pendingFinish.operCode));
+      // ------------------------------------------------------------
+      // 중요:
+      // 서버 저장 성공 직후 현재 화면의 routingSteps도 같이 갱신한다.
+      // 그렇지 않으면 서버에는 양품/불량이 저장됐는데
+      // 현재 scanResult는 이전 값을 계속 가지고 있게 된다.
+      // ------------------------------------------------------------
+
+      const currentStep = scanResult?.routingSteps.find(
+        (step) => step.operCode === pendingFinish.operCode,
+      );
+
+      const inputQty =
+        currentStep?.inputQty ??
+        (startedOperCode === pendingFinish.operCode ? startedInputQty : null);
+
+      const yieldRate =
+        inputQty !== null && inputQty > 0
+          ? Number(((good / inputQty) * 100).toFixed(2))
+          : 0;
+
+      updateFinishedStepPerformance({
+        operCode: pendingFinish.operCode,
+        inputQty,
+        outputQty: good,
+        defectQty: totalDefectQty,
+        yieldRate,
+      });
+
+      // 기존 완료 상태도 유지
+      setCompletedOperCodes((prev) => {
+        const next = new Set(prev);
+        next.add(pendingFinish.operCode);
+        return next;
+      });
 
       setStartedOperCode(null);
       setStartedInputQty(null);
@@ -418,7 +495,10 @@ export function WorkOrderScanPage() {
 
       resetFinishForm();
     } catch (err) {
-      const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.message
+        : undefined;
+
       setFinishError(message || '공정 종료 처리에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
@@ -485,9 +565,20 @@ export function WorkOrderScanPage() {
 
           <div className="workScanMain">
             <div className="workTabletScanHeader">
-              <span className="workTabletZone">
+              <span
+                className={`workTabletScanZoneBadge workTabletScanZoneBadge--${zoneVariant}`}
+              >
                 <MapPinIcon aria-hidden="true" />
                 {zoneLabel}
+              </span>
+              <ChevronRightIcon
+                className="workTabletScanArrow"
+                aria-hidden="true"
+              />
+              <span
+                className={`workTabletScanProcessBadge workTabletScanProcessBadge--${zoneVariant}`}
+              >
+                작업지시
               </span>
             </div>
             {scanFailure && !scanResult ? (
@@ -513,7 +604,6 @@ export function WorkOrderScanPage() {
                   <span className="workScanTargetCorner workScanTargetCorner--br" />
                   <span className="workScanTargetLine" />
                   <div className="workScanTargetLabel">
-                    <strong>작업지시</strong>
                     <ClipboardDocumentListIcon className="workScanWaitingIconSvg" />
                   </div>
                 </div>
@@ -605,7 +695,13 @@ export function WorkOrderScanPage() {
                         // 공정은 아직 재스캔 전이라 서버 값이 없어 직전에 입력한 값을 그대로 보여준다
                         const displayInputQty =
                           step.inputQty ?? (startedOperCode === step.operCode ? startedInputQty : null);
-                        const hasInputQty = displayInputQty !== null;
+
+                        const hasPerformance =
+                          displayInputQty !== null ||
+                          step.outputQty !== null ||
+                          step.defectQty !== null ||
+                          step.yieldRate !== null;
+
                         const isExpanded = expandedOperCodes.has(step.operCode);
                         const isNext = !isPending && nextStep?.operCode === step.operCode;
                         return (
@@ -634,14 +730,43 @@ export function WorkOrderScanPage() {
                                       )
                                     </span>
                                   </div>
-                                  {hasInputQty && isExpanded && (
-                                    <div
-                                      className={[
-                                        'workOrderRoutingInputQty',
-                                        isInProgress ? 'workOrderRoutingInputQty--active' : '',
-                                      ].filter(Boolean).join(' ')}
-                                    >
-                                      투입 {displayInputQty.toLocaleString()} {scanResult.unit}
+                                  {hasPerformance && isExpanded && (
+                                    <div className="workOrderRoutingPerformance">
+                                      <div className="workOrderRoutingPerformanceCell">
+                                        <span className="workOrderRoutingPerformanceLabel">투입량</span>
+                                        <strong className="workOrderRoutingPerformanceValue">
+                                          {displayInputQty !== null
+                                            ? `${displayInputQty.toLocaleString()} ${scanResult.unit}`
+                                            : '-'}
+                                        </strong>
+                                      </div>
+
+                                      <div className="workOrderRoutingPerformanceCell">
+                                        <span className="workOrderRoutingPerformanceLabel">양품량</span>
+                                        <strong className="workOrderRoutingPerformanceValue">
+                                          {step.outputQty !== null
+                                            ? `${step.outputQty.toLocaleString()} ${scanResult.unit}`
+                                            : '-'}
+                                        </strong>
+                                      </div>
+
+                                      <div className="workOrderRoutingPerformanceCell">
+                                        <span className="workOrderRoutingPerformanceLabel">불량량</span>
+                                        <strong className="workOrderRoutingPerformanceValue">
+                                          {step.defectQty !== null
+                                            ? `${step.defectQty.toLocaleString()} ${scanResult.unit}`
+                                            : '-'}
+                                        </strong>
+                                      </div>
+
+                                      <div className="workOrderRoutingPerformanceCell">
+                                        <span className="workOrderRoutingPerformanceLabel">양품률</span>
+                                        <strong className="workOrderRoutingPerformanceValue workOrderRoutingPerformanceYield">
+                                          {step.yieldRate !== null
+                                            ? `${step.yieldRate.toLocaleString()}%`
+                                            : '-'}
+                                        </strong>
+                                      </div>
                                     </div>
                                   )}
                                 </div>
@@ -658,12 +783,12 @@ export function WorkOrderScanPage() {
                                     )}
                                   </div>
                                 )}
-                                {hasInputQty && (
+                                {hasPerformance && (
                                   <button
                                     type="button"
                                     className="workOrderRoutingChevronBtn"
                                     onClick={() => toggleExpandedOperCode(step.operCode)}
-                                    aria-label={isExpanded ? '투입수량 접기' : '투입수량 펼치기'}
+                                    aria-label={isExpanded ? '공정실적 접기' : '공정실적 펼치기'}
                                     aria-expanded={isExpanded}
                                   >
                                     <ChevronDownIcon
