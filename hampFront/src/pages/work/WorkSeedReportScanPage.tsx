@@ -22,7 +22,13 @@ interface ScanFailure {
 const isScanFailure = (data: unknown): data is ScanFailure =>
   !!data && typeof data === 'object' && (data as { status?: string }).status === 'NG';
 
-const todayStr = () => new Date().toISOString().slice(0, 10);
+// [주의] toISOString()은 UTC 기준이라 한국 시간 00:00~09:00 사이에는 "어제 날짜"가 나옴
+// -> 로컬(KST) 기준 날짜로 만들어 준다
+const todayStr = () => {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
 
 // 신고 진행상태 문자열(백엔드가 그대로 라벨을 내려줌)에 따라 상태칩 색을 다르게 보여주기 위한 매핑
 const REPORT_STATUS_VARIANT: Record<string, string> = {
@@ -177,11 +183,12 @@ export function WorkSeedReportScanPage() {
 
   const isFoodZone = zone === '1';
   const zoneLabel = isFoodZone ? '식품동' : '작물동';
+  const zoneVariant = isFoodZone ? 'food' : 'crop';
 
   return (
     <div className="workTabletPage">
       <div className="workScanPanel">
-        <div className="workScanContainer">
+        <div className={`workScanContainer workScanContainer--${zoneVariant}`}>
           <div className="workScanTopBar">
             <button
               type="button"
@@ -225,7 +232,7 @@ export function WorkSeedReportScanPage() {
               </div>
             ) : !scanResult ? (
               <div className="workScanWaiting">
-                <div className={`workScanTarget workScanTarget--food`}>
+                <div className={`workScanTarget workScanTarget--${zoneVariant}`}>
                   <span className="workScanTargetCorner workScanTargetCorner--tl" />
                   <span className="workScanTargetCorner workScanTargetCorner--tr" />
                   <span className="workScanTargetCorner workScanTargetCorner--bl" />
@@ -245,8 +252,7 @@ export function WorkSeedReportScanPage() {
                   <div className="workScanCardHead">
                     <span className="workScanBarcode">{scanResult.barcode}</span>
                     <span
-                      className={`workScanStatusChip workScanStatusChip--${REPORT_STATUS_VARIANT[scanResult.reportStatus] ?? 'none'
-                        }`}
+                      className={`workScanStatusChip workScanStatusChip--${REPORT_STATUS_VARIANT[scanResult.reportStatus] ?? 'none'}`}
                     >
                       {scanResult.reportStatus}
                     </span>
