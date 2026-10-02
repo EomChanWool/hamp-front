@@ -94,6 +94,9 @@ export interface WorkOrderRoutingStepResponse {
     done: boolean; // 이 작업지시라인에서 이미 종료 처리된 공정인지 (DB 기준)
     inProgress: boolean; // 이 작업지시라인에서 지금 진행 중인 공정인지 (시작O, 종료X) (DB 기준)
     inputQty: number | null; // 이 공정을 시작할 때 기록한 투입수량 (시작 전이면 null)
+    outputQty: number | null;   // 이 공정을 끝낼 때 기록한 양품 산출수량 (종료 전이면 null)
+    defectQty: number | null;   // 이 공정을 끝낼 때 기록한 불량수량 (종료 전이면 null)
+    yieldRate: number | null;   // 이 공정의 양품률
     equipments: EquipmentOptionResponse[]; // 이 공정용으로 등록된 설비 목록 (실제 사용 설비가 아니라 매칭된 설비)
 }
 
