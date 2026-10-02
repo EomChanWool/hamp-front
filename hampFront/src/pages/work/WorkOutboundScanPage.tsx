@@ -43,7 +43,7 @@ export function WorkOutboundScanPage() {
               </span>
             </div>
             <div className="workScanWaiting">
-              <div className={`workScanTarget workScanTarget--food`}>
+              <div className={`workScanTarget workScanTarget--${zoneVariant}`}>
                 <span className="workScanTargetCorner workScanTargetCorner--tl" />
                 <span className="workScanTargetCorner workScanTargetCorner--tr" />
                 <span className="workScanTargetCorner workScanTargetCorner--bl" />
