@@ -3,7 +3,7 @@ import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
 // 도메인 상수 및 타입 (Literal Types)
 
-/** 종류 (0: 식품, 1: 작물) */
+/** 종류 (0: 식품, 1: 섬유) */
 export type ProductType = 0 | 1;
 
 /** 품목 구분 (0: 원료, 1: 반제품, 2: 완제품) */
@@ -12,7 +12,7 @@ export type ItemCategory = 0 | 1 | 2;
 /** 종류 매핑 라벨 (화면 표시용) */
 export const PRODUCT_TYPE_LABEL: Record<ProductType, string> = {
   0: '식품',
-  1: '작물',
+  1: '섬유',
 } as const;
 
 /** 품목 구분 매핑 라벨 (화면 표시용) */
@@ -43,7 +43,7 @@ export interface ItemRoutingResponse {
 /** 품목 등록 요청 */
 export interface ItemCreateRequest {
   itemCode: string;
-  productType?: ProductType | null; // 종류 (0: 식품, 1: 작물)
+  productType?: ProductType | null; // 종류 (0: 식품, 1: 섬유)
   category?: ItemCategory | null;   // 품목 구분 (0: 원료, 1: 반제품, 2: 완제품)
   itemNm?: string | null;
   unit?: string | null;
@@ -53,7 +53,7 @@ export interface ItemCreateRequest {
 
 /** 품목 수정 요청 */
 export interface ItemUpdateRequest {
-  productType?: ProductType | null; // 종류 (0: 식품, 1: 작물)
+  productType?: ProductType | null; // 종류 (0: 식품, 1: 섬유)
   category?: ItemCategory | null;   // 품목 구분 (0: 원료, 1: 반제품, 2: 완제품)
   itemNm?: string | null;
   unit?: string | null;
