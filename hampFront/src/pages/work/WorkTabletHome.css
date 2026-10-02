@@ -636,7 +636,7 @@
   border: 1px solid;
   border-radius: 16px;
 
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -644,8 +644,8 @@
 }
 
 .workTabletScanZoneBadge svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
 }
 
@@ -671,13 +671,13 @@
   justify-content: center;
 
   min-height: 32px;
-  padding: 0 13px;
+  padding: 0 12px;
 
   border: 1px solid;
   border-radius: 16px;
 
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   line-height: 1;
   white-space: nowrap;
   box-sizing: border-box;
