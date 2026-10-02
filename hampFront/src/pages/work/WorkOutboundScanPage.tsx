@@ -1,5 +1,6 @@
-import { useNavigate } from 'react-router-dom';
-import { TruckIcon } from '@heroicons/react/24/outline';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { MapPinIcon, TruckIcon } from '@heroicons/react/24/outline';
+import { isValidWorkZone } from '@/utils/common';
 import '@/pages/work/WorkTabletHome.css';
 import '@/pages/work/WorkSeedReportScanPage.css';
 
@@ -9,22 +10,37 @@ import '@/pages/work/WorkSeedReportScanPage.css';
 export function WorkOutboundScanPage() {
   const navigate = useNavigate();
 
+  const [searchParams] = useSearchParams();
+  const zone = searchParams.get('zone') ?? '';
+
+  if (!isValidWorkZone(zone)) {
+    return <Navigate to="/work" replace />;
+  }
+
+  const isFoodZone = zone === '1';
+  const zoneLabel = isFoodZone ? '식품동' : '작물동';
+  const zoneVariant = isFoodZone ? 'food' : 'crop';
+
   return (
     <div className="workTabletPage">
       <div className="workScanPanel">
-        <div className="workScanContainer">
+        <div className={`workScanContainer workScanContainer--${zoneVariant}`}>
           <div className="workScanTopBar">
-            <button type="button" className="workScanHomeBtn" onClick={() => navigate('/work')}>
+            <button
+              type="button"
+              className="workScanHomeBtn"
+              onClick={() => navigate(`/work/home?zone=${encodeURIComponent(zone)}`)}
+            >
               ← 돌아가기
             </button>
           </div>
 
           <div className="workScanMain">
             <div className="workTabletScanHeader">
-              {/* <span className={`workTabletZoneBadge workTabletZoneBadge--${zoneVariant}`}>
-                <ZoneIcon aria-hidden="true" />
+              <span className="workTabletZone">
+                <MapPinIcon aria-hidden="true" />
                 {zoneLabel}
-              </span> */}
+              </span>
             </div>
             <div className="workScanWaiting">
               <div className={`workScanTarget workScanTarget--food`}>
