@@ -350,9 +350,8 @@
   z-index: -1;
   pointer-events: none;
   animation: workOrderNextGlow 2.4s ease-in-out infinite;
+  /* 화살표로 투입수량 줄을 펼치면 이 박스 높이가 늘어나는데, 순간 튀지 않고 부드럽게 커지도록 */
   transition: inset 0.25s ease;
-  /* 화살표로 투입수량 줄을 펼치면 이 박스 높이가 늘어나는데,
-                                    순간 튀지 않고 부드럽게 커지도록 */
 }
 
 @keyframes workOrderNextGlow {
@@ -394,8 +393,6 @@
   pointer-events: none;
   animation: workOrderInProgressGlow 2.4s ease-in-out infinite;
   transition: inset 0.25s ease;
-  /* 화살표로 투입수량 줄을 펼치면 이 박스 높이가 늘어나는데,
-                                    순간 튀지 않고 부드럽게 커지도록 */
 }
 
 @keyframes workOrderInProgressGlow {
@@ -566,6 +563,9 @@
   gap: 14px;
   margin-top: 12px;
   padding: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 12px;
 }
 
 .workOrderFinishTabs {
@@ -577,14 +577,11 @@
 .workOrderFinishTabs button {
   height: 48px;
   border-radius: 10px;
-
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: rgba(255, 255, 255, 0.06);
-
   color: #94a3b8;
   font-size: 15px;
   font-weight: 700;
-
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -605,12 +602,7 @@
   font-weight: 700;
 }
 
-.workOrderDefectSelector {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
+/* ── 불량 유형 드롭다운 ───────────────────── */
 .workOrderDefectSelector {
   display: flex;
   flex-direction: column;
@@ -629,19 +621,14 @@
   justify-content: space-between;
   gap: 12px;
   padding: 0 14px;
-
   box-sizing: border-box;
-
   border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 10px;
-
   background: rgba(0, 0, 0, 0.22);
   color: #f1f5f9;
-
   font-size: 14px;
   font-weight: 600;
   text-align: left;
-
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -674,12 +661,10 @@
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-
-  overflow: hidden;
-
+  max-height: 260px;
+  overflow-y: auto;
   border: 1px solid rgba(148, 163, 184, 0.3);
   border-radius: 10px;
-
   background: #18221f;
   box-shadow:
     0 12px 30px rgba(0, 0, 0, 0.35),
@@ -689,23 +674,17 @@
 .workOrderDefectDropdownOption {
   width: 100%;
   min-height: 46px;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   padding: 0 14px;
-
   border: 0;
   border-bottom: 1px solid rgba(148, 163, 184, 0.08);
-
   background: transparent;
   color: #cbd5e1;
-
   font-size: 14px;
   font-weight: 600;
   text-align: left;
-
   cursor: pointer;
 }
 
@@ -728,19 +707,22 @@
   font-weight: 800;
 }
 
+.workOrderDefectDropdownEmpty {
+  padding: 14px;
+  color: #94a3b8;
+  font-size: 13px;
+  text-align: center;
+}
+
 .workOrderAddDefectBtn {
   width: 100%;
   height: 46px;
-
   border-radius: 9px;
   border: 1px solid rgba(16, 185, 129, 0.45);
-
   background: rgba(16, 185, 129, 0.08);
   color: #34d399;
-
   font-size: 14px;
   font-weight: 700;
-
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -758,17 +740,7 @@
   cursor: not-allowed;
 }
 
-.workOrderAddDefectBtn:active {
-  background: rgba(245, 158, 11, 0.22);
-}
-
-.workOrderAddDefectBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 /* ── 실적 요약 ───────────────────────── */
-
 .workOrderDefectSummary {
   display: flex;
   flex-direction: column;
@@ -779,10 +751,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   min-height: 42px;
   padding: 0;
-
   border-bottom: 1px solid rgba(148, 163, 184, 0.16);
 }
 
@@ -799,14 +769,11 @@
   font-weight: 700;
 }
 
-
 /* ── 불량 내역 헤더 ───────────────────── */
-
 .workOrderDefectSummaryHead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   min-height: 42px;
 }
 
@@ -822,44 +789,38 @@
   font-weight: 600;
 }
 
-
 /* ── 불량 내역 없음 ───────────────────── */
-
 .workOrderDefectEmpty {
   padding: 8px 0 12px;
-
   color: #64748b;
   font-size: 13px;
+  text-align: center;
 }
 
-
 /* ── 불량 내역 한 줄 ──────────────────── */
-
 .workOrderDefectItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-
+  gap: 10px;
   min-height: 46px;
-  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .workOrderDefectItemName {
   min-width: 0;
-
   display: flex;
   align-items: baseline;
   gap: 5px;
-
   color: #e2e8f0;
   font-size: 14px;
   font-weight: 600;
-
-  white-space: nowrap;
+  word-break: keep-all;
 }
 
 .workOrderDefectItemQty {
+  flex-shrink: 0;
   color: #94a3b8;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
   font-size: 13px;
@@ -867,132 +828,17 @@
 }
 
 /* ── 삭제 ─────────────────────────────── */
-
-.workOrderDefectDeleteBtn {
-  width: 34px;
-  height: 32px;
-
-  padding: 0;
-
-  border: 0;
-  background: transparent;
-
-  color: #94a3b8;
-
-  font-size: 12px;
-  font-weight: 600;
-
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.workOrderDefectDeleteBtn:hover {
-  color: #f87171;
-}
-
-.workOrderDefectDeleteBtn:active {
-  color: #fca5a5;
-}
-
-.workOrderDefectDeleteBtn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
 .workOrderDefectDeleteBtn {
   flex-shrink: 0;
-
-  height: 30px;
-  padding: 0 6px;
-
-  border: 0;
-  background: transparent;
-
-  color: #f87171;
-
-  font-size: 12px;
-  font-weight: 700;
-
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.workOrderDefectDeleteBtn:hover {
-  color: #fca5a5;
-}
-
-.workOrderDefectDeleteBtn:active {
-  opacity: 0.7;
-}
-
-.workOrderDefectDeleteBtn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.workOrderDefectEmpty {
-  padding: 10px 0;
-
-  color: #64748b;
-  font-size: 13px;
-  text-align: center;
-}
-
-.workOrderDefectItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-
-  padding: 10px 0;
-
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.workOrderDefectItemInfo {
-  min-width: 0;
-  flex: 1;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.workOrderDefectItemInfo span {
-  min-width: 0;
-
-  color: #cbd5e1;
-  font-size: 14px;
-  font-weight: 600;
-
-  word-break: keep-all;
-}
-
-.workOrderDefectItemInfo strong {
-  flex-shrink: 0;
-
-  color: #f0f0f0;
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 14px;
-}
-
-.workOrderDefectDeleteBtn {
-  flex-shrink: 0;
-
   min-width: 52px;
   height: 34px;
   padding: 0 10px;
-
   border-radius: 8px;
   border: 1px solid rgba(239, 68, 68, 0.3);
-
   background: rgba(239, 68, 68, 0.1);
   color: #f87171;
-
   font-size: 12px;
   font-weight: 700;
-
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -1005,3 +851,42 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ── 입력 중 들어온 스캔을 무시했을 때 경고 토스트 ───────── */
+.workOrderWarnToast {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  max-width: calc(100% - 40px);
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: rgba(217, 119, 6, 0.95);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  word-break: keep-all;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  z-index: 40; 
+}
+
+/* ── 불량 옵션 조회 실패/빈 목록일 때 "다시 불러오기" 버튼 ── */
+.workOrderDefectRetryBtn {
+  margin-top: 10px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workOrderDefectRetryBtn:active {
+  background: rgba(255, 255, 255, 0.16);
+}
+

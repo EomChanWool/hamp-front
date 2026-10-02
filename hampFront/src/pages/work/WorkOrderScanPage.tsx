@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ChevronDownIcon,
@@ -10,12 +10,14 @@ import axios from 'axios';
 import { apiClient } from '@/api/apiClient';
 import { WorkOrderApi } from '@/api/WorkOrder';
 import type { WorkOrderLineScanResponse, WorkOrderPerformanceDefectRequest, WorkOrderPerformanceScanResponse, ZoneType } from '@/api/WorkOrder';
+import { DefectApi, type DefectOptionResponse } from '@/api/master/Defect';
 import { isValidWorkZone } from '@/utils/common';
 import '@/pages/work/WorkTabletHome.css';
 import '@/pages/work/WorkSeedReportScanPage.css';
 import '@/pages/work/WorkOrderScanPage.css';
 
 type ConnectionStatus = 'connecting' | 'open' | 'closed';
+type FinishInputType = 'GOOD' | 'DEFECT';
 
 interface ScanFailure {
   code: string;
@@ -28,15 +30,6 @@ const STATUS_LABEL: Record<string, string> = {
   DONE: '완료',
   DELAY: '지연',
 };
-
-const DEFECT_REASON_OPTIONS = [
-  { value: 'FOREIGN_MATERIAL', label: '이물질 혼합' },
-  { value: 'APPEARANCE', label: '외관 불량' },
-  { value: 'WEIGHT', label: '중량 불량' },
-  { value: 'PACKAGING', label: '포장 불량' },
-  { value: 'EQUIPMENT', label: '설비 불량' },
-  { value: 'ETC', label: '기타' },
-];
 
 const KEYPAD_KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', 'back'];
 
@@ -83,8 +76,6 @@ export function WorkOrderScanPage() {
   // 설비 재스캔 후 공정 종료 실적을 입력받기 위한 상태
   const [pendingFinish, setPendingFinish] = useState<WorkOrderPerformanceScanResponse | null>(null);
 
-  type FinishInputType = 'GOOD' | 'DEFECT';
-
   const [finishInputType, setFinishInputType] = useState<FinishInputType>('GOOD');
   const [goodQty, setGoodQty] = useState('');
   const [defectQty, setDefectQty] = useState('');
@@ -93,6 +84,14 @@ export function WorkOrderScanPage() {
   const [finishError, setFinishError] = useState<string | null>(null);
 
   const [isDefectDropdownOpen, setIsDefectDropdownOpen] = useState(false);
+
+  const [defectOptions, setDefectOptions] = useState<DefectOptionResponse[]>([]);
+  const [isDefectOptionsLoading, setIsDefectOptionsLoading] = useState(true);
+  const [defectOptionsError, setDefectOptionsError] = useState<string | null>(null);
+
+  // 입력 중에 들어온 스캔을 무시했을 때 띄우는 경고 토스트 문구
+  const [scanNotice, setScanNotice] = useState<string | null>(null);
+  const shouldIgnoreScanRef = useRef(false);
 
   // 이번 화면에서 종료 처리된 공정 코드들 - 공정순서도에 완료 표시를 해주기 위한 용도
   const [completedOperCodes, setCompletedOperCodes] = useState<Set<string>>(new Set());
@@ -106,6 +105,46 @@ export function WorkOrderScanPage() {
 
   // 투입수량을 아코디언으로 펼쳐서 보고 있는 공정 코드들
   const [expandedOperCodes, setExpandedOperCodes] = useState<Set<string>>(new Set());
+
+  const resetStartForm = useCallback(() => {
+    setPendingStart(null);
+    setQtyInput('');
+    setStartError(null);
+  }, []);
+
+  const resetFinishForm = useCallback(() => {
+    setPendingFinish(null);
+    setFinishInputType('GOOD');
+    setGoodQty('');
+    setDefectQty('');
+    setSelectedDefectCode('');
+    setDefectEntries([]);
+    setFinishError(null);
+    setIsDefectDropdownOpen(false);
+  }, []);
+
+  // 불량 옵션 조회
+  const loadDefectOptions = useCallback(async () => {
+    setIsDefectOptionsLoading(true);
+    try {
+      const res = await DefectApi.getOptions();
+      setDefectOptions(res.data ?? []);
+      setDefectOptionsError(null);
+    } catch (err) {
+      console.error('불량 유형 목록을 불러오지 못했습니다.', err);
+      setDefectOptionsError('불량 유형을 불러오지 못했습니다.');
+    } finally {
+      setIsDefectOptionsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDefectOptions();
+  }, [loadDefectOptions]);
+
+  // defCode -> 불량명 (옵션에 없으면 코드 그대로 표시)
+  const getDefectName = (defCode: string) =>
+    defectOptions.find((option) => option.defCode === defCode)?.defNm ?? defCode;
 
   // 작업지시 스캔 화면 진입 시 SSE 연결, 이탈 시 반드시 연결 종료
   useEffect(() => {
@@ -132,33 +171,29 @@ export function WorkOrderScanPage() {
         return;
       }
 
+      // (스캔 실패(NG) 배너는 폼을 건드리지 않으므로 위에서 그대로 처리됨)
+      if (shouldIgnoreScanRef.current) {
+        setScanNotice('입력 중인 내용이 있어 새 스캔을 무시했습니다. 취소 후 다시 스캔해 주세요.');
+        return;
+      }
+
       if (isPerformanceScanResult(data)) {
         // 이전에 잘못된 설비를 찍어서 빨간 오류 배너가 떠 있었더라도,
         // 이번 스캔이 성공했으니 바로 지운다
         setScanFailure(null);
 
         if (data.action === 'START_READY') {
+          resetFinishForm();
+          resetStartForm();
           setPendingStart(data);
-          setPendingFinish(null);
-          setQtyInput('');
-          setStartError(null);
           return;
         }
 
         // FINISH_READY - 바로 종료하지 않고 양품/불량 입력 화면을 띄운다.
         if (data.action === 'FINISH_READY') {
-          setScanFailure(null);
-
+          resetStartForm();
+          resetFinishForm();
           setPendingFinish(data);
-          setPendingStart(null);
-          setFinishInputType('GOOD');
-          setGoodQty('');
-          setDefectQty('');
-          setSelectedDefectCode('');
-          setDefectEntries([]);
-          setFinishError(null);
-
-          return;
         }
 
         return;
@@ -169,16 +204,8 @@ export function WorkOrderScanPage() {
       setScanFailure(null);
       setScanResult(data as WorkOrderLineScanResponse);
 
-      setPendingStart(null);
-      setPendingFinish(null);
-
-      setQtyInput('');
-      setGoodQty('');
-      setDefectQty('');
-      setSelectedDefectCode('');
-      setDefectEntries([]);
-      setFinishError(null);
-      setFinishInputType('GOOD');
+      resetStartForm();
+      resetFinishForm();
 
       setCompletedOperCodes(new Set());
       setStartedOperCode(null);
@@ -189,7 +216,7 @@ export function WorkOrderScanPage() {
     return () => {
       eventSource.close();
     };
-  }, [zone]);
+  }, [zone, resetStartForm, resetFinishForm]);
 
   useEffect(() => {
     if (!scanFailure) return;
@@ -202,6 +229,21 @@ export function WorkOrderScanPage() {
     const timer = setTimeout(() => setCompletedBanner(null), 3000);
     return () => clearTimeout(timer);
   }, [completedBanner]);
+
+  useEffect(() => {
+    if (!scanNotice) return;
+    const timer = setTimeout(() => setScanNotice(null), 3000);
+    return () => clearTimeout(timer);
+  }, [scanNotice]);
+
+  // 새 스캔을 무시해야 하는 상태를 ref에 최신으로 반영
+  useEffect(() => {
+    const hasStartInput = pendingStart !== null && qtyInput !== '';
+    const hasFinishInput =
+      pendingFinish !== null && (goodQty !== '' || defectQty !== '' || defectEntries.length > 0);
+
+    shouldIgnoreScanRef.current = isSubmitting || hasStartInput || hasFinishInput;
+  }, [isSubmitting, pendingStart, qtyInput, pendingFinish, goodQty, defectQty, defectEntries]);
 
   const handleKeypadPress = useCallback((key: string) => {
     if (key === 'back') {
@@ -217,9 +259,7 @@ export function WorkOrderScanPage() {
 
   const handleFinishKeypadPress = useCallback(
     (key: string) => {
-      const setter = finishInputType === 'GOOD'
-        ? setGoodQty
-        : setDefectQty;
+      const setter = finishInputType === 'GOOD' ? setGoodQty : setDefectQty;
 
       if (key === 'back') {
         setter((prev) => prev.slice(0, -1));
@@ -249,28 +289,15 @@ export function WorkOrderScanPage() {
     }
 
     setDefectEntries((prev) => {
-      const existing = prev.find(
-        (item) => item.defCode === selectedDefectCode,
-      );
+      const existing = prev.find((item) => item.defCode === selectedDefectCode);
 
       if (existing) {
         return prev.map((item) =>
-          item.defCode === selectedDefectCode
-            ? {
-              ...item,
-              qty: item.qty + qty,
-            }
-            : item,
+          item.defCode === selectedDefectCode ? { ...item, qty: item.qty + qty } : item,
         );
       }
 
-      return [
-        ...prev,
-        {
-          defCode: selectedDefectCode,
-          qty,
-        },
-      ];
+      return [...prev, { defCode: selectedDefectCode, qty }];
     });
 
     setDefectQty('');
@@ -278,9 +305,7 @@ export function WorkOrderScanPage() {
   };
 
   const handleRemoveDefect = (defCode: string) => {
-    setDefectEntries((prev) =>
-      prev.filter((entry) => entry.defCode !== defCode),
-    );
+    setDefectEntries((prev) => prev.filter((entry) => entry.defCode !== defCode));
 
     if (selectedDefectCode === defCode) {
       setSelectedDefectCode('');
@@ -299,22 +324,6 @@ export function WorkOrderScanPage() {
       }
       return next;
     });
-  };
-
-  const handleCancelStart = () => {
-    setPendingStart(null);
-    setQtyInput('');
-    setStartError(null);
-  };
-
-  const handleCancelFinish = () => {
-    setPendingFinish(null);
-    setFinishInputType('GOOD');
-    setGoodQty('');
-    setDefectQty('');
-    setSelectedDefectCode('');
-    setDefectEntries([]);
-    setFinishError(null);
   };
 
   const handleConfirmStart = async () => {
@@ -337,8 +346,7 @@ export function WorkOrderScanPage() {
       await WorkOrderApi.startPerformance({ zone: Number(zone) as ZoneType, operCode: pendingStart.operCode, qty });
       setStartedOperCode(pendingStart.operCode);
       setStartedInputQty(qty);
-      setPendingStart(null);
-      setQtyInput('');
+      resetStartForm();
     } catch (err) {
       const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
       setStartError(message || '공정 시작 등록에 실패했습니다.');
@@ -351,12 +359,7 @@ export function WorkOrderScanPage() {
     if (!pendingFinish) return;
 
     const good = Number(goodQty || 0);
-
-    const totalDefectQty = defectEntries.reduce(
-      (sum, entry) => sum + entry.qty,
-      0,
-    );
-
+    const totalDefectQty = defectEntries.reduce((sum, entry) => sum + entry.qty, 0);
     const totalQty = good + totalDefectQty;
 
     if (Number.isNaN(good) || good < 0) {
@@ -402,37 +405,20 @@ export function WorkOrderScanPage() {
         operCode: pendingFinish.operCode,
         qty: good,
         ...(defectEntries.length > 0
-          ? {
-            defects: defectEntries.map((entry) => ({
-              defCode: entry.defCode,
-              qty: entry.qty,
-            })),
-          }
+          ? { defects: defectEntries.map((entry) => ({ defCode: entry.defCode, qty: entry.qty })) }
           : {}),
       });
 
-      setCompletedOperCodes((prev) =>
-        new Set(prev).add(pendingFinish.operCode),
-      );
+      setCompletedOperCodes((prev) => new Set(prev).add(pendingFinish.operCode));
 
       setStartedOperCode(null);
       setStartedInputQty(null);
 
-      setCompletedBanner(
-        `${pendingFinish.operNm} 공정이 종료되었습니다.`,
-      );
+      setCompletedBanner(`${pendingFinish.operNm} 공정이 종료되었습니다.`);
 
-      setPendingFinish(null);
-      setFinishInputType('GOOD');
-      setGoodQty('');
-      setDefectQty('');
-      setSelectedDefectCode('');
-      setDefectEntries([]);
+      resetFinishForm();
     } catch (err) {
-      const message = axios.isAxiosError(err)
-        ? err.response?.data?.message
-        : undefined;
-
+      const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
       setFinishError(message || '공정 종료 처리에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
@@ -475,7 +461,7 @@ export function WorkOrderScanPage() {
   return (
     <div className="workTabletPage">
       <div className="workScanPanel">
-        <div className="workScanContainer">
+        <div className={`workScanContainer workScanContainer--${zoneVariant}`}>
           <div className="workScanTopBar">
             <button
               type="button"
@@ -503,7 +489,6 @@ export function WorkOrderScanPage() {
                 <MapPinIcon aria-hidden="true" />
                 {zoneLabel}
               </span>
-
             </div>
             {scanFailure && !scanResult ? (
               // 작업지시 라벨 자체를 아직 못 읽은 경우 - 보여줄 결과 화면이 없으니 전체 화면으로 안내
@@ -530,7 +515,6 @@ export function WorkOrderScanPage() {
                   <div className="workScanTargetLabel">
                     <strong>작업지시</strong>
                     <ClipboardDocumentListIcon className="workScanWaitingIconSvg" />
-                    
                   </div>
                 </div>
                 <h1>스캔 대기 중</h1>
@@ -597,7 +581,7 @@ export function WorkOrderScanPage() {
                         {inProgressStep
                           ? `진행 중: ${inProgressStep.operNm} — 종료하려면 ${inProgressStepEquipment ? `${inProgressStepEquipment} ` : ''}바코드를 다시 스캔하세요`
                           : nextStep
-                            ? `다음 공정: ${nextStep.operNm} — ${nextStepEquipment ? `${nextStepEquipment} ` : ''} 바코드를 스캔해주세요`
+                            ? `다음 공정: ${nextStep.operNm} — ${nextStepEquipment ? `${nextStepEquipment} ` : ''}바코드를 스캔해주세요`
                             : '모든 공정이 완료되었습니다'}
                       </span>
                     </div>
@@ -679,6 +663,8 @@ export function WorkOrderScanPage() {
                                     type="button"
                                     className="workOrderRoutingChevronBtn"
                                     onClick={() => toggleExpandedOperCode(step.operCode)}
+                                    aria-label={isExpanded ? '투입수량 접기' : '투입수량 펼치기'}
+                                    aria-expanded={isExpanded}
                                   >
                                     <ChevronDownIcon
                                       className={[
@@ -705,7 +691,7 @@ export function WorkOrderScanPage() {
                                     <button
                                       type="button"
                                       className="workScanCancelBtn"
-                                      onClick={handleCancelStart}
+                                      onClick={resetStartForm}
                                       disabled={isSubmitting}
                                     >
                                       취소
@@ -730,6 +716,7 @@ export function WorkOrderScanPage() {
                                       className={finishInputType === 'GOOD' ? 'active' : ''}
                                       onClick={() => {
                                         setFinishInputType('GOOD');
+                                        setIsDefectDropdownOpen(false);
                                         setFinishError(null);
                                       }}
                                     >
@@ -751,26 +738,26 @@ export function WorkOrderScanPage() {
                                   {/* 불량 입력을 선택했을 때만 불량 유형 선택 */}
                                   {finishInputType === 'DEFECT' && (
                                     <div className="workOrderDefectSelector">
-                                      <div className="workOrderFinishLabel">
-                                        불량 유형
-                                      </div>
+                                      <div className="workOrderFinishLabel">불량 유형</div>
 
                                       <div className="workOrderDefectDropdown">
                                         <button
                                           type="button"
-                                          className={`workOrderDefectDropdownTrigger ${isDefectDropdownOpen ? 'isOpen' : ''
-                                            }`}
+                                          className={`workOrderDefectDropdownTrigger ${isDefectDropdownOpen ? 'isOpen' : ''}`}
                                           onClick={() => {
+                                            if (!isDefectDropdownOpen && !isDefectOptionsLoading && (defectOptionsError || defectOptions.length === 0)) {
+                                              loadDefectOptions();
+                                            }
                                             setIsDefectDropdownOpen((prev) => !prev);
                                             setFinishError(null);
                                           }}
                                         >
                                           <span>
                                             {selectedDefectCode
-                                              ? DEFECT_REASON_OPTIONS.find(
-                                                (item) => item.value === selectedDefectCode,
-                                              )?.label
-                                              : '불량 유형을 선택하세요'}
+                                              ? getDefectName(selectedDefectCode)
+                                              : isDefectOptionsLoading
+                                                ? '불량 유형을 불러오는 중...'
+                                                : '불량 유형을 선택하세요'}
                                           </span>
 
                                           <ChevronDownIcon
@@ -781,27 +768,44 @@ export function WorkOrderScanPage() {
 
                                         {isDefectDropdownOpen && (
                                           <div className="workOrderDefectDropdownMenu">
-                                            {DEFECT_REASON_OPTIONS.map((option) => (
-                                              <button
-                                                key={option.value}
-                                                type="button"
-                                                className={`workOrderDefectDropdownOption ${selectedDefectCode === option.value ? 'selected' : ''
-                                                  }`}
-                                                onClick={() => {
-                                                  setSelectedDefectCode(option.value);
-                                                  setIsDefectDropdownOpen(false);
-                                                  setFinishError(null);
-                                                }}
-                                              >
-                                                <span>{option.label}</span>
-
-                                                {selectedDefectCode === option.value && (
-                                                  <span className="workOrderDefectDropdownCheck">
-                                                    ✓
-                                                  </span>
+                                            {defectOptionsError || defectOptions.length === 0 ? (
+                                              // [변경] 실패/빈 목록일 때 새로고침 없이 다시 불러올 수 있게 버튼 추가
+                                              <div className="workOrderDefectDropdownEmpty">
+                                                <div>
+                                                  {isDefectOptionsLoading
+                                                    ? '불러오는 중...'
+                                                    : defectOptionsError ?? '등록된 불량 유형이 없습니다.'}
+                                                </div>
+                                                {!isDefectOptionsLoading && (
+                                                  <button
+                                                    type="button"
+                                                    className="workOrderDefectRetryBtn"
+                                                    onClick={loadDefectOptions}
+                                                  >
+                                                    다시 불러오기
+                                                  </button>
                                                 )}
-                                              </button>
-                                            ))}
+                                              </div>
+                                            ) : (
+                                              defectOptions.map((option) => (
+                                                <button
+                                                  key={option.defCode}
+                                                  type="button"
+                                                  className={`workOrderDefectDropdownOption ${selectedDefectCode === option.defCode ? 'selected' : ''}`}
+                                                  onClick={() => {
+                                                    setSelectedDefectCode(option.defCode);
+                                                    setIsDefectDropdownOpen(false);
+                                                    setFinishError(null);
+                                                  }}
+                                                >
+                                                  <span>{option.defNm}</span>
+
+                                                  {selectedDefectCode === option.defCode && (
+                                                    <span className="workOrderDefectDropdownCheck">✓</span>
+                                                  )}
+                                                </button>
+                                              ))
+                                            )}
                                           </div>
                                         )}
                                       </div>
@@ -855,19 +859,12 @@ export function WorkOrderScanPage() {
                                       </div>
                                     ) : (
                                       defectEntries.map((entry) => {
-                                        const option = DEFECT_REASON_OPTIONS.find(
-                                          (item) => item.value === entry.defCode,
-                                        );
+                                        const defectName = getDefectName(entry.defCode);
 
                                         return (
-                                          <div
-                                            key={entry.defCode}
-                                            className="workOrderDefectItem"
-                                          >
+                                          <div key={entry.defCode} className="workOrderDefectItem">
                                             <div className="workOrderDefectItemName">
-                                              <span>
-                                                {option?.label ?? entry.defCode}
-                                              </span>
+                                              <span>{defectName}</span>
 
                                               <span className="workOrderDefectItemQty">
                                                 · {entry.qty.toLocaleString()} {scanResult.unit}
@@ -879,7 +876,7 @@ export function WorkOrderScanPage() {
                                               className="workOrderDefectDeleteBtn"
                                               onClick={() => handleRemoveDefect(entry.defCode)}
                                               disabled={isSubmitting}
-                                              aria-label={`${option?.label ?? entry.defCode} 삭제`}
+                                              aria-label={`${defectName} 삭제`}
                                             >
                                               삭제
                                             </button>
@@ -891,9 +888,7 @@ export function WorkOrderScanPage() {
 
                                   {/* 에러 */}
                                   {finishError && (
-                                    <div className="workScanErrorMsg">
-                                      {finishError}
-                                    </div>
+                                    <div className="workScanErrorMsg">{finishError}</div>
                                   )}
 
                                   {/* 취소 / 종료 */}
@@ -901,7 +896,7 @@ export function WorkOrderScanPage() {
                                     <button
                                       type="button"
                                       className="workScanCancelBtn"
-                                      onClick={handleCancelFinish}
+                                      onClick={resetFinishForm}
                                       disabled={isSubmitting}
                                     >
                                       취소
@@ -930,6 +925,8 @@ export function WorkOrderScanPage() {
           </div>
 
           {completedBanner && <div className="workScanSuccessToast">{completedBanner}</div>}
+
+          {scanNotice && !completedBanner && <div className="workOrderWarnToast">{scanNotice}</div>}
         </div>
       </div>
     </div>
