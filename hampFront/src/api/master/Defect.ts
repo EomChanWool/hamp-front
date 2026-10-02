@@ -46,6 +46,12 @@ export interface DefectDetailResponse {
   updatedAt: string;
 }
 
+/** 불량 옵션 조회 응답 */
+export interface DefectOptionResponse {
+  defCode: string;
+  defNm: string;
+}
+
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 불량 단건/기본 응답 API 최종 응답 타입 */
@@ -59,6 +65,9 @@ export type PageDefectResponse = PageResponse<DefectResponse>;
 
 /** 불량 목록 페이징 API 최종 응답 타입 */
 export type ApiResponsePageDefectResponse = ApiResponsePage<DefectResponse>;
+
+/** 불량 옵션 목록 API 최종 응답 타입 */
+export type ApiResponseListDefectOptionResponse = ApiResponse<DefectOptionResponse[]>;
 
 // ── 불량 관리 API 함수 ────────────────────────────────────────────────────────
 
@@ -99,5 +108,11 @@ export const DefectApi = {
   delete: async (defCode: string): Promise<ApiResponse<string>> => {
     const res = await apiClient.delete(`/defects/${defCode}`);
     return res.data;
-  }
+  },
+
+  /** 불량 셀렉트 옵션 조회 */
+    getOptions: async (): Promise<ApiResponseListDefectOptionResponse> => {
+      const res = await apiClient.get<ApiResponseListDefectOptionResponse>('/defects/options');
+      return res.data;
+    },
 };
