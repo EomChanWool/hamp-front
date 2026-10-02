@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ChevronDownIcon,
+  ChevronRightIcon,
   ClipboardDocumentListIcon,
   ExclamationTriangleIcon,
   MapPinIcon,
@@ -564,9 +565,20 @@ export function WorkOrderScanPage() {
 
           <div className="workScanMain">
             <div className="workTabletScanHeader">
-              <span className="workTabletZone">
+              <span
+                className={`workTabletScanZoneBadge workTabletScanZoneBadge--${zoneVariant}`}
+              >
                 <MapPinIcon aria-hidden="true" />
                 {zoneLabel}
+              </span>
+              <ChevronRightIcon
+                className="workTabletScanArrow"
+                aria-hidden="true"
+              />
+              <span
+                className={`workTabletScanProcessBadge workTabletScanProcessBadge--${zoneVariant}`}
+              >
+                작업지시
               </span>
             </div>
             {scanFailure && !scanResult ? (
@@ -592,7 +604,6 @@ export function WorkOrderScanPage() {
                   <span className="workScanTargetCorner workScanTargetCorner--br" />
                   <span className="workScanTargetLine" />
                   <div className="workScanTargetLabel">
-                    <strong>작업지시</strong>
                     <ClipboardDocumentListIcon className="workScanWaitingIconSvg" />
                   </div>
                 </div>

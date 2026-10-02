@@ -155,7 +155,7 @@
   justify-content: center;
   text-align: center;
   gap: 12px;
-  padding: 16px 16px;
+  padding: 8px 16px;
 }
 
 /* ── 스캔 대기 화면의 "스캔 타겟" 프레임 ─────────────────────
@@ -206,11 +206,6 @@
 
 .workScanTarget--crop .workScanTargetLabel {
   color: #4ade80;
-}
-
-.workScanTargetLabel strong {
-  font-size: 24px;
-  line-height: 1.2;
 }
 
 .workScanTargetLabel .workScanWaitingIconSvg {
@@ -393,7 +388,7 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
   padding: 20px;
-  margin-top: 20px;
+  margin-top: 12px;
 }
 
 .workScanCardHead {
