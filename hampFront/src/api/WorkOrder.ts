@@ -4,7 +4,7 @@ import type { EquipmentOptionResponse } from '@/api/master/Equipment';
 
 // 도메인 상수 및 타입 (Literal Types)
 
-/** 종류 (1: 식품동, 2: 작물동) */
+/** 종류 (1: 식품동, 2: 섬유동) */
 export type ZoneType = 1 | 2;
 
 /** 작업지시 라인 요청 (등록/수정 시) */

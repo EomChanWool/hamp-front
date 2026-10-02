@@ -182,7 +182,7 @@ export function WorkSeedReportScanPage() {
   }
 
   const isFoodZone = zone === '1';
-  const zoneLabel = isFoodZone ? '식품동' : '작물동';
+  const zoneLabel = isFoodZone ? '식품동' : '섬유동';
   const zoneVariant = isFoodZone ? 'food' : 'crop';
 
   return (

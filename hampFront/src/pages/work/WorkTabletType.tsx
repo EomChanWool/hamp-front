@@ -69,7 +69,7 @@ export function WorkTabletType() {
                 </span>
               </button>
 
-              {/* 작물동 버튼 -> 태블릿 작물동 업무 화면 연결 */}
+              {/* 섬유동 버튼 -> 태블릿 섬유동 업무 화면 연결 */}
               <button
                 type="button"
                 className="workTabletBtn workTabletBtn--crop"
@@ -77,9 +77,9 @@ export function WorkTabletType() {
               >
                 <PlantIcon aria-hidden="true" />
                 <span className="workTabletBtnText">
-                  <span className="workTabletBtnTitle">작물동</span>
+                  <span className="workTabletBtnTitle">섬유동</span>
                   <span className="workTabletBtnDesc">
-                    작물동 업무 화면으로 넘어가
+                    섬유동 업무 화면으로 넘어가
                     <br />
                     작업지시/출고처리를 진행합니다.
                   </span>
