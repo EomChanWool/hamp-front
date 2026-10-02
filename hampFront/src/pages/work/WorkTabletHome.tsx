@@ -29,7 +29,7 @@ export function WorkTabletHome() {
   return (
     <div className="workTabletPage">
       <div className="workTabletPanel">
-        <div className="workTabletContainer">
+        <div className={`workTabletContainer workTabletContainer--${zoneVariant}`}>
 
           {/* 신고처리는 로그인 없이도 쓸 수 있어 이 홈 화면 자체는 비로그인 상태로도 들어올 수 있음 -
               그럴 땐 사용자 정보/로그아웃 대신 로그인 버튼을 보여준다 (작업지시를 쓰려면 로그인이 필요) */}
