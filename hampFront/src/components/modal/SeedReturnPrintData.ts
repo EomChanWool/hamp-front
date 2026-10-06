@@ -13,36 +13,38 @@ import type { SeedGoodsReceiptReturnItemResponse } from '@/api/seed/SeedGoodsRec
 
 /** 처리상태 코드 -> 출력용 문구 (페이지의 PROCESS_STATUS_MAP 과 동일하게 유지) */
 const PROCESS_STATUS_TEXT: Record<number, string> = {
-  0: '신고대기',
-  1: '신고완료',
+    0: '신고대기',
+    1: '신고완료',
 };
 
 /** 표의 한 행 */
 export interface SeedReturnPrintRow {
-  no: number; // 순번 (1부터)
-  returnId: number; // 신고ID
-  itemCode: string; // 품목코드
-  itemNm: string; // 품목명
-  returnQty: number; // 수량
-  reportDate: string; // 신고일자
-  returnDueDate: string; // 처리예정일
-  statusText: string; // 처리상태 문구
+    no: number; // 순번 (1부터)
+    returnId: number; // 신고ID
+    itemCode: string; // 품목코드
+    itemNm: string; // 품목명
+    returnQty: number; // 수량
+    hullQty: number; // 껍질수량
+    reportDate: string; // 신고일자
+    returnDueDate: string; // 처리예정일
+    statusText: string; // 처리상태 문구
 }
 
 /** 문서 전체 */
 export interface SeedReturnPrintData {
-  docNo: string; // 문서번호 (예: RTN-12 / RTN-12 외 2건)
-  printedAt: string; // 출력일시 (yyyy-MM-dd HH:mm)
-  rows: SeedReturnPrintRow[];
-  totalQty: number; // 수량 합계
-  barcodeValue: string | null; // 단건일 때만 바코드 값, 여러 건이면 null
+    docNo: string; // 문서번호 (예: RTN-12 / RTN-12 외 2건)
+    printedAt: string; // 출력일시 (yyyy-MM-dd HH:mm)
+    rows: SeedReturnPrintRow[];
+    totalQty: number; // 수량 합계
+    totalHullQty: number; // 껍질수량 합계
+    barcodeValue: string | null; // 단건일 때만 바코드 값, 여러 건이면 null
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
 /** 출력일시 포맷 */
 export const formatPrintDateTime = (date: Date) =>
-  `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 
 /**
  * API 응답 목록 -> 출력용 데이터
@@ -51,32 +53,34 @@ export const formatPrintDateTime = (date: Date) =>
  *       호출하는 쪽(페이지의 인쇄 버튼)에서 한다. 여기서는 받은 그대로 변환만 한다.
  */
 export function buildSeedReturnPrintData(
-  items: SeedGoodsReceiptReturnItemResponse[],
-  now: Date = new Date()
+    items: SeedGoodsReceiptReturnItemResponse[],
+    now: Date = new Date()
 ): SeedReturnPrintData {
-  const rows: SeedReturnPrintRow[] = items.map((it, idx) => ({
-    no: idx + 1,
-    returnId: it.returnId,
-    itemCode: it.itemCode ?? '-',
-    itemNm: it.itemNm ?? '-',
-    returnQty: it.returnQty ?? 0,
-    reportDate: it.reportDate || '-',
-    returnDueDate: it.returnDueDate || '-',
-    statusText: PROCESS_STATUS_TEXT[it.processStatus] ?? String(it.processStatus),
-  }));
+    const rows: SeedReturnPrintRow[] = items.map((it, idx) => ({
+        no: idx + 1,
+        returnId: it.returnId,
+        itemCode: it.itemCode ?? '-',
+        itemNm: it.itemNm ?? '-',
+        returnQty: it.returnQty ?? 0,
+        hullQty: it.hullQty ?? 0,
+        reportDate: it.reportDate || '-',
+        returnDueDate: it.returnDueDate || '-',
+        statusText: PROCESS_STATUS_TEXT[it.processStatus] ?? String(it.processStatus),
+    }));
 
-  const first = items[0];
-  const docNo = first
-    ? `RTN-${first.returnId}${items.length > 1 ? ` 외 ${items.length - 1}건` : ''}`
-    : '-';
+    const first = items[0];
+    const docNo = first
+        ? `RTN-${first.returnId}${items.length > 1 ? ` 외 ${items.length - 1}건` : ''}`
+        : '-';
 
-  return {
-    docNo,
-    printedAt: formatPrintDateTime(now),
-    rows,
-    totalQty: rows.reduce((sum, r) => sum + r.returnQty, 0),
-    barcodeValue: items.length === 1 && first ? `RTN-${first.returnId}` : null,
-  };
+    return {
+        docNo,
+        printedAt: formatPrintDateTime(now),
+        rows,
+        totalQty: rows.reduce((sum, r) => sum + r.returnQty, 0),
+        totalHullQty: rows.reduce((sum, r) => sum + r.hullQty, 0),
+        barcodeValue: items.length === 1 && first ? `RTN-${first.returnId}` : null,
+    };
 }
 
 /**
@@ -91,17 +95,18 @@ export function buildSeedReturnPrintData(
  * 프론트는 "다운로드 API 호출 -> blob 저장" 만 담당하는 구성을 권장.
  */
 export function flattenForTemplate(data: SeedReturnPrintData): Record<string, string> {
-  const flat: Record<string, string> = {
-    docNo: data.docNo,
-    printedAt: data.printedAt,
-    totalQty: String(data.totalQty),
-  };
+    const flat: Record<string, string> = {
+        docNo: data.docNo,
+        printedAt: data.printedAt,
+        totalQty: String(data.totalQty),
+        totalHullQty: String(data.totalHullQty),
+    };
 
-  data.rows.forEach((row, i) => {
-    Object.entries(row).forEach(([key, value]) => {
-      flat[`rows.${i}.${key}`] = String(value);
+    data.rows.forEach((row, i) => {
+        Object.entries(row).forEach(([key, value]) => {
+            flat[`rows.${i}.${key}`] = String(value);
+        });
     });
-  });
 
-  return flat;
+    return flat;
 }
