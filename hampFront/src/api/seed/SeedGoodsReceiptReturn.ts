@@ -10,12 +10,12 @@ export interface SeedGoodsReceiptReturnUpdateRequest {
     processStatus: number;
 }
 
-/** 씨드 신고처리 전체 목록 조회 아이템 응답 (itemCode, itemNm 포함) */
+/** 씨드 신고처리 전체 목록 조회 아이템 응답 (receiptBarcode 포함) */
 export interface SeedGoodsReceiptReturnItemResponse {
     returnId: number;
     receiptId: number;
-    itemCode: string;
-    itemNm: string;
+    receiptBarcode: string;
+    receivedAt: string;
     returnQty: number;
     hullQty: number;
     reportDate: string;
