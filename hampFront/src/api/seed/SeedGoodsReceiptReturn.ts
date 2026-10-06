@@ -4,6 +4,7 @@ import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 /** 씨드 신고처리 수정 요청 */
 export interface SeedGoodsReceiptReturnUpdateRequest {
     returnQty: number;
+    hullQty: number;
     reportDate: string;
     returnDueDate: string;
     processStatus: number;
@@ -16,6 +17,7 @@ export interface SeedGoodsReceiptReturnItemResponse {
     itemCode: string;
     itemNm: string;
     returnQty: number;
+    hullQty: number;
     reportDate: string;
     returnDueDate: string;
     processStatus: number;
@@ -28,6 +30,7 @@ export interface SeedGoodsReceiptReturnResponse {
     returnId: number;
     receiptId: number;
     returnQty: number;
+    hullQty: number;
     reportDate: string;
     returnDueDate: string;
     processStatus: number;
