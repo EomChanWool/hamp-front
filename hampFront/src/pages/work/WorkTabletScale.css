@@ -1,0 +1,565 @@
+/* ==========================================================================
+   WORK TABLET SCALE (태블릿 화면 확대 오버라이드)
+   - 기존 WorkTabletHome.css / WorkSeedReportScanPage.css / WorkOrderScanPage.css /
+     WorkTabletLoginPage.css 는 건드리지 않고, 여기서 .workTabletPage 접두사로 한 단계
+     더 높은 우선순위를 줘서 import 순서와 상관없이 덮어쓴다.
+   - 전부 min-width: 768px 안에서만 적용 -> 폰 화면(기존 480px 이하 규칙)은 그대로 유지
+   ========================================================================== */
+
+@media (min-width: 768px) {
+
+  /* ── 패널/컨테이너 크기 ─────────────────────────── */
+  .workTabletPage .workTabletPanel,
+  .workTabletPage .workScanPanel {
+    max-width: 1200px;
+  }
+
+  .workTabletPage .workTabletContainer,
+  .workTabletPage .workScanContainer {
+    padding: 48px;
+  }
+
+  .workTabletPage .workTabletContainer {
+    padding-bottom: 80px;
+    /* 하단 로그아웃 링크 자리 */
+  }
+
+  .workTabletPage .workTabletLoginContainer {
+    padding: 56px 64px;
+  }
+
+  /* ── 공통: 상단바 ─────────────────────────────── */
+  .workTabletPage .workTabletTopBar {
+    min-height: 52px;
+  }
+
+  .workTabletPage .workScanHomeBtn {
+    padding: 14px 22px;
+    font-size: 17px;
+    border-radius: 12px;
+  }
+
+  .workTabletPage .workTabletLogoPlaceholder {
+    height: 40px;
+    padding: 0 18px;
+    font-size: 14px;
+  }
+
+  .workTabletPage .workTabletUserInfo {
+    gap: 14px;
+  }
+
+  .workTabletPage .workTabletUserAvatar {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+  }
+
+  .workTabletPage .workTabletUserName {
+    font-size: 19px;
+  }
+
+  .workTabletPage .workTabletUserPosition {
+    font-size: 15px;
+  }
+
+  .workTabletPage .workTabletLogoutLink {
+    bottom: 28px;
+    padding: 10px 16px;
+    font-size: 16px;
+  }
+
+  .workTabletPage .workScanStatus {
+    font-size: 16px;
+    gap: 10px;
+  }
+
+  .workTabletPage .workScanStatusDot {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* ── 생산동 선택 / 메뉴 ───────────────────────── */
+  .workTabletPage .workTabletMain {
+    gap: 72px;
+  }
+
+  .workTabletPage .workTabletHeader {
+    gap: 12px;
+  }
+
+  .workTabletPage .workTabletHeader h1,
+  .workTabletPage .workTabletScanHeader h1 {
+    font-size: 40px;
+  }
+
+  .workTabletPage .workTabletHeader p {
+    font-size: 19px;
+  }
+
+  .workTabletPage .workTabletZoneBadge {
+    padding: 12px 34px;
+    font-size: 36px;
+    gap: 14px;
+  }
+
+  .workTabletPage .workTabletZoneBadge svg {
+    width: 42px;
+    height: 42px;
+  }
+
+  .workTabletPage .workTabletMenuButtons,
+  .workTabletPage .workTabletTypeButtons {
+    gap: 24px;
+  }
+
+  .workTabletPage .workTabletBtn {
+    min-height: 230px;
+    padding: 28px 20px;
+    gap: 22px;
+    border-radius: 20px;
+  }
+
+  .workTabletPage .workTabletBtnIcon,
+  .workTabletPage .workTabletBtn svg {
+    width: 56px;
+    height: 56px;
+  }
+
+  .workTabletPage .workTabletBtnText {
+    gap: 10px;
+  }
+
+  .workTabletPage .workTabletBtnTitle {
+    font-size: 30px;
+  }
+
+  .workTabletPage .workTabletBtnDesc {
+    font-size: 16px;
+  }
+
+  /* ── 스캔 화면 상단 라벨(생산동 > 업무) ─────────── */
+  .workTabletPage .workTabletScanHeader {
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .workTabletPage .workTabletScanZoneBadge,
+  .workTabletPage .workTabletScanProcessBadge {
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: 22px;
+    font-size: 21px;
+  }
+
+  .workTabletPage .workTabletScanZoneBadge {
+    gap: 8px;
+  }
+
+  .workTabletPage .workTabletScanZoneBadge svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .workTabletPage .workTabletScanArrow {
+    width: 12px;
+    height: 12px;
+    flex-basis: 24px;
+  }
+
+  /* ── 스캔 대기 / 실패 화면 ────────────────────── */
+  .workTabletPage .workScanWaiting {
+    gap: 18px;
+  }
+
+  .workTabletPage .workScanTarget {
+    width: 210px;
+    height: 210px;
+    border-radius: 30px;
+  }
+
+  .workTabletPage .workScanTargetCorner {
+    width: 34px;
+    height: 34px;
+    border-width: 4px;
+  }
+
+  .workTabletPage .workScanTargetLabel .workScanWaitingIconSvg {
+    width: 68px;
+    height: 68px;
+  }
+
+  .workTabletPage .workScanFailure .workScanWaitingIconSvg {
+    width: 76px;
+    height: 76px;
+  }
+
+  .workTabletPage .workScanWaiting h1 {
+    font-size: 36px;
+  }
+
+  .workTabletPage .workScanWaiting p {
+    font-size: 19px;
+  }
+
+  .workTabletPage .workScanFailure .workScanCancelBtn {
+    width: 280px;
+  }
+
+  /* ── 카드(품목 정보) ──────────────────────────── */
+  .workTabletPage .workScanItemCard,
+  .workTabletPage .workOrderItemCard,
+  .workTabletPage .workOrderRoutingSection {
+    padding: 28px;
+    border-radius: 18px;
+  }
+
+  .workTabletPage .workScanBarcode,
+  .workTabletPage .workOrderId {
+    font-size: 19px;
+  }
+
+  .workTabletPage .workScanStatusChip,
+  .workTabletPage .workOrderStatusChip {
+    padding: 5px 14px;
+    font-size: 15px;
+  }
+
+  .workTabletPage .workScanItemCard h2,
+  .workTabletPage .workOrderItemCard h2 {
+    margin-bottom: 18px;
+    font-size: 30px;
+  }
+
+  .workTabletPage .workScanInfoGrid {
+    gap: 16px;
+  }
+
+  .workTabletPage .workScanInfoItem span {
+    font-size: 16px;
+  }
+
+  .workTabletPage .workScanInfoItem strong {
+    font-size: 21px;
+  }
+
+  .workTabletPage .workScanRemainingBanner {
+    margin-top: 20px;
+    padding: 16px;
+    font-size: 20px;
+  }
+
+  .workTabletPage .workOrderQtyRow {
+    padding-top: 18px;
+    font-size: 17px;
+  }
+
+  .workTabletPage .workOrderQtyRow strong {
+    font-size: 26px;
+  }
+
+  .workTabletPage .workOrderResult {
+    gap: 24px;
+  }
+
+  /* ── 키패드 / 수량 입력 / 버튼 ─────────────────── */
+  .workTabletPage .workScanForm,
+  .workTabletPage .workOrderPerformanceForm,
+  .workTabletPage .workOrderFinishForm {
+    gap: 18px;
+  }
+
+  .workTabletPage .workOrderPerformanceForm,
+  .workTabletPage .workOrderFinishForm {
+    padding: 22px;
+    margin-top: 16px;
+  }
+
+  .workTabletPage .workScanQtyDisplay {
+    padding: 16px 22px;
+    font-size: 46px;
+    border-radius: 16px;
+  }
+
+  .workTabletPage .workScanQtyDisplay span {
+    font-size: 20px;
+  }
+
+  .workTabletPage .workScanKeypad {
+    gap: 14px;
+  }
+
+  .workTabletPage .workScanKeypadBtn {
+    height: 76px;
+    font-size: 28px;
+    border-radius: 16px;
+  }
+
+  .workTabletPage .workScanDueDateRow label {
+    font-size: 18px;
+  }
+
+  .workTabletPage .workScanDueDateRow input[type='date'] {
+    max-width: 280px;
+    padding: 14px 16px;
+    font-size: 18px;
+  }
+
+  .workTabletPage .workScanErrorMsg {
+    padding: 14px 16px;
+    font-size: 17px;
+  }
+
+  .workTabletPage .workScanActionRow {
+    gap: 16px;
+  }
+
+  .workTabletPage .workScanCancelBtn,
+  .workTabletPage .workScanSubmitBtn {
+    height: 76px;
+    border-radius: 16px;
+    font-size: 22px;
+  }
+
+  .workTabletPage .workScanSuccessToast,
+  .workTabletPage .workOrderWarnToast {
+    bottom: 32px;
+    padding: 16px 28px;
+    font-size: 18px;
+  }
+
+  .workTabletPage .workOrderPerformanceLabel {
+    font-size: 20px;
+  }
+
+  /* ── 작업지시: 다음 행동 배너 ──────────────────── */
+  .workTabletPage .workOrderNextStepBanner {
+    gap: 12px;
+    padding: 16px 20px;
+    font-size: 18px;
+    border-radius: 14px;
+  }
+
+  .workTabletPage .workOrderNextStepBannerIcon {
+    width: 34px;
+    height: 34px;
+  }
+
+  /* ── 작업지시: 공정순서도 타임라인 ─────────────── */
+  .workTabletPage .workOrderRoutingLabel {
+    margin-bottom: 22px;
+    font-size: 15px;
+  }
+
+  .workTabletPage .workOrderRoutingEmpty {
+    font-size: 16px;
+  }
+
+  .workTabletPage .workOrderRoutingList {
+    padding-left: 52px;
+  }
+
+  .workTabletPage .workOrderRoutingList::before {
+    left: 19px;
+    top: 20px;
+    bottom: 20px;
+  }
+
+  .workTabletPage .workOrderRoutingStep {
+    padding-bottom: 44px;
+  }
+
+  .workTabletPage .workOrderRoutingMarker {
+    left: -52px;
+    width: 40px;
+    height: 40px;
+    font-size: 19px;
+  }
+
+  .workTabletPage .workOrderRoutingOperNm {
+    font-size: 23px;
+  }
+
+  .workTabletPage .workOrderRoutingOperCode {
+    font-size: 16px;
+  }
+
+  .workTabletPage .workOrderRoutingNextTag,
+  .workTabletPage .workOrderRoutingProgressTag,
+  .workTabletPage .workOrderRoutingFinalTag {
+    padding: 4px 14px;
+    font-size: 15px;
+  }
+
+  .workTabletPage .workOrderRoutingChevronBtn {
+    padding: 8px;
+    margin: -8px -8px -8px 0;
+  }
+
+  .workTabletPage .workOrderRoutingChevron {
+    width: 28px;
+    height: 28px;
+  }
+
+  .workTabletPage .workOrderRoutingPerformance {
+    margin-top: 14px;
+    border-radius: 10px;
+  }
+
+  .workTabletPage .workOrderRoutingPerformanceCell {
+    padding: 10px 6px;
+  }
+
+  .workTabletPage .workOrderRoutingPerformanceLabel {
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+
+  .workTabletPage .workOrderRoutingPerformanceValue {
+    font-size: 18px;
+  }
+
+  .workTabletPage .workOrderRoutingPerformanceYield {
+    font-size: 19px;
+  }
+
+  /* ── 작업지시: 공정 종료(양품/불량) 폼 ─────────── */
+  .workTabletPage .workOrderFinishTabs {
+    gap: 12px;
+  }
+
+  .workTabletPage .workOrderFinishTabs button {
+    height: 60px;
+    font-size: 19px;
+    border-radius: 12px;
+  }
+
+  .workTabletPage .workOrderFinishLabel {
+    font-size: 18px;
+  }
+
+  .workTabletPage .workOrderDefectDropdownTrigger {
+    height: 60px;
+    padding: 0 18px;
+    font-size: 18px;
+    border-radius: 12px;
+  }
+
+  .workTabletPage .workOrderDefectDropdownIcon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .workTabletPage .workOrderDefectDropdownMenu {
+    max-height: 340px;
+  }
+
+  .workTabletPage .workOrderDefectDropdownOption {
+    min-height: 58px;
+    padding: 0 18px;
+    font-size: 18px;
+  }
+
+  .workTabletPage .workOrderDefectDropdownCheck {
+    font-size: 20px;
+  }
+
+  .workTabletPage .workOrderDefectDropdownEmpty {
+    padding: 20px;
+    font-size: 16px;
+  }
+
+  .workTabletPage .workOrderAddDefectBtn {
+    height: 60px;
+    font-size: 18px;
+    border-radius: 12px;
+  }
+
+  .workTabletPage .workOrderDefectSummaryRow {
+    min-height: 54px;
+  }
+
+  .workTabletPage .workOrderDefectSummaryRow span {
+    font-size: 16px;
+  }
+
+  .workTabletPage .workOrderDefectSummaryRow strong {
+    font-size: 20px;
+  }
+
+  .workTabletPage .workOrderDefectSummaryHead {
+    min-height: 54px;
+  }
+
+  .workTabletPage .workOrderDefectSummaryHead>span {
+    font-size: 18px;
+  }
+
+  .workTabletPage .workOrderDefectSummaryHead>strong {
+    font-size: 15px;
+  }
+
+  .workTabletPage .workOrderDefectEmpty {
+    font-size: 16px;
+  }
+
+  .workTabletPage .workOrderDefectItem {
+    min-height: 60px;
+  }
+
+  .workTabletPage .workOrderDefectItemName {
+    font-size: 18px;
+  }
+
+  .workTabletPage .workOrderDefectItemQty {
+    font-size: 16px;
+  }
+
+  .workTabletPage .workOrderDefectDeleteBtn {
+    min-width: 72px;
+    height: 46px;
+    font-size: 15px;
+    border-radius: 10px;
+  }
+
+  .workTabletPage .workOrderDefectRetryBtn {
+    height: 48px;
+    padding: 0 22px;
+    font-size: 16px;
+  }
+
+  /* ── 로그인 화면 ──────────────────────────────── */
+  .workTabletPage .workTabletLoginMain {
+    gap: 36px;
+  }
+
+  .workTabletPage .workTabletLoginFields {
+    gap: 20px;
+  }
+
+  .workTabletPage .workTabletLoginInput {
+    height: 76px;
+    padding: 0 26px;
+    font-size: 24px;
+    border-radius: 16px;
+  }
+
+  .workTabletPage .workTabletLoginSubmitBtn {
+    height: 76px;
+    font-size: 22px;
+    border-radius: 16px;
+  }
+}
+
+/* ==========================================================================
+   세로 공간이 충분한 화면 -> 컨테이너가 화면을 꽉 채우게 (카드가 떠 있는 느낌 제거)
+   (기존 max-height: 600px 규칙이 min-height: 0 으로 풀어주는 짧은 화면은 건드리지 않는다)
+   ========================================================================== */
+@media (min-width: 768px) and (min-height: 601px) {
+
+  .workTabletPage .workTabletContainer,
+  .workTabletPage .workScanContainer,
+  .workTabletPage .workTabletLoginContainer {
+    min-height: calc(100dvh - 48px);
+  }
+}
