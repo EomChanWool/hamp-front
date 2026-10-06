@@ -255,19 +255,14 @@
   line-height: 1.3;
 }
 
-.itemCell__name {
+.itemCell__barcode {
   font-weight: 600;
   color: #111827;
 }
 
-.itemCell__code {
-  font-size: 12px;
-  color: #9ca3af;
-}
-
 /* 다크모드 품목 이름 색상 적용 */
-[data-theme="dark"] .itemCell__name,
-[data-theme="dark"] .seedItemRow__name {
+[data-theme="dark"] .itemCell__barcode,
+[data-theme="dark"] .seedItemRow__barcode {
   color: #f8fafc !important;
 }
 
