@@ -1,171 +1,402 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Panel } from '@components/card/Panel'
-import { RowDetailModal } from '@/components/modal/RowDetailModal'
-import { SearchBand, type SearchField } from '@components/search/SearchBand'
-import { CusTable } from '@components/table/CusTable'
-import { CusPagination } from '@components/table/CusPagination'
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import type { ColumnDef } from "@tanstack/react-table";
+import { Badge } from "@components/common/Badge";
+import { Panel } from "@components/card/Panel";
+import { SearchBand, type SearchField } from "@components/search/SearchBand";
+import { CusTable } from "@components/table/CusTable";
+import { CusPagination } from "@components/table/CusPagination";
+import { formatDateTime } from "@/utils/common";
+import { useTableSorting } from "@/hooks/useTableSorting";
+import Spinner from "@/components/common/Spinner";
+import { UserLoginApi } from "@/api/UserLogin";
+import type { UserLoginResponse, UserLoginStatus } from "@/api/UserLogin";
 
-interface AccessLog {
-  loginAt: string
-  userId: string
-  name: string
-  ip: string
-  browser: string
-  status: '성공' | '실패'
-  logoutAt: string
-  note: string
-}
+// 접속상태 코드 → 화면 표시명
+const STATUS_LABEL: Record<UserLoginStatus, string> = {
+  SUCCESS: "성공",
+  FAIL: "실패",
+  LOGGED_OUT: "로그아웃",
+  REPLACED: "중복로그인",
+};
 
-const dummyAccessLogs: AccessLog[] = [
-  { loginAt: '2026-06-22 07:20', userId: 'user001', name: '김민준', ip: '10.10.1.24', browser: 'Chrome', status: '성공', logoutAt: '2026-06-22 08:20', note: '정상 로그아웃' },
-  { loginAt: '2026-06-21 08:20', userId: 'user002', name: '이서연', ip: '10.10.1.25', browser: 'Edge', status: '성공', logoutAt: '2026-06-21 09:20', note: '정상 로그아웃' },
-  { loginAt: '2026-06-20 09:20', userId: 'user003', name: '박지훈', ip: '10.10.1.26', browser: 'Whale', status: '성공', logoutAt: '2026-06-20 10:20', note: '정상 로그아웃' },
-  { loginAt: '2026-06-19 10:20', userId: 'user004', name: '최유진', ip: '10.10.1.27', browser: 'Chrome', status: '실패', logoutAt: '-', note: '비밀번호 오류' },
-  { loginAt: '2026-06-18 11:20', userId: 'user005', name: '정도윤', ip: '10.10.1.28', browser: 'Edge', status: '성공', logoutAt: '2026-06-18 12:20', note: '정상 로그아웃' },
-  { loginAt: '2026-06-17 12:20', userId: 'user006', name: '한수아', ip: '10.10.1.29', browser: 'Whale', status: '성공', logoutAt: '2026-06-17 13:20', note: '정상 로그아웃' },
-  { loginAt: '2026-06-16 13:20', userId: 'user007', name: '오현우', ip: '10.10.1.30', browser: 'Chrome', status: '성공', logoutAt: '2026-06-16 14:20', note: '정상 로그아웃' },
-  { loginAt: '2026-06-15 14:20', userId: 'user008', name: '임하린', ip: '10.10.1.31', browser: 'Edge', status: '성공', logoutAt: '2026-06-15 15:20', note: '정상 로그아웃' },
-  { loginAt: '2026-06-14 15:20', userId: 'user009', name: '강태오', ip: '10.10.1.32', browser: 'Whale', status: '성공', logoutAt: '2026-06-14 16:20', note: '정상 로그아웃' },
-  { loginAt: '2026-06-22 07:20', userId: 'user010', name: '윤지아', ip: '10.10.1.33', browser: 'Chrome', status: '성공', logoutAt: '2026-06-22 08:20', note: '정상 로그아웃' },
-]
+const STATUS_OPTIONS = [
+  { label: "전체", value: "" },
+  { label: STATUS_LABEL.SUCCESS, value: "SUCCESS" },
+  { label: STATUS_LABEL.FAIL, value: "FAIL" },
+  { label: STATUS_LABEL.LOGGED_OUT, value: "LOGGED_OUT" },
+  { label: STATUS_LABEL.REPLACED, value: "REPLACED" },
+];
 
-const PAGE_SIZE = 10
+const STATUS_TONE: Record<UserLoginStatus, "good" | "warn" | "danger" | "info" | "muted"> = {
+  SUCCESS: "good",
+  FAIL: "warn",
+  LOGGED_OUT: "info",
+  REPLACED: "danger",
+};
+
+// User-Agent → 브라우저명
+const getBrowserName = (userAgent?: string | null) => {
+  if (!userAgent) {
+    return "-";
+  }
+
+  if (userAgent.includes("Edg/")) {
+    return "Edge";
+  }
+
+  if (userAgent.includes("Chrome/")) {
+    return "Chrome";
+  }
+
+  if (userAgent.includes("Firefox/")) {
+    return "Firefox";
+  }
+
+  if (userAgent.includes("Safari/")) {
+    return "Safari";
+  }
+
+  if (userAgent.includes("OPR/")) {
+    return "Opera";
+  }
+
+  if (userAgent.includes("MSIE") || userAgent.includes("Trident/")) {
+    return "Internet Explorer";
+  }
+
+  return "기타";
+};
 
 export function SystemAccessLogsPage() {
-  const [filteredLogs, setFilteredLogs] = useState<AccessLog[]>(dummyAccessLogs)
-  const [modalLog, setModalLog] = useState<AccessLog | null>(null)
-  const [page, setPage] = useState(0)
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const loginStartRef = useRef<HTMLInputElement>(null)
-  const loginEndRef = useRef<HTMLInputElement>(null)
-  const userIdRef = useRef<HTMLInputElement>(null)
-  const statusRef = useRef<HTMLInputElement>(null)
+  const [logs, setLogs] = useState<UserLoginResponse[]>([]);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const searchFields: SearchField[] = [
-    { type: 'date', label: '기간', startRef: loginStartRef, endRef: loginEndRef },
-    { type: 'input', label: '사용자ID', ref: userIdRef, name: "userId" },
-    { type: 'input', label: '접속상태', ref: statusRef, name: "status" },
-  ]
+  // 새로고침 초기화가 끝난 뒤에 목록 조회를 시작하기 위한 상태
+  const [isReady, setIsReady] = useState(false);
 
-  const handleSearch = () => {
-    const loginStart = loginStartRef.current?.value.trim() ?? ''
-    const loginEnd = loginEndRef.current?.value.trim() ?? ''
-    const userId = userIdRef.current?.value.trim() ?? ''
-    const status = statusRef.current?.value.trim() ?? ''
+  const { sorting, sortParams, handleSortingChange } = useTableSorting();
 
-    // 현재는 더미접속기록에 필터로 걸러내고 있는데 추후에 api 연동할 것
-    setFilteredLogs(
-      dummyAccessLogs.filter((log) => {
-        const loginDate = log.loginAt.slice(0, 10)
-        return (
-          (!loginStart || loginDate >= loginStart) &&
-          (!loginEnd || loginDate <= loginEnd) &&
-          (!userId || log.userId.includes(userId)) &&
-          (!status || log.status.includes(status))
-        )
-      }),
-    )
-  }
-
-  const handleReset = () => {
-    ;[loginStartRef, loginEndRef, userIdRef, statusRef].forEach((ref) => {
-      if (ref.current) ref.current.value = ''
-    })
-    setFilteredLogs(dummyAccessLogs)
-  }
-
-  const handleDelete = (log: AccessLog) => {
-    if (window.confirm(`${log.userId} 접속기록을 삭제할까요?`)) {
-      setFilteredLogs((prev) => prev.filter((l) => l !== log))
-      window.alert('mock data에서만 삭제되었습니다.')
-    }
-  }
-
-  const handleSave = (updated: Record<string, string>) => {
-    setFilteredLogs((prev) => prev.map((l) => (l === modalLog ? ({ ...l, ...updated } as AccessLog) : l)))
-    setModalLog(null)
-    window.alert('화면 상태에만 저장되었습니다.')
-  }
-
-  // 검색 결과가 바뀌면 페이지를 처음으로 되돌리기
+  // [정확한 새로고침 감지]
+  // 브라우저가 닫히거나 새로고침(F5)될 때만 플래그 설정
   useEffect(() => {
-    setPage(0)
-  }, [filteredLogs])
+    const handleBeforeUnload = () => {
+      sessionStorage.setItem("is_browser_reload", "true");
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
 
-  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / PAGE_SIZE))
-  const pagedLogs = filteredLogs.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+  // 진입 시 실제 브라우저 새로고침 여부 확인 후 검색 조건 초기화
+  useEffect(() => {
+    const isReload = sessionStorage.getItem("is_browser_reload") === "true";
 
-  const columns: ColumnDef<AccessLog>[] = useMemo(
+    if (isReload) {
+      sessionStorage.removeItem("is_browser_reload");
+      if (searchParams.toString()) {
+        setSearchParams({}, { replace: true });
+        return;
+      }
+    }
+
+    setIsReady(true);
+  }, []);
+
+  // 새로고침 때문에 setSearchParams가 실행된 경우 조회 가능 상태로 변경
+  useEffect(() => {
+    const isReload = sessionStorage.getItem("is_browser_reload") === "true";
+    if (!isReload && !isReady) {
+      setIsReady(true);
+    }
+  }, [searchParams, isReady]);
+
+  // URL에서 현재 검색조건 추출
+  const currentPage = Number(searchParams.get("page") || "0");
+  const queryLoginAtFrom = searchParams.get("loginAtFrom") || "";
+  const queryLoginAtTo = searchParams.get("loginAtTo") || "";
+  const queryUserId = searchParams.get("userId") || "";
+  const queryIp = searchParams.get("ip") || "";
+  const queryStatus = searchParams.get("status") || "";
+
+  // 검색 input refs
+  const loginStartRef = useRef<HTMLInputElement>(null);
+  const loginEndRef = useRef<HTMLInputElement>(null);
+  const userIdRef = useRef<HTMLInputElement>(null);
+  const ipRef = useRef<HTMLInputElement>(null);
+  const statusRef = useRef<HTMLSelectElement>(null);
+
+  // 검색 필드
+  const searchFields: SearchField[] = [
+    {
+      type: "date",
+      label: "기간",
+      startRef: loginStartRef,
+      endRef: loginEndRef,
+    },
+    {
+      type: "input",
+      label: "사용자ID",
+      ref: userIdRef,
+      name: "userId",
+    },
+    {
+      type: "input",
+      label: "IP",
+      ref: ipRef,
+      name: "ip",
+    },
+    {
+      type: "select",
+      label: "접속상태",
+      ref: statusRef,
+      name: "status",
+      options: STATUS_OPTIONS,
+    },
+  ];
+
+  // URL → SearchBand input 동기화
+  useEffect(() => {
+    if (loginStartRef.current) {
+      loginStartRef.current.value = queryLoginAtFrom;
+    }
+
+    if (loginEndRef.current) {
+      loginEndRef.current.value = queryLoginAtTo;
+    }
+
+    if (userIdRef.current) {
+      userIdRef.current.value = queryUserId;
+    }
+
+    if (ipRef.current) {
+      ipRef.current.value = queryIp;
+    }
+
+    if (statusRef.current) {
+      statusRef.current.value = queryStatus;
+    }
+  }, [queryLoginAtFrom, queryLoginAtTo, queryUserId, queryIp, queryStatus]);
+
+  // 접속기록 목록 조회
+  const loadLogs = useCallback(async () => {
+    if (!isReady) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const params: Record<string, any> = {
+        page: currentPage,
+        size: 10,
+      };
+
+      if (queryLoginAtFrom) {
+        params.loginAtFrom = queryLoginAtFrom;
+      }
+
+      if (queryLoginAtTo) {
+        params.loginAtTo = queryLoginAtTo;
+      }
+
+      if (queryUserId) {
+        params.userId = queryUserId;
+      }
+
+      if (queryIp) {
+        params.ip = queryIp;
+      }
+
+      if (queryStatus) {
+        params.status = queryStatus;
+      }
+
+      if (sortParams.length > 0) {
+        params.sort = sortParams;
+      }
+
+      const response = await UserLoginApi.getList(params);
+      const pageData = response.data;
+
+      setLogs(pageData?.content ?? []);
+      setTotalElements(pageData?.totalElements ?? 0);
+      setTotalPages(pageData?.totalPages ?? 0);
+    } catch (error) {
+      console.error("접속기록 목록 조회 실패:", error);
+
+      window.alert("데이터를 불러오는 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    isReady,
+    currentPage,
+    queryLoginAtFrom,
+    queryLoginAtTo,
+    queryUserId,
+    queryIp,
+    queryStatus,
+    sortParams,
+  ]);
+
+  useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
+
+  // 검색
+  const handleSearch = () => {
+    const nextParams = new URLSearchParams(searchParams);
+
+    nextParams.set("page", "0");
+
+    const values: Record<string, string> = {
+      loginAtFrom: loginStartRef.current?.value.trim() || "",
+      loginAtTo: loginEndRef.current?.value.trim() || "",
+      userId: userIdRef.current?.value.trim() || "",
+      ip: ipRef.current?.value.trim() || "",
+      status: statusRef.current?.value.trim() || "",
+    };
+
+    Object.entries(values).forEach(([key, value]) => {
+      if (value) {
+        nextParams.set(key, value);
+      } else {
+        nextParams.delete(key);
+      }
+    });
+
+    setSearchParams(nextParams);
+  };
+
+  // 검색 초기화
+  const handleReset = () => {
+    [loginStartRef, loginEndRef, userIdRef, ipRef].forEach((ref) => {
+      if (ref.current) {
+        ref.current.value = "";
+      }
+    });
+
+    if (statusRef.current) {
+      statusRef.current.value = "";
+    }
+
+    setSearchParams({ page: "0" }, { replace: true });
+  };
+
+  // 페이지 이동
+  const handlePageChange = (newPage: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+
+    nextParams.set("page", String(newPage));
+
+    setSearchParams(nextParams);
+  };
+
+  // 테이블 컬럼
+  const columns: ColumnDef<UserLoginResponse>[] = useMemo(
     () => [
-      { accessorKey: 'loginAt', header: '접속일시' },
-      { accessorKey: 'userId', header: '사용자ID' },
-      { accessorKey: 'name', header: '이름' },
-      { accessorKey: 'ip', header: 'IP' },
-      { accessorKey: 'browser', header: '접속브라우저' },
-      { accessorKey: 'status', header: '접속상태' },
-      { accessorKey: 'logoutAt', header: '로그아웃일시' },
-      { accessorKey: 'note', header: '비고' },
       {
-        id: 'actions',
-        header: '관리',
-        meta: { width: '150px' },
-        cell: ({ row }) => (
-          <div className="rowActions">
-            <button
-              type="button"
-              className="miniButton"
-              onClick={(e) => {
-                e.stopPropagation()
-                setModalLog(row.original)
-              }}
-            >
-              상세
-            </button>
-            <button
-              type="button"
-              className="miniButton danger"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleDelete(row.original)
-              }}
-            >
-              삭제
-            </button>
-          </div>
-        ),
+        accessorKey: "loginAt",
+        header: "접속일시",
+        cell: ({ getValue }) => {
+          const val = getValue<string>();
+
+          return val ? formatDateTime(val) : "-";
+        },
+      },
+      {
+        accessorKey: "userId",
+        header: "사용자ID",
+      },
+      {
+        accessorKey: "ip",
+        header: "IP",
+        cell: ({ getValue }) => getValue<string>() || "-",
+      },
+      {
+        accessorKey: "browser",
+        header: "접속브라우저",
+        cell: ({ getValue }) => {
+          const val = getValue<string | null>();
+
+          return getBrowserName(val);
+        },
+      },
+      {
+        accessorKey: "status",
+        header: "접속상태",
+        cell: ({ getValue }) => {
+          const val = getValue<UserLoginStatus | undefined>();
+
+          if (!val) {
+            return "-";
+          }
+
+          return (
+            <Badge tone={STATUS_TONE[val as UserLoginStatus] ?? "muted"}>
+              {STATUS_LABEL[val as UserLoginStatus] ?? val}
+            </Badge>
+          );
+        },
+      },
+      {
+        accessorKey: "logoutAt",
+        header: "로그아웃일시",
+        cell: ({ getValue }) => {
+          const val = getValue<string | null>();
+
+          return val ? formatDateTime(val) : "-";
+        },
+      },
+      {
+        accessorKey: "note",
+        header: "비고",
+        cell: ({ getValue }) => getValue<string>() || "-",
       },
     ],
-    [],
-  )
-
-  const detailFields = [
-    { label: '접속일시', key: 'loginAt' },
-    { label: '사용자ID', key: 'userId' },
-    { label: '이름', key: 'name' },
-    { label: 'IP', key: 'ip' },
-    { label: '접속브라우저', key: 'browser' },
-    { label: '접속상태', key: 'status' },
-    { label: '로그아웃일시', key: 'logoutAt' },
-    { label: '비고', key: 'note' },
-  ]
+    []
+  );
 
   return (
     <section className="screenStack">
-      <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
+      <SearchBand
+        fields={searchFields}
+        onSearch={handleSearch}
+        onReset={handleReset}
+      />
 
       <Panel title="사용자접속기록 목록">
-        <CusTable data={pagedLogs} columns={columns} onRowClick={setModalLog} />
-        <CusPagination page={page} totalPages={totalPages} totalCount={filteredLogs.length} onPageChange={setPage} />
-      </Panel>
+        <div className="relative min-h-[300px]">
+          {isLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              <CusTable
+                data={logs}
+                columns={columns}
+                sorting={sorting}
+                onSortingChange={handleSortingChange}
+                noDataMessage="조회된 데이터가 없습니다."
+              />
 
-      <RowDetailModal
-        isOpen={modalLog !== null}
-        onClose={() => setModalLog(null)}
-        onSave={handleSave}
-        fields={detailFields}
-        data={(modalLog ?? {}) as unknown as Record<string, string>}
-      />
+              <CusPagination
+                page={currentPage}
+                totalPages={totalPages}
+                totalCount={totalElements}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
+        </div>
+      </Panel>
     </section>
-  )
+  );
 }
