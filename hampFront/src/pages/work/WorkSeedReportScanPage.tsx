@@ -67,6 +67,8 @@ export function WorkSeedReportScanPage() {
   const [scanResult, setScanResult] = useState<SeedGoodsReceiptResponse | null>(null);
   const [scanFailure, setScanFailure] = useState<ScanFailure | null>(null);
   const [qtyInput, setQtyInput] = useState('');
+  const [hullQtyInput, setHullQtyInput] = useState('');
+  const [inputMode, setInputMode] = useState<'return' | 'hull'>('return');
   const [returnDueDate, setReturnDueDate] = useState(todayStr());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -95,6 +97,8 @@ export function WorkSeedReportScanPage() {
         setScanFailure(null);
         setScanResult(data as SeedGoodsReceiptResponse);
         setQtyInput('');
+        setHullQtyInput('');
+        setInputMode('return');
         setReturnDueDate(todayStr());
         setErrorMsg(null);
       } catch (err) {
@@ -120,20 +124,25 @@ export function WorkSeedReportScanPage() {
   }, [scanFailure]);
 
   const handleKeypadPress = useCallback((key: string) => {
+    const setInput = inputMode === 'return' ? setQtyInput : setHullQtyInput;
+
     if (key === 'back') {
-      setQtyInput((prev) => prev.slice(0, -1));
+      setInput((prev) => prev.slice(0, -1));
       return;
     }
-    setQtyInput((prev) => {
+
+    setInput((prev) => {
       if (key === '.' && prev.includes('.')) return prev;
       if (prev.length >= 10) return prev;
       return prev + key;
     });
-  }, []);
+  }, [inputMode]);
 
   const handleCancel = () => {
     setScanResult(null);
     setQtyInput('');
+    setHullQtyInput('');
+    setInputMode('return');
     setErrorMsg(null);
   };
 
@@ -141,12 +150,25 @@ export function WorkSeedReportScanPage() {
     if (!scanResult) return;
 
     const qty = Number(qtyInput);
+    const hullQty = Number(hullQtyInput);
+
     if (!qtyInput || Number.isNaN(qty) || qty <= 0) {
       setErrorMsg('신고수량을 올바르게 입력해 주세요.');
       return;
     }
+
+    if (hullQtyInput === '' || Number.isNaN(hullQty) || hullQty < 0) {
+      setErrorMsg('껍질수량을 올바르게 입력해 주세요.');
+      return;
+    }
+
     if (qty > scanResult.remainingQty) {
       setErrorMsg(`신고 가능 잔여수량(${scanResult.remainingQty})을 초과했습니다.`);
+      return;
+    }
+
+    if (hullQty > qty) {
+      setErrorMsg('껍질수량은 신고수량을 초과할 수 없습니다.');
       return;
     }
 
@@ -155,6 +177,7 @@ export function WorkSeedReportScanPage() {
     try {
       await SeedGoodsReceiptReturnApi.createByScan(scanResult.receiptId, {
         returnQty: qty,
+        hullQty,
         reportDate: todayStr(),
         returnDueDate,
         processStatus: 0,
@@ -162,6 +185,8 @@ export function WorkSeedReportScanPage() {
       setSuccessMsg('신고가 등록되었습니다.');
       setScanResult(null);
       setQtyInput('');
+      setHullQtyInput('');
+      setInputMode('return');
     } catch (err) {
       const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
       setErrorMsg(message || '신고 등록에 실패했습니다.');
@@ -292,11 +317,57 @@ export function WorkSeedReportScanPage() {
                 </div>
 
                 <div className="workScanForm">
+                  <div className="workScanInputMode">
+                    <button
+                      type="button"
+                      className={`workScanInputModeBtn ${inputMode === 'return' ? 'is-active' : ''
+                        }`}
+                      onClick={() => setInputMode('return')}
+                    >
+                      신고수량 입력
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`workScanInputModeBtn ${inputMode === 'hull' ? 'is-active' : ''
+                        }`}
+                      onClick={() => setInputMode('hull')}
+                    >
+                      껍질수량 입력
+                    </button>
+                  </div>
+
                   <div className="workScanQtyDisplay">
-                    {qtyInput || '0'} <span>{scanResult.unit}</span>
+                    {inputMode === 'return'
+                      ? qtyInput || '0'
+                      : hullQtyInput || '0'}{' '}
+                    <span>{scanResult.unit}</span>
                   </div>
 
                   <NumericKeypad onPress={handleKeypadPress} />
+
+                  <div className="workScanQtySummary">
+                    <div className="workScanQtySummaryItem">
+                      <span>신고수량</span>
+                      <strong>
+                        {qtyInput || 0} {scanResult.unit}
+                      </strong>
+                    </div>
+
+                    <div className="workScanQtySummaryItem">
+                      <span>껍질수량</span>
+                      <strong>
+                        {hullQtyInput || 0} {scanResult.unit}
+                      </strong>
+                    </div>
+
+                    <div className="workScanQtySummaryItem workScanQtySummaryItem--total">
+                      <span>합계</span>
+                      <strong>
+                        {Number(qtyInput || 0).toLocaleString()} {scanResult.unit}
+                      </strong>
+                    </div>
+                  </div>
 
                   <div className="workScanDueDateRow">
                     <label htmlFor="returnDueDate">반납예정일</label>
