@@ -1,0 +1,293 @@
+/* =========================================================
+   씨드 신고반납 확인서 인쇄 모달
+
+   [다른 인쇄 CSS와 공존 규칙]
+   - 클래스는 모두 return-print- 접두사로 작업지시서/라벨과 겹치지 않게 했다.
+   - 용지 설정은 이름 있는 @page(seed-return)만 사용한다. (전역 @page 금지)
+   - 작업지시서/라벨 CSS 는 인쇄 시 "body > *:not(#자기root)" 규칙으로 다른 요소를 전부 숨긴다.
+     이 규칙에는 #return-print-root 예외가 없으므로, 아래 PRINT 영역에서
+     선택자 우선순위를 높여(html body > #return-print-root#return-print-root)
+     다른 CSS 파일을 수정하지 않아도 인쇄되게 했다.
+     (원하면 두 CSS 의 해당 규칙에 :not(#return-print-root) 를 추가해 정리해도 된다.)
+========================================================= */
+
+/* ---------- 화면용 모달 ---------- */
+
+.return-print-root {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+.return-print-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.68);
+}
+
+.return-print-frame {
+  width: min(1000px, calc(100vw - 40px));
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.return-print-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  background: #ffffff;
+  border-radius: 10px 10px 0 0;
+}
+
+.return-print-toolbar h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.return-print-toolbar-actions {
+  display: flex;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.return-print-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 30px 40px 50px;
+  background: #e2e8f0;
+  border-radius: 0 0 10px 10px;
+}
+
+/* ---------- A4 문서 ---------- */
+
+.return-print-sheet {
+  width: 210mm;
+  max-width: 100%;
+  min-height: 297mm;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 16mm;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  box-shadow: 0 15px 40px rgba(15, 23, 42, 0.2);
+  color: #1e293b;
+}
+
+.return-print-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 14px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #166534;
+}
+
+.return-print-header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #0f172a;
+}
+
+.return-print-header p {
+  margin: 4px 0 0;
+  font-size: 9px;
+  color: #64748b;
+}
+
+.return-print-meta {
+  font-size: 9px;
+  line-height: 1.7;
+  text-align: right;
+  color: #475569;
+}
+
+.return-print-section {
+  margin-bottom: 18px;
+}
+
+.return-print-section h3 {
+  margin: 0 0 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+/* ---------- 표 ---------- */
+
+.return-print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9px;
+}
+
+.return-print-table th,
+.return-print-table td {
+  padding: 7px 8px;
+  border: 1px solid #cbd5e1;
+  vertical-align: middle;
+}
+
+.return-print-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+}
+
+.return-print-table td {
+  color: #334155;
+}
+
+.return-print-table .center {
+  text-align: center;
+}
+
+.return-print-table .right {
+  text-align: right;
+}
+
+.return-print-table .bold {
+  font-weight: 700;
+}
+
+.return-print-table .code {
+  margin-left: 4px;
+  color: #64748b;
+  font-size: 8px;
+  font-family: 'Courier New', monospace;
+}
+
+/* ---------- 바코드 / 서명 / 푸터 ---------- */
+
+.return-print-sign-area {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #cbd5e1;
+}
+
+.return-print-sign-box {
+  padding: 8px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+}
+
+.return-print-sign-title {
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+  color: #475569;
+}
+
+.return-print-sign-space {
+  height: 40px;
+}
+
+.return-print-footer {
+  margin-top: 12px;
+  font-size: 7px;
+  text-align: center;
+  color: #94a3b8;
+}
+
+/* 인쇄 전용 영역은 화면에서 숨긴다 */
+.return-print-pages {
+  display: none;
+}
+
+/* =========================================================
+   PRINT
+========================================================= */
+
+/* 신고반납 확인서 전용 용지 설정.
+   업체 양식이 A5/라벨지 등 다른 규격이면 size 만 교체하면 된다. */
+@page seed-return {
+  size: A4;
+  margin: 7mm;
+}
+
+@media print {
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    background: #ffffff !important;
+  }
+
+  /* root: 화면용 fixed 구조를 해제하고 일반 문서 흐름으로
+     [중요] 선택자를 일부러 길게 쓴 이유:
+     다른 인쇄 CSS 의 body > *:not(#a):not(#b) { display:none !important } 보다
+     우선순위(2,0,2 > 2,0,1)를 높여서 이 root 가 숨겨지지 않게 하기 위함 */
+  html body > #return-print-root#return-print-root {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  /* 화면용 모달 제거 */
+  .return-print-modal {
+    display: none !important;
+  }
+
+  /* 인쇄 전용 영역 표시 */
+  .return-print-pages {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .return-print-pages .return-print-sheet {
+    page: seed-return; /* 위에서 정의한 @page 적용 */
+    width: 100% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    /* 배경색(표 머리글, 서명칸)도 인쇄되게 */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* 표가 페이지를 넘어가면 머리글 반복, 행 중간 분할 방지 */
+  .return-print-pages .return-print-table thead {
+    display: table-header-group;
+  }
+
+  .return-print-pages .return-print-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .return-print-pages .return-print-header,
+  .return-print-pages .return-print-sign-area,
+  .return-print-pages .return-print-barcode {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

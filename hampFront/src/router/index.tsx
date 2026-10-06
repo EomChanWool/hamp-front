@@ -357,16 +357,11 @@ export const routeObj: RouteObject[] = [
     element: <WorkTabletLoginPage />,
   },
   {
-    path: '/work',
-    element: <WorkTabletType />,
-  },
-
-  // 신고처리는 로그인 없이 바로 사용 가능, 작업지시/출고처리는 로그인이 필요해서 그 라우트만 가드로 감싼다
-  { path: '/work/home', element: <WorkTabletHome /> },
-  { path: '/work/seed-report-scan', element: <WorkSeedReportScanPage /> },
-  {
     element: <WorkTabletGuard />,
     children: [
+      { path: '/work', element: <WorkTabletType /> },
+      { path: '/work/home', element: <WorkTabletHome /> },
+      { path: '/work/seed-report-scan', element: <WorkSeedReportScanPage /> },
       { path: '/work/work-order-scan', element: <WorkOrderScanPage /> },
       { path: '/work/outbound-scan', element: <WorkOutboundScanPage /> },
     ],

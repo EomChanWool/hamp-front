@@ -1,8 +1,11 @@
 import { useEffect, useState, type SyntheticEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { isValidWorkZone } from '@/utils/common';
+import { getLastWorkZone } from '@/pages/work/WorkZoneStorage';
 import '@/pages/work/WorkTabletHome.css';
 import '@/pages/work/WorkTabletLoginPage.css';
+import '@/pages/work/WorkTabletScale.css';
 
 export function WorkTabletLoginPage() {
   const [userId, setUserId] = useState('');
@@ -13,8 +16,14 @@ export function WorkTabletLoginPage() {
   const location = useLocation();
   const { login, isAuthenticated } = useAuth();
 
-  // 신고처리 등 태블릿 화면 진입이 막혀 로그인으로 넘어온 경우, 로그인 후 그 화면으로 복귀
-  const from = (location.state as { from?: string } | null)?.from || '/work';
+  // 로그인 후 이동할 곳
+  // 1) 가드에 막혀서 온 경우 -> 원래 가려던 화면
+  // 2) 직접 로그인 화면으로 온 경우 -> 이 태블릿에서 마지막으로 쓴 생산동 메뉴(없으면 생산동 선택 화면)
+  const lastZone = getLastWorkZone();
+  const defaultPath = isValidWorkZone(lastZone)
+    ? `/work/home?zone=${encodeURIComponent(lastZone)}`
+    : '/work';
+  const from = (location.state as { from?: string } | null)?.from || defaultPath;
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -55,14 +64,6 @@ export function WorkTabletLoginPage() {
     <div className="workTabletPage">
       <div className="workTabletPanel">
         <form className="workTabletLoginContainer" onSubmit={handleLogin}>
-          <button
-            type="button"
-            className="workTabletHomeBtn"
-            onClick={() => navigate(-1)}
-          >
-            ← 뒤로가기
-          </button>
-
           <div className="workTabletLoginMain">
             {/* TODO: 헴프 로고 자리 - 지금은 자리만 잡아둔 임시 표시 */}
             <div className="workTabletLogoPlaceholder workTabletLogoPlaceholder--center">로고</div>
