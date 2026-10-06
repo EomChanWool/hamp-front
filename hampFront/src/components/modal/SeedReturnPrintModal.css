@@ -129,15 +129,29 @@
 
 .return-print-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 9px;
 }
 
 .return-print-table th,
 .return-print-table td {
-  padding: 7px 8px;
+  padding: 7px 6px;
   border: 1px solid #cbd5e1;
   vertical-align: middle;
+  overflow: hidden;
+}
+
+.return-print-table th:nth-child(4),
+.return-print-table td:nth-child(4),
+.return-print-table th:nth-child(5),
+.return-print-table td:nth-child(5),
+.return-print-table th:nth-child(6),
+.return-print-table td:nth-child(6) {
+  padding-left: 3px;
+  padding-right: 3px;
+  white-space: nowrap;
+  font-size: 12px;
 }
 
 .return-print-table th {
@@ -221,6 +235,7 @@
 }
 
 @media print {
+
   html,
   body {
     margin: 0 !important;
@@ -234,7 +249,7 @@
      [중요] 선택자를 일부러 길게 쓴 이유:
      다른 인쇄 CSS 의 body > *:not(#a):not(#b) { display:none !important } 보다
      우선순위(2,0,2 > 2,0,1)를 높여서 이 root 가 숨겨지지 않게 하기 위함 */
-  html body > #return-print-root#return-print-root {
+  html body>#return-print-root#return-print-root {
     display: block !important;
     position: static !important;
     width: 100% !important;
@@ -259,7 +274,8 @@
   }
 
   .return-print-pages .return-print-sheet {
-    page: seed-return; /* 위에서 정의한 @page 적용 */
+    page: seed-return;
+    /* 위에서 정의한 @page 적용 */
     width: 100% !important;
     min-height: 0 !important;
     margin: 0 !important;

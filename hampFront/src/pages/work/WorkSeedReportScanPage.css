@@ -478,6 +478,36 @@
   gap: 16px;
 }
 
+/* ── 신고수량 / 껍질수량 입력 모드 선택 ───────────── */
+
+.workScanInputMode {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.workScanInputModeBtn {
+  min-height: 72px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.workScanInputModeBtn.is-active {
+  background: rgba(71, 85, 105, 0.75);
+  border-color: rgba(147, 197, 253, 0.7);
+  color: #ffffff;
+}
+
 .workScanQtyDisplay {
   text-align: right;
   color: #fff;
@@ -516,6 +546,40 @@
 
 .workScanKeypadBtn:active {
   background: var(--primary);
+}
+
+/* ── 신고수량 / 껍질수량 / 합계 ───────────────── */
+
+.workScanQtySummary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.workScanQtySummaryItem {
+  padding: 12px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+.workScanQtySummaryItem span {
+  display: block;
+  margin-bottom: 5px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.workScanQtySummaryItem strong {
+  display: block;
+  color: #f8fafc;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.workScanQtySummaryItem--total {
+  border-color: rgba(245, 158, 11, 0.45);
 }
 
 .workScanDueDateRow {
@@ -616,6 +680,23 @@
   .workScanKeypadBtn {
     height: 52px;
     font-size: 20px;
+  }
+
+  .workScanInputModeBtn {
+    min-height: 60px;
+    font-size: 17px;
+  }
+
+  .workScanQtySummaryItem {
+    padding: 10px 6px;
+  }
+
+  .workScanQtySummaryItem span {
+    font-size: 11px;
+  }
+
+  .workScanQtySummaryItem strong {
+    font-size: 17px;
   }
 }
 

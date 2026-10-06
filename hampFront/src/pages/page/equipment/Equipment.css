@@ -536,6 +536,7 @@
 .flow__amber {
   display: flex;
   align-items: center;
+  justify-content: center;
   min-height: 40px;
   padding: 0 16px;
   border-radius: 14px;

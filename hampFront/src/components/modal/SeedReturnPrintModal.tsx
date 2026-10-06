@@ -57,13 +57,14 @@ export function SeedReturnPrintModal({ isOpen, onClose, items }: SeedReturnPrint
         <table className="return-print-table">
           <thead>
             <tr>
-              <th style={{ width: 40 }}>순번</th>
-              <th style={{ width: 70 }}>신고ID</th>
+              <th style={{ width: 35 }}>순번</th>
+              <th style={{ width: 55 }}>신고ID</th>
               <th>품목</th>
-              <th style={{ width: 90 }}>신고일자</th>
-              <th style={{ width: 90 }}>처리예정일</th>
-              <th style={{ width: 70 }}>처리상태</th>
-              <th style={{ width: 70 }}>수량</th>
+              <th style={{ width: 75 }}>신고일자</th>
+              <th style={{ width: 75 }}>처리예정일</th>
+              <th style={{ width: 60 }}>처리상태</th>
+              <th style={{ width: 60 }}>수량</th>
+              <th style={{ width: 65 }}>껍질수량</th>
             </tr>
           </thead>
           <tbody>
@@ -78,6 +79,8 @@ export function SeedReturnPrintModal({ isOpen, onClose, items }: SeedReturnPrint
                 <td className="center">{row.returnDueDate}</td>
                 <td className="center">{row.statusText}</td>
                 <td className="right">{row.returnQty.toLocaleString()}</td>
+                <td className="right">{row.hullQty.toLocaleString()}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -85,6 +88,7 @@ export function SeedReturnPrintModal({ isOpen, onClose, items }: SeedReturnPrint
             <tr>
               <th colSpan={6}>합계</th>
               <td className="right bold">{data.totalQty.toLocaleString()}</td>
+              <td className="right bold">{data.totalHullQty.toLocaleString()}</td>
             </tr>
           </tfoot>
         </table>

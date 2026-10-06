@@ -262,14 +262,12 @@ export function SeedReportReturnManagePage() {
       const finalReturnQty = editQuantitiesRef.current[item.returnId];
       const finalHullQty = editHullQuantitiesRef.current[item.returnId];
 
-      // 신고수량 필수 검증
       if (finalReturnQty === '' || Number(finalReturnQty) <= 0) {
         window.alert('신고 수량을 입력해주세요.');
         return;
       }
 
-      // 껍질수량 필수 검증
-      if (finalHullQty === '' || Number(finalHullQty) < 0) {
+      if (finalHullQty === '') {
         window.alert('껍질 수량을 입력해주세요.');
         return;
       }
@@ -277,7 +275,16 @@ export function SeedReportReturnManagePage() {
       const returnQty = Number(finalReturnQty);
       const hullQty = Number(finalHullQty);
 
-      // 껍질수량은 신고수량을 초과할 수 없음
+      if (Number.isNaN(hullQty)) {
+        window.alert('껍질 수량은 숫자로 입력해주세요.');
+        return;
+      }
+
+      if (hullQty < 0) {
+        window.alert('껍질 수량은 0 이상으로 입력해주세요.');
+        return;
+      }
+
       if (hullQty > returnQty) {
         window.alert('껍질 수량은 신고 수량을 초과할 수 없습니다.');
         return;
@@ -412,14 +419,7 @@ export function SeedReportReturnManagePage() {
                     return;
                   }
 
-                  const num = Number(value);
-                  const returnQty = Number(
-                    editQuantitiesRef.current[item.returnId]
-                  );
-
-                  if (num <= returnQty) {
-                    editHullQuantitiesRef.current[item.returnId] = num;
-                  }
+                  editHullQuantitiesRef.current[item.returnId] = Number(value);
                 }}
               />
             );
