@@ -41,6 +41,7 @@ export function SeedReportReturnManagePage() {
 
   // --- useRef 기반 수량 임시 저장소 (returnId를 키로 관리하여 포커스 튀김 방지) ---
   const editQuantitiesRef = useRef<Record<number, number | ''>>({});
+  const editHullQuantitiesRef = useRef<Record<number, number | ''>>({});
 
   // 인쇄 대상 행 (null 이면 인쇄 모달 닫힘)
   const [printItem, setPrintItem] = useState<SeedGoodsReceiptReturnItemResponse | null>(null);
@@ -236,17 +237,21 @@ export function SeedReportReturnManagePage() {
   // 행 수정 모드 진입
   const handleStartEdit = (item: SeedGoodsReceiptReturnItemResponse) => {
     setEditingId(item.returnId);
+
     editQuantitiesRef.current[item.returnId] = item.returnQty;
+    editHullQuantitiesRef.current[item.returnId] = item.hullQty;
 
     setEditForm({
       returnDueDate: item.returnDueDate ?? '',
-      reportDate: item.reportDate ?? '', // undefined 방지를 위해 기본값 설정
+      reportDate: item.reportDate ?? '',
     });
   };
 
   // 행 수정 취소
   const handleCancelEdit = (returnId: number) => {
     delete editQuantitiesRef.current[returnId];
+    delete editHullQuantitiesRef.current[returnId];
+
     setEditingId(null);
     setEditForm({});
   };
@@ -255,20 +260,47 @@ export function SeedReportReturnManagePage() {
   const handleSaveEdit = async (item: SeedGoodsReceiptReturnItemResponse) => {
     try {
       const finalReturnQty = editQuantitiesRef.current[item.returnId];
+      const finalHullQty = editHullQuantitiesRef.current[item.returnId];
+
+      // 신고수량 필수 검증
+      if (finalReturnQty === '' || Number(finalReturnQty) <= 0) {
+        window.alert('신고 수량을 입력해주세요.');
+        return;
+      }
+
+      // 껍질수량 필수 검증
+      if (finalHullQty === '' || Number(finalHullQty) < 0) {
+        window.alert('껍질 수량을 입력해주세요.');
+        return;
+      }
+
+      const returnQty = Number(finalReturnQty);
+      const hullQty = Number(finalHullQty);
+
+      // 껍질수량은 신고수량을 초과할 수 없음
+      if (hullQty > returnQty) {
+        window.alert('껍질 수량은 신고 수량을 초과할 수 없습니다.');
+        return;
+      }
 
       const payload: SeedGoodsReceiptReturnUpdateRequest = {
-        returnQty: finalReturnQty === '' ? 0 : Number(finalReturnQty),
+        returnQty,
+        hullQty,
         processStatus: item.processStatus,
         returnDueDate: editForm.returnDueDate ?? item.returnDueDate,
         reportDate: editForm.reportDate ?? item.reportDate,
       };
 
       await SeedGoodsReceiptReturnApi.update(item.returnId, payload);
+
       window.alert('성공적으로 수정되었습니다.');
 
       delete editQuantitiesRef.current[item.returnId];
+      delete editHullQuantitiesRef.current[item.returnId];
+
       setEditingId(null);
       setEditForm({});
+
       loadList();
     } catch (error) {
       console.error('씨드 신고반납 수정 실패:', error);
@@ -283,6 +315,7 @@ export function SeedReportReturnManagePage() {
     try {
       await SeedGoodsReceiptReturnApi.update(item.returnId, {
         returnQty: item.returnQty,
+        hullQty: item.hullQty,
         processStatus: 1,
         returnDueDate: item.returnDueDate,
         reportDate: item.reportDate,
@@ -302,6 +335,10 @@ export function SeedReportReturnManagePage() {
 
     try {
       await SeedGoodsReceiptReturnApi.delete(item.returnId);
+
+      delete editQuantitiesRef.current[item.returnId];
+      delete editHullQuantitiesRef.current[item.returnId];
+
       window.alert('성공적으로 삭제되었습니다.');
       loadList();
     } catch (error) {
@@ -347,6 +384,48 @@ export function SeedReportReturnManagePage() {
             );
           }
           return item.returnQty;
+        },
+      },
+      {
+        accessorKey: 'hullQty',
+        header: '껍질수량',
+        cell: ({ row }) => {
+          const item = row.original;
+          const isEditing = editingId === item.returnId;
+
+          if (isEditing) {
+            return (
+              <input
+                type="number"
+                min={0}
+                max={editQuantitiesRef.current[item.returnId] ?? undefined}
+                style={{ width: '80px' }}
+                className="w-24 border px-2 py-0.5 rounded text-sm"
+                defaultValue={
+                  editHullQuantitiesRef.current[item.returnId] ?? item.hullQty
+                }
+                onChange={(e) => {
+                  const value = e.target.value;
+
+                  if (value === '') {
+                    editHullQuantitiesRef.current[item.returnId] = '';
+                    return;
+                  }
+
+                  const num = Number(value);
+                  const returnQty = Number(
+                    editQuantitiesRef.current[item.returnId]
+                  );
+
+                  if (num <= returnQty) {
+                    editHullQuantitiesRef.current[item.returnId] = num;
+                  }
+                }}
+              />
+            );
+          }
+
+          return item.hullQty;
         },
       },
       {

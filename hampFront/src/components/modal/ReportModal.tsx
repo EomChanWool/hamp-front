@@ -31,16 +31,19 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
 
     const editFormRef = useRef<{
         returnQty: number | '';
+        hullQty: number | '';
         reportDate: string;
         returnDueDate: string;
     }>({
         returnQty: '',
+        hullQty: '',
         reportDate: '',
         returnDueDate: '',
     });
 
     // --- 2. 하단 신규 등록 모드 상태 ---
     const [newReturnQtyInput, setNewReturnQtyInput] = useState<number | ''>('');
+    const [newHullQtyInput, setNewHullQtyInput] = useState<number | ''>('');
     const [newReportDateInput, setNewReportDateInput] = useState<string>('');
     const [newReturnDueDateInput, setNewReturnDueDateInput] = useState<string>('');
 
@@ -92,6 +95,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
         setEditingReturnId(item.returnId);
         editFormRef.current = {
             returnQty: item.returnQty ?? '',
+            hullQty: item.hullQty ?? '',
             reportDate: item.reportDate ?? '',
             returnDueDate: item.returnDueDate ?? '',
         };
@@ -110,8 +114,26 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
         }
 
         const qty = Number(editFormRef.current.returnQty) || 0;
+
         if (qty <= 0) {
             window.alert('신고 수량을 입력해주세요.');
+            return;
+        }
+
+        // 껍질수량 필수값 검증
+        if (
+            editFormRef.current.hullQty === '' ||
+            Number(editFormRef.current.hullQty) < 0
+        ) {
+            window.alert('껍질 수량을 입력해주세요.');
+            return;
+        }
+
+        const hullQty = Number(editFormRef.current.hullQty);
+
+        // 껍질수량은 신고수량을 초과할 수 없음
+        if (hullQty > qty) {
+            window.alert('껍질 수량은 신고 수량을 초과할 수 없습니다.');
             return;
         }
 
@@ -122,7 +144,9 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
         const maxAllowedQty = goodQty - otherRowsTotal;
 
         if (qty > maxAllowedQty) {
-            window.alert(`수정 가능한 최대 수량(${maxAllowedQty}${unitText})을 초과할 수 없습니다.`);
+            window.alert(
+                `수정 가능한 최대 수량(${maxAllowedQty}${unitText})을 초과할 수 없습니다.`
+            );
             return;
         }
 
@@ -132,15 +156,22 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
         }
 
         setIsSaving(true);
+
         try {
             const payload: SeedGoodsReceiptReturnUpdateRequest = {
                 returnQty: qty,
-                processStatus: item.processStatus ?? 0, // 기존 상태 유지 또는 필요에 따라 처리
+                hullQty,
+                processStatus: item.processStatus ?? 0,
                 reportDate: editFormRef.current.reportDate,
                 returnDueDate: editFormRef.current.returnDueDate,
             };
 
-            const res = await SeedGoodsReceiptReturnApi.update(receipt.receiptId, item.returnId, payload);
+            const res = await SeedGoodsReceiptReturnApi.update(
+                receipt.receiptId,
+                item.returnId,
+                payload
+            );
+
             window.alert(res.message || '수정되었습니다.');
 
             setEditingReturnId(null);
@@ -148,7 +179,11 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
             onChanged();
         } catch (error) {
             console.error('신고 이력 수정 실패:', error);
-            const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
+
+            const message = axios.isAxiosError(error)
+                ? error.response?.data?.message
+                : null;
+
             window.alert(message || '수정에 실패했습니다.');
         } finally {
             setIsSaving(false);
@@ -189,10 +224,23 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
 
         const currentRemaining = Math.max(goodQty - reportedTotal, 0);
         const qty = Number(newReturnQtyInput) || 0;
+        const hullQty = Number(newHullQtyInput) || 0;
+
         if (qty <= 0) {
             window.alert('신고 수량을 입력해주세요.');
             return;
         }
+
+        if (newHullQtyInput === '' || Number(newHullQtyInput) < 0) {
+            window.alert('껍질 수량을 입력해주세요.');
+            return;
+        }
+
+        if (hullQty > qty) {
+            window.alert('껍질 수량은 신고 수량을 초과할 수 없습니다.');
+            return;
+        }
+
         if (qty > currentRemaining) {
             window.alert('잔여수량을 넘으면 등록할 수 없습니다.');
             return;
@@ -206,6 +254,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
         try {
             const payload: SeedGoodsReceiptReturnCreateRequest = {
                 returnQty: qty,
+                hullQty,
                 processStatus: 0, // 신규 등록 시 기본값 (신고대기)
                 reportDate: newReportDateInput,
                 returnDueDate: newReturnDueDateInput,
@@ -213,6 +262,8 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
             const res = await SeedGoodsReceiptReturnApi.create(receipt.receiptId, payload);
             window.alert(res.message || '등록되었습니다.');
 
+            setNewReturnQtyInput('');
+            setNewHullQtyInput('');
             setNewReportDateInput('');
             setNewReturnDueDateInput('');
             await loadReturns();
@@ -251,6 +302,46 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                 },
             },
             {
+                accessorKey: 'hullQty',
+                header: '껍질 수량',
+                enableSorting: false,
+                cell: ({ row }) => {
+                    const item = row.original;
+                    const isEditing =
+                        editingReturnId === item.returnId &&
+                        !isReportCompleted(item);
+
+                    if (isEditing) {
+                        return (
+                            <input
+                                type="number"
+                                className="modalTableInput"
+                                min={0}
+                                max={editFormRef.current.returnQty || undefined}
+                                defaultValue={editFormRef.current.hullQty}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+
+                                    if (value === '') {
+                                        editFormRef.current.hullQty = '';
+                                        return;
+                                    }
+
+                                    const num = Number(value);
+                                    const returnQty = Number(editFormRef.current.returnQty);
+
+                                    if (num <= returnQty) {
+                                        editFormRef.current.hullQty = num;
+                                    }
+                                }}
+                            />
+                        );
+                    }
+
+                    return `${(item.hullQty ?? 0).toLocaleString()}${unitText ? ` ${unitText}` : ''}`;
+                },
+            },
+            {
                 accessorKey: 'reportDate',
                 header: '신고일자',
                 enableSorting: false,
@@ -278,7 +369,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                 enableSorting: false,
                 cell: ({ row }) => {
                     const item = row.original;
-                    const isEditing = editingReturnId === item.returnId && isReportCompleted(item);
+                    const isEditing = editingReturnId === item.returnId && !isReportCompleted(item);
                     if (isEditing) {
                         return (
                             <input
@@ -475,9 +566,24 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                                         setNewReturnQtyInput(e.target.value === '' ? '' : Number(e.target.value));
                                     }}
                                 />
-                                <p className="reportFormHelper">
-                                    잔여수량({Math.max(goodQty - reportedTotal, 0).toLocaleString()}{unitText ? ` ${unitText}` : ''})을 초과하여 등록할 수 없습니다.
-                                </p>
+                                <div className="reportFormDateItem">
+                                    <label className="reportFormSubLabel">껍질 수량 *</label>
+                                    <input
+                                        type="number"
+                                        className="reportFormInput"
+                                        min={0}
+                                        value={newHullQtyInput}
+                                        placeholder="껍질 수량을 입력하세요"
+                                        onChange={(e) =>
+                                            setNewHullQtyInput(
+                                                e.target.value === '' ? '' : Number(e.target.value)
+                                            )
+                                        }
+                                    />
+                                    <p className="reportFormHelper">
+                                        잔여수량({Math.max(goodQty - reportedTotal, 0).toLocaleString()}{unitText ? ` ${unitText}` : ''})을 초과하여 등록할 수 없습니다.
+                                    </p>
+                                </div>
 
                                 <div className="reportFormDateRow">
                                     <div className="reportFormDateItem">
