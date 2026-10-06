@@ -13,7 +13,7 @@
   --eq-line: #e3e9e8;
   --eq-line-strong: #c9d3d1;
   --eq-link: #b4bfbc; /* 공정 연결선 · 끝 링 (회색) */
-  --eq-dot: #d6dcda;  /* 캔버스 점 배경 */
+  --eq-dot: #e1e5e4;  /* 캔버스 점 배경 */
 
   --eq-run: #1fa24f;
   --eq-run-soft: #e6f6ec;
@@ -245,9 +245,10 @@
 }
 .eqAlert {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
   gap: 14px;
-  max-width: 420px;
+  width: fit-content;
   padding: 20px 24px;
   border-radius: 18px;
   background: var(--eq-surface);
@@ -271,12 +272,14 @@
   font-size: 14.5px;
   font-weight: 600;
   color: var(--eq-text);
+  text-align: center;
 }
 .eqAlert__text p {
   margin: 4px 0 0;
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--eq-text-2);
+  text-align: center;
 }
 
 /* 탭 (세그먼트) */
@@ -372,232 +375,55 @@
 }
 
 /* ══════════════════════════════════════════
-   공정 흐름 레이아웃
-   치수는 변수로 통일 → 트리/꺾임선이 이 값으로 계산되므로 박스 폭을 바꿀 땐 여기만 수정
+   공정 흐름 레이아웃 (좌표 캔버스 + SVG 연결선)
+   - 노드 위치/크기는 tsx 의 Place(x, y, w, h)
+   - 연결선 좌표는 tsx 의 edges 배열
 ══════════════════════════════════════════ */
 .flow {
-  --eq-box: 124px;  /* 공정 박스 폭 */
-  --eq-arr: 28px;   /* 가로 커넥터 길이 */
-  --eq-col: 160px;  /* 씨드 노드 폭 */
-  --eq-r: 12px;     /* 연결선 꺾임 모서리 반경 */
   display: flex;
   flex-direction: column;
-  min-width: max-content;
-}
-.flow--food { padding-right: 180px; } /* 부산물 노드가 오른쪽으로 삐져나올 자리 */
-
-.flow__row {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-.flow__row--indent { margin-left: calc(var(--eq-box) + var(--eq-arr)); }
-
-/* ══════════════════════════════════════════
-   식품: 전처리 행 + 하위 라인 그리드
-   컬럼: 씨 | → | 겉피 | → | 세척 | → | 건조 | → | 씨드
-   겉피/세척/건조 컬럼은 하위 라인 폭 이상으로 넓어지고, 남는 폭은 박스가 채운다
-══════════════════════════════════════════ */
-.flow__foodGrid {
-  --eq-vgap: 36px; /* 부모 ↔ 자식 세로 간격 */
-  display: grid;
-  grid-template-columns:
-    auto var(--eq-arr)
-    minmax(var(--eq-box), 1fr) var(--eq-arr)
-    minmax(var(--eq-box), 1fr) var(--eq-arr)
-    minmax(var(--eq-box), 1fr) var(--eq-arr)
-    auto;
-  align-items: start;
-}
-/* 1행(전처리 라인)은 세로 중앙 정렬 */
-.flow__foodGrid > :nth-child(-n + 9) { align-self: center; }
-/* 박스는 컬럼 폭을 꽉 채운다 → 하위 라인이 넓어지면 박스도 함께 넓어짐 */
-.flow__foodGrid > .flow__box {
   width: 100%;
-  min-width: var(--eq-box);
-  min-height: 76px;
-}
-.flow__seedPill { position: relative; }
-.flow__byproduct {
-  position: absolute;
-  left: 100%;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
 }
 
-/* 하위 라인: 부모 박스 컬럼 안에서 가운데 정렬 */
-.flow__lane {
-  grid-row: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.flow__lane--peel { grid-column: 3; }
-.flow__lane--wash { grid-column: 5; }
-.flow__lane--dry { grid-column: 7; }
-
-/* ── 세로 트리 ── */
-.vt {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.vt__kids {
-  display: flex;
-  justify-content: center;
-}
-.vt__kid {
+/* 캔버스는 부모 폭 100%. 노드는 절대 좌표, 실제 폭에 맞춘 좌표는 tsx 의 FlowCanvas 가 계산 */
+.flow__canvas {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: calc(var(--eq-vgap) / 2) 10px 0;
+  width: 100%;
 }
-/* 분기선: 가운데 자식은 직선, 양 끝 자식은 모서리를 둥글게 꺾는다 */
-.vt__kid::before {
-  content: '';
+.flow__abs {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1.5px;
-  background: var(--eq-link);
 }
-.vt__kid:first-child::before,
-.vt__kid:last-child::before {
-  box-sizing: border-box;
-  height: var(--eq-r);
-  background: none;
-  border-top: 1.5px solid var(--eq-link);
-}
-.vt__kid:first-child::before {
-  left: calc(50% - 0.75px);
-  border-left: 1.5px solid var(--eq-link);
-  border-top-left-radius: var(--eq-r);
-}
-.vt__kid:last-child::before {
-  right: calc(50% - 0.75px);
-  border-right: 1.5px solid var(--eq-link);
-  border-top-right-radius: var(--eq-r);
+.flow__abs > .flow__node {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
 }
 
-/* ── 세로 커넥터: 라인 + 아래 끝 링 ── */
-.flow__vline {
-  position: relative;
+/* 연결선: 박스 위에 얹되 클릭은 통과 */
+.flow__svg {
+  position: absolute;
+  inset: 0;
   z-index: 1;
-  flex-shrink: 0;
-  width: 1.5px;
-  height: var(--eq-vgap);
-  background: var(--eq-link);
+  overflow: visible;
+  pointer-events: none;
 }
-.flow__vline--half { height: calc(var(--eq-vgap) / 2); }
-.flow__vline--end::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 50%;
-  width: 8px;
-  height: 8px;
-  box-sizing: border-box;
-  border: 1.5px solid var(--eq-link);
-  border-radius: 50%;
-  background: var(--eq-surface);
-  transform: translateX(-50%);
+.flow__ln {
+  fill: none;
+  stroke: var(--eq-link);
+  stroke-width: 1.5;
 }
-.vt__stub {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-}
-/* 양 끝 자식은 모서리 곡선이 끝난 지점부터 이어 그린다 */
-.vt__kid:first-child > .vt__stub,
-.vt__kid:last-child > .vt__stub {
-  top: var(--eq-r);
-  height: calc(var(--eq-vgap) / 2 - var(--eq-r));
-}
+.flow__ln--dash { stroke-dasharray: 5 4; }
+.flow__ln--run { stroke: var(--eq-run); }
+.flow__ln--warn { stroke: var(--eq-warn); }
 
-/* ── 단섬유: 1행 끝(탈수) → 2행 시작(압축) 꺾임선 (모서리 둥글게) ── */
-.flow__elbow {
-  position: relative;
-  height: 44px;
-  margin-left: calc(var(--eq-box) + var(--eq-arr) + var(--eq-box) / 2);
-  width: calc(3 * (var(--eq-box) + var(--eq-arr)));
+/* 연결선 끝 링 */
+.flow__ring {
+  fill: var(--eq-surface);
+  stroke: var(--eq-link);
+  stroke-width: 1.5;
 }
-.flow__elbow i {
-  position: absolute;
-  background: var(--eq-link);
-}
-/* 탈수 아래로 */
-.flow__elbow i:nth-child(1) { right: 0; top: 0; width: 1.5px; height: calc(50% - var(--eq-r)); }
-/* 가운데 가로선 */
-.flow__elbow i:nth-child(2) { left: var(--eq-r); right: var(--eq-r); top: calc(50% - 1.5px); height: 1.5px; }
-/* 압축으로 내려가는 선 + 끝 링 */
-.flow__elbow i:nth-child(3) { left: 0; bottom: 0; top: calc(50% - 1.5px + var(--eq-r)); width: 1.5px; }
-.flow__elbow i:nth-child(3)::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 50%;
-  width: 8px;
-  height: 8px;
-  box-sizing: border-box;
-  border: 1.5px solid var(--eq-link);
-  border-radius: 50%;
-  background: var(--eq-surface);
-  transform: translateX(-50%);
-}
-/* 모서리 2곳 */
-.flow__elbow::before,
-.flow__elbow::after {
-  content: '';
-  position: absolute;
-  box-sizing: border-box;
-  width: var(--eq-r);
-  height: var(--eq-r);
-}
-.flow__elbow::before {
-  right: 0;
-  top: calc(50% - var(--eq-r));
-  border-right: 1.5px solid var(--eq-link);
-  border-bottom: 1.5px solid var(--eq-link);
-  border-bottom-right-radius: var(--eq-r);
-}
-.flow__elbow::after {
-  left: 0;
-  top: calc(50% - 1.5px);
-  border-left: 1.5px solid var(--eq-link);
-  border-top: 1.5px solid var(--eq-link);
-  border-top-left-radius: var(--eq-r);
-}
-
-/* ── 가로 커넥터: 라인 + 오른쪽 끝 링 ── */
-.flow__arr {
-  position: relative;
-  z-index: 1;
-  width: var(--eq-arr);
-  height: 1.5px;
-  flex-shrink: 0;
-  background: var(--eq-link);
-}
-.flow__arr::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  right: -4px;
-  width: 8px;
-  height: 8px;
-  box-sizing: border-box;
-  border: 1.5px solid var(--eq-link);
-  border-radius: 50%;
-  background: var(--eq-surface);
-  transform: translateY(-50%);
-}
-.flow__arr--dash {
-  background: repeating-linear-gradient(90deg, var(--eq-link) 0 5px, transparent 5px 9px);
-}
+.flow__ring--run { stroke: var(--eq-run); }
+.flow__ring--warn { stroke: var(--eq-warn); }
 
 /* ── 노드 공통 ── */
 .flow__node {
@@ -613,7 +439,7 @@
   flex-direction: column;
   gap: 4px;
   justify-content: center;
-  width: var(--eq-box);
+  width: 124px;
   min-height: 84px;
   padding: 12px 14px;
   border-radius: 16px;
@@ -694,8 +520,6 @@
 .flow__box--clickable:focus-visible { outline: 2px solid var(--eq-run); outline-offset: 3px; }
 
 /* 시작/종료 노드 */
-.flow__pill--col { width: var(--eq-col); padding: 0 10px; }
-.flow__pill--box { width: var(--eq-box); }
 .flow__pill {
   display: flex;
   align-items: center;
@@ -725,6 +549,7 @@
 .flow__tag {
   display: flex;
   align-items: center;
+  justify-content: center;
   min-height: 34px;
   padding: 0 14px;
   border-radius: 12px;

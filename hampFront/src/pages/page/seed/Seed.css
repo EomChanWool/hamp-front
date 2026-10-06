@@ -11,14 +11,66 @@
   padding: 4px;
 }
 
+/* ── 클릭 가능한 KPI 카드 ───────────────────── */
+.screenStack .metricCard {
+  position: relative;
+  cursor: pointer;
+  border: 1px solid var(--border, #e2e8f0);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    transform 0.15s ease, background 0.15s ease;
+}
+
+.screenStack .metricCard:hover {
+  border-color: var(--border-strong, #cbd5e1);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  transform: translateY(-2px);
+}
+
+.screenStack .metricCard:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.screenStack .metricCard:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+}
+
 .screenStack .metricCard.is-selected {
-  --card-selected-bg: var(--bg-subtle, #f1f5f9);
-  --card-selected-border: #64748b;
+  border-color: var(--primary, #3b82f6);
+  background: color-mix(in srgb, var(--primary, #3b82f6) 7%, var(--bg-card, #fff));
+  box-shadow: 0 0 0 1px var(--primary, #3b82f6);
+}
+
+[data-theme="dark"] .screenStack .metricCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 [data-theme="dark"] .screenStack .metricCard.is-selected {
-  --card-selected-bg: #1e293b;
-  --card-selected-border: #64748b;
+  border-color: #60a5fa;
+  background: color-mix(in srgb, #60a5fa 10%, var(--bg-card, #1e293b));
+  box-shadow: 0 0 0 1px #60a5fa;
+}
+
+/* 우측 화살표 = "누르면 이동/필터" 신호 */
+.inventorySummaryCard__go {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--text-muted, #94a3b8);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.screenStack .metricCard:hover .inventorySummaryCard__go {
+  transform: translateX(2px);
+  color: var(--text-heading, #0f172a);
+}
+
+.screenStack .metricCard.is-selected .inventorySummaryCard__go {
+  color: var(--primary, #3b82f6);
+}
+
+[data-theme="dark"] .screenStack .metricCard.is-selected .inventorySummaryCard__go {
+  color: #60a5fa;
 }
 
 .inventorySummaryCard__badge {
@@ -196,12 +248,6 @@
   color: #f87171;
 }
 
-.seedKpiClickable {
-  cursor: pointer;
-  width: 100%;
-  height: 100%;
-}
-
 /* =========================================================================
    공통 캡션
    ========================================================================= */
@@ -288,7 +334,7 @@
   display: grid;
   grid-template-columns: 1.6fr 0.8fr 0.9fr 0.9fr;
   gap: 8px;
-  padding: 0 10px 10px;
+  padding: 0 11px 10px; /* 행 테두리 1px만큼 보정해서 컬럼 정렬 유지 */
   font-size: 12px;
   color: var(--text-muted, #94a3b8);
   border-bottom: 1px solid var(--border, #e2e8f0);
@@ -305,25 +351,69 @@
 .seedItemList {
   display: flex;
   flex-direction: column;
+  gap: 6px;
 }
 
 .seedItemRow {
+  position: relative;
   display: grid;
   grid-template-columns: 1.6fr 0.8fr 0.9fr 0.9fr;
   align-items: center;
   gap: 8px;
   padding: 10px;
+  border: 1px solid var(--border, #e2e8f0);
   border-radius: 10px;
+  background: var(--bg-card, #fff);
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* 선택 표시용 좌측 바 */
+.seedItemRow::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--primary, #3b82f6);
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
 
 .seedItemRow:hover {
+  border-color: var(--border-strong, #cbd5e1);
   background: var(--bg-subtle, #f8fafc);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.seedItemRow:active {
+  background: var(--bg-subtle, #f1f5f9);
+  box-shadow: none;
+}
+
+.seedItemRow:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
 }
 
 .seedItemRow.selected {
-  background: var(--bg-subtle, #f8fafc);
+  border-color: var(--primary, #3b82f6);
+  background: color-mix(in srgb, var(--primary, #3b82f6) 7%, var(--bg-card, #fff));
+}
+
+.seedItemRow.selected::before {
+  opacity: 1;
+}
+
+[data-theme="dark"] .seedItemRow.selected {
+  border-color: #60a5fa;
+  background: color-mix(in srgb, #60a5fa 10%, var(--bg-card, #1e293b));
+}
+
+[data-theme="dark"] .seedItemRow.selected::before {
+  background: #60a5fa;
 }
 
 .seedItemRow__identity {
@@ -723,7 +813,7 @@
 
 /* ---- ~640px : KPI 3열 → 1열 ---- */
 @container content (max-width: 640px) {
-   .screenStack .metricGrid {
+  .screenStack .metricGrid {
     flex-direction: column;
   }
 

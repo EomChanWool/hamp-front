@@ -530,12 +530,15 @@ button {
 }
 
 .metricCard .metricIcon {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  display: flex;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  border-radius: 8px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .metricCard span {
@@ -1979,6 +1982,150 @@ textarea.tableInput {
 [data-theme="dark"] .timelineItem {
   background: var(--bg-subtle);
   border-color: var(--border);
+}
+
+/* ================================
+   LOT 흐름 스테퍼 (공용)
+================================ */
+
+.lotFlow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+
+.lotFlow__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  text-align: center;
+}
+
+.lotFlow__no {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.lotFlow__step.is-done .lotFlow__no,
+.lotFlow__step.is-current .lotFlow__no {
+  color: var(--primary);
+}
+
+/* 트랙: 각 단계 중심에서 다음 단계 중심까지 */
+.lotFlow__rail {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 4px 0 6px;
+}
+
+.lotFlow__step:not(:last-child) .lotFlow__rail::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 8px;
+  transform: translateY(-50%);
+  background: var(--primary-light);
+}
+
+.lotFlow__step.is-done:not(:last-child) .lotFlow__rail::after {
+  background: var(--primary);
+}
+
+.lotFlow__dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid var(--primary-light);
+  background: var(--bg-card);
+  color: var(--text-muted);
+}
+
+/* 완료: 채운 원 + 체크 */
+.lotFlow__step.is-done .lotFlow__dot {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+/* 현재: 강조 링 + 시계 */
+.lotFlow__step.is-current .lotFlow__dot {
+  border-width: 3px;
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+.lotFlow__label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.lotFlow__step.is-pending .lotFlow__label {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .lotFlow__step.is-done .lotFlow__dot {
+  color: #0f1117;
+}
+
+/* 폰: 세로 스테퍼 */
+@container content (max-width: 640px) {
+  .lotFlow {
+    grid-template-columns: 1fr;
+  }
+
+  .lotFlow__step {
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    grid-template-areas:
+      "rail no"
+      "rail label"
+      "rail badge";
+    column-gap: 14px;
+    row-gap: 4px;
+    align-items: center;
+    justify-items: start;
+    padding-bottom: 20px;
+    text-align: left;
+  }
+
+  .lotFlow__no { grid-area: no; }
+  .lotFlow__label { grid-area: label; }
+  .lotFlow__step > :last-child { grid-area: badge; }
+
+  .lotFlow__rail {
+    grid-area: rail;
+    align-self: stretch;
+    width: 36px;
+    margin: 0;
+    justify-content: flex-start;
+    align-items: flex-start;
+  }
+
+  .lotFlow__step:not(:last-child) .lotFlow__rail::after {
+    top: 36px;
+    bottom: -20px;
+    left: 14px;
+    width: 8px;
+    height: auto;
+    transform: none;
+  }
 }
 
 /* ================================

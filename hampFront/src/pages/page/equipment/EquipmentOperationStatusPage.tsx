@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import "./Equipment.css";
@@ -167,6 +167,7 @@ function formatElapsed(date: Date | null, now: Date) {
 
 /* ══════════════════════════════════════════
    설비 ID
+   - 식품: 초임계 추출물이 충진 / 포장으로 합류하므로 food-pack-oil 은 제거
 ══════════════════════════════════════════ */
 const FOOD_EQUIPMENT_IDS = [
   "food-peel",
@@ -180,7 +181,6 @@ const FOOD_EQUIPMENT_IDS = [
   "food-concentrate",
   "food-grind",
   "food-extract-sc",
-  "food-pack-oil",
   "food-select",
   "food-powder-tank",
   "food-pack-powder",
@@ -555,120 +555,376 @@ const Box = ({
 const Pill = ({ label }: { label: string }) => <div className="flow__node flow__pill">{label}</div>;
 const Amber = ({ label }: { label: string }) => <div className="flow__node flow__amber">{label}</div>;
 const Tag = ({ label }: { label: string }) => <div className="flow__node flow__tag">{label}</div>;
-const Arr = () => <span className="flow__arr" aria-hidden />;
-const ArrDash = () => <span className="flow__arr flow__arr--dash" aria-hidden />;
 
 type FlowProps = { statusMap: Record<EquipmentId, EquipmentStatus>; filter: StatusFilter };
 
 /* ══════════════════════════════════════════
-   세로 트리 (부모 아래로 내려가며, 분기점에서 좌우로 갈라진다)
-   - 자식이 1개면 직선, 2개 이상이면 가로 bus + 각 자식으로 내려가는 선
-   - 연결선은 CSS 로만 그린다
+   플로우 캔버스 (폭 100% · 가로로만 늘어남)
+   - 디자인 좌표(최소 폭 designWidth) 기준으로 작성하고, 실제 폭이 더 넓으면
+     가로 위치(X)와 박스 폭(Wd)만 늘린다. 글자 크기/높이/세로 간격은 그대로.
+   - 연결선은 늘어난 실제 좌표로 다시 계산해서 SVG 로 그린다 (코너 반경 12 고정)
+   - 위치 수정: build() 안의 cx(가운데 x) / y / w 와 edges 좌표만 고치면 된다
 ══════════════════════════════════════════ */
-type VNode = { node: ReactNode; children?: VNode[] };
+type Pt = [number, number];
+interface Edge {
+  /** 꺾이는 점 목록. 꺾이는 모서리는 자동으로 둥글게 처리 */
+  paths: Pt[][];
+  rings?: Pt[];
+  tone?: "run" | "warn";
+  dash?: boolean;
+}
+interface Place {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  node: ReactNode;
+}
+interface Layout {
+  nodes: Place[];
+  edges: Edge[];
+}
+interface Geo {
+  /** 디자인 x(가운데 기준) → 실제 x */
+  X: (x: number) => number;
+  /** 디자인 폭 → 실제 폭 */
+  Wd: (w: number) => number;
+}
+type LineOpt = Pick<Edge, "tone" | "dash">;
 
-const VLine = ({ className = "" }: { className?: string }) => (
-  <span className={`flow__vline ${className}`.trim()} aria-hidden />
-);
+const BOX_W = 124;
+const BOX_H = 84;
+const PILL_H = 40;
+const CORNER = 12;
+/** 늘어난 폭 중 박스 폭으로 가는 비율 (나머지는 박스 사이 간격으로 간다) */
+const WIDTH_SHARE = 0.4;
 
-function VTree({ item }: { item: VNode }) {
-  const kids = item.children;
+const hLine = (x1: number, x2: number, y: number, opt: LineOpt = {}): Edge => ({
+  paths: [
+    [
+      [x1, y],
+      [x2, y],
+    ],
+  ],
+  rings: [[x2, y]],
+  ...opt,
+});
+const vLine = (x: number, y1: number, y2: number, opt: LineOpt = {}): Edge => ({
+  paths: [
+    [
+      [x, y1],
+      [x, y2],
+    ],
+  ],
+  rings: [[x, y2]],
+  ...opt,
+});
 
-  if (!kids?.length) return <div className="vt">{item.node}</div>;
-
-  if (kids.length === 1) {
-    return (
-      <div className="vt">
-        {item.node}
-        <VLine className="flow__vline--end" />
-        <VTree item={kids[0]} />
-      </div>
-    );
+/** 꺾인 선 → path (모서리는 반경 CORNER 의 원호) */
+function roundedPath(pts: Pt[]): string {
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  const last = pts.length - 1;
+  for (let i = 1; i < last; i++) {
+    const [px, py] = pts[i - 1];
+    const [cx, cy] = pts[i];
+    const [nx, ny] = pts[i + 1];
+    const d1 = Math.hypot(cx - px, cy - py);
+    const d2 = Math.hypot(nx - cx, ny - cy);
+    if (!d1 || !d2) continue;
+    const r = Math.min(CORNER, i > 1 ? d1 / 2 : d1, i < last - 1 ? d2 / 2 : d2);
+    const cross = (cx - px) * (ny - cy) - (cy - py) * (nx - cx);
+    const ax = cx + ((px - cx) / d1) * r;
+    const ay = cy + ((py - cy) / d1) * r;
+    const bx = cx + ((nx - cx) / d2) * r;
+    const by = cy + ((ny - cy) / d2) * r;
+    d += ` L${ax},${ay} A${r},${r} 0 0 ${cross > 0 ? 1 : 0} ${bx},${by}`;
   }
-
-  return (
-    <div className="vt">
-      {item.node}
-      <VLine className="flow__vline--half" />
-      <div className="vt__kids">
-        {kids.map((kid, i) => (
-          <div key={i} className="vt__kid">
-            <VLine className="flow__vline--half flow__vline--end vt__stub" />
-            <VTree item={kid} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  d += ` L${pts[last][0]},${pts[last][1]}`;
+  return d;
 }
 
-/* 전처리 박스 아래로 내려가는 라인 (부모 박스 가운데 정렬) */
-function Lane({ className, item }: { className: string; item: VNode }) {
+function FlowCanvas({
+  designWidth,
+  height,
+  build,
+}: {
+  designWidth: number;
+  height: number;
+  build: (g: Geo) => Layout;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(designWidth);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => setWidth(Math.max(designWidth, Math.floor(el.clientWidth)));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [designWidth]);
+
+  const k = width / designWidth; // 가로 늘림 배율 (최소 1)
+  const kw = 1 + (k - 1) * WIDTH_SHARE;
+  const geo: Geo = {
+    X: (x) => Math.round(x * k),
+    Wd: (w) => Math.round((w * kw) / 2) * 2, // 짝수로 맞춰 가운데 정렬 시 반 픽셀 방지
+  };
+  const { nodes, edges } = build(geo);
+
   return (
-    <div className={`flow__lane ${className}`}>
-      <VLine className="flow__vline--end" />
-      <VTree item={item} />
+    <div ref={ref} className="flow__canvas" style={{ height }}>
+      {nodes.map((n, i) => (
+        <div key={i} className="flow__abs" style={{ left: n.x, top: n.y, width: n.w, height: n.h }}>
+          {n.node}
+        </div>
+      ))}
+
+      <svg
+        className="flow__svg"
+        width={width}
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        aria-hidden
+        focusable="false"
+      >
+        {edges.flatMap((e, i) =>
+          e.paths.map((pts, j) => (
+            <path
+              key={`${i}-${j}`}
+              d={roundedPath(pts)}
+              className={`flow__ln${e.dash ? " flow__ln--dash" : ""}${e.tone ? ` flow__ln--${e.tone}` : ""}`}
+            />
+          )),
+        )}
+        {edges.flatMap((e, i) =>
+          (e.rings ?? []).map(([x, y], j) => (
+            <circle
+              key={`r${i}-${j}`}
+              cx={x}
+              cy={y}
+              r={3.25}
+              className={`flow__ring${e.tone ? ` flow__ring--${e.tone}` : ""}`}
+            />
+          )),
+        )}
+      </svg>
     </div>
   );
 }
 
 /* ══════════════════════════════
-   식품 가공공정
-   1행: 헴프 씨 → 겉피 탈피 → 세척 → 건조 → 전처리 완료된 씨드
-   2행: 겉피 탈피 ↓ 착유 / 세척 ↓ 분쇄 / 건조 ↓ 선별 (각 부모 박스 가운데 아래)
+   식품 가공공정 (이미지 기준)
+   1행  헴프 씨 → 겉피 탈피 → 세척 → 건조 → 전처리 완료된 씨드
+        (세척·건조에서 위로 올라가 슬러지/껍질 신고반납으로 연결)
+   분기 씨드 아래 가로선 → 착유 / 분쇄 / 선별
+   좌측 착유 → 열수 추출 → 농축 → (←) 필터링 → 탱크저장, 착유 ↓ 필터링
+        탱크저장·초임계 추출 → 충진 / 포장 → 헴프오일 · 헴프박 농축액 · 초임계 추출물
+   우측 분쇄 → 분말저장 → (←) 초임계 추출
+        분말저장·선별 → 계량 / 포장 → 단백질 파우더 · 헴프씨드
 ══════════════════════════════ */
 function FoodFlow({ statusMap, filter }: FlowProps) {
-  const B = (id: string, label: string, sub?: string) => (
-    <Box label={label} sub={sub} equipmentId={id} status={statusMap[id]} filter={filter} />
-  );
+  const build = ({ X, Wd }: Geo): Layout => {
+    const L = (cx: number, w = BOX_W) => X(cx) - Wd(w) / 2;
+    const R = (cx: number, w = BOX_W) => X(cx) + Wd(w) / 2;
+    const pad = Wd(BOX_W) / 2;
 
-  /* 겉피 탈피 ↓ 착유 */
-  const peelLane: VNode = {
-    node: B("food-press", "착유"),
-    children: [
+    const B = (id: string, label: string, cx: number, y: number, w = BOX_W, sub?: string): Place => ({
+      x: L(cx, w),
+      y,
+      w: Wd(w),
+      h: BOX_H,
+      node: <Box label={label} sub={sub} equipmentId={id} status={statusMap[id]} filter={filter} />,
+    });
+    const P = (label: string, cx: number, y: number, w: number): Place => ({
+      x: L(cx, w),
+      y,
+      w: Wd(w),
+      h: PILL_H,
+      node: <Pill label={label} />,
+    });
+    /* 여러 선이 들어오는 합류 박스: 첫/마지막 입력 가운데 x 사이를 덮는다 */
+    const span = (id: string, label: string, cxA: number, cxB: number, y: number): Place => ({
+      x: X(cxA) - pad,
+      y,
+      w: X(cxB) - X(cxA) + pad * 2,
+      h: BOX_H,
+      node: <Box label={label} equipmentId={id} status={statusMap[id]} filter={filter} />,
+    });
+
+    const seedL = L(676, 160);
+    const mid1 = (X(62) + X(366)) / 2; // 충진 / 포장 가운데
+    const mid2 = (X(518) + X(676)) / 2; // 계량 / 포장 가운데
+
+    const nodes: Place[] = [
+      /* 1행 */
+      P("헴프 씨", 44, 78, 88),
+      B("food-peel", "겉피 탈피", 178, 56),
+      B("food-wash", "세척", 342, 56, 148, "(탈피 / 세척)"),
+      B("food-dry", "건조", 506, 56),
+      P("전처리 완료된 씨드", 676, 78, 160),
+      { x: seedL, y: 0, w: Wd(176), h: PILL_H, node: <Amber label="슬러지 / 껍질 신고반납" /> },
+
+      /* 2행 */
+      B("food-press", "착유", 62, 188),
+      B("food-extract-heat", "열수 추출", 214, 188),
+      B("food-grind", "분쇄", 442, 188),
+      B("food-select", "선별", 676, 188),
+
+      /* 3행 */
+      B("food-filter", "필터링", 62, 308),
+      B("food-concentrate", "농축", 214, 308),
+
+      /* 4행 */
+      B("food-tank", "탱크저장", 62, 428),
+      B("food-extract-sc", "초임계 추출", 366, 428),
+      B("food-powder-tank", "분말저장", 518, 428),
+
+      /* 5행: 합류 박스 */
+      span("food-fill", "충진 / 포장", 62, 366, 548),
+      span("food-pack-powder", "계량 / 포장", 518, 676, 548),
+
+      /* 6행: 최종 제품 */
+      P("헴프오일", 62, 668, 100),
+      P("헴프박 농축액", 214, 668, 136),
+      P("초임계 추출물", 366, 668, 128),
+      P("단백질 파우더", 518, 668, 130),
+      P("헴프씨드", 676, 668, 100),
+    ];
+
+    const edges: Edge[] = [
+      /* 1행 가로 연결 */
+      hLine(R(44, 88), L(178), 98),
+      hLine(R(178), L(342, 148), 98),
+      hLine(R(342, 148), L(506), 98),
+      hLine(R(506), seedL, 98),
+
+      /* 세척·건조 → 슬러지/껍질 (노란선) */
       {
-        node: B("food-filter", "필터링"),
-        children: [
-          {
-            node: B("food-tank", "탱크저장"),
-            children: [{ node: B("food-fill", "충진 / 포장"), children: [{ node: <Pill label="헴프오일" /> }] }],
-          },
+        paths: [
+          [
+            [X(342), 56],
+            [X(342), 20],
+            [seedL, 20],
+          ],
+          [
+            [X(506), 56],
+            [X(506), 20],
+          ],
+        ],
+        rings: [[seedL, 20]],
+        tone: "warn",
+      },
+
+      /* 씨드 → 착유 / 분쇄 / 선별 */
+      {
+        paths: [
+          [
+            [X(676), 118],
+            [X(676), 188],
+          ],
+          [
+            [X(676), 164],
+            [X(62), 164],
+            [X(62), 188],
+          ],
+          [
+            [X(442), 164],
+            [X(442), 188],
+          ],
+        ],
+        rings: [
+          [X(676), 188],
+          [X(62), 188],
+          [X(442), 188],
         ],
       },
-      {
-        node: B("food-extract-heat", "열수 추출"),
-        children: [{ node: B("food-concentrate", "농축"), children: [{ node: <Pill label="헴프박 농축액" /> }] }],
-      },
-    ],
-  };
 
-  /* 세척 ↓ 분쇄 */
-  const washLane: VNode = {
-    node: B("food-grind", "분쇄"),
-    children: [
-      {
-        node: B("food-extract-sc", "초임계 추출"),
-        children: [{ node: B("food-pack-oil", "계량 / 포장"), children: [{ node: <Pill label="초임계 추출물" /> }] }],
-      },
-    ],
-  };
+      /* 착유 라인 */
+      hLine(R(62), L(214), 230), // 착유 → 열수 추출
+      vLine(X(62), 272, 308), // 착유 ↓ 필터링
+      vLine(X(214), 272, 308), // 열수 추출 ↓ 농축
+      hLine(L(214), R(62), 350), // 농축 → 필터링 (←)
+      vLine(X(62), 392, 428), // 필터링 ↓ 탱크저장
 
-  /* 건조 ↓ 선별  ※ 헴프씨드 연결 위치는 실제 공정에 맞게 조정 */
-  const dryLane: VNode = {
-    node: B("food-select", "선별"),
-    children: [
+      /* 분쇄 라인 */
       {
-        node: B("food-powder-tank", "분말저장"),
-        children: [
-          { node: B("food-pack-powder", "계량 / 포장"), children: [{ node: <Pill label="단백질 파우더" /> }] },
+        paths: [
+          [
+            [X(442), 272],
+            [X(442), 410],
+            [X(518), 410],
+            [X(518), 428],
+          ],
+        ],
+        rings: [[X(518), 428]],
+      }, // 분쇄 ↓ 분말저장
+      hLine(L(518), R(366), 470), // 분말저장 → 초임계 추출 (←)
+
+      /* 충진 / 포장으로 합류 */
+      vLine(X(62), 512, 548), // 탱크저장
+      vLine(X(366), 512, 548), // 초임계 추출
+
+      /* 계량 / 포장으로 합류 */
+      vLine(X(518), 512, 548), // 분말저장
+      vLine(X(676), 272, 548), // 선별
+
+      /* 충진 / 포장 → 제품 3종 */
+      {
+        paths: [
+          [
+            [mid1, 632],
+            [mid1, 668],
+          ],
+          [
+            [mid1, 650],
+            [X(62), 650],
+            [X(62), 668],
+          ],
+          [
+            [mid1, 650],
+            [X(366), 650],
+            [X(366), 668],
+          ],
+        ],
+        rings: [
+          [X(62), 668],
+          [mid1, 668],
+          [X(366), 668],
         ],
       },
-      { node: <Pill label="헴프씨드" /> },
-    ],
+
+      /* 계량 / 포장 → 제품 2종 */
+      {
+        paths: [
+          [
+            [mid2, 632],
+            [mid2, 650],
+          ],
+          [
+            [mid2, 650],
+            [X(518), 650],
+            [X(518), 668],
+          ],
+          [
+            [mid2, 650],
+            [X(676), 650],
+            [X(676), 668],
+          ],
+        ],
+        rings: [
+          [X(518), 668],
+          [X(676), 668],
+        ],
+      },
+    ];
+
+    return { nodes, edges };
   };
 
   return (
-    <div className="flow flow--food">
+    <div className="flow">
       <Legend
         items={[
           { bg: "var(--eq-run)", label: "투입 원물 / 최종 제품" },
@@ -676,42 +932,122 @@ function FoodFlow({ statusMap, filter }: FlowProps) {
           { bg: "var(--eq-warn-soft)", border: "var(--eq-warn)", dash: true, label: "부산물 처리" },
         ]}
       />
-
-      {/* 1행: 전처리 라인 / 2행: 겉피·세척·건조 각각의 하위 라인 */}
-      <div className="flow__foodGrid">
-        <Pill label="헴프 씨" />
-        <Arr />
-        {B("food-peel", "겉피 탈피")}
-        <Arr />
-        {B("food-wash", "세척", "(탈피 / 세척)")}
-        <Arr />
-        {B("food-dry", "건조")}
-        <Arr />
-        <div className="flow__seedPill">
-          <div className="flow__node flow__pill flow__pill--col">전처리 완료된 씨드</div>
-          <div className="flow__byproduct">
-            <ArrDash />
-            <Amber label="슬러지 / 껍질 신고반납" />
-          </div>
-        </div>
-
-        <Lane className="flow__lane--peel" item={peelLane} />
-        <Lane className="flow__lane--wash" item={washLane} />
-        <Lane className="flow__lane--dry" item={dryLane} />
-      </div>
+      <FlowCanvas designWidth={780} height={708} build={build} />
     </div>
   );
 }
 
 /* ══════════════════════════════
-   단섬유 가공공정
-   1행: 줄기 → 스커칭 → 정련/표백 → 건조 → 탈수
-   2행: (탈수에서 꺾여 내려옴) 압축 → 인피 → 개섬 → 개면 → 카딩 → 압축포장 → 헴프솜
+   단섬유 가공공정 (이미지 기준)
+   줄기(인피) → 스커칭 / 압축 (좌측 분기)
+   인피 ⇢ 정련/표백 — 건조 — 탈수   (초록 점선: 인피에서 올라가는 경로)
+   압축 ⇢ 개섬 — 개면 — 카딩 — 압축포장 — 헴프솜  (초록 점선: 인피에서 내려오는 경로)
+   탈수 ┈┈ 개섬 (회색 점선, 꺾여서 내려옴)
 ══════════════════════════════ */
 function FiberFlow({ statusMap, filter }: FlowProps) {
-  const B = (id: string, label: string) => (
-    <Box label={label} equipmentId={id} status={statusMap[id]} filter={filter} />
-  );
+  const build = ({ X, Wd }: Geo): Layout => {
+    const L = (cx: number, w = BOX_W) => X(cx) - Wd(w) / 2;
+    const R = (cx: number, w = BOX_W) => X(cx) + Wd(w) / 2;
+
+    const B = (id: string, label: string, cx: number, y: number): Place => ({
+      x: L(cx),
+      y,
+      w: Wd(BOX_W),
+      h: BOX_H,
+      node: <Box label={label} equipmentId={id} status={statusMap[id]} filter={filter} />,
+    });
+
+    const busX = (R(62) + L(232)) / 2; // 줄기 → 스커칭/압축 분기선 x
+
+    const nodes: Place[] = [
+      { x: L(62), y: 104, w: Wd(BOX_W), h: PILL_H, node: <Pill label="줄기 (인피)" /> },
+
+      /* 1행 */
+      B("fiber-scutch", "스커칭", 232, 0),
+      B("fiber-refine", "정련 / 표백", 432, 0),
+      B("fiber-dry", "건조", 584, 0),
+      B("fiber-dehydrate", "탈수", 736, 0),
+
+      /* 인피 (두 행 사이) */
+      { x: L(332, 64), y: 107, w: Wd(64), h: 34, node: <Tag label="인피" /> },
+
+      /* 2행 */
+      B("fiber-compress", "압축", 232, 164),
+      B("fiber-open-fiber", "개섬", 432, 164),
+      B("fiber-open-cotton", "개면", 584, 164),
+      B("fiber-card", "카딩", 736, 164),
+      B("fiber-pack", "압축포장", 888, 164),
+      { x: L(1028, 100), y: 186, w: Wd(100), h: PILL_H, node: <Pill label="헴프솜" /> },
+    ];
+
+    const edges: Edge[] = [
+      /* 줄기 → 스커칭 / 압축 */
+      {
+        paths: [
+          [
+            [R(62), 124],
+            [busX, 124],
+          ],
+          [
+            [busX, 124],
+            [busX, 42],
+            [L(232), 42],
+          ],
+          [
+            [busX, 124],
+            [busX, 206],
+            [L(232), 206],
+          ],
+        ],
+        rings: [
+          [L(232), 42],
+          [L(232), 206],
+        ],
+      },
+
+      /* 인피 → 정련/표백, 압축 → 개섬 (초록 점선) */
+      {
+        paths: [
+          [
+            [X(332), 107],
+            [X(332), 42],
+            [L(432), 42],
+          ],
+        ],
+        rings: [[L(432), 42]],
+        tone: "run",
+        dash: true,
+      }, // 인피 ⇢ 정련/표백
+      hLine(R(232), L(432), 206, { tone: "run", dash: true }), // 압축 ⇢ 개섬
+      { paths: [[[X(332), 141], [X(332), 206]]], tone: "run", dash: true },
+
+      /* 1행 실선 */
+      hLine(R(432), L(584), 42),
+      hLine(R(584), L(736), 42),
+
+      /* 탈수 ┈ 개섬 (회색 점선, 꺾임) */
+      {
+        paths: [
+          [
+            [X(736), 84],
+            [X(736), 124],
+            [X(432), 124],
+            [X(432), 164],
+          ],
+        ],
+        rings: [[X(432), 164]],
+        dash: true,
+      },
+
+      /* 2행 실선 */
+      hLine(R(432), L(584), 206),
+      hLine(R(584), L(736), 206),
+      hLine(R(736), L(888), 206),
+      hLine(R(888), L(1028, 100), 206),
+    ];
+
+    return { nodes, edges };
+  };
 
   return (
     <div className="flow">
@@ -722,41 +1058,7 @@ function FiberFlow({ statusMap, filter }: FlowProps) {
           { bg: "transparent", border: "var(--eq-line-strong)", dash: true, label: "연결 공정 경로" },
         ]}
       />
-
-      <div className="flow__row">
-        <div className="flow__node flow__pill flow__pill--box">줄기 (인피)</div>
-        <Arr />
-        {B("fiber-scutch", "스커칭")}
-        <ArrDash />
-        {B("fiber-refine", "정련 / 표백")}
-        <Arr />
-        {B("fiber-dry", "건조")}
-        <Arr />
-        {B("fiber-dehydrate", "탈수")}
-      </div>
-
-      {/* 탈수 → 압축 연결 (1행 끝에서 2행 시작으로 꺾임) */}
-      <div className="flow__elbow" aria-hidden>
-        <i />
-        <i />
-        <i />
-      </div>
-
-      <div className="flow__row flow__row--indent">
-        {B("fiber-compress", "압축")}
-        <ArrDash />
-        <Tag label="인피" />
-        <ArrDash />
-        {B("fiber-open-fiber", "개섬")}
-        <Arr />
-        {B("fiber-open-cotton", "개면")}
-        <Arr />
-        {B("fiber-card", "카딩")}
-        <Arr />
-        {B("fiber-pack", "압축포장")}
-        <Arr />
-        <Pill label="헴프솜" />
-      </div>
+      <FlowCanvas designWidth={1078} height={248} build={build} />
     </div>
   );
 }

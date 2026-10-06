@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { CubeIcon, BeakerIcon, ArchiveBoxIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/solid'
+import { CubeIcon, BeakerIcon, ArchiveBoxIcon, ArrowUpIcon, ArrowDownIcon, ChevronRightIcon } from '@heroicons/react/24/solid'
 import { KpiGrid, type KpiItem } from '@components/kpi/KpiGrid'
 import { Panel } from '@components/card/Panel'
 import { formatDateTime } from "@/utils/common";
@@ -229,7 +229,7 @@ export function SeedInventoryStatusPage() {
   const semiSummary = getCategorySummaryValues(1)
   const finSummary = getCategorySummaryValues(2)
 
-  // KPI 카드 콘텐츠 렌더 헬퍼 (뱃지 아이콘 + 라벨 + 값 + 입출고 요약)
+  // KPI 카드 콘텐츠 렌더 헬퍼 (뱃지 아이콘 + 라벨 + 화살표 + 값 + 입출고 요약)
   const renderSummaryCard = (
     category: SeedInventoryStatusRow['category'],
     summary: { currentQty: string; todayIncrease: string; todayDecrease: string },
@@ -244,6 +244,7 @@ export function SeedInventoryStatusPage() {
               <Icon width={14} height={14} />
             </div>
             <span className="inventorySummaryCard__header">{category} 재고</span>
+            <ChevronRightIcon className="inventorySummaryCard__go" width={14} height={14} aria-hidden />
           </div>
           <div className="inventorySummaryCard__valueArea">
             <span>{summary.currentQty}</span>
@@ -349,8 +350,17 @@ export function SeedInventoryStatusPage() {
                 return (
                   <div
                     key={item.itemCode}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={isSelected}
                     className={`seedItemRow${isSelected ? ' selected' : ''}`}
                     onClick={() => setSelectedIndex(index)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        setSelectedIndex(index)
+                      }
+                    }}
                   >
                     <div className="seedItemRow__identity">
                       <div className={`seedItemRow__avatar ${cls}`}>

@@ -1,10 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { RefObject } from 'react';
+import {
+  ChartPieIcon,
+  CheckCircleIcon,
+  ClipboardDocumentListIcon,
+  CubeIcon,
+} from '@heroicons/react/24/outline';
 import { SalesOrderApi, type SalesOrderPerformanceKpiResponse, type SalesOrderPerformanceTrendSeriesResponse } from '@/api/sales/SalesOrder';
 import { OrderPerformanceDashboard } from '@pages/page/dashboard/OrderPerformanceDashboard';
-import { KpiGrid, type KpiItem } from '@/components/kpi/KpiGrid';
 import { ProgressRadialChart } from '@components/chart/ProgressRadialChart';
-import '@/components/kpi/KpiGrid.css';
 import { Panel } from '@/components/card/Panel';
+import './Sales.css'; // 반드시 OrderPerformanceDashboard import 보다 아래에 둘 것 (토글 스타일 덮어쓰기)
 
 type PeriodUnit = 'month' | 'quarter' | 'year';
 type GroupByType = 'item' | 'bp' | 'order';
@@ -71,6 +77,103 @@ function convertTrendToChartData(trendSeriesList: SalesOrderPerformanceTrendSeri
   });
 }
 
+/* ══════════════════════════════════════════
+   KPI 카드 (이 페이지 전용)
+══════════════════════════════════════════ */
+type KpiTone = 'blue' | 'amber' | 'green';
+type KpiIcon = typeof CubeIcon;
+
+/** 가까운 [data-theme] 요소를 보고 다크모드 여부를 추적 (ProgressRadialChart 의 isDark 용) */
+function useIsDark(ref: RefObject<HTMLElement | null>) {
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const host = ref.current?.closest('[data-theme]');
+    if (!host) return;
+    const read = () => setIsDark(host.getAttribute('data-theme') === 'dark');
+    read();
+    const observer = new MutationObserver(read);
+    observer.observe(host, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return isDark;
+}
+
+function ProgressCard({
+  pct,
+  ordered,
+  produced,
+  periodText,
+}: {
+  pct: number;
+  ordered: number;
+  produced: number;
+  periodText: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isDark = useIsDark(ref);
+  const remaining = Math.max(ordered - produced, 0);
+
+  return (
+    <div ref={ref} className="opKpi opKpi--amber opKpi--withChart">
+      <div className="opKpi__main">
+        <div className="opKpi__top">
+          <span className="opKpi__icon" aria-hidden>
+            <ChartPieIcon />
+          </span>
+          <span className="opKpi__label">진행률</span>
+        </div>
+
+        <strong className="opKpi__value">
+          {remaining.toLocaleString()}
+          <small> EA 남음</small>
+        </strong>
+        <span className="opKpi__sub">{periodText ? `${periodText} 기준` : '-'}</span>
+      </div>
+
+      <div className="opKpi__chart">
+        <ProgressRadialChart value={pct} size={80} isDark={isDark} />
+      </div>
+    </div>
+  );
+}
+
+function StatCard({
+  Icon,
+  tone,
+  label,
+  value,
+  unit,
+  sub,
+}: {
+  Icon: KpiIcon;
+  tone: KpiTone;
+  label: string;
+  value: string;
+  unit: string;
+  sub: string;
+}) {
+  return (
+    <div className={`opKpi opKpi--${tone}`}>
+      <div className="opKpi__main">
+        <div className="opKpi__top">
+          <span className="opKpi__icon" aria-hidden>
+            <Icon />
+          </span>
+          <span className="opKpi__label">{label}</span>
+        </div>
+
+        <strong className="opKpi__value">
+          {value}
+          <small> {unit}</small>
+        </strong>
+        <span className="opKpi__sub">{sub}</span>
+      </div>
+    </div>
+  );
+}
+
 export function OrderPerformancePage() {
   const [period, setPeriod] = useState<PeriodUnit>('year');
   const [groupBy, setGroupBy] = useState<GroupByType>('item');
@@ -125,29 +228,7 @@ export function OrderPerformancePage() {
   const completedLineCount = kpiData?.completedLineCount ?? 0;
   const totalLineCount = kpiData?.totalLineCount ?? 0;
 
-  const orderStatusKpis: KpiItem[] = [
-    {
-      label: '진행률',
-      value: null,
-      tone: 'warn',
-      render: (isDark) => (
-        <div className="customProgressKpiCard customProgressKpiCard--spread">
-          <ProgressRadialChart value={currentProgressPct} size={110} isDark={isDark} />
-          <div className="customProgressKpiCard__text">
-            <span className="customProgressKpiCard__title">
-              {totalProducedQty.toLocaleString()} / {totalOrderQty.toLocaleString()} EA
-            </span>
-            <span className="customProgressKpiCard__badge">
-              ● {formatPeriodBadgeText(kpiData?.periodStart, period)} 진행중
-            </span>
-          </div>
-        </div>
-      ),
-    },
-    { label: '총 주문수량', value: `${totalOrderQty.toLocaleString()} EA`, tone: 'danger' },
-    { label: '총 생산수량', value: `${totalProducedQty.toLocaleString()} EA`, tone: 'warn' },
-    { label: '완료 라인', value: `${completedLineCount} / ${totalLineCount} 건`, tone: 'good' },
-  ];
+  const periodText = formatPeriodBadgeText(kpiData?.periodStart, period);
 
   const formattedChartData = convertTrendToChartData(trendData);
 
@@ -164,26 +245,64 @@ export function OrderPerformancePage() {
     // 전체를 반투명 처리 + 클릭 차단으로만 표시
     <section className={`screenStack${isLoading ? ' screenStack--loading' : ''}`}>
       <Panel title="수주실적 현황">
-        <div className="orderPerfDashboard__toggle" role="tablist" aria-label="집계 기간 선택">
-          {PERIOD_TABS.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              role="tab"
-              aria-selected={period === tab.key}
-              className={period === tab.key ? "isActive" : ""}
-              onClick={() => setPeriod(tab.key)}
-              // 로딩 중 연타로 인한 중복 요청/깜빡임 방지
-              disabled={isLoading}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="opBar">
+          {/* 기간별 현황 패널의 토글과 같은 클래스를 써서 디자인을 통일 */}
+          <div className="orderPerfDashboard__toggle" role="tablist" aria-label="집계 기간 선택">
+            {PERIOD_TABS.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                role="tab"
+                aria-selected={period === tab.key}
+                className={period === tab.key ? 'isActive' : ''}
+                onClick={() => setPeriod(tab.key)}
+                // 로딩 중 연타로 인한 중복 요청/깜빡임 방지
+                disabled={isLoading}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <p className="opBar__desc">
+            <strong>{periodText || '-'}</strong> 기준 수주 대비 생산 실적
+          </p>
         </div>
       </Panel>
 
-      <KpiGrid kpis={orderStatusKpis} />
-      
+      <div className="opKpis" role="group" aria-label="수주실적 요약">
+        <ProgressCard
+          pct={currentProgressPct}
+          produced={totalProducedQty}
+          ordered={totalOrderQty}
+          periodText={periodText}
+        />
+        <StatCard
+          Icon={ClipboardDocumentListIcon}
+          tone="blue"
+          label="총 주문수량"
+          value={totalOrderQty.toLocaleString()}
+          unit="EA"
+          sub={`${totalLineCount.toLocaleString()}개 라인`}
+        />
+        <StatCard
+          Icon={CubeIcon}
+          tone="amber"
+          label="총 생산수량"
+          value={totalProducedQty.toLocaleString()}
+          unit="EA"
+          sub={`주문 대비 ${currentProgressPct}%`}
+        />
+        <StatCard
+          Icon={CheckCircleIcon}
+          tone="green"
+          label="완료 라인"
+          value={`${completedLineCount.toLocaleString()} / ${totalLineCount.toLocaleString()}`}
+          unit="건"
+          sub={`미완료 ${Math.max(totalLineCount - completedLineCount, 0).toLocaleString()}건`}
+        />
+      </div>
+
       <OrderPerformanceDashboard
         data={dashboardData}
         barData={trendData}
