@@ -59,7 +59,6 @@ export function SeedReturnPrintModal({ isOpen, onClose, items }: SeedReturnPrint
             <tr>
               <th style={{ width: 35 }}>순번</th>
               <th style={{ width: 55 }}>신고ID</th>
-              <th>품목</th>
               <th style={{ width: 75 }}>신고일자</th>
               <th style={{ width: 75 }}>처리예정일</th>
               <th style={{ width: 60 }}>처리상태</th>
@@ -72,9 +71,6 @@ export function SeedReturnPrintModal({ isOpen, onClose, items }: SeedReturnPrint
               <tr key={row.returnId}>
                 <td className="center">{row.no}</td>
                 <td className="center">{row.returnId}</td>
-                <td>
-                  {row.itemNm} <span className="code">({row.itemCode})</span>
-                </td>
                 <td className="center">{row.reportDate}</td>
                 <td className="center">{row.returnDueDate}</td>
                 <td className="center">{row.statusText}</td>
@@ -86,7 +82,7 @@ export function SeedReturnPrintModal({ isOpen, onClose, items }: SeedReturnPrint
           </tbody>
           <tfoot>
             <tr>
-              <th colSpan={6}>합계</th>
+              <th colSpan={5}>합계</th>
               <td className="right bold">{data.totalQty.toLocaleString()}</td>
               <td className="right bold">{data.totalHullQty.toLocaleString()}</td>
             </tr>

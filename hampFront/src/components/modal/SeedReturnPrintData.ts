@@ -21,8 +21,6 @@ const PROCESS_STATUS_TEXT: Record<number, string> = {
 export interface SeedReturnPrintRow {
     no: number; // 순번 (1부터)
     returnId: number; // 신고ID
-    itemCode: string; // 품목코드
-    itemNm: string; // 품목명
     returnQty: number; // 수량
     hullQty: number; // 껍질수량
     reportDate: string; // 신고일자
@@ -59,8 +57,6 @@ export function buildSeedReturnPrintData(
     const rows: SeedReturnPrintRow[] = items.map((it, idx) => ({
         no: idx + 1,
         returnId: it.returnId,
-        itemCode: it.itemCode ?? '-',
-        itemNm: it.itemNm ?? '-',
         returnQty: it.returnQty ?? 0,
         hullQty: it.hullQty ?? 0,
         reportDate: it.reportDate || '-',
