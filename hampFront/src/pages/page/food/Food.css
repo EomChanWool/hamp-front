@@ -472,6 +472,160 @@
   }
 }
 
+/* ==========================================
+   LOT 흐름 (STEP 스테퍼)
+   ========================================== */
+.lotFlow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+
+.lotFlow__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  text-align: center;
+}
+
+.lotFlow__no {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #94a3b8);
+}
+.lotFlow__step.is-done .lotFlow__no,
+.lotFlow__step.is-current .lotFlow__no {
+  color: var(--primary, #3b82f6);
+}
+
+/* 트랙: 각 단계 중심에서 다음 단계 중심까지 */
+.lotFlow__rail {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 4px 0 6px;
+}
+
+.lotFlow__step:not(:last-child) .lotFlow__rail::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 4px;
+  transform: translateY(-50%);
+  background: color-mix(in srgb, var(--primary, #3b82f6) 12%, var(--bg-card, #fff));
+}
+.lotFlow__step.is-done:not(:last-child) .lotFlow__rail::after {
+  background: var(--primary, #3b82f6);
+}
+
+.lotFlow__dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--primary, #3b82f6) 18%, var(--bg-card, #fff));
+  background: var(--bg-card, #fff);
+  color: var(--text-muted, #94a3b8);
+}
+
+/* 완료: 채운 원 + 체크 */
+.lotFlow__step.is-done .lotFlow__dot {
+  border-color: var(--primary, #3b82f6);
+  background: var(--primary, #3b82f6);
+  color: #fff;
+}
+
+/* 현재: 파란 링 + 시계 */
+.lotFlow__step.is-current .lotFlow__dot {
+  border-width: 3px;
+  border-color: var(--primary, #3b82f6);
+  color: var(--primary, #3b82f6);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary, #3b82f6) 15%, transparent);
+}
+
+.lotFlow__label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-heading, #0f172a);
+}
+.lotFlow__step.is-pending .lotFlow__label {
+  color: var(--text-muted, #94a3b8);
+}
+
+[data-theme="dark"] .lotFlow__step.is-done .lotFlow__dot {
+  border-color: #60a5fa;
+  background: #60a5fa;
+  color: #0f172a;
+}
+[data-theme="dark"] .lotFlow__step.is-current .lotFlow__dot {
+  border-color: #60a5fa;
+  color: #60a5fa;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.2);
+}
+[data-theme="dark"] .lotFlow__step.is-done:not(:last-child) .lotFlow__rail::after {
+  background: #60a5fa;
+}
+[data-theme="dark"] .lotFlow__step.is-done .lotFlow__no,
+[data-theme="dark"] .lotFlow__step.is-current .lotFlow__no {
+  color: #60a5fa;
+}
+
+/* 폰: 세로 스테퍼 */
+@container content (max-width: 640px) {
+  .lotFlow {
+    grid-template-columns: 1fr;
+  }
+
+  .lotFlow__step {
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    grid-template-areas:
+      "rail no"
+      "rail label"
+      "rail badge";
+    column-gap: 14px;
+    row-gap: 4px;
+    align-items: center;
+    justify-items: start;
+    padding-bottom: 20px;
+    text-align: left;
+  }
+
+  .lotFlow__no { grid-area: no; }
+  .lotFlow__label { grid-area: label; }
+  .lotFlow__step > :last-child { grid-area: badge; }
+
+  .lotFlow__rail {
+    grid-area: rail;
+    align-self: stretch;
+    width: 36px;
+    margin: 0;
+    justify-content: flex-start;
+    align-items: flex-start;
+  }
+
+  .lotFlow__step:not(:last-child) .lotFlow__rail::after {
+    top: 36px;
+    bottom: -20px;
+    left: 14px;
+    width: 4px;
+    height: auto;
+    transform: none;
+  }
+}
+
 /* ================================================
    DARK MODE (Food 작업지시 전용 추가 스타일)
    ================================================ */

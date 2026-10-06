@@ -79,26 +79,35 @@
 
 /* 그룹 행 — 이름 / 진행바 / 수량이 한 줄에 나란히 배치되는 3열 그리드 */
 .groupList {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
 }
 
 .groupRow {
-  display: grid;
-  grid-template-columns: 180px 1fr minmax(140px, auto);
-  align-items: center;
-  gap: 16px;
-}
-
-.groupInfo {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: border-color 0.2s ease;
+}
+.groupRow:hover {
+  border-color: var(--text-muted);
+}
+
+.groupHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
   min-width: 0;
 }
 
 .groupName {
+  min-width: 0;
   font-size: 14px;
   font-weight: 700;
   color: var(--text-heading);
@@ -107,34 +116,57 @@
   white-space: nowrap;
 }
 
-.groupCount {
-  font-size: 12px;
-  color: var(--text-muted);
+/* 진행률 숫자 — 구간 색 (텍스트는 흰 배경 대비를 위해 바보다 한 단계 진하게) */
+.groupPct {
+  flex-shrink: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
+.pctHigh { color: #059669; }
+.pctMid  { color: #d97706; }
+.pctLow  { color: #dc2626; }
+[data-theme="dark"] .pctHigh { color: #34d399; }
+[data-theme="dark"] .pctMid  { color: #fbbf24; }
+[data-theme="dark"] .pctLow  { color: #f87171; }
 
 .groupBarTrack {
   width: 100%;
-  height: 10px;
+  height: 6px;
   background: var(--border);
-  border-radius: 5px;
+  border-radius: 3px;
   overflow: hidden;
 }
 
 .groupBarFill {
   height: 100%;
-  border-radius: 5px;
+  border-radius: 3px;
   transition: width 0.3s ease;
 }
 
+.groupFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.groupCount {
+  color: var(--text-muted);
+}
+
 .groupNumbers {
-  font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-heading);
-  text-align: right;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .emptyState {
+  grid-column: 1 / -1;
   text-align: center;
   padding: 20px;
   color: var(--text-muted);
@@ -239,6 +271,193 @@
   color: #f8fafc !important;
 }
 
+/* ══════════════════════════════════════════
+   수주실적 — 기간 바
+══════════════════════════════════════════ */
+.opBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.opBar__desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.opBar__desc strong {
+  margin-right: 2px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+/* ══════════════════════════════════════════
+   공용 세그먼트 토글
+   수주실적(상단)과 기간별 현황(차트 패널)이 같은 클래스를 쓰므로 디자인이 항상 같다.
+   OrderPerformanceDashboard.css 에 있던 기존 .orderPerfDashboard__toggle 규칙은
+   겹치면 지우고 이 블록을 단일 기준으로 쓴다.
+══════════════════════════════════════════ */
+.orderPerfDashboard__toggle {
+  display: inline-flex;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--border);
+  overflow-x: auto;
+}
+.orderPerfDashboard__toggle button {
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.orderPerfDashboard__toggle button:hover:not(.isActive):not(:disabled) {
+  color: var(--text-heading);
+}
+.orderPerfDashboard__toggle button.isActive {
+  background: var(--bg-card, #fff);
+  color: var(--text-heading);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.orderPerfDashboard__toggle button:focus-visible {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+}
+.orderPerfDashboard__toggle button:disabled {
+  cursor: default;
+}
+
+/* ══════════════════════════════════════════
+   KPI 카드
+   4장 모두 같은 뼈대(라벨 → 값 → 서브). 톤 색(--k)만 바꿔서 아이콘 칩이 같이 바뀐다.
+   진행률 카드만 오른쪽에 링(.opKpi__chart)이 붙는다.
+══════════════════════════════════════════ */
+.opKpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.opKpi {
+  --k: #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  min-height: 124px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-card, #fff);
+  transition: border-color 0.2s ease;
+}
+.opKpi:hover {
+  border-color: color-mix(in srgb, var(--k) 45%, var(--border));
+}
+.opKpi--blue  { --k: #3b82f6; }
+.opKpi--amber { --k: #f59e0b; }
+.opKpi--green { --k: #10b981; }
+
+.opKpi__main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.opKpi__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+/* 아이콘 칩 */
+.opKpi__icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--k) 14%, transparent);
+  color: var(--k);
+}
+.opKpi__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.opKpi__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.opKpi__value {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--text-heading);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.opKpi__value small {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+.opKpi__sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 진행률 카드: 링은 오른쪽 보조 비주얼 */
+.opKpi__chart {
+  flex: none;
+  display: grid;
+  place-items: center;
+}
+
+/* ══════════════════════════════════════════
+   반응형 (공용 레이아웃 컨테이너 기준)
+   1024 : 2x2
+   640  : 1열
+══════════════════════════════════════════ */
+@container content (max-width: 1024px) {
+  .opKpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container content (max-width: 640px) {
+  .opKpis {
+    grid-template-columns: 1fr;
+  }
+  .opKpi__value {
+    font-size: 24px;
+  }
+}
+
 /* ================================
    반응형
    1024 : 태블릿 — groupRow 고정폭 살짝 축소
@@ -246,37 +465,12 @@
 ================================ */
 
 @container content (max-width: 1024px) {
-  .groupRow {
-    grid-template-columns: 140px 1fr minmax(110px, auto);
-    gap: 12px;
-  }
-
   .progressTrack {
     width: 60px;
   }
 }
 
 @container content (max-width: 640px) {
-  .groupRow {
-    grid-template-columns: 1fr auto;
-    grid-template-areas:
-      "info numbers"
-      "bar bar";
-    row-gap: 8px;
-  }
-
-  .groupInfo {
-    grid-area: info;
-  }
-
-  .groupNumbers {
-    grid-area: numbers;
-  }
-
-  .groupBarTrack {
-    grid-area: bar;
-  }
-
   .progressCell {
     flex-wrap: wrap;
   }

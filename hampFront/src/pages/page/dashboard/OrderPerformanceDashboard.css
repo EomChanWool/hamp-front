@@ -46,7 +46,7 @@
 .orderPerfDashboard__toggle {
   display: inline-flex;
   gap: 2px;
-  padding: 5px;
+  padding: 3px;
   background: #f1f5f9;
   border-radius: 8px;
 }
@@ -55,7 +55,7 @@
   border: none;
   background: transparent;
   padding: 4px 12px;
-  font-size: 14px;
+  font-size: 13px;
   border-radius: 6px;
   cursor: pointer;
   color: #475569;
@@ -63,7 +63,7 @@
 
 .orderPerfDashboard__toggle button.isActive {
   background: #fff;
-  font-weight: 600;
+  font-weight: 500;
   color: #0f172a;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }

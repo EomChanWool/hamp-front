@@ -395,11 +395,15 @@ export function OrderStatusPage() {
                         {visibleGroupData.map((item) => {
                             const pct = item.progressRate ?? 0;
                             const toneClass = getProgressToneClass(pct);
+                            const pctToneClass = toneClass.replace("bar", "pct"); // barHigh → pctHigh
+                            const safePct = Math.min(pct, 100);
                             return (
                                 <div key={item.groupKey} className="groupRow">
-                                    <div className="groupInfo">
-                                        <span className="groupName">{item.groupLabel}</span>
-                                        <span className="groupCount">{item.lineCount}건 합산</span>
+                                    <div className="groupHead">
+                                        <span className="groupName" title={item.groupLabel}>
+                                            {item.groupLabel}
+                                        </span>
+                                        <span className={`groupPct ${pctToneClass}`}>{pct}%</span>
                                     </div>
 
                                     <div
@@ -407,17 +411,20 @@ export function OrderStatusPage() {
                                         role="progressbar"
                                         aria-valuemin={0}
                                         aria-valuemax={100}
-                                        aria-valuenow={Math.min(pct, 100)}
+                                        aria-valuenow={safePct}
                                         aria-label={`${item.groupLabel} 생산 진행률`}
                                     >
                                         <div
                                             className={`groupBarFill ${toneClass}`}
-                                            style={{ width: `${Math.min(pct, 100)}%` }}
+                                            style={{ width: `${safePct}%` }}
                                         />
                                     </div>
 
-                                    <div className="groupNumbers">
-                                        {(item.totalProducedQty ?? 0).toLocaleString()} / {(item.totalOrderQty ?? 0).toLocaleString()}
+                                    <div className="groupFoot">
+                                        <span className="groupCount">{item.lineCount}건 합산</span>
+                                        <span className="groupNumbers">
+                                            {(item.totalProducedQty ?? 0).toLocaleString()} / {(item.totalOrderQty ?? 0).toLocaleString()}
+                                        </span>
                                     </div>
                                 </div>
                             );
