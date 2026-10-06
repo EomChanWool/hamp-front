@@ -11,6 +11,7 @@ import {
   type SeedGoodsReceiptReturnUpdateRequest
 } from '@/api/seed/SeedGoodsReceiptReturn';
 import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
+import { SeedReturnPrintModal } from '@/components/modal/SeedReturnPrintModal';
 
 const PROCESS_STATUS_MAP: Record<number, string> = {
   0: '신고대기',
@@ -35,11 +36,17 @@ export function SeedReportReturnManagePage() {
   // 현재 수정 중인 행의 ID
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  // 상태 변경 및 날짜 수정용 폼 상태
+  // 날짜 수정용 폼 상태
   const [editForm, setEditForm] = useState<Partial<SeedGoodsReceiptReturnUpdateRequest>>({});
 
   // --- useRef 기반 수량 임시 저장소 (returnId를 키로 관리하여 포커스 튀김 방지) ---
   const editQuantitiesRef = useRef<Record<number, number | ''>>({});
+
+  // 인쇄 대상 행 (null 이면 인쇄 모달 닫힘)
+  const [printItem, setPrintItem] = useState<SeedGoodsReceiptReturnItemResponse | null>(null);
+
+  // 모달에 넘기는 배열을 매 렌더마다 새로 만들면 출력일시가 계속 바뀌므로 메모이제이션
+  const printItems = useMemo(() => (printItem ? [printItem] : []), [printItem]);
 
   const [searchFilters, setSearchFilters] = useState({
     itemCode: '',
@@ -232,7 +239,6 @@ export function SeedReportReturnManagePage() {
     editQuantitiesRef.current[item.returnId] = item.returnQty;
 
     setEditForm({
-      processStatus: item.processStatus ?? 0,
       returnDueDate: item.returnDueDate ?? '',
       reportDate: item.reportDate ?? '', // undefined 방지를 위해 기본값 설정
     });
@@ -250,10 +256,9 @@ export function SeedReportReturnManagePage() {
     try {
       const finalReturnQty = editQuantitiesRef.current[item.returnId];
 
-      // 타입 단언(as SeedGoodsReceiptReturnUpdateRequest)을 통해 필수값 누락 타입 에러 방지
       const payload: SeedGoodsReceiptReturnUpdateRequest = {
         returnQty: finalReturnQty === '' ? 0 : Number(finalReturnQty),
-        processStatus: editForm.processStatus ?? item.processStatus,
+        processStatus: item.processStatus,
         returnDueDate: editForm.returnDueDate ?? item.returnDueDate,
         reportDate: editForm.reportDate ?? item.reportDate,
       };
@@ -268,6 +273,25 @@ export function SeedReportReturnManagePage() {
     } catch (error) {
       console.error('씨드 신고반납 수정 실패:', error);
       window.alert('수정에 실패했습니다.');
+    }
+  };
+
+  const handleApprove = async (item: SeedGoodsReceiptReturnItemResponse) => {
+    const confirmed = window.confirm(`신고 ID [${item.returnId}] 건을 승인(신고완료) 처리하시겠습니까?`);
+    if (!confirmed) return;
+
+    try {
+      await SeedGoodsReceiptReturnApi.update(item.returnId, {
+        returnQty: item.returnQty,
+        processStatus: 1,
+        returnDueDate: item.returnDueDate,
+        reportDate: item.reportDate,
+      });
+      window.alert('승인 처리되었습니다.');
+      loadList();
+    } catch (error) {
+      console.error('씨드 신고반납 승인 실패:', error);
+      window.alert('승인 처리에 실패했습니다.');
     }
   };
 
@@ -349,30 +373,36 @@ export function SeedReportReturnManagePage() {
         },
       },
       {
+        id: 'approve',
+        header: '승인',
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.processStatus !== 0) return '-';
+
+          return (
+            <button
+              type="button"
+              className="miniButton"
+              // 수정 중인 행은 승인 불가 (수정 저장/취소 후 승인하도록)
+              disabled={editingId === item.returnId}
+              onClick={() => handleApprove(item)}
+            >
+              승인
+            </button>
+          );
+        },
+      },
+      {
         accessorKey: 'processStatus',
         header: '처리상태',
         cell: ({ row }) => {
-          const isEditing = editingId === row.original.returnId;
           const statusNum = row.original.processStatus;
-
-          if (isEditing) {
-            return (
-              <select
-                className="w-full border px-1 py-0.5 rounded text-sm"
-                value={editForm.processStatus ?? 0}
-                onChange={(e) => setEditForm({ ...editForm, processStatus: Number(e.target.value) })}
-              >
-                <option value={0}>신고대기</option>
-                <option value={1}>신고완료</option>
-              </select>
-            );
-          }
-
           const statusText = PROCESS_STATUS_MAP[statusNum] ?? statusNum;
           const color = PROCESS_STATUS_COLORS[statusNum];
           return color ? <span style={{ color, fontWeight: 600 }}>{statusText}</span> : statusText;
         },
       },
+
       {
         id: 'actions',
         header: '관리',
@@ -400,6 +430,17 @@ export function SeedReportReturnManagePage() {
                 </>
               ) : (
                 <>
+                  {/* 신고완료(1) 건에만 인쇄 버튼 표시 */}
+                  {item.processStatus === 1 && (
+                    <button
+                      type="button"
+                      className="miniButton"
+                      onClick={() => setPrintItem(item)}
+                    >
+                      인쇄
+                    </button>
+                  )}
+                  {/* 완료 건 수정/삭제를 막으려면 아래 두 버튼에 disabled={item.processStatus === 1} 추가 */}
                   <button
                     type="button"
                     className="miniButton"
@@ -421,7 +462,7 @@ export function SeedReportReturnManagePage() {
         },
       },
     ],
-    [editingId, editForm]
+    [editingId, editForm, loadList]
   );
 
   return (
@@ -453,6 +494,12 @@ export function SeedReportReturnManagePage() {
           )}
         </div>
       </Panel>
+
+      <SeedReturnPrintModal
+        isOpen={printItem !== null}
+        onClose={() => setPrintItem(null)}
+        items={printItems}
+      />
     </section>
   );
 }
