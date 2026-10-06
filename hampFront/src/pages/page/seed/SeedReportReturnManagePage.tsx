@@ -28,6 +28,17 @@ export function SeedReportReturnManagePage() {
   const [itemOptions, setItemOptions] = useState<ItemOptionResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+
+  const [pendingList, setPendingList] = useState<SeedGoodsReceiptReturnItemResponse[]>([]);
+  const [pendingTotalElements, setPendingTotalElements] = useState(0);
+  const [pendingPage, setPendingPage] = useState(0);
+  const [pendingTotalPages, setPendingTotalPages] = useState(0);
+
+  const completedList = useMemo(
+    () => dataList.filter((item) => item.processStatus === 1),
+    [dataList]
+  );
+
   const [isLoading, setIsLoading] = useState(false);
 
   const [page, setPage] = useState(0);
@@ -120,28 +131,25 @@ export function SeedReportReturnManagePage() {
     return sorting.map((sort) => `${sort.id},${sort.desc ? 'desc' : 'asc'}`);
   }, [sorting]);
 
-  const loadList = useCallback(async () => {
+  const loadCompletedList = useCallback(async () => {
     setIsLoading(true);
+
     try {
-      const params: Record<string, any> = {
-        page,
-        size: 10,
-      };
-
-      if (searchFilters.itemCode) {
-        params.itemCode = searchFilters.itemCode;
-      }
-
       if (searchFilters.processStatusKeyword === '__INVALID__') {
         setDataList([]);
         setTotalElements(0);
         setTotalPages(0);
-        setIsLoading(false);
         return;
       }
 
-      if (searchFilters.processStatus !== '') {
-        params.processStatus = Number(searchFilters.processStatus);
+      const params: Record<string, any> = {
+        page,
+        size: 10,
+        processStatus: 1,
+      };
+
+      if (searchFilters.itemCode) {
+        params.itemCode = searchFilters.itemCode;
       }
 
       if (sortParams.length > 0) {
@@ -155,19 +163,63 @@ export function SeedReportReturnManagePage() {
       setTotalElements(pageData?.totalElements ?? 0);
       setTotalPages(pageData?.totalPages ?? 0);
     } catch (error) {
-      console.error('씨드 신고반납 목록 조회 실패:', error);
+      console.error('씨드 신고완료 목록 조회 실패:', error);
       window.alert('데이터를 불러오는 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }
-  }, [page, searchFilters, sortParams]);
+  }, [page, searchFilters.itemCode, searchFilters.processStatusKeyword, sortParams]);
+
+  const loadPendingList = useCallback(async () => {
+    try {
+      if (searchFilters.processStatusKeyword === '__INVALID__') {
+        setPendingList([]);
+        setPendingTotalElements(0);
+        setPendingTotalPages(0);
+        return;
+      }
+      const params: Record<string, any> = {
+        page: pendingPage,
+        size: 3,
+        processStatus: 0,
+      };
+
+      if (searchFilters.itemCode) {
+        params.itemCode = searchFilters.itemCode;
+      }
+
+      if (sortParams.length > 0) {
+        params.sort = sortParams;
+      }
+
+      const response = await SeedGoodsReceiptReturnApi.getList(params);
+      const pageData = response.data;
+
+      const content = pageData?.content ?? [];
+
+      setPendingList((prev) =>
+        pendingPage === 0 ? content : [...prev, ...content]
+      );
+
+      setPendingTotalElements(pageData?.totalElements ?? 0);
+      setPendingTotalPages(pageData?.totalPages ?? 0);
+    } catch (error) {
+      console.error('씨드 신고대기 목록 조회 실패:', error);
+      window.alert('데이터를 불러오는 중 오류가 발생했습니다.');
+    }
+  }, [pendingPage, searchFilters.itemCode, searchFilters.processStatusKeyword, sortParams]);
 
   useEffect(() => {
-    loadList();
-  }, [loadList]);
+    loadCompletedList();
+  }, [loadCompletedList]);
+
+  useEffect(() => {
+    loadPendingList();
+  }, [loadPendingList]);
 
   const handleSearch = () => {
     setPage(0);
+    setPendingPage(0);
 
     const itemCode =
       itemCodeInputRef.current?.value.trim() ||
@@ -220,6 +272,7 @@ export function SeedReportReturnManagePage() {
     if (processStatusRef.current) processStatusRef.current.value = '';
 
     setPage(0);
+    setPendingPage(0);
 
     setSearchFilters({
       itemCode: '',
@@ -308,7 +361,8 @@ export function SeedReportReturnManagePage() {
       setEditingId(null);
       setEditForm({});
 
-      loadList();
+      await loadCompletedList();
+      await loadPendingList();
     } catch (error) {
       console.error('씨드 신고반납 수정 실패:', error);
       window.alert('수정에 실패했습니다.');
@@ -328,7 +382,8 @@ export function SeedReportReturnManagePage() {
         reportDate: item.reportDate,
       });
       window.alert('승인 처리되었습니다.');
-      loadList();
+      await loadCompletedList();
+      await loadPendingList();
     } catch (error) {
       console.error('씨드 신고반납 승인 실패:', error);
       window.alert('승인 처리에 실패했습니다.');
@@ -347,7 +402,8 @@ export function SeedReportReturnManagePage() {
       delete editHullQuantitiesRef.current[item.returnId];
 
       window.alert('성공적으로 삭제되었습니다.');
-      loadList();
+      await loadCompletedList();
+      await loadPendingList();
     } catch (error) {
       console.error('씨드 신고반납 삭제 실패:', error);
       window.alert('삭제에 실패했습니다.');
@@ -358,14 +414,13 @@ export function SeedReportReturnManagePage() {
     () => [
       { accessorKey: 'returnId', header: '신고ID' },
       {
-        accessorKey: 'itemCode',
-        header: '품목',
+        accessorKey: 'receiptBarcode',
+        header: '입고라벨',
         cell: ({ row }) => {
-          const { itemCode, itemNm } = row.original;
+          const { receiptBarcode } = row.original;
           return (
             <div className="itemCell">
-              <span className="itemCell__name">{itemNm ?? '-'}</span>
-              <span className="itemCell__code">({itemCode ?? '-'})</span>
+              <span className="itemCell__barcode">{receiptBarcode ?? '-'}</span>
             </div>
           );
         },
@@ -541,38 +596,390 @@ export function SeedReportReturnManagePage() {
         },
       },
     ],
-    [editingId, editForm, loadList]
+    [editingId, editForm]
+  );
+
+  const completedColumns: ColumnDef<SeedGoodsReceiptReturnItemResponse>[] = useMemo(
+    () => [
+      {
+        accessorKey: 'receiptBarcode',
+        header: '입고 라벨',
+        cell: ({ row }) => {
+          const { receiptBarcode } = row.original;
+
+          return (
+            <div className="itemCell">
+              <span className="itemCell__barcode">
+                {receiptBarcode ?? '-'}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: 'returnQty',
+        header: '신고수량',
+        cell: ({ row }) => row.original.returnQty,
+      },
+      {
+        accessorKey: 'hullQty',
+        header: '껍질수량',
+        cell: ({ row }) => row.original.hullQty,
+      },
+      {
+        accessorKey: 'reportDate',
+        header: '신고일자',
+        cell: ({ row }) => row.original.reportDate ?? '-',
+      },
+      {
+        accessorKey: 'returnDueDate',
+        header: '반납예정일',
+        cell: ({ row }) => row.original.returnDueDate ?? '-',
+      },
+      {
+        accessorKey: 'processStatus',
+        header: '상태',
+        cell: () => (
+          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-600" />
+            신고완료
+          </span>
+        ),
+      },
+      {
+        id: 'actions',
+        header: '관리',
+        cell: ({ row }) => {
+          const item = row.original;
+
+          return (
+            <div className="rowActions">
+              <button
+                type="button"
+                className="miniButton"
+                onClick={() => setPrintItem(item)}
+              >
+                인쇄
+              </button>
+
+              <button
+                type="button"
+                className="miniButton"
+                onClick={() => handleStartEdit(item)}
+              >
+                수정
+              </button>
+
+              <button
+                type="button"
+                className="miniButton danger"
+                onClick={() => handleDelete(item)}
+              >
+                삭제
+              </button>
+            </div>
+          );
+        },
+      },
+    ],
+    [editingId]
   );
 
   return (
     <section className="screenStack">
-      <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
+      <SearchBand
+        fields={searchFields}
+        onSearch={handleSearch}
+        onReset={handleReset}
+      />
 
-      <Panel title="씨드 신고반납 관리 목록">
-        <div className="relative min-h-[300px]">
-          {isLoading ? (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Spinner />
-            </div>
-          ) : (
-            <>
-              <CusTable
-                data={dataList}
-                columns={columns}
-                sorting={sorting}
-                onSortingChange={setSorting}
-                noDataMessage="조회된 씨드 신고반납 데이터가 없습니다."
-              />
+      <div className="relative min-h-[300px]">
+        {isLoading ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Spinner />
+          </div>
+        ) : (
+          <div className="space-y-8">
+
+            {/* =========================
+              신고대기
+          ========================= */}
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-2.5 h-2.5 rounded-full bg-orange-500" />
+
+                <h2 className="text-lg font-semibold text-gray-900">
+                  신고대기 · 승인 필요
+                </h2>
+
+                <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-full bg-gray-100 text-sm font-medium text-gray-700">
+                  {pendingTotalElements}
+                </span>
+              </div>
+
+              {pendingList.length === 0 ? (
+                <div className="rounded-xl border border-gray-200 bg-white py-10 text-center text-sm text-gray-500">
+                  승인 대기 중인 신고가 없습니다.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {pendingList.map((item) => {
+                    const isEditing = editingId === item.returnId;
+
+                    return (
+                      <div
+                        key={item.returnId}
+                        className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+                      >
+                        {/* 왼쪽 강조선 */}
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-500" />
+
+                        <div className="p-5">
+
+                          {/* 입고 라벨 / 입고일시 */}
+                          <div className="mb-4">
+                            <div className="text-sm font-semibold text-blue-700">
+                              {item.receiptBarcode ?? '-'}
+                            </div>
+
+                            <div className="mt-1 text-xs text-gray-500">
+                              입고 {item.receivedAt ?? '-'}
+                            </div>
+                          </div>
+
+                          {isEditing ? (
+                            <>
+                              {/* 수정 모드 */}
+                              <div className="grid grid-cols-2 gap-3 mb-4">
+
+                                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                                  <div className="text-xs text-gray-500 mb-1">
+                                    신고수량
+                                  </div>
+
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm"
+                                    defaultValue={
+                                      editQuantitiesRef.current[item.returnId] ??
+                                      item.returnQty
+                                    }
+                                    onChange={(e) => {
+                                      editQuantitiesRef.current[item.returnId] =
+                                        e.target.value === ''
+                                          ? ''
+                                          : Number(e.target.value);
+                                    }}
+                                  />
+                                </div>
+
+                                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                                  <div className="text-xs text-gray-500 mb-1">
+                                    껍질수량
+                                  </div>
+
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={
+                                      editQuantitiesRef.current[item.returnId] ??
+                                      item.returnQty
+                                    }
+                                    className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm"
+                                    defaultValue={
+                                      editHullQuantitiesRef.current[item.returnId] ??
+                                      item.hullQty
+                                    }
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+
+                                      editHullQuantitiesRef.current[item.returnId] =
+                                        value === '' ? '' : Number(value);
+                                    }}
+                                  />
+                                </div>
+
+                                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                                  <div className="text-xs text-gray-500 mb-1">
+                                    신고일자
+                                  </div>
+
+                                  <div className="text-sm text-gray-800">
+                                    {item.reportDate ?? '-'}
+                                  </div>
+                                </div>
+
+                                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                                  <div className="text-xs text-gray-500 mb-1">
+                                    반납예정일
+                                  </div>
+
+                                  <input
+                                    type="date"
+                                    className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm"
+                                    value={editForm.returnDueDate ?? ''}
+                                    onChange={(e) =>
+                                      setEditForm({
+                                        ...editForm,
+                                        returnDueDate: e.target.value,
+                                      })
+                                    }
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  className="flex-1 rounded-lg bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                                  onClick={() => handleSaveEdit(item)}
+                                >
+                                  저장
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                                  onClick={() => handleCancelEdit(item.returnId)}
+                                >
+                                  취소
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              {/* 기본 표시 */}
+                              <div className="grid grid-cols-4 overflow-hidden rounded-lg border border-gray-200 bg-white mb-4">
+
+                                <div className="px-2 py-3 text-center border-r border-gray-200">
+                                  <div className="text-lg font-semibold text-gray-900">
+                                    {item.returnQty}
+                                  </div>
+                                  <div className="mt-1 text-[11px] text-gray-500">
+                                    신고수량
+                                  </div>
+                                </div>
+
+                                <div className="px-2 py-3 text-center border-r border-gray-200">
+                                  <div className="text-lg font-semibold text-gray-900">
+                                    {item.hullQty}
+                                  </div>
+                                  <div className="mt-1 text-[11px] text-gray-500">
+                                    껍질수량
+                                  </div>
+                                </div>
+
+                                <div className="px-2 py-3 text-center border-r border-gray-200">
+                                  <div className="text-sm font-semibold text-gray-900">
+                                    {item.reportDate
+                                      ? item.reportDate.slice(5)
+                                      : '-'}
+                                  </div>
+                                  <div className="mt-1 text-[11px] text-gray-500">
+                                    신고일자
+                                  </div>
+                                </div>
+
+                                <div className="px-2 py-3 text-center">
+                                  <div className="text-sm font-semibold text-gray-900">
+                                    {item.returnDueDate
+                                      ? item.returnDueDate.slice(5)
+                                      : '-'}
+                                  </div>
+                                  <div className="mt-1 text-[11px] text-gray-500">
+                                    반납예정
+                                  </div>
+                                </div>
+
+                              </div>
+
+                              {/* 버튼 */}
+                              <div className="flex gap-2">
+
+                                <button
+                                  type="button"
+                                  className="flex-1 rounded-lg bg-green-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-green-700"
+                                  onClick={() => handleApprove(item)}
+                                >
+                                  ✓ 승인 처리
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="rounded-lg bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                                  onClick={() => handleStartEdit(item)}
+                                >
+                                  수정
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100"
+                                  onClick={() => handleDelete(item)}
+                                >
+                                  삭제
+                                </button>
+
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {pendingPage < pendingTotalPages - 1 && (
+                    <div className="flex justify-center mt-6">
+                      <button
+                        type="button"
+                        onClick={() => setPendingPage((prev) => prev + 1)}
+                        className="rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        더보기
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+
+            {/* =========================
+              신고완료
+          ========================= */}
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-2.5 h-2.5 rounded-full bg-green-600" />
+
+                <h2 className="text-lg font-semibold text-gray-900">
+                  신고완료
+                </h2>
+
+                <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-full bg-gray-100 text-sm font-medium text-gray-700">
+                  {totalElements}
+                </span>
+              </div>
+
+              <div className="relative">
+                <CusTable
+                  data={completedList}
+                  columns={completedColumns}
+                  sorting={sorting}
+                  onSortingChange={setSorting}
+                  noDataMessage="신고완료된 데이터가 없습니다."
+                />
+              </div>
+
               <CusPagination
                 page={page}
                 totalPages={totalPages}
                 totalCount={totalElements}
                 onPageChange={handlePageChange}
               />
-            </>
-          )}
-        </div>
-      </Panel>
+            </section>
+
+          </div>
+        )}
+      </div>
 
       <SeedReturnPrintModal
         isOpen={printItem !== null}
