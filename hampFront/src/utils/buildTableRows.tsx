@@ -13,69 +13,30 @@ const BADGE_COLUMNS = new Set([
   "완료상태",
   "출고여부",
   "판정기준",
+  "처리상태",
 ]);
 
-const toneColorMap: Record<StatusTone, string> = {
-  good: "#10b981",
-  warn: "#f59e0b",
-  danger: "#f87171",
-  info: "#60a5fa",
-  muted: "#94a3b8",
-  limits: "#a78bfa",
-};
-
-const DEFECT_TYPE_COLORS: Record<string, string> = {
-  이물: "#10b981",
-  중량미달: "#ef4444",
-  파손: "#ff8c3a",
-  색상불량: "#8b5cf6",
-  포장불량: "#eab308",
-  기타: "#64748b",
-};
-
-const 처리구분_COLORS: Record<string, string> = {
-  입고: "#34d399",
-  출고: "#fb7185",
-  조정: "#94a3b8",
-};
-
-const 처리상태_COLORS: Record<string, string> = {
-  접수: "#818cf8",
-  신고접수: "#818cf8",
-  원인분석중: "#e879f9",
-  미처리: "#e879f9",
-  처리중: "#e879f9",
-  반납대기: "#e879f9",
-  조치완료: "#22d3ee", 
-  반납완료: "#22d3ee",
-  폐기: "#94a3b8",
-  취소: "#94a3b8",
-};
-
-const 조치내용_COLORS: Record<string, string> = {
-  "센서 교체 완료": "#34d399",
-  "현장 확인 중": "#fbbf24",
-  부품교체: "#38bdf8",
-  캘리브레이션: "#c084fc",
-  윤활작업: "#fb923c",
-};
-
-const 출입목적_COLORS: Record<string, string> = {
-  정기점검: "#38bdf8",
-  원료납품: "#34d399",
-  품질확인: "#c084fc",
-  출하: "#fb923c",
-};
-
-const VALUE_COLOR_MAP: Record<string, Record<string, string>> = {
-  불량유형: DEFECT_TYPE_COLORS,
-  처리구분: 처리구분_COLORS,
-  처리상태: 처리상태_COLORS,
-  조치내용: 조치내용_COLORS,
-  출입목적: 출입목적_COLORS,
-};
-
 const ACTION_VALUES = new Set(["수정/삭제", "상세", "처리", "등록/수정"]);
+
+/** 컬럼별 값 → 톤. 지정하지 않은 값은 일반 본문색으로 출력 */
+const VALUE_TONE_MAP: Record<string, Record<string, StatusTone>> = {
+  출입목적: {
+    정기점검: "info",
+  },
+  불량유형: {
+    파손: "danger",
+    중량미달: "warn",
+    이물: "warn",
+  },
+  처리구분: {
+    입고: "good",
+    출고: "info",
+  },
+  조치내용: {
+    "센서 교체 완료": "good",
+    "현장 확인 중": "warn",
+  },
+};
 
 export function buildTableRows(
   rows: MesRow[],
@@ -98,20 +59,17 @@ export function buildTableRows(
           return <Badge tone={getStatusTone(value)}>{value}</Badge>;
         }
 
-        // 값 → 색상 직접 매핑 컬럼 (불량유형, 처리구분, 처리상태, 조치내용, 출입목적)
-        const colorMap = VALUE_COLOR_MAP[colName];
-        if (colorMap) {
-          const color = colorMap[value];
-          if (color) {
-            return <span style={{ color, fontWeight: 600 }}>{value}</span>;
-          }
+        // 값별 톤 텍스트 (매핑된 값만 색, 나머지는 본문색)
+        const mappedTone = VALUE_TONE_MAP[colName]?.[value];
+        if (mappedTone) {
+          return <span className={`valueText ${mappedTone}`}>{value}</span>;
         }
 
         // 고장내용 — tone 기반 텍스트 컬러
         if (colName === "고장내용") {
           const tone = getStatusTone(value);
           if (tone !== "muted") {
-            return <span style={{ color: toneColorMap[tone], fontWeight: 600 }}>{value}</span>;
+            return <span className={`valueText ${tone}`}>{value}</span>;
           }
         }
 
@@ -142,6 +100,7 @@ export function buildTableRows(
     ];
   });
 }
+
 export function buildOrderTableRows(
   rows: any[],
   columnCount: number,
@@ -150,6 +109,7 @@ export function buildOrderTableRows(
     return Array.from({ length: columnCount }, (_, i) => row[`c${i}`] ?? "");
   });
 }
+
 //DeliveryTableRows
 export function buildDeliveryTableRows(rows: any[], columnCount: number, _columns: string[]) {
   return rows.map((row) => {
