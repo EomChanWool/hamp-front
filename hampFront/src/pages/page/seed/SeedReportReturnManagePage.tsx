@@ -14,6 +14,7 @@ import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
 import { SeedReturnPrintModal } from '@/components/modal/SeedReturnPrintModal';
 import '@pages/page/seed/Seed.css';
 import { Badge } from '@/components/common/Badge';
+import { formatDateTime } from '@/utils/common';
 
 const PENDING_PREVIEW_COUNT = 3;
 
@@ -699,7 +700,7 @@ export function SeedReportReturnManagePage() {
                                   </div>
 
                                   <div className="seedPendingCard__receivedAt">
-                                    입고 {item.receivedAt ?? '-'}
+                                    입고 {item.receivedAt ? formatDateTime(item.receivedAt) : '-'}
                                   </div>
                                 </div>
 
