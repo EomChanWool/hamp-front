@@ -610,7 +610,7 @@ export function SeedReportReturnManagePage() {
         },
       },
     ],
-    [editingId]
+    [editingId, editForm.returnDueDate]
   );
 
 
