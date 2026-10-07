@@ -1266,6 +1266,10 @@ textarea.tableInput {
   margin-left: auto;
 }
 
+.searchFilterPanel > .searchDateGroup:first-child {
+  margin-left: 0;
+}
+
 @keyframes searchPanelIn {
   from {
     opacity: 0;
