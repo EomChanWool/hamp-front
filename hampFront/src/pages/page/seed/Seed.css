@@ -1112,7 +1112,7 @@
 }
 
 .seedPendingStat__value--date {
-  font-size: 14px;
+  font-size: 18px;
 }
 
 .seedPendingStat__label {
@@ -1210,7 +1210,7 @@
 
 .seedPendingButton--save {
   flex: 1;
-  background: #16a34a;
+  background: #0f8a52;
   color: #fff;
   font-weight: 600;
 }
