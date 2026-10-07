@@ -17,19 +17,19 @@ interface InpiDefect {
   status: string
 }
 
-const DEFECT_TYPE_COLORS: Record<string, string> = {
-  이물: '#10b981',
-  중량미달: '#ef4444',
-  파손: '#ff8c3a',
-  색상불량: '#8b5cf6',
-}
+const TYPE_PURPOSE_CLASS: Record<string, string> = {
+  이물: "purpose-green",
+  중량미달: "purpose-red",
+  파손: "purpose-gray",
+  색상불량: "purpose-purple",
+};
 
-const STATUS_COLORS: Record<string, string> = {
-  접수: '#818cf8',
-  원인분석중: '#e879f9',
-  조치완료: '#22d3ee',
-  폐기: '#94a3b8',
-}
+const STATUS_PURPOSE_CLASS: Record<string, string> = {
+  접수: "purpose-purple",
+  원인분석중: "purpose-orange",
+  조치완료: "purpose-blue",
+  폐기: "purpose-gray",
+};
 
 const dummyDefects: InpiDefect[] = [
   { defectNo: 'DF-I-5100', occurredAt: '2026-06-22 10:20', itemName: '인피 원면', lotNumber: 'LOT-7000', process: '세척', defectType: '이물', quantity: '4 kg', status: '접수' },
@@ -118,8 +118,7 @@ export function InpiDefectManagePage() {
         header: '불량유형',
         cell: ({ getValue }) => {
           const value = getValue() as string
-          const color = DEFECT_TYPE_COLORS[value]
-          return color ? <span style={{ color, fontWeight: 600 }}>{value}</span> : value
+          return <span className={`purposeText ${TYPE_PURPOSE_CLASS[value] ?? ""}`}>{value}</span>;
         },
       },
       { accessorKey: 'quantity', header: '수량' },
@@ -128,8 +127,7 @@ export function InpiDefectManagePage() {
         header: '처리상태',
         cell: ({ getValue }) => {
           const value = getValue() as string
-          const color = STATUS_COLORS[value]
-          return color ? <span style={{ color, fontWeight: 600 }}>{value}</span> : value
+          return <span className={`purposeText ${STATUS_PURPOSE_CLASS[value] ?? ""}`}>{value}</span>;
         },
       },
       {

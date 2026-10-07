@@ -31,11 +31,11 @@ const STATUS_TONE: Record<RepairRow['completeStatus'], 'good' | 'warn'> = {
   진행중: 'warn',
 }
 
-const ACTION_COLORS: Record<string, string> = {
-  부품교체: '#38bdf8',
-  캘리브레이션: '#c084fc',
-  윤활작업: '#fb923c',
-}
+const ACTION_PURPOSE_CLASS: Record<string, string> = {
+  부품교체: "purpose-blue",
+  캘리브레이션: "purpose-purple",
+  윤활작업: "purpose-orange",
+};
 
 const PAGE_SIZE = 10
 
@@ -111,8 +111,8 @@ export function EquipmentRepairHistoryPage() {
         header: '조치내용',
         cell: ({ getValue }) => {
           const value = getValue() as string
-          const color = ACTION_COLORS[value]
-          return color ? <span style={{ color, fontWeight: 600 }}>{value}</span> : value
+          return <span className={`purposeText ${ACTION_PURPOSE_CLASS[value] ?? ""}`}>{value}</span>;
+
         },
       },
       { accessorKey: 'manager', header: '수리담당자' },
