@@ -334,7 +334,8 @@
   display: grid;
   grid-template-columns: 1.6fr 0.8fr 0.9fr 0.9fr;
   gap: 8px;
-  padding: 0 11px 10px; /* 행 테두리 1px만큼 보정해서 컬럼 정렬 유지 */
+  padding: 0 11px 10px;
+  /* 행 테두리 1px만큼 보정해서 컬럼 정렬 유지 */
   font-size: 12px;
   color: var(--text-muted, #94a3b8);
   border-bottom: 1px solid var(--border, #e2e8f0);
@@ -869,5 +870,555 @@
   .seedTrendControls .seedTabGroup {
     flex: 1 1 100%;
     justify-content: center;
+  }
+}
+
+/* =========================================================================
+   신고반납관리 — 요약칩 (품목 / 신고대기 / 신고완료)
+   ========================================================================= */
+.seedSummaryChips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.seedSummaryChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  box-sizing: border-box;
+  padding: 0 16px;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.seedSummaryChip__label {
+  font-size: 13px;
+  color: var(--text-body, #475569);
+}
+
+/* 품목 칩은 라벨만 있고 조금 더 진하게 */
+.seedSummaryChip--item .seedSummaryChip__label {
+  color: var(--text-heading, #0f172a);
+  font-weight: 500;
+}
+
+.seedSummaryChip__count {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* 신고대기 = 주황 / 신고완료 = 초록 (페이지 내 섹션 점 색상과 동일) */
+.seedSummaryChip__count.is-pending {
+  color: #f97316;
+}
+
+.seedSummaryChip__count.is-done {
+  color: #16a34a;
+}
+
+[data-theme="dark"] .seedSummaryChip__count.is-pending {
+  color: #fb923c;
+}
+
+[data-theme="dark"] .seedSummaryChip__count.is-done {
+  color: #4ade80;
+}
+
+/* 폰: 품목 칩은 한 줄 전체, 긴 품목명은 줄바꿈 허용 */
+@container content (max-width: 480px) {
+  .seedSummaryChip--item {
+    flex: 1 1 100%;
+    height: auto;
+    min-height: 44px;
+    padding: 10px 16px;
+    white-space: normal;
+  }
+}
+
+/* =========================================================================
+   신고대기 카드 — "+N건 더보기 ▾" / "접기 ▴" 토글 버튼 (알약형, 가운데 정렬)
+   ========================================================================= */
+.seedPendingToggleWrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.seedPendingToggle {
+  height: 36px;
+  padding: 0 18px;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 999px;
+  background: var(--bg-card, #ffffff);
+  color: #4f46e5;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.seedPendingToggle:hover {
+  background: var(--bg-subtle, #f8fafc);
+  border-color: var(--border-strong, #cbd5e1);
+}
+
+.seedPendingToggle:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+[data-theme="dark"] .seedPendingToggle {
+  color: #a5b4fc;
+}
+
+/* ========================================
+   씨드 신고반납 관리
+======================================== */
+
+.seedReportSections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.seedReportSection {
+  width: 100%;
+}
+
+.seedSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.seedSectionHeader__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.seedSectionHeader__dot--pending {
+  background: #f97316;
+}
+
+.seedSectionHeader__dot--done {
+  background: #16a34a;
+}
+
+.seedSectionHeader__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.seedSectionHeader__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* 신고대기 카드 */
+
+.seedPendingGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.seedPendingCard {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.seedPendingCard__accent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #f97316;
+}
+
+.seedPendingCard__body {
+  padding: 20px;
+}
+
+.seedPendingCard__receipt {
+  margin-bottom: 16px;
+}
+
+.seedPendingCard__barcode {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d4ed8;
+}
+
+.seedPendingCard__receivedAt {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* 수량/날짜 영역 */
+
+.seedPendingStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.seedPendingStat {
+  padding: 12px 8px;
+  text-align: center;
+  border-right: 1px solid #e5e7eb;
+}
+
+.seedPendingStat--last {
+  border-right: 0;
+}
+
+.seedPendingStat__value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.seedPendingStat__value--date {
+  font-size: 14px;
+}
+
+.seedPendingStat__label {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* 버튼 */
+
+.seedPendingActions {
+  display: flex;
+  gap: 8px;
+}
+
+.seedPendingButton {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.seedPendingButton--approve {
+  flex: 1;
+  background: #16a34a;
+  color: #fff;
+  font-weight: 600;
+}
+
+.seedPendingButton--approve:hover {
+  background: #15803d;
+}
+
+.seedPendingButton--edit {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.seedPendingButton--edit:hover {
+  background: #dbeafe;
+}
+
+.seedPendingButton--delete {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.seedPendingButton--delete:hover {
+  background: #fee2e2;
+}
+
+/* 수정 */
+
+.seedPendingEditGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.seedPendingField {
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.seedPendingField__label {
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.seedPendingField__value {
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.seedPendingInput {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  padding: 6px 8px;
+  font-size: 14px;
+}
+
+.seedPendingEditActions {
+  display: flex;
+  gap: 8px;
+}
+
+.seedPendingButton--save {
+  flex: 1;
+  background: #16a34a;
+  color: #fff;
+  font-weight: 600;
+}
+
+.seedPendingButton--save:hover {
+  background: #15803d;
+}
+
+.seedPendingButton--cancel {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.seedPendingButton--cancel:hover {
+  background: #e5e7eb;
+}
+
+/* 더보기 */
+
+.seedPendingToggleWrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.seedPendingToggle {
+  border: 0;
+  background: transparent;
+  color: #6b7280;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.seedPendingToggle:hover {
+  color: #374151;
+}
+
+/* 빈 상태 */
+
+.seedEmptyState {
+  padding: 40px 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* 로딩 */
+
+.seedLoading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 완료 테이블 */
+
+.seedCompletedTable {
+  position: relative;
+}
+
+/* ========================================
+   씨드 신고반납 관리 - Dark Mode
+======================================== */
+
+[data-theme="dark"] .seedSectionHeader__title {
+  color: #f3f4f6;
+}
+
+[data-theme="dark"] .seedSectionHeader__count {
+  background: #2a2d36;
+  border: 1px solid #3a3e49;
+  color: #e5e7eb;
+}
+
+/* ========================================
+   신고대기 카드
+======================================== */
+
+[data-theme="dark"] .seedPendingCard {
+  background: #20232c;
+  border-color: #383c47;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .seedPendingCard__barcode {
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .seedPendingCard__receivedAt {
+  color: #9ca3af;
+}
+
+/* ========================================
+   카드 내부 통계
+======================================== */
+
+[data-theme="dark"] .seedPendingStats {
+  background: #252832;
+  border-color: #3a3e49;
+}
+
+[data-theme="dark"] .seedPendingStat {
+  border-right-color: #3a3e49;
+}
+
+[data-theme="dark"] .seedPendingStat__value {
+  color: #f3f4f6;
+}
+
+[data-theme="dark"] .seedPendingStat__label {
+  color: #9ca3af;
+}
+
+/* ========================================
+   신고대기 없음
+======================================== */
+
+[data-theme="dark"] .seedEmptyState {
+  background: #20232c;
+  border-color: #383c47;
+  color: #9ca3af;
+}
+
+/* ========================================
+   신고대기 수정 모드
+======================================== */
+
+[data-theme="dark"] .seedPendingField {
+  background: #252832;
+  border-color: #3a3e49;
+}
+
+[data-theme="dark"] .seedPendingField__label {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .seedPendingField__value {
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .seedPendingInput {
+  background: #1b1e26;
+  border-color: #454a57;
+  color: #f3f4f6;
+}
+
+[data-theme="dark"] .seedPendingInput:focus {
+  border-color: #60a5fa;
+  outline: none;
+}
+
+/* ========================================
+   더보기 / 접기
+======================================== */
+
+[data-theme="dark"] .seedPendingToggle {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .seedPendingToggle:hover {
+  color: #e5e7eb;
+}
+
+/* ========================================
+   모바일
+======================================== */
+
+@media (max-width: 767px) {
+  [data-theme="dark"] .seedPendingStat:nth-child(-n + 2) {
+    border-bottom-color: #3a3e49;
+  }
+}
+
+/* 반응형 */
+
+@media (max-width: 1199px) {
+  .seedPendingGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .seedPendingGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .seedPendingStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .seedPendingStat:nth-child(2) {
+    border-right: 0;
+  }
+
+  .seedPendingStat:nth-child(-n + 2) {
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .seedPendingActions {
+    flex-wrap: wrap;
+  }
+
+  .seedPendingButton--approve {
+    flex-basis: 100%;
   }
 }
