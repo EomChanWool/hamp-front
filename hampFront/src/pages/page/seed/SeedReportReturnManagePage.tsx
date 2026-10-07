@@ -12,16 +12,9 @@ import {
 } from '@/api/seed/SeedGoodsReceiptReturn';
 import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
 import { SeedReturnPrintModal } from '@/components/modal/SeedReturnPrintModal';
+import '@pages/page/seed/Seed.css';
 
-const PROCESS_STATUS_MAP: Record<number, string> = {
-  0: '신고대기',
-  1: '신고완료',
-};
-
-const PROCESS_STATUS_COLORS: Record<number, string> = {
-  0: '#818cf8',
-  1: '#e879f9',
-};
+const PENDING_PREVIEW_COUNT = 3;
 
 export function SeedReportReturnManagePage() {
   const [dataList, setDataList] = useState<SeedGoodsReceiptReturnItemResponse[]>([]);
@@ -29,15 +22,17 @@ export function SeedReportReturnManagePage() {
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
+  // "+N건 더보기 / 접기" 동작
   const [pendingList, setPendingList] = useState<SeedGoodsReceiptReturnItemResponse[]>([]);
   const [pendingTotalElements, setPendingTotalElements] = useState(0);
-  const [pendingPage, setPendingPage] = useState(0);
-  const [pendingTotalPages, setPendingTotalPages] = useState(0);
+  const [pendingExpanded, setPendingExpanded] = useState(false);
+  const pendingTotalRef = useRef(0);
 
   const completedList = useMemo(
     () => dataList.filter((item) => item.processStatus === 1),
     [dataList]
   );
+
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -127,6 +122,19 @@ export function SeedReportReturnManagePage() {
     [itemOptions]
   );
 
+  //  요약칩 '품목' 라벨
+  //  - 검색조건에 품목이 선택돼 있으면 "품목 · 품목명 (코드)" 로 표시
+  //  - 선택 안 했으면 "품목 · 전체"
+  //  - 품목 옵션에서 못 찾는 경우(직접 입력한 코드 등)는 코드만 표시
+  const itemChipLabel = useMemo(() => {
+    if (!searchFilters.itemCode) return '품목 · 전체';
+
+    const found = itemOptions.find((opt) => opt.itemCode === searchFilters.itemCode);
+    return found
+      ? `품목 · ${found.itemNm} (${found.itemCode})`
+      : `품목 · ${searchFilters.itemCode}`;
+  }, [searchFilters.itemCode, itemOptions]);
+
   const sortParams = useMemo(() => {
     return sorting.map((sort) => `${sort.id},${sort.desc ? 'desc' : 'asc'}`);
   }, [sorting]);
@@ -170,17 +178,22 @@ export function SeedReportReturnManagePage() {
     }
   }, [page, searchFilters.itemCode, searchFilters.processStatusKeyword, sortParams]);
 
+  //  신고대기 조회
+  //  - 접힘: 앞 3건만 조회
+  //  - 펼침: 전체 건수만큼 한 번에 조회 (page 는 항상 0)
   const loadPendingList = useCallback(async () => {
     try {
       if (searchFilters.processStatusKeyword === '__INVALID__') {
         setPendingList([]);
         setPendingTotalElements(0);
-        setPendingTotalPages(0);
+        pendingTotalRef.current = 0;
         return;
       }
       const params: Record<string, any> = {
-        page: pendingPage,
-        size: 3,
+        page: 0,
+        size: pendingExpanded
+          ? Math.max(pendingTotalRef.current, PENDING_PREVIEW_COUNT)
+          : PENDING_PREVIEW_COUNT,
         processStatus: 0,
       };
 
@@ -195,19 +208,24 @@ export function SeedReportReturnManagePage() {
       const response = await SeedGoodsReceiptReturnApi.getList(params);
       const pageData = response.data;
 
-      const content = pageData?.content ?? [];
+      const total = pageData?.totalElements ?? 0;
 
-      setPendingList((prev) =>
-        pendingPage === 0 ? content : [...prev, ...content]
-      );
-
-      setPendingTotalElements(pageData?.totalElements ?? 0);
-      setPendingTotalPages(pageData?.totalPages ?? 0);
+      setPendingList(pageData?.content ?? []);
+      pendingTotalRef.current = total;
+      setPendingTotalElements(total);
     } catch (error) {
       console.error('씨드 신고대기 목록 조회 실패:', error);
       window.alert('데이터를 불러오는 중 오류가 발생했습니다.');
     }
-  }, [pendingPage, searchFilters.itemCode, searchFilters.processStatusKeyword, sortParams]);
+  }, [pendingExpanded, searchFilters.itemCode, searchFilters.processStatusKeyword, sortParams]);
+
+  const visiblePendingList = useMemo(
+    () => (pendingExpanded ? pendingList : pendingList.slice(0, PENDING_PREVIEW_COUNT)),
+    [pendingExpanded, pendingList]
+  );
+
+  // 접힘 상태에서 "+N건 더보기" 에 표시할 숨은 건수
+  const pendingHiddenCount = Math.max(pendingTotalElements - PENDING_PREVIEW_COUNT, 0);
 
   useEffect(() => {
     loadCompletedList();
@@ -219,7 +237,7 @@ export function SeedReportReturnManagePage() {
 
   const handleSearch = () => {
     setPage(0);
-    setPendingPage(0);
+    setPendingExpanded(false);
 
     const itemCode =
       itemCodeInputRef.current?.value.trim() ||
@@ -272,7 +290,7 @@ export function SeedReportReturnManagePage() {
     if (processStatusRef.current) processStatusRef.current.value = '';
 
     setPage(0);
-    setPendingPage(0);
+    setPendingExpanded(false); // 초기화 시 신고대기는 접힘 상태로
 
     setSearchFilters({
       itemCode: '',
@@ -410,195 +428,6 @@ export function SeedReportReturnManagePage() {
     }
   };
 
-  const columns: ColumnDef<SeedGoodsReceiptReturnItemResponse>[] = useMemo(
-    () => [
-      { accessorKey: 'returnId', header: '신고ID' },
-      {
-        accessorKey: 'receiptBarcode',
-        header: '입고라벨',
-        cell: ({ row }) => {
-          const { receiptBarcode } = row.original;
-          return (
-            <div className="itemCell">
-              <span className="itemCell__barcode">{receiptBarcode ?? '-'}</span>
-            </div>
-          );
-        },
-      },
-      {
-        accessorKey: 'returnQty',
-        header: '수량',
-        cell: ({ row }) => {
-          const item = row.original;
-          const isEditing = editingId === item.returnId;
-
-          if (isEditing) {
-            return (
-              <input
-                type="number"
-                style={{ width: '80px' }}
-                className="w-24 border px-2 py-0.5 rounded text-sm"
-                defaultValue={editQuantitiesRef.current[item.returnId] ?? item.returnQty}
-                onChange={(e) => {
-                  editQuantitiesRef.current[item.returnId] = e.target.value === '' ? '' : Number(e.target.value);
-                }}
-              />
-            );
-          }
-          return item.returnQty;
-        },
-      },
-      {
-        accessorKey: 'hullQty',
-        header: '껍질수량',
-        cell: ({ row }) => {
-          const item = row.original;
-          const isEditing = editingId === item.returnId;
-
-          if (isEditing) {
-            return (
-              <input
-                type="number"
-                min={0}
-                max={editQuantitiesRef.current[item.returnId] ?? undefined}
-                style={{ width: '80px' }}
-                className="w-24 border px-2 py-0.5 rounded text-sm"
-                defaultValue={
-                  editHullQuantitiesRef.current[item.returnId] ?? item.hullQty
-                }
-                onChange={(e) => {
-                  const value = e.target.value;
-
-                  if (value === '') {
-                    editHullQuantitiesRef.current[item.returnId] = '';
-                    return;
-                  }
-
-                  editHullQuantitiesRef.current[item.returnId] = Number(value);
-                }}
-              />
-            );
-          }
-
-          return item.hullQty;
-        },
-      },
-      {
-        accessorKey: 'reportDate',
-        header: '신고일자',
-        cell: ({ row }) => row.original.reportDate,
-      },
-      {
-        accessorKey: 'returnDueDate',
-        header: '처리예정일',
-        cell: ({ row }) => {
-          const isEditing = editingId === row.original.returnId;
-          if (isEditing) {
-            return (
-              <input
-                type="date"
-                className="border px-2 py-0.5 rounded text-sm"
-                value={editForm.returnDueDate ?? ''}
-                onChange={(e) => setEditForm({ ...editForm, returnDueDate: e.target.value })}
-              />
-            );
-          }
-          return row.original.returnDueDate;
-        },
-      },
-      {
-        id: 'approve',
-        header: '승인',
-        cell: ({ row }) => {
-          const item = row.original;
-          if (item.processStatus !== 0) return '-';
-
-          return (
-            <button
-              type="button"
-              className="miniButton"
-              // 수정 중인 행은 승인 불가 (수정 저장/취소 후 승인하도록)
-              disabled={editingId === item.returnId}
-              onClick={() => handleApprove(item)}
-            >
-              승인
-            </button>
-          );
-        },
-      },
-      {
-        accessorKey: 'processStatus',
-        header: '처리상태',
-        cell: ({ row }) => {
-          const statusNum = row.original.processStatus;
-          const statusText = PROCESS_STATUS_MAP[statusNum] ?? statusNum;
-          const color = PROCESS_STATUS_COLORS[statusNum];
-          return color ? <span style={{ color, fontWeight: 600 }}>{statusText}</span> : statusText;
-        },
-      },
-
-      {
-        id: 'actions',
-        header: '관리',
-        cell: ({ row }) => {
-          const item = row.original;
-          const isEditing = editingId === item.returnId;
-          return (
-            <div className="rowActions">
-              {isEditing ? (
-                <>
-                  <button
-                    type="button"
-                    className="miniButton"
-                    onClick={() => handleSaveEdit(item)}
-                  >
-                    저장
-                  </button>
-                  <button
-                    type="button"
-                    className="miniButton danger"
-                    onClick={() => handleCancelEdit(item.returnId)}
-                  >
-                    취소
-                  </button>
-                </>
-              ) : (
-                <>
-                  {/* 신고완료(1) 건에만 인쇄 버튼 표시 */}
-                  {item.processStatus === 1 && (
-                    <button
-                      type="button"
-                      className="miniButton"
-                      onClick={() => setPrintItem(item)}
-                    >
-                      인쇄
-                    </button>
-                  )}
-                  {/* 완료 건 수정/삭제를 막으려면 아래 두 버튼에 disabled={item.processStatus === 1} 추가 */}
-                  <button
-                    type="button"
-                    className="miniButton"
-                    onClick={() => handleStartEdit(item)}
-                  >
-                    수정
-                  </button>
-                  <button
-                    type="button"
-                    className="miniButton danger"
-                    onClick={() => handleDelete(item)}
-                  >
-                    삭제
-                  </button>
-                </>
-              )}
-            </div>
-          );
-        },
-      },
-    ],
-    [editingId, editForm]
-  );
-
   const completedColumns: ColumnDef<SeedGoodsReceiptReturnItemResponse>[] = useMemo(
     () => [
       {
@@ -685,6 +514,7 @@ export function SeedReportReturnManagePage() {
     [editingId]
   );
 
+
   return (
     <section className="screenStack">
       <SearchBand
@@ -693,293 +523,327 @@ export function SeedReportReturnManagePage() {
         onReset={handleReset}
       />
 
-      <div className="relative min-h-[300px]">
-        {isLoading ? (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Spinner />
-          </div>
-        ) : (
-          <div className="space-y-8">
+      <Panel title="씨드 신고반납 관리 목록">
+        <div className="relative min-h-[300px]">
+          {isLoading ? (
+            <div className="seedLoading">
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              {/* 요약칩 */}
+              <div className="seedSummaryChips">
+                <div className="seedSummaryChip seedSummaryChip--item">
+                  <span className="seedSummaryChip__label">
+                    {itemChipLabel}
+                  </span>
+                </div>
 
-            {/* =========================
-              신고대기
-          ========================= */}
-            <section>
-              <div className="flex items-center gap-2 mb-4">
-                <span className="w-2.5 h-2.5 rounded-full bg-orange-500" />
+                <div className="seedSummaryChip">
+                  <span className="seedSummaryChip__count is-pending">
+                    {pendingTotalElements}
+                  </span>
+                  <span className="seedSummaryChip__label">
+                    신고대기
+                  </span>
+                </div>
 
-                <h2 className="text-lg font-semibold text-gray-900">
-                  신고대기 · 승인 필요
-                </h2>
-
-                <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-full bg-gray-100 text-sm font-medium text-gray-700">
-                  {pendingTotalElements}
-                </span>
+                <div className="seedSummaryChip">
+                  <span className="seedSummaryChip__count is-done">
+                    {totalElements}
+                  </span>
+                  <span className="seedSummaryChip__label">
+                    신고완료
+                  </span>
+                </div>
               </div>
 
-              {pendingList.length === 0 ? (
-                <div className="rounded-xl border border-gray-200 bg-white py-10 text-center text-sm text-gray-500">
-                  승인 대기 중인 신고가 없습니다.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {pendingList.map((item) => {
-                    const isEditing = editingId === item.returnId;
+              <div className="seedReportSections">
 
-                    return (
-                      <div
-                        key={item.returnId}
-                        className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
-                      >
-                        {/* 왼쪽 강조선 */}
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-500" />
+                {/* 신고대기 */}
+                <section className="seedReportSection">
+                  <div className="seedSectionHeader">
+                    <span className="seedSectionHeader__dot seedSectionHeader__dot--pending" />
 
-                        <div className="p-5">
+                    <h2 className="seedSectionHeader__title">
+                      신고대기 · 승인 필요
+                    </h2>
 
-                          {/* 입고 라벨 / 입고일시 */}
-                          <div className="mb-4">
-                            <div className="text-sm font-semibold text-blue-700">
-                              {item.receiptBarcode ?? '-'}
-                            </div>
+                    <span className="seedSectionHeader__count">
+                      {pendingTotalElements}
+                    </span>
+                  </div>
 
-                            <div className="mt-1 text-xs text-gray-500">
-                              입고 {item.receivedAt ?? '-'}
-                            </div>
-                          </div>
-
-                          {isEditing ? (
-                            <>
-                              {/* 수정 모드 */}
-                              <div className="grid grid-cols-2 gap-3 mb-4">
-
-                                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                                  <div className="text-xs text-gray-500 mb-1">
-                                    신고수량
-                                  </div>
-
-                                  <input
-                                    type="number"
-                                    min={1}
-                                    className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm"
-                                    defaultValue={
-                                      editQuantitiesRef.current[item.returnId] ??
-                                      item.returnQty
-                                    }
-                                    onChange={(e) => {
-                                      editQuantitiesRef.current[item.returnId] =
-                                        e.target.value === ''
-                                          ? ''
-                                          : Number(e.target.value);
-                                    }}
-                                  />
-                                </div>
-
-                                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                                  <div className="text-xs text-gray-500 mb-1">
-                                    껍질수량
-                                  </div>
-
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    max={
-                                      editQuantitiesRef.current[item.returnId] ??
-                                      item.returnQty
-                                    }
-                                    className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm"
-                                    defaultValue={
-                                      editHullQuantitiesRef.current[item.returnId] ??
-                                      item.hullQty
-                                    }
-                                    onChange={(e) => {
-                                      const value = e.target.value;
-
-                                      editHullQuantitiesRef.current[item.returnId] =
-                                        value === '' ? '' : Number(value);
-                                    }}
-                                  />
-                                </div>
-
-                                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                                  <div className="text-xs text-gray-500 mb-1">
-                                    신고일자
-                                  </div>
-
-                                  <div className="text-sm text-gray-800">
-                                    {item.reportDate ?? '-'}
-                                  </div>
-                                </div>
-
-                                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                                  <div className="text-xs text-gray-500 mb-1">
-                                    반납예정일
-                                  </div>
-
-                                  <input
-                                    type="date"
-                                    className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm"
-                                    value={editForm.returnDueDate ?? ''}
-                                    onChange={(e) =>
-                                      setEditForm({
-                                        ...editForm,
-                                        returnDueDate: e.target.value,
-                                      })
-                                    }
-                                  />
-                                </div>
-                              </div>
-
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  className="flex-1 rounded-lg bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700"
-                                  onClick={() => handleSaveEdit(item)}
-                                >
-                                  저장
-                                </button>
-
-                                <button
-                                  type="button"
-                                  className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
-                                  onClick={() => handleCancelEdit(item.returnId)}
-                                >
-                                  취소
-                                </button>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              {/* 기본 표시 */}
-                              <div className="grid grid-cols-4 overflow-hidden rounded-lg border border-gray-200 bg-white mb-4">
-
-                                <div className="px-2 py-3 text-center border-r border-gray-200">
-                                  <div className="text-lg font-semibold text-gray-900">
-                                    {item.returnQty}
-                                  </div>
-                                  <div className="mt-1 text-[11px] text-gray-500">
-                                    신고수량
-                                  </div>
-                                </div>
-
-                                <div className="px-2 py-3 text-center border-r border-gray-200">
-                                  <div className="text-lg font-semibold text-gray-900">
-                                    {item.hullQty}
-                                  </div>
-                                  <div className="mt-1 text-[11px] text-gray-500">
-                                    껍질수량
-                                  </div>
-                                </div>
-
-                                <div className="px-2 py-3 text-center border-r border-gray-200">
-                                  <div className="text-sm font-semibold text-gray-900">
-                                    {item.reportDate
-                                      ? item.reportDate.slice(5)
-                                      : '-'}
-                                  </div>
-                                  <div className="mt-1 text-[11px] text-gray-500">
-                                    신고일자
-                                  </div>
-                                </div>
-
-                                <div className="px-2 py-3 text-center">
-                                  <div className="text-sm font-semibold text-gray-900">
-                                    {item.returnDueDate
-                                      ? item.returnDueDate.slice(5)
-                                      : '-'}
-                                  </div>
-                                  <div className="mt-1 text-[11px] text-gray-500">
-                                    반납예정
-                                  </div>
-                                </div>
-
-                              </div>
-
-                              {/* 버튼 */}
-                              <div className="flex gap-2">
-
-                                <button
-                                  type="button"
-                                  className="flex-1 rounded-lg bg-green-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-green-700"
-                                  onClick={() => handleApprove(item)}
-                                >
-                                  ✓ 승인 처리
-                                </button>
-
-                                <button
-                                  type="button"
-                                  className="rounded-lg bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 hover:bg-blue-100"
-                                  onClick={() => handleStartEdit(item)}
-                                >
-                                  수정
-                                </button>
-
-                                <button
-                                  type="button"
-                                  className="rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100"
-                                  onClick={() => handleDelete(item)}
-                                >
-                                  삭제
-                                </button>
-
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {pendingPage < pendingTotalPages - 1 && (
-                    <div className="flex justify-center mt-6">
-                      <button
-                        type="button"
-                        onClick={() => setPendingPage((prev) => prev + 1)}
-                        className="rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                      >
-                        더보기
-                      </button>
+                  {pendingList.length === 0 ? (
+                    <div className="seedEmptyState">
+                      승인 대기 중인 신고가 없습니다.
                     </div>
+                  ) : (
+                    <>
+                      <div className="seedPendingGrid">
+                        {visiblePendingList.map((item) => {
+                          const isEditing = editingId === item.returnId;
+
+                          return (
+                            <div
+                              key={item.returnId}
+                              className="seedPendingCard"
+                            >
+                              <div className="seedPendingCard__accent" />
+
+                              <div className="seedPendingCard__body">
+
+                                {/* 입고 라벨 / 입고일시 */}
+                                <div className="seedPendingCard__receipt">
+                                  <div className="seedPendingCard__barcode">
+                                    {item.receiptBarcode ?? '-'}
+                                  </div>
+
+                                  <div className="seedPendingCard__receivedAt">
+                                    입고 {item.receivedAt ?? '-'}
+                                  </div>
+                                </div>
+
+                                {isEditing ? (
+                                  <>
+                                    {/* 수정 모드 */}
+                                    <div className="seedPendingEditGrid">
+
+                                      <div className="seedPendingField">
+                                        <div className="seedPendingField__label">
+                                          신고수량
+                                        </div>
+
+                                        <input
+                                          type="number"
+                                          min={1}
+                                          className="seedPendingInput"
+                                          defaultValue={
+                                            editQuantitiesRef.current[item.returnId] ??
+                                            item.returnQty
+                                          }
+                                          onChange={(e) => {
+                                            editQuantitiesRef.current[item.returnId] =
+                                              e.target.value === ''
+                                                ? ''
+                                                : Number(e.target.value);
+                                          }}
+                                        />
+                                      </div>
+
+                                      <div className="seedPendingField">
+                                        <div className="seedPendingField__label">
+                                          껍질수량
+                                        </div>
+
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          max={
+                                            editQuantitiesRef.current[item.returnId] ??
+                                            item.returnQty
+                                          }
+                                          className="seedPendingInput"
+                                          defaultValue={
+                                            editHullQuantitiesRef.current[item.returnId] ??
+                                            item.hullQty
+                                          }
+                                          onChange={(e) => {
+                                            const value = e.target.value;
+
+                                            editHullQuantitiesRef.current[item.returnId] =
+                                              value === '' ? '' : Number(value);
+                                          }}
+                                        />
+                                      </div>
+
+                                      <div className="seedPendingField">
+                                        <div className="seedPendingField__label">
+                                          신고일자
+                                        </div>
+
+                                        <div className="seedPendingField__value">
+                                          {item.reportDate ?? '-'}
+                                        </div>
+                                      </div>
+
+                                      <div className="seedPendingField">
+                                        <div className="seedPendingField__label">
+                                          반납예정일
+                                        </div>
+
+                                        <input
+                                          type="date"
+                                          className="seedPendingInput"
+                                          value={editForm.returnDueDate ?? ''}
+                                          onChange={(e) =>
+                                            setEditForm({
+                                              ...editForm,
+                                              returnDueDate: e.target.value,
+                                            })
+                                          }
+                                        />
+                                      </div>
+
+                                    </div>
+
+                                    <div className="seedPendingEditActions">
+                                      <button
+                                        type="button"
+                                        className="seedPendingButton seedPendingButton--save"
+                                        onClick={() => handleSaveEdit(item)}
+                                      >
+                                        저장
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        className="seedPendingButton seedPendingButton--cancel"
+                                        onClick={() =>
+                                          handleCancelEdit(item.returnId)
+                                        }
+                                      >
+                                        취소
+                                      </button>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    {/* 기본 표시 */}
+                                    <div className="seedPendingStats">
+
+                                      <div className="seedPendingStat">
+                                        <div className="seedPendingStat__value">
+                                          {item.returnQty}
+                                        </div>
+                                        <div className="seedPendingStat__label">
+                                          신고수량
+                                        </div>
+                                      </div>
+
+                                      <div className="seedPendingStat">
+                                        <div className="seedPendingStat__value">
+                                          {item.hullQty}
+                                        </div>
+                                        <div className="seedPendingStat__label">
+                                          껍질수량
+                                        </div>
+                                      </div>
+
+                                      <div className="seedPendingStat">
+                                        <div className="seedPendingStat__value seedPendingStat__value--date">
+                                          {item.reportDate
+                                            ? item.reportDate.slice(5)
+                                            : '-'}
+                                        </div>
+                                        <div className="seedPendingStat__label">
+                                          신고일자
+                                        </div>
+                                      </div>
+
+                                      <div className="seedPendingStat seedPendingStat--last">
+                                        <div className="seedPendingStat__value seedPendingStat__value--date">
+                                          {item.returnDueDate
+                                            ? item.returnDueDate.slice(5)
+                                            : '-'}
+                                        </div>
+                                        <div className="seedPendingStat__label">
+                                          반납예정
+                                        </div>
+                                      </div>
+
+                                    </div>
+
+                                    <div className="seedPendingActions">
+                                      <button
+                                        type="button"
+                                        className="seedPendingButton seedPendingButton--approve"
+                                        onClick={() => handleApprove(item)}
+                                      >
+                                        ✓ 승인 처리
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        className="seedPendingButton seedPendingButton--edit"
+                                        onClick={() => handleStartEdit(item)}
+                                      >
+                                        수정
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        className="seedPendingButton seedPendingButton--delete"
+                                        onClick={() => handleDelete(item)}
+                                      >
+                                        삭제
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {pendingTotalElements > PENDING_PREVIEW_COUNT && (
+                        <div className="seedPendingToggleWrap">
+                          <button
+                            type="button"
+                            className="seedPendingToggle"
+                            aria-expanded={pendingExpanded}
+                            onClick={() =>
+                              setPendingExpanded((prev) => !prev)
+                            }
+                          >
+                            {pendingExpanded
+                              ? '접기 ▴'
+                              : `+${pendingHiddenCount}건 더보기 ▾`}
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
-                </div>
-              )}
-            </section>
+                </section>
 
-            {/* =========================
-              신고완료
-          ========================= */}
-            <section>
-              <div className="flex items-center gap-2 mb-4">
-                <span className="w-2.5 h-2.5 rounded-full bg-green-600" />
+                {/* 신고완료 */}
+                <section className="seedReportSection">
+                  <div className="seedSectionHeader">
+                    <span className="seedSectionHeader__dot seedSectionHeader__dot--done" />
 
-                <h2 className="text-lg font-semibold text-gray-900">
-                  신고완료
-                </h2>
+                    <h2 className="seedSectionHeader__title">
+                      신고완료
+                    </h2>
 
-                <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-full bg-gray-100 text-sm font-medium text-gray-700">
-                  {totalElements}
-                </span>
+                    <span className="seedSectionHeader__count">
+                      {totalElements}
+                    </span>
+                  </div>
+
+                  <div className="seedCompletedTable">
+                    <CusTable
+                      data={completedList}
+                      columns={completedColumns}
+                      sorting={sorting}
+                      onSortingChange={setSorting}
+                      noDataMessage="신고완료된 데이터가 없습니다."
+                    />
+                  </div>
+
+                  <CusPagination
+                    page={page}
+                    totalPages={totalPages}
+                    totalCount={totalElements}
+                    onPageChange={handlePageChange}
+                  />
+                </section>
+
               </div>
-
-              <div className="relative">
-                <CusTable
-                  data={completedList}
-                  columns={completedColumns}
-                  sorting={sorting}
-                  onSortingChange={setSorting}
-                  noDataMessage="신고완료된 데이터가 없습니다."
-                />
-              </div>
-
-              <CusPagination
-                page={page}
-                totalPages={totalPages}
-                totalCount={totalElements}
-                onPageChange={handlePageChange}
-              />
-            </section>
-
-          </div>
-        )}
-      </div>
+            </>
+          )}
+        </div>
+      </Panel>
 
       <SeedReturnPrintModal
         isOpen={printItem !== null}
