@@ -43,17 +43,24 @@
    ========================================== */
 :root {
   /* 라벨 실측 규격 (100 x 100) */
-  --label-w: 100mm;        /* 라벨 가로 */
-  --label-h: 100mm;        /* 라벨 세로 */
+  --label-w: 100mm;
+  /* 라벨 가로 */
+  --label-h: 100mm;
+  /* 라벨 세로 */
 
   /* 라벨 안쪽 여백 (프린터가 가장자리를 못 찍으면 키움) */
-  --label-pad-x: 5mm;      /* 좌우 */
-  --label-pad-y: 5mm;      /* 상하 */
+  --label-pad-x: 5mm;
+  /* 좌우 */
+  --label-pad-y: 5mm;
+  /* 상하 */
 
   /* 글자 크기 */
-  --label-font-title: 14pt;   /* 작업지시번호 */
-  --label-font-body: 12pt;    /* 품목명 (주문코드) */
-  --label-font-qty: 12pt;     /* 지시수량 */
+  --label-font-title: 14pt;
+  /* 작업지시번호 */
+  --label-font-body: 12pt;
+  /* 품목명 (주문코드) */
+  --label-font-qty: 12pt;
+  /* 지시수량 */
 
   /* 바코드 영역 높이 (가장 많이 조정하게 되는 값) */
   --label-barcode-h: 35mm;
@@ -353,7 +360,8 @@
 
   .food-label-modal-container,
   .food-label-modal-container.single-item-modal {
-    page: label;                 /* 위에서 정의한 @page label 적용 */
+    page: label;
+    /* 위에서 정의한 @page label 적용 */
     position: static !important;
     display: block !important;
     width: auto !important;
@@ -385,7 +393,8 @@
 
   .food-label-modal-grid,
   .food-label-modal-grid.single-item {
-    display: block !important;   /* grid → block */
+    display: block !important;
+    /* grid → block */
     max-width: none !important;
     margin: 0 !important;
     gap: 0 !important;
@@ -408,10 +417,17 @@
     padding: var(--label-pad-y) var(--label-pad-x) !important;
     margin: 0 !important;
     overflow: hidden !important;
-    border: none !important;          /* 화면용 점선 테두리는 인쇄 안 함 */
+    border: none !important;
+    /* 화면용 점선 테두리는 인쇄 안 함 */
     border-radius: 0 !important;
-    background-color: #ffffff !important;   /* 다크모드여도 흰 배경 */
-    color: #000000 !important;              /* 다크모드여도 검정 글씨 */
+    background-color: #ffffff !important;
+    /* 다크모드여도 흰 배경 */
+    color: #000000 !important;
+    /* 다크모드여도 검정 글씨 */
+
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
 
     /* 카드마다 새 페이지 */
     break-after: page;
@@ -460,7 +476,8 @@
         (막대 비율은 유지되고 가운데 정렬됨. 더 크게 하려면 --label-barcode-h 를 키움)
      ------------------------------------------------ */
   .food-label-card .food-card-barcode-wrap {
-    border-top: none !important;      /* 점선 구분선 인쇄 안 함 */
+    border-top: none !important;
+    /* 점선 구분선 인쇄 안 함 */
     padding-top: 0 !important;
   }
 

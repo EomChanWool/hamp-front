@@ -13,6 +13,8 @@ import {
 import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
 import { SeedReturnPrintModal } from '@/components/modal/SeedReturnPrintModal';
 import '@pages/page/seed/Seed.css';
+import { Badge } from '@/components/common/Badge';
+import { formatDateTime } from '@/utils/common';
 
 const PENDING_PREVIEW_COUNT = 3;
 
@@ -542,10 +544,12 @@ export function SeedReportReturnManagePage() {
         accessorKey: 'processStatus',
         header: '상태',
         cell: () => (
-          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-600" />
-            신고완료
-          </span>
+          <Badge tone="good">
+            <span className="seedDoneBadge">
+              <span className="seedDoneDot" />
+              신고완료
+            </span>
+          </Badge>
         ),
       },
       {
@@ -607,7 +611,7 @@ export function SeedReportReturnManagePage() {
         },
       },
     ],
-    [editingId]
+    [editingId, editForm.returnDueDate]
   );
 
 
@@ -696,7 +700,7 @@ export function SeedReportReturnManagePage() {
                                   </div>
 
                                   <div className="seedPendingCard__receivedAt">
-                                    입고 {item.receivedAt ?? '-'}
+                                    입고 {item.receivedAt ? formatDateTime(item.receivedAt) : '-'}
                                   </div>
                                 </div>
 

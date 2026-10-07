@@ -1276,6 +1276,21 @@
   position: relative;
 }
 
+/* 신고완료 배지 내부 */
+.seedDoneBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.seedDoneDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #16a34a;
+  flex-shrink: 0;
+}
+
 /* ========================================
    씨드 신고반납 관리 - Dark Mode
 ======================================== */

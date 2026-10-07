@@ -142,18 +142,6 @@
   overflow: hidden;
 }
 
-.return-print-table th:nth-child(4),
-.return-print-table td:nth-child(4),
-.return-print-table th:nth-child(5),
-.return-print-table td:nth-child(5),
-.return-print-table th:nth-child(6),
-.return-print-table td:nth-child(6) {
-  padding-left: 3px;
-  padding-right: 3px;
-  white-space: nowrap;
-  font-size: 12px;
-}
-
 .return-print-table th {
   background: #f8fafc;
   color: #475569;
