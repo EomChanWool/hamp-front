@@ -59,11 +59,11 @@ const INITIAL_DUMMY_DATA: InpiInventoryTransaction[] = [
   },
 ]
 
-const TRANSACTION_TYPE_COLORS: Record<string, string> = {
-  입고: '#34d399',
-  출고: '#fb7185',
-  조정: '#94a3b8',
-}
+const TYPE_PURPOSE_CLASS: Record<string, string> = {
+  입고: "purpose-green",
+  출고: "purpose-red",
+  조정: "purpose-gray",
+};
 
 const PAGE_SIZE = 10
 
@@ -180,8 +180,7 @@ export function InpiInventoryManagePage() {
         header: '처리구분',
         cell: ({ getValue }) => {
           const value = getValue() as string
-          const color = TRANSACTION_TYPE_COLORS[value]
-          return color ? <span style={{ color, fontWeight: 600 }}>{value}</span> : value
+          return <span className={`purposeText ${TYPE_PURPOSE_CLASS[value] ?? ""}`}>{value}</span>;
         },
       },
       { accessorKey: 'itemName', header: '품목명' },

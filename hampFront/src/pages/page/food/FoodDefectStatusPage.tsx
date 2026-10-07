@@ -29,21 +29,24 @@ const dummyDefectStatus: DefectStatusRow[] = [
   { occurredAt: '2026-06-17 16:20', itemName: '헴프 캡슐', lotNumber: 'LOT-7105', process: '건조', defectType: '중량미달', quantity: '8 kg', status: '원인분석중', manager: '한수아' },
 ]
 
-const DEFECT_TYPE_COLORS: Record<string, string> = {
-  이물: '#10b981',
-  중량미달: '#ef4444',
-  파손: '#ff8c3a',
-  색상불량: '#8b5cf6',
-  포장불량: '#eab308',
-  기타: '#64748b',
-}
+const TYPE_PURPOSE_CLASS: Record<string, string> = {
+  이물: "purpose-green",
+  중량미달: "purpose-red",
+  파손: "purpose-gray",
+  색상불량: "purpose-purple",
+  포장불량: "purpose-orange",
+  기타: "purpose-blue",
+};
 
-const DEFECT_STATUS_COLORS: Record<string, string> = {
-  접수: '#818cf8',
-  원인분석중: '#e879f9',
-  조치완료: '#22d3ee',
-  폐기: '#94a3b8',
-}
+const STATUS_PURPOSE_CLASS: Record<string, string> = {
+  부품교체: "purpose-blue",
+  캘리브레이션: "purpose-purple",
+  윤활작업: "purpose-orange",
+  접수: "purpose-purple",
+  원인분석중: "purpose-orange",
+  조치완료: "purpose-blue",
+  폐기: "purpose-gray",
+};
 
 const defectStatusKpis: { label: string; value: string; tone: StatusTone }[] = [
   { label: '금일 불량건수', value: '14건', tone: 'warn' },
@@ -137,7 +140,8 @@ export function FoodDefectStatusPage() {
         header: '불량유형',
         cell: ({ getValue }) => {
           const value = getValue() as string
-          return <span style={{ color: DEFECT_TYPE_COLORS[value], fontWeight: 600 }}>{value}</span>
+          return <span className={`purposeText ${TYPE_PURPOSE_CLASS[value] ?? ""}`}>{value}</span>;
+
         },
       },
       { accessorKey: 'quantity', header: '수량' },
@@ -146,7 +150,7 @@ export function FoodDefectStatusPage() {
         header: '처리상태',
         cell: ({ getValue }) => {
           const value = getValue() as string
-          return <span style={{ color: DEFECT_STATUS_COLORS[value], fontWeight: 600 }}>{value}</span>
+          return <span className={`purposeText ${STATUS_PURPOSE_CLASS[value] ?? ""}`}>{value}</span>;
         },
       },
       { accessorKey: 'manager', header: '담당자' },

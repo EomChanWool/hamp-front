@@ -928,11 +928,15 @@ textarea.tableInput {
 .purpose-green  { --dot: #3f9c7a; }
 .purpose-purple { --dot: #8a6bbf; }
 .purpose-orange { --dot: #c98a2b; }
+.purpose-red    { --dot: #b85a52; }
+.purpose-gray   { --dot: #68737d; }
 
 [data-theme="dark"] .purpose-blue   { --dot: #7fb8dc; }
 [data-theme="dark"] .purpose-green  { --dot: #74c4a4; }
 [data-theme="dark"] .purpose-purple { --dot: #b6a0e0; }
 [data-theme="dark"] .purpose-orange { --dot: #e3a074; }
+[data-theme="dark"] .purpose-red  { --dot: #ef8a8a; }
+[data-theme="dark"] .purpose-gray { --dot: #9aa7b8; }
 
 .limitsTxt {
   display: inline-flex;

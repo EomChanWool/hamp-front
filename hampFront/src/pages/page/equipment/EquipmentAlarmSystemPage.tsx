@@ -33,16 +33,17 @@ const ALARM_GRADE_TONE: Record<AlarmRow['alarmGrade'], 'good' | 'warn' | 'danger
   위험: 'danger',
 }
 
-const STATUS_COLORS: Record<AlarmRow['status'], string> = {
-  미처리: '#e879f9',
-  처리중: '#e879f9',
-  조치완료: '#22d3ee',
-}
 
-const ACTION_COLORS: Record<string, string> = {
-  '현장 확인 중': '#fbbf24',
-  '센서 교체 완료': '#34d399',
-}
+const STATUS_PURPOSE_CLASS: Record<string, string> = {
+  조치완료: "purpose-blue",
+  미처리: "purpose-purple",
+  처리중: "purpose-orange",
+};
+
+const ACTION_PURPOSE_CLASS: Record<string, string> = {
+  '센서 교체 완료': "purpose-green",
+  '현장 확인 중': "purpose-orange",
+};
 
 const PAGE_SIZE = 10
 
@@ -59,7 +60,7 @@ export function EquipmentAlarmSystemPage() {
   const searchFields: SearchField[] = [
     { type: 'date', label: '알림', startRef: alarmStartRef, endRef: alarmEndRef },
     { type: 'input', label: '설비명', ref: equipmentNameRef, name: "equipmentName" },
-    { type: 'input', label: '처리상태', ref: statusRef, name: "equipmentName"  },
+    { type: 'input', label: '처리상태', ref: statusRef, name: "equipmentName" },
   ]
 
   const handleSearch = () => {
@@ -128,7 +129,7 @@ export function EquipmentAlarmSystemPage() {
         header: '처리상태',
         cell: ({ getValue }) => {
           const value = getValue() as AlarmRow['status']
-          return <span style={{ color: STATUS_COLORS[value], fontWeight: 600 }}>{value}</span>
+          return <span className={`purposeText ${STATUS_PURPOSE_CLASS[value] ?? ""}`}>{value}</span>;
         },
       },
       { accessorKey: 'manager', header: '담당자' },
@@ -137,8 +138,7 @@ export function EquipmentAlarmSystemPage() {
         header: '조치내용',
         cell: ({ getValue }) => {
           const value = getValue() as string
-          const color = ACTION_COLORS[value]
-          return color ? <span style={{ color, fontWeight: 600 }}>{value}</span> : value
+          return <span className={`purposeText ${ACTION_PURPOSE_CLASS[value] ?? ""}`}>{value}</span>;
         },
       },
       {
