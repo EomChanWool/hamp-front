@@ -448,12 +448,64 @@ export function SeedReportReturnManagePage() {
       {
         accessorKey: 'returnQty',
         header: '신고수량',
-        cell: ({ row }) => row.original.returnQty,
+        cell: ({ row }) => {
+          const item = row.original;
+          const isEditing = editingId === item.returnId;
+
+          if (!isEditing) {
+            return item.returnQty;
+          }
+
+          return (
+            <input
+              type="number"
+              min={1}
+              className="seedTableEditInput"
+              defaultValue={
+                editQuantitiesRef.current[item.returnId] ?? item.returnQty
+              }
+              onChange={(e) => {
+                editQuantitiesRef.current[item.returnId] =
+                  e.target.value === ''
+                    ? ''
+                    : Number(e.target.value);
+              }}
+            />
+          );
+        },
       },
       {
         accessorKey: 'hullQty',
         header: '껍질수량',
-        cell: ({ row }) => row.original.hullQty,
+        cell: ({ row }) => {
+          const item = row.original;
+          const isEditing = editingId === item.returnId;
+
+          if (!isEditing) {
+            return item.hullQty;
+          }
+
+          return (
+            <input
+              type="number"
+              min={0}
+              max={
+                editQuantitiesRef.current[item.returnId] ??
+                item.returnQty
+              }
+              className="seedTableEditInput"
+              defaultValue={
+                editHullQuantitiesRef.current[item.returnId] ?? item.hullQty
+              }
+              onChange={(e) => {
+                editHullQuantitiesRef.current[item.returnId] =
+                  e.target.value === ''
+                    ? ''
+                    : Number(e.target.value);
+              }}
+            />
+          );
+        },
       },
       {
         accessorKey: 'reportDate',
@@ -463,7 +515,28 @@ export function SeedReportReturnManagePage() {
       {
         accessorKey: 'returnDueDate',
         header: '반납예정일',
-        cell: ({ row }) => row.original.returnDueDate ?? '-',
+        cell: ({ row }) => {
+          const item = row.original;
+          const isEditing = editingId === item.returnId;
+
+          if (!isEditing) {
+            return item.returnDueDate ?? '-';
+          }
+
+          return (
+            <input
+              type="date"
+              className="seedTableEditInput"
+              value={editForm.returnDueDate ?? ''}
+              onChange={(e) =>
+                setEditForm((prev) => ({
+                  ...prev,
+                  returnDueDate: e.target.value,
+                }))
+              }
+            />
+          );
+        },
       },
       {
         accessorKey: 'processStatus',
@@ -480,6 +553,29 @@ export function SeedReportReturnManagePage() {
         header: '관리',
         cell: ({ row }) => {
           const item = row.original;
+          const isEditing = editingId === item.returnId;
+
+          if (isEditing) {
+            return (
+              <div className="rowActions">
+                <button
+                  type="button"
+                  className="miniButton"
+                  onClick={() => handleSaveEdit(item)}
+                >
+                  저장
+                </button>
+
+                <button
+                  type="button"
+                  className="miniButton"
+                  onClick={() => handleCancelEdit(item.returnId)}
+                >
+                  취소
+                </button>
+              </div>
+            );
+          }
 
           return (
             <div className="rowActions">
