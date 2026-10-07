@@ -1,6 +1,11 @@
 import { apiClient } from '@/api/apiClient';
 import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
+/** 씨드 신고처리 문서 다운로드 요청 */
+export interface SeedGoodsReceiptReturnDocumentRequest {
+    returnIds: number[];
+}
+
 /** 씨드 신고처리 수정 요청 */
 export interface SeedGoodsReceiptReturnUpdateRequest {
     returnQty: number;
@@ -66,7 +71,7 @@ export const SeedGoodsReceiptReturnApi = {
 
     /** 씨드 신고처리 수정 */
     update: async (
-        returnId: number, 
+        returnId: number,
         data: SeedGoodsReceiptReturnUpdateRequest
     ): Promise<ApiResponseSeedGoodsReceiptReturnResponse> => {
         const res = await apiClient.put(`/seed-goods-receipt-returns/${returnId}`, data);
@@ -76,6 +81,19 @@ export const SeedGoodsReceiptReturnApi = {
     /** 씨드 신고처리 삭제 */
     delete: async (returnId: number): Promise<ApiResponse<string>> => {
         const res = await apiClient.delete(`/seed-goods-receipt-returns/${returnId}`);
+        return res.data;
+    },
+
+    /** 씨드 신고처리 문서 다운로드 */
+    document: async (data: SeedGoodsReceiptReturnDocumentRequest) => {
+        const res = await apiClient.post(
+            '/seed-goods-receipt-returns/document',
+            data,
+            {
+                responseType: 'blob',
+            },
+        );
+
         return res.data;
     },
 };
