@@ -72,6 +72,7 @@ export function WorkOrderPrintModal({
 }: WorkOrderPrintModalProps) {
     const [printDateTime, setPrintDateTime] = useState("");
 
+    // 모달이 열릴 때마다 출력일시를 현재 시각으로 갱신
     useEffect(() => {
         if (!isOpen) return;
 
@@ -236,7 +237,7 @@ export function WorkOrderPrintModal({
                                 </tbody>
                             </table>
 
-                            {/* 품목별 바코드 */}
+                            {/* 품목별 바코드 (색상 명시: 다크모드와 무관하게 흰 배경 + 검정 바) */}
                             <div className="work-order-item-barcode">
                                 <Barcode
                                     value={line.barcode || "NO-BARCODE"}
@@ -245,6 +246,8 @@ export function WorkOrderPrintModal({
                                     fontSize={11}
                                     displayValue={true}
                                     margin={0}
+                                    background="#ffffff"
+                                    lineColor="#000000"
                                 />
                             </div>
                         </div>
@@ -356,11 +359,13 @@ export function WorkOrderPrintModal({
                                 onClick={() => {
                                     window.focus();
 
+                                    // PDF 저장 시 기본 파일명이 되도록 문서 제목을 임시 변경
                                     const originalTitle = document.title;
 
                                     const WorkDate = workOrder.workDate.replace(/-/g, "");
                                     document.title = `작업지시서_${WorkDate}_${workOrder.workOrderNo}`;
 
+                                    // 인쇄 창이 닫히면 원래 제목으로 복구
                                     const restoreTitle = () => {
                                         document.title = originalTitle;
                                         window.removeEventListener("afterprint", restoreTitle);

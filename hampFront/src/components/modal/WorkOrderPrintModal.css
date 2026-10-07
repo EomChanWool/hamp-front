@@ -6,6 +6,14 @@
     position: fixed;
     inset: 0;
     z-index: 9999;
+
+    /* 항상 라이트 고정 (앱이 다크여도 영향받지 않음) */
+    color-scheme: only light;
+    color: #1e293b;
+
+    /* 인쇄/PDF 저장 시 배경색·테두리색 유지 */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
 }
 
 .work-order-print-modal {
@@ -80,6 +88,61 @@
 
     gap: 7px;
 }
+
+.work-order-print-root .work-order-print-toolbar-actions button {
+    appearance: none;
+
+    padding: 8px 14px;
+
+    border-radius: 6px;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    box-shadow: none;
+    filter: none;
+
+    transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+/* 닫기 버튼 (흰색 → hover 시 연한 회색) */
+.work-order-print-root .work-order-print-toolbar-actions .ghostButton {
+    background: #ffffff;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+}
+
+.work-order-print-root .work-order-print-toolbar-actions .ghostButton:hover,
+.work-order-print-root .work-order-print-toolbar-actions .ghostButton:focus-visible {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+.work-order-print-root .work-order-print-toolbar-actions .ghostButton:active {
+    background: #e2e8f0;
+}
+
+/* 인쇄하기 버튼 (초록 → hover 시 더 진한 초록) */
+.work-order-print-root .work-order-print-toolbar-actions .primaryButton {
+    background: #166534;
+    color: #ffffff;
+    border: 1px solid #166534;
+}
+
+.work-order-print-root .work-order-print-toolbar-actions .primaryButton:hover,
+.work-order-print-root .work-order-print-toolbar-actions .primaryButton:focus-visible {
+    background: #14532d;
+    color: #ffffff;
+    border-color: #14532d;
+}
+
+.work-order-print-root .work-order-print-toolbar-actions .primaryButton:active {
+    background: #052e16;
+}
+
 
 /* =========================================================
    Preview Scroll
@@ -250,7 +313,21 @@
 }
 
 .work-order-print-table td {
+    background: #ffffff;
+
     color: #334155;
+}
+
+.work-order-print-root .work-order-print-table tr:hover,
+.work-order-print-root .work-order-print-table tr:hover td {
+    background: #ffffff;
+    color: #334155;
+}
+
+.work-order-print-root .work-order-print-table tr:hover th,
+.work-order-print-root .work-order-print-table th:hover {
+    background: #f8fafc;
+    color: #475569;
 }
 
 .work-order-print-table .bold {
@@ -603,7 +680,7 @@
 
     /* =====================================================
      기존 화면 UI 전부 숨김
-     [변경] 라벨 인쇄 root(#label-print-root)는 예외 처리.
+     라벨 인쇄 root(#label-print-root)는 예외 처리.
      (이 규칙이 라벨 모달까지 숨겨서 흰 화면이 나오던 원인)
   ===================================================== */
 
