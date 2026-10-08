@@ -8,7 +8,7 @@ import { SalesOrderModal } from "@/components/modal/SalesOrderModal";
 import { type SalesOrderStatusLineResponse } from "@/api/sales/SalesOrder";
 import { WorkOrderApi } from "@/api/WorkOrder";
 import { UserApi, type UserOptionResponse } from "@/api/User";
-import '@/pages/page/food/Food.css'; 
+import '@/pages/page/food/Food.css';
 
 interface WorkOrderLine {
   id: string;
@@ -31,7 +31,6 @@ export function FoodWorkOrderCreatePage() {
 
   const [form, setForm] = useState({
     workDate: new Date().toISOString().split('T')[0],
-    status: "WAIT", // 영문 상태 코드 ("WAIT" | "PROGRESS" | "DONE" | "DELAY")
     managerId: "",
   });
 
@@ -105,7 +104,7 @@ export function FoodWorkOrderCreatePage() {
             orderCode: selected.orderCode,
             itemCode: selected.itemCode,
             itemNm: selected.itemNm,
-            instructQty: defaultQty, 
+            instructQty: defaultQty,
           };
         }
         return line;
@@ -231,7 +230,6 @@ export function FoodWorkOrderCreatePage() {
 
     const payload = {
       workDate: form.workDate,
-      status: form.status,
       managerId: form.managerId,
       lines: finalizedLines,
     };
@@ -252,30 +250,22 @@ export function FoodWorkOrderCreatePage() {
   return (
     <section className="screenStack">
       <div className="createCard">
-        
+
         {/* 헤더 영역 */}
         <div className="createHeader">
           <h1 className="createTitle">작업지시 등록</h1>
           <span className="createMeta">
-            수주 라인을 지정해 생산에 필요한 작업지시를 생성합니다. <span className="required">* 표시는 필수 입력 항목입니다</span>
+            <span className="required">* 표시는 필수 입력 항목입니다</span>
           </span>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="createBody">
-            
+
             {/* 1. 기본 정보 섹션 */}
             <div className="createSection">
               <h2 className="createSectionTitle">기본정보</h2>
               <div className="createGrid2Cols">
-                
-                <div className="createField">
-                  <label className="requiredLabel">작업지시코드</label>
-                  <input className="tableInput" value="(저장 시 자동 채번)" disabled />
-                  <span className="createMeta food-create-meta-spacing">
-                    등록 시 날짜+일련번호로 자동 채번됩니다.
-                  </span>
-                </div>
 
                 <div className="createField">
                   <label className="requiredLabel">작업일자 <span className="required">*</span></label>
@@ -286,21 +276,6 @@ export function FoodWorkOrderCreatePage() {
                     disabled={isSubmitting}
                     onChange={(e) => handleChange("workDate", e.target.value)}
                   />
-                </div>
-
-                <div className="createField">
-                  <label className="requiredLabel">상태</label>
-                  <select
-                    className="tableInput"
-                    value={form.status}
-                    disabled={isSubmitting}
-                    onChange={(e) => handleChange("status", e.target.value)}
-                  >
-                    <option value="WAIT">대기</option>
-                    <option value="PROGRESS">진행중</option>
-                    <option value="DONE">완료</option>
-                    <option value="DELAY">지연</option>
-                  </select>
                 </div>
 
                 <div className="createField">
