@@ -1,36 +1,48 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ColumnDef, SortingState } from '@tanstack/react-table';
-import { Panel } from '@components/card/Panel';
-import { SearchBand, type SearchField } from '@components/search/SearchBand';
-import { CusTable } from '@components/table/CusTable';
-import { CusPagination } from '@components/table/CusPagination';
-import Spinner from '@/components/common/Spinner';
-import { formatDateTime } from '@/utils/common';
-import axios from 'axios';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
+import { Panel } from "@components/card/Panel";
+import { SearchBand, type SearchField } from "@components/search/SearchBand";
+import { CusTable } from "@components/table/CusTable";
+import { CusPagination } from "@components/table/CusPagination";
+import Spinner from "@/components/common/Spinner";
+import { formatDateTime } from "@/utils/common";
+import axios from "axios";
 import {
   SeedGoodsReceiptApi,
   type SeedGoodsReceiptResponse,
   type SeedGoodsReceiptCreateRequest,
   type SeedGoodsReceiptUpdateRequest,
-} from '@/api/ioSeed/SeedGoodsReceipt';
-import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
-import { ReportModal } from '@/components/modal/ReportModal';
-import { LabelPrintModal, type WorkOrderLineDetail } from '@/components/modal/LabelPrintModal';
-import '@/pages/page/ioSeed/ioSeed.css';
+} from "@/api/ioSeed/SeedGoodsReceipt";
+import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
+import { ReportModal } from "@/components/modal/ReportModal";
+import { LabelPrintModal, type WorkOrderLineDetail } from "@/components/modal/LabelPrintModal";
+import "@/pages/page/ioSeed/ioSeed.css";
 
 // 백엔드 reportStatus 값: '미신고' / '부분신고' / '신고완료'
 const REPORT_STATUS_META: Record<string, { label: string; badgeClass: string; barClass: string }> = {
-  미신고: { label: '미신고', badgeClass: 'statusBadge statusBadge--unreported', barClass: 'progressFill progressFill--unreported' },
-  부분신고: { label: '부분신고 진행중', badgeClass: 'statusBadge statusBadge--partial', barClass: 'progressFill progressFill--partial' },
-  신고완료: { label: '신고완료', badgeClass: 'statusBadge statusBadge--completed', barClass: 'progressFill progressFill--completed' },
+  미신고: {
+    label: "미신고",
+    badgeClass: "statusBadge statusBadge--unreported",
+    barClass: "progressFill progressFill--unreported",
+  },
+  부분신고: {
+    label: "부분신고",
+    badgeClass: "statusBadge statusBadge--partial",
+    barClass: "progressFill progressFill--partial",
+  },
+  신고완료: {
+    label: "신고완료",
+    badgeClass: "statusBadge statusBadge--completed",
+    barClass: "progressFill progressFill--completed",
+  },
 };
 
-const DEFAULT_STATUS_META = REPORT_STATUS_META['미신고'];
+const DEFAULT_STATUS_META = REPORT_STATUS_META["미신고"];
 
 function getActionLabel(reportStatus: string): string {
-  if (reportStatus === '신고완료') return '이력보기';
-  if (reportStatus === '부분신고') return '이어서 신고';
-  return '신고처리';
+  if (reportStatus === "신고완료") return "이력보기";
+  if (reportStatus === "부분신고") return "이어서 신고";
+  return "신고처리";
 }
 
 export function SeedInboundManagePage() {
@@ -44,16 +56,16 @@ export function SeedInboundManagePage() {
   const [page, setPage] = useState(0);
 
   const [searchFilters, setSearchFilters] = useState({
-    itemCode: '',
-    receivedAtFrom: '',
-    receivedAtTo: '',
-    reportProgress: '',
+    itemCode: "",
+    receivedAtFrom: "",
+    receivedAtTo: "",
+    reportProgress: "",
   });
 
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const sortParams = useMemo(() => {
-    return sorting.map((sort) => `${sort.id},${sort.desc ? 'desc' : 'asc'}`);
+    return sorting.map((sort) => `${sort.id},${sort.desc ? "desc" : "asc"}`);
   }, [sorting]);
 
   const handleSortingChange = (newSorting: SortingState) => {
@@ -81,11 +93,11 @@ export function SeedInboundManagePage() {
     goodQty?: number;
     receivedAt?: string;
   }>({
-    itemCode: '',
+    itemCode: "",
     receiptQty: 0,
     defectQty: 0,
     goodQty: 0,
-    receivedAt: '',
+    receivedAt: "",
   });
 
   const [isUpdating, setIsUpdating] = useState(false);
@@ -135,7 +147,7 @@ export function SeedInboundManagePage() {
       const res = await ItemApi.getOptions({ productType: 0 });
       setItemOptions(res.data ?? []);
     } catch (error) {
-      console.error('씨드 품목 옵션 조회 실패:', error);
+      console.error("씨드 품목 옵션 조회 실패:", error);
     }
   }, []);
 
@@ -146,55 +158,55 @@ export function SeedInboundManagePage() {
   const searchFields: SearchField[] = useMemo(
     () => [
       {
-        type: 'input',
-        label: '품목코드',
+        type: "input",
+        label: "품목코드",
         ref: itemCodeInputRef,
-        name: 'itemCode',
+        name: "itemCode",
       },
       {
-        type: 'input',
-        label: '진행상태',
+        type: "input",
+        label: "진행상태",
         ref: reportProgressInputRef,
-        name: 'reportProgress',
+        name: "reportProgress",
       },
       {
-        type: 'select',
-        label: '품목명',
+        type: "select",
+        label: "품목명",
         ref: itemCodeRef,
-        name: 'itemCode',
+        name: "itemCode",
         options: [
-          { label: '전체', value: '' },
+          { label: "전체", value: "" },
           ...itemOptions.map((opt) => ({
-            label: `${opt.itemNm} (${opt.itemCode ?? '-'})`,
+            label: `${opt.itemNm} (${opt.itemCode ?? "-"})`,
             value: opt.itemCode,
           })),
         ],
       },
       {
-        type: 'date',
-        label: '입고일자',
+        type: "date",
+        label: "입고일자",
         startRef: receivedAtStartRef,
         endRef: receivedAtEndRef,
-        name: 'receivedAt',
+        name: "receivedAt",
       },
       {
-        type: 'select',
-        label: '진행상태',
+        type: "select",
+        label: "진행상태",
         ref: reportProgressRef,
-        name: 'reportProgress',
+        name: "reportProgress",
         options: [
-          { label: '전체', value: '' },
-          { label: '미신고', value: '0' },
-          { label: '부분신고', value: '1' },
-          { label: '신고완료', value: '2' },
+          { label: "전체", value: "" },
+          { label: "미신고", value: "0" },
+          { label: "부분신고", value: "1" },
+          { label: "신고완료", value: "2" },
         ],
       },
     ],
-    [itemOptions]
+    [itemOptions],
   );
 
   const loadReceipts = useCallback(async () => {
-    if (searchFilters.reportProgress === '__INVALID__') {
+    if (searchFilters.reportProgress === "__INVALID__") {
       setReceipts([]);
       setTotalElements(0);
       setTotalPages(0);
@@ -211,7 +223,7 @@ export function SeedInboundManagePage() {
       if (searchFilters.itemCode) params.itemCode = searchFilters.itemCode;
       if (searchFilters.receivedAtFrom) params.receivedAtFrom = searchFilters.receivedAtFrom;
       if (searchFilters.receivedAtTo) params.receivedAtTo = searchFilters.receivedAtTo;
-      if (searchFilters.reportProgress !== '') {
+      if (searchFilters.reportProgress !== "") {
         params.reportProgress = Number(searchFilters.reportProgress);
       }
 
@@ -226,8 +238,8 @@ export function SeedInboundManagePage() {
       setTotalElements(pageData?.totalElements ?? 0);
       setTotalPages(pageData?.totalPages ?? 0);
     } catch (error) {
-      console.error('씨드 입고 목록 조회 실패:', error);
-      window.alert('데이터를 불러오는 중 오류가 발생했습니다.');
+      console.error("씨드 입고 목록 조회 실패:", error);
+      window.alert("데이터를 불러오는 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -240,46 +252,36 @@ export function SeedInboundManagePage() {
   const handleSearch = () => {
     setPage(0);
 
-    const itemCode =
-      itemCodeInputRef.current?.value.trim() ||
-      itemCodeRef.current?.value.trim() ||
-      '';
+    const itemCode = itemCodeInputRef.current?.value.trim() || itemCodeRef.current?.value.trim() || "";
 
-    const reportProgressInput =
-      reportProgressInputRef.current?.value.trim() || '';
+    const reportProgressInput = reportProgressInputRef.current?.value.trim() || "";
 
-    const normalizedProgress = reportProgressInput.replace(/\s/g, '');
+    const normalizedProgress = reportProgressInput.replace(/\s/g, "");
 
-    let reportProgress = '';
+    let reportProgress = "";
 
     if (!normalizedProgress) {
       // 상단 입력이 비어 있으면 상세 select 사용
-      reportProgress = reportProgressRef.current?.value || '';
+      reportProgress = reportProgressRef.current?.value || "";
+    } else if (normalizedProgress === "미신고" || normalizedProgress === "0") {
+      reportProgress = "0";
     } else if (
-      normalizedProgress === '미신고' ||
-      normalizedProgress === '0'
+      normalizedProgress === "부분신고" ||
+      normalizedProgress === "부분신고진행중" ||
+      normalizedProgress === "1"
     ) {
-      reportProgress = '0';
-    } else if (
-      normalizedProgress === '부분신고' ||
-      normalizedProgress === '부분신고진행중' ||
-      normalizedProgress === '1'
-    ) {
-      reportProgress = '1';
-    } else if (
-      normalizedProgress === '신고완료' ||
-      normalizedProgress === '2'
-    ) {
-      reportProgress = '2';
+      reportProgress = "1";
+    } else if (normalizedProgress === "신고완료" || normalizedProgress === "2") {
+      reportProgress = "2";
     } else {
       // 잘못된 진행상태 입력
-      reportProgress = '__INVALID__';
+      reportProgress = "__INVALID__";
     }
 
     setSearchFilters({
       itemCode,
-      receivedAtFrom: receivedAtStartRef.current?.value || '',
-      receivedAtTo: receivedAtEndRef.current?.value || '',
+      receivedAtFrom: receivedAtStartRef.current?.value || "",
+      receivedAtTo: receivedAtEndRef.current?.value || "",
       reportProgress,
     });
 
@@ -289,23 +291,23 @@ export function SeedInboundManagePage() {
   };
 
   const handleReset = () => {
-    if (itemCodeRef.current) itemCodeRef.current.value = '';
+    if (itemCodeRef.current) itemCodeRef.current.value = "";
     if (itemCodeInputRef.current) {
-      itemCodeInputRef.current.value = '';
+      itemCodeInputRef.current.value = "";
     }
-    if (receivedAtStartRef.current) receivedAtStartRef.current.value = '';
-    if (receivedAtEndRef.current) receivedAtEndRef.current.value = '';
-    if (reportProgressRef.current) reportProgressRef.current.value = '';
+    if (receivedAtStartRef.current) receivedAtStartRef.current.value = "";
+    if (receivedAtEndRef.current) receivedAtEndRef.current.value = "";
+    if (reportProgressRef.current) reportProgressRef.current.value = "";
     if (reportProgressInputRef.current) {
-      reportProgressInputRef.current.value = '';
+      reportProgressInputRef.current.value = "";
     }
 
     setPage(0);
     setSearchFilters({
-      itemCode: '',
-      receivedAtFrom: '',
-      receivedAtTo: '',
-      reportProgress: '',
+      itemCode: "",
+      receivedAtFrom: "",
+      receivedAtTo: "",
+      reportProgress: "",
     });
     setSorting([]);
     setEditingReceiptId(null);
@@ -324,11 +326,11 @@ export function SeedInboundManagePage() {
     if (isCreatingNewRow) return;
     setEditingReceiptId(null);
     editFormRef.current = {
-      itemCode: '',
+      itemCode: "",
       receiptQty: 0,
       defectQty: 0,
       goodQty: 0,
-      receivedAt: '',
+      receivedAt: "",
     };
     setIsGoodQtyManual(false);
     setIsCreatingNewRow(true);
@@ -344,19 +346,19 @@ export function SeedInboundManagePage() {
     const goodQty = Number(editFormRef.current.goodQty) || 0;
 
     if (receiptQty <= 0) {
-      window.alert('입고수량은 0보다 커야 합니다.');
+      window.alert("입고수량은 0보다 커야 합니다.");
       return false;
     }
     if (defectQty > receiptQty) {
-      window.alert('불량수량은 입고수량을 초과할 수 없습니다.');
+      window.alert("불량수량은 입고수량을 초과할 수 없습니다.");
       return false;
     }
     if (goodQty + defectQty > receiptQty) {
-      window.alert('양품수량과 불량수량의 합이 입고수량을 초과할 수 없습니다.');
+      window.alert("양품수량과 불량수량의 합이 입고수량을 초과할 수 없습니다.");
       return false;
     }
     if (goodQty <= 0) {
-      window.alert('양품수량이 0입니다. 입고수량과 불량수량을 확인해주세요.');
+      window.alert("양품수량이 0입니다. 입고수량과 불량수량을 확인해주세요.");
       return false;
     }
     return true;
@@ -367,12 +369,12 @@ export function SeedInboundManagePage() {
 
     const itemCode = editFormRef.current.itemCode?.trim();
     if (!itemCode) {
-      window.alert('품목을 선택해주세요.');
+      window.alert("품목을 선택해주세요.");
       return;
     }
 
     if (!editFormRef.current.receivedAt) {
-      window.alert('입고일자를 입력해주세요.');
+      window.alert("입고일자를 입력해주세요.");
       return;
     }
 
@@ -389,19 +391,19 @@ export function SeedInboundManagePage() {
       };
 
       const response = await SeedGoodsReceiptApi.create(payload);
-      window.alert(response.message || '등록되었습니다.');
+      window.alert(response.message || "등록되었습니다.");
       setIsCreatingNewRow(false);
 
-      if (itemCodeRef.current) itemCodeRef.current.value = '';
-      if (reportProgressRef.current) reportProgressRef.current.value = '';
+      if (itemCodeRef.current) itemCodeRef.current.value = "";
+      if (reportProgressRef.current) reportProgressRef.current.value = "";
       setPage(0);
-      setSearchFilters({ itemCode: '', receivedAtFrom: '', receivedAtTo: '', reportProgress: '' });
+      setSearchFilters({ itemCode: "", receivedAtFrom: "", receivedAtTo: "", reportProgress: "" });
       setSorting([]);
       setRefreshKey((prev) => prev + 1);
     } catch (err) {
-      console.error('등록 실패:', err);
+      console.error("등록 실패:", err);
       const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
-      window.alert(errorMessage || '등록에 실패했습니다.');
+      window.alert(errorMessage || "등록에 실패했습니다.");
     } finally {
       setIsUpdating(false);
     }
@@ -410,11 +412,11 @@ export function SeedInboundManagePage() {
   const handleStartEdit = (row: SeedGoodsReceiptResponse) => {
     setIsCreatingNewRow(false);
     editFormRef.current = {
-      itemCode: row.itemCode ?? '',
+      itemCode: row.itemCode ?? "",
       receiptQty: row.receiptQty ?? 0,
       defectQty: row.defectQty ?? 0,
       goodQty: row.goodQty ?? 0,
-      receivedAt: row.receivedAt ?? '',
+      receivedAt: row.receivedAt ?? "",
     };
     const initialAutoGoodQty = Math.max((row.receiptQty ?? 0) - (row.defectQty ?? 0), 0);
     setIsGoodQtyManual((row.goodQty ?? 0) !== initialAutoGoodQty);
@@ -423,7 +425,7 @@ export function SeedInboundManagePage() {
 
   const handleCancelEdit = () => {
     setEditingReceiptId(null);
-    editFormRef.current = { itemCode: '', receiptQty: 0, defectQty: 0, goodQty: 0, receivedAt: '' };
+    editFormRef.current = { itemCode: "", receiptQty: 0, defectQty: 0, goodQty: 0, receivedAt: "" };
     setIsGoodQtyManual(false);
   };
 
@@ -432,7 +434,7 @@ export function SeedInboundManagePage() {
 
     const itemCode = editFormRef.current.itemCode?.trim();
     if (!itemCode) {
-      window.alert('품목을 선택해주세요.');
+      window.alert("품목을 선택해주세요.");
       return;
     }
 
@@ -441,21 +443,21 @@ export function SeedInboundManagePage() {
     setIsUpdating(true);
     try {
       const updatePayload: SeedGoodsReceiptUpdateRequest = {
-        itemCode: editFormRef.current.itemCode?.trim() ?? '',
+        itemCode: editFormRef.current.itemCode?.trim() ?? "",
         receiptQty: Number(editFormRef.current.receiptQty) || 0,
         defectQty: Number(editFormRef.current.defectQty) || 0,
         goodQty: Number(editFormRef.current.goodQty) || 0,
-        receivedAt: editFormRef.current.receivedAt ?? '',
+        receivedAt: editFormRef.current.receivedAt ?? "",
       };
 
       const response = await SeedGoodsReceiptApi.update(receiptId, updatePayload);
-      window.alert(response.message || '수정되었습니다.');
+      window.alert(response.message || "수정되었습니다.");
       setEditingReceiptId(null);
       setRefreshKey((prev) => prev + 1);
     } catch (err) {
-      console.error('수정 실패:', err);
+      console.error("수정 실패:", err);
       const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
-      window.alert(errorMessage || '수정에 실패했습니다.');
+      window.alert(errorMessage || "수정에 실패했습니다.");
     } finally {
       setIsUpdating(false);
     }
@@ -470,12 +472,12 @@ export function SeedInboundManagePage() {
     setIsDeletingId(row.receiptId);
     try {
       await SeedGoodsReceiptApi.delete(row.receiptId);
-      window.alert('삭제되었습니다.');
+      window.alert("삭제되었습니다.");
       setRefreshKey((prev) => prev + 1);
     } catch (error) {
-      console.error('삭제 실패:', error);
+      console.error("삭제 실패:", error);
       const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
-      window.alert(message || '삭제에 실패했습니다.');
+      window.alert(message || "삭제에 실패했습니다.");
     } finally {
       setIsDeletingId(null);
     }
@@ -505,19 +507,19 @@ export function SeedInboundManagePage() {
   const columns: ColumnDef<SeedGoodsReceiptResponse>[] = useMemo(
     () => [
       {
-        id: 'select',
+        id: "select",
         header: () => (
           <input
             type="checkbox"
             onChange={(e) => {
               if (e.target.checked) {
-                setSelectedReceiptIds(receipts.map(r => r.receiptId));
+                setSelectedReceiptIds(receipts.map((r) => r.receiptId));
               } else {
                 setSelectedReceiptIds([]);
               }
             }}
             checked={selectedReceiptIds.length === receipts.length && receipts.length > 0}
-            style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+            style={{ cursor: "pointer", width: "16px", height: "16px" }}
           />
         ),
         cell: ({ row }) => {
@@ -529,28 +531,28 @@ export function SeedInboundManagePage() {
               type="checkbox"
               checked={selectedReceiptIds.includes(row.original.receiptId)}
               onChange={() => {
-                setSelectedReceiptIds(prev =>
+                setSelectedReceiptIds((prev) =>
                   prev.includes(row.original.receiptId)
-                    ? prev.filter(id => id !== row.original.receiptId)
-                    : [...prev, row.original.receiptId]
+                    ? prev.filter((id) => id !== row.original.receiptId)
+                    : [...prev, row.original.receiptId],
                 );
               }}
-              style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+              style={{ cursor: "pointer", width: "16px", height: "16px" }}
             />
           );
         },
-        meta: { width: '50px' },
+        meta: { width: "50px" },
       },
       {
-        accessorKey: 'itemCode',
-        header: '품목',
-        meta: { width: '200px' },
+        accessorKey: "itemCode",
+        header: "품목",
+        meta: { width: "200px" },
         cell: ({ row }) => {
           const isNewRow = row.original.receiptId === -999999;
           const isEditing = row.original.receiptId === editingReceiptId;
 
           if (isNewRow || isEditing) {
-            const currentVal = editFormRef.current.itemCode ?? '';
+            const currentVal = editFormRef.current.itemCode ?? "";
             const existsInOptions = itemOptions.some((opt) => opt.itemCode === currentVal);
 
             return (
@@ -565,13 +567,13 @@ export function SeedInboundManagePage() {
                   품목 선택
                 </option>
                 {!existsInOptions && currentVal && (
-                  <option value={currentVal} style={{ color: '#9ca3af' }}>
-                    {currentVal} · {row.original.itemNm || '기존 품목'}
+                  <option value={currentVal} style={{ color: "#9ca3af" }}>
+                    {currentVal} · {row.original.itemNm || "기존 품목"}
                   </option>
                 )}
                 {itemOptions.map((opt) => (
                   <option key={opt.itemCode} value={opt.itemCode}>
-                    {opt.itemNm ?? '-'} ({opt.itemCode})
+                    {opt.itemNm ?? "-"} ({opt.itemCode})
                   </option>
                 ))}
               </select>
@@ -580,16 +582,16 @@ export function SeedInboundManagePage() {
 
           return (
             <div className="itemCell">
-              <span className="itemCell__name">{row.original.itemNm || '-'}</span>
+              <span className="itemCell__name">{row.original.itemNm || "-"}</span>
               <span className="itemCell__code">{row.original.itemCode}</span>
             </div>
           );
         },
       },
       {
-        accessorKey: 'receiptQty',
-        header: '입고수량',
-        meta: { width: '120px' },
+        accessorKey: "receiptQty",
+        header: "입고수량",
+        meta: { width: "120px" },
         cell: ({ row }) => {
           const isNewRow = row.original.receiptId === -999999;
           const isEditing = row.original.receiptId === editingReceiptId;
@@ -601,23 +603,23 @@ export function SeedInboundManagePage() {
                 type="number"
                 min="0"
                 placeholder="수량 입력"
-                defaultValue={editFormRef.current.receiptQty || ''}
+                defaultValue={editFormRef.current.receiptQty || ""}
                 onChange={(e) => {
-                  editFormRef.current.receiptQty = e.target.value === '' ? 0 : Number(e.target.value);
+                  editFormRef.current.receiptQty = e.target.value === "" ? 0 : Number(e.target.value);
                   recalcGoodQty();
                 }}
               />
             );
           }
           const qtyVal = (row.original.receiptQty ?? 0).toLocaleString();
-          const unitVal = row.original.unit ? ` ${row.original.unit}` : '';
+          const unitVal = row.original.unit ? ` ${row.original.unit}` : "";
           return `${qtyVal}${unitVal}`;
         },
       },
       {
-        accessorKey: 'defectQty',
-        header: '불량수량',
-        meta: { width: '120px' },
+        accessorKey: "defectQty",
+        header: "불량수량",
+        meta: { width: "120px" },
         cell: ({ row }) => {
           const isNewRow = row.original.receiptId === -999999;
           const isEditing = row.original.receiptId === editingReceiptId;
@@ -629,23 +631,23 @@ export function SeedInboundManagePage() {
                 type="number"
                 min="0"
                 placeholder="수량 입력"
-                defaultValue={editFormRef.current.defectQty || ''}
+                defaultValue={editFormRef.current.defectQty || ""}
                 onChange={(e) => {
-                  editFormRef.current.defectQty = e.target.value === '' ? 0 : Number(e.target.value);
+                  editFormRef.current.defectQty = e.target.value === "" ? 0 : Number(e.target.value);
                   recalcGoodQty();
                 }}
               />
             );
           }
           const qtyVal = (row.original.defectQty ?? 0).toLocaleString();
-          const unitVal = row.original.unit ? ` ${row.original.unit}` : '';
+          const unitVal = row.original.unit ? ` ${row.original.unit}` : "";
           return `${qtyVal}${unitVal}`;
         },
       },
       {
-        accessorKey: 'goodQty',
-        header: '양품수량',
-        meta: { width: '170px' },
+        accessorKey: "goodQty",
+        header: "양품수량",
+        meta: { width: "170px" },
         cell: ({ row }) => {
           const isNewRow = row.original.receiptId === -999999;
           const isEditing = row.original.receiptId === editingReceiptId;
@@ -660,7 +662,7 @@ export function SeedInboundManagePage() {
                   min="0"
                   defaultValue={editFormRef.current.goodQty || 0}
                   onChange={(e) => {
-                    const val = e.target.value === '' ? 0 : Number(e.target.value);
+                    const val = e.target.value === "" ? 0 : Number(e.target.value);
                     handleManualGoodQtyChange(val);
                   }}
                 />
@@ -678,14 +680,14 @@ export function SeedInboundManagePage() {
             );
           }
           const qtyVal = (row.original.goodQty ?? 0).toLocaleString();
-          const unitVal = row.original.unit ? ` ${row.original.unit}` : '';
+          const unitVal = row.original.unit ? ` ${row.original.unit}` : "";
           return `${qtyVal}${unitVal}`;
         },
       },
       {
-        accessorKey: 'receivedAt',
-        header: '입고시간',
-        meta: { width: '195px' },
+        accessorKey: "receivedAt",
+        header: "입고시간",
+        meta: { width: "195px" },
         cell: ({ row }) => {
           const isNewRow = row.original.receiptId === -999999;
           const isEditing = row.original.receiptId === editingReceiptId;
@@ -695,20 +697,20 @@ export function SeedInboundManagePage() {
               <input
                 className="tableInput"
                 type="datetime-local"
-                defaultValue={editFormRef.current.receivedAt ? editFormRef.current.receivedAt.slice(0, 16) : ''}
+                defaultValue={editFormRef.current.receivedAt ? editFormRef.current.receivedAt.slice(0, 16) : ""}
                 onChange={(e) => {
                   editFormRef.current.receivedAt = e.target.value;
                 }}
               />
             );
           }
-          return row.original.receivedAt ? formatDateTime(row.original.receivedAt) : '-';
+          return row.original.receivedAt ? formatDateTime(row.original.receivedAt) : "-";
         },
       },
       {
-        accessorKey: 'reportStatus',
-        header: '진행상태',
-        meta: { width: '250px' },
+        accessorKey: "reportStatus",
+        header: "진행상태",
+        meta: { width: "250px" },
         cell: ({ row }) => {
           const isNewRow = row.original.receiptId === -999999;
           if (isNewRow) return null;
@@ -718,28 +720,38 @@ export function SeedInboundManagePage() {
           const returnedQty = Math.max(goodQty - remainingQty, 0);
           const meta = REPORT_STATUS_META[row.original.reportStatus] ?? DEFAULT_STATUS_META;
           const percent = goodQty > 0 ? Math.min((returnedQty / goodQty) * 100, 100) : 0;
-          const unitVal = row.original.unit ? ` ${row.original.unit}` : '';
+          const unitVal = row.original.unit ? ` ${row.original.unit}` : "";
 
           return (
             <div className="reportStatusCell">
-              <span className={meta.badgeClass}>
-                <span className="statusBadge__dot" />
-                {meta.label}
-              </span>
-              <div className="seedProgressBar">
+              <div className="reportStatusCell__head">
+                <span className={meta.badgeClass}>
+                  <span className="statusBadge__dot" />
+                  {meta.label}
+                </span>
+                <span className="reportStatusCell__count">
+                  <strong>{returnedQty.toLocaleString()}</strong> / {goodQty.toLocaleString()}
+                  {unitVal}
+                </span>
+              </div>
+              <div
+                className="seedProgressBar"
+                role="progressbar"
+                aria-label="신고 진행률"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(percent)}
+              >
                 <div className={`seedProgressFill ${meta.barClass}`} style={{ width: `${percent}%` }} />
               </div>
-              <span className="reportStatusCell__count">
-                {returnedQty.toLocaleString()}{unitVal} / {goodQty.toLocaleString()}{unitVal} 신고
-              </span>
             </div>
           );
         },
       },
       {
-        id: 'actions',
-        header: '관리',
-        meta: { width: '180px' },
+        id: "actions",
+        header: "관리",
+        meta: { width: "180px" },
         cell: ({ row }) => {
           const isNewRow = row.original.receiptId === -999999;
           const isEditing = row.original.receiptId === editingReceiptId;
@@ -754,7 +766,7 @@ export function SeedInboundManagePage() {
                   disabled={isUpdating}
                   onClick={() => (isNewRow ? handleSaveCreate() : handleSaveEdit(row.original.receiptId))}
                 >
-                  {isUpdating ? '저장 중' : '저장'}
+                  {isUpdating ? "저장 중" : "저장"}
                 </button>
                 <button
                   type="button"
@@ -795,33 +807,42 @@ export function SeedInboundManagePage() {
                 disabled={disableRow}
                 onClick={() => handleDeleteReceipt(row.original)}
               >
-                {isDeleting ? '삭제 중' : '삭제'}
+                {isDeleting ? "삭제 중" : "삭제"}
               </button>
             </div>
           );
         },
       },
     ],
-    [editingReceiptId, isCreatingNewRow, isUpdating, isDeletingId, itemOptions, isGoodQtyManual, selectedReceiptIds, receipts]
+    [
+      editingReceiptId,
+      isCreatingNewRow,
+      isUpdating,
+      isDeletingId,
+      itemOptions,
+      isGoodQtyManual,
+      selectedReceiptIds,
+      receipts,
+    ],
   );
 
   const displayReceipts = useMemo(() => {
     if (isCreatingNewRow) {
       const dummyNewRow: SeedGoodsReceiptResponse = {
         receiptId: -999999,
-        itemCode: '',
-        itemNm: '',
-        unit: '',
-        barcode: '',
+        itemCode: "",
+        itemNm: "",
+        unit: "",
+        barcode: "",
         receiptQty: 0,
         defectQty: 0,
         goodQty: 0,
         returnedQty: 0,
         remainingQty: 0,
-        reportStatus: '',
-        receivedAt: '',
-        createdAt: '',
-        updatedAt: '',
+        reportStatus: "",
+        receivedAt: "",
+        createdAt: "",
+        updatedAt: "",
       };
       return [dummyNewRow, ...receipts];
     }
@@ -837,8 +858,8 @@ export function SeedInboundManagePage() {
         orderCode: r.itemCode,
         lineId: `#${idx + 1}`,
         itemCode: r.itemCode,
-        itemNm: r.itemNm || '',
-        unit: r.unit || '',
+        itemNm: r.itemNm || "",
+        unit: r.unit || "",
         instructQty: r.goodQty || r.receiptQty,
         barcode: r.barcode || String(r.receiptId),
       }));
@@ -851,19 +872,11 @@ export function SeedInboundManagePage() {
       <Panel
         title="씨드 입고관리 목록"
         action={
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button
-              type="button"
-              className="ghostButton"
-              onClick={handleOpenLabelModal}
-            >
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <button type="button" className="ghostButton" onClick={handleOpenLabelModal}>
               선택 라벨 인쇄 ({selectedReceiptIds.length}건)
             </button>
-            <button
-              type="button"
-              className="primaryButton"
-              onClick={handleStartCreate}
-            >
+            <button type="button" className="primaryButton" onClick={handleStartCreate}>
               등록
             </button>
           </div>

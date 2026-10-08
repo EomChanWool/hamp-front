@@ -24,27 +24,42 @@
 .reportStatusCell {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     width: 100%;
     box-sizing: border-box;
 }
 
+.reportStatusCell__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
 .reportStatusCell__count {
     font-size: 12px;
-    color: #6b7280;
-    align-self: flex-start;
+    line-height: 1;
+    color: #9ca3af;
     white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.reportStatusCell__count strong {
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
 }
 
 .statusBadge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    align-self: flex-start;
     padding: 3px 10px;
     border-radius: 999px;
     font-size: 12px;
     font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
 }
 
 .statusBadge__dot {

@@ -1,5 +1,14 @@
 import { useMemo } from "react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import {
+  BarChart,
+  Bar,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 import { Panel } from "@components/card/Panel";
 import { mesScreens } from "@/data/mesScreens";
 import { KpiGrid } from "@components/kpi/KpiGrid";
@@ -9,28 +18,31 @@ import { useRealtimePulse } from "@/hooks/useRealtimePulse";
 const DEF = mesScreens.facilityEnvironmentRealtime;
 
 const A_SERIES = [
-  { key: 'A동_온도',     label: '온도',    color: '#3b82f6', base: 55 }, 
-  { key: 'A동_습도',     label: '습도',    color: '#10b981', base: 42 }, 
-  { key: 'A동_CO2',      label: 'CO₂',     color: '#06b6d4', base: 25 }, 
-  { key: 'A동_미세먼지', label: '미세먼지', color: '#34d399', base: 18 }, 
+  { key: 'A동_온도',     label: '온도',    color: '#3b82f6', base: 55 },
+  { key: 'A동_습도',     label: '습도',    color: '#10b981', base: 42 },
+  { key: 'A동_CO2',      label: 'CO₂',     color: '#06b6d4', base: 25 },
+  { key: 'A동_미세먼지', label: '미세먼지', color: '#34d399', base: 18 },
 ]
 
 const B_SERIES = [
-  { key: 'B동_온도',     label: '온도',    color: '#2563eb', base: 48 }, 
-  { key: 'B동_습도',     label: '습도',    color: '#059669', base: 30 }, 
-  { key: 'B동_CO2',      label: 'CO₂',     color: '#0891b2', base: 20 }, 
-  { key: 'B동_미세먼지', label: '미세먼지', color: '#0d9488', base: 12 }, 
+  { key: 'B동_온도',     label: '온도',    color: '#8b5cf6', base: 48 }, // 바이올렛
+  { key: 'B동_습도',     label: '습도',    color: '#f59e0b', base: 30 }, // 앰버
+  { key: 'B동_CO2',      label: 'CO₂',     color: '#f43f5e', base: 20 }, // 로즈
+  { key: 'B동_미세먼지', label: '미세먼지', color: '#64748b', base: 12 }, // 슬레이트
 ]
 
-const HOURS = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
+/** 2시간 간격. 1시간 간격이 필요하면 '09:00', '11:00' ... 을 추가 */
+const HOURS = ["08:00", "10:00", "12:00", "14:00", "16:00"];
 
 function buildChartData(series: typeof A_SERIES, pulse: number) {
   return HOURS.map((hour, hi) => {
     const entry: Record<string, string | number> = { time: hour };
     series.forEach((s, si) => {
-      entry[s.key] = Math.min(
-        100,
-        Math.max(5, s.base + Math.sin((hi + si * 1.3 + pulse * 0.25) * 0.7) * s.base * 0.45),
+      entry[s.key] = Math.round(
+        Math.min(
+          100,
+          Math.max(5, s.base + Math.sin((hi * 2 + si * 1.3 + pulse * 0.25) * 0.7) * s.base * 0.45),
+        ),
       );
     });
     return entry;
@@ -49,18 +61,23 @@ function EnvChart({ title, series, pulse }: EnvChartProps) {
   return (
     <Panel title={title}>
       <ResponsiveContainer width="100%" height={260}>
-        <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-          <defs>
-            {series.map((s) => (
-              <linearGradient key={s.key} id={`grad-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={s.color} stopOpacity={0.25} />
-                <stop offset="95%" stopColor={s.color} stopOpacity={0} />
-              </linearGradient>
-            ))}
-          </defs>
+        <BarChart
+          data={data}
+          margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+          barCategoryGap="22%"
+          barGap={3}
+        >
+          <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
           <XAxis dataKey="time" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-          <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+          <YAxis
+            domain={[0, 100]}
+            ticks={[0, 25, 50, 75, 100]}
+            tick={{ fontSize: 11, fill: "#94a3b8" }}
+            axisLine={false}
+            tickLine={false}
+          />
           <Tooltip
+            cursor={{ fill: "rgba(148, 163, 184, 0.08)" }}
             contentStyle={{
               background: "var(--bg-card)",
               border: "1px solid var(--border)",
@@ -69,10 +86,9 @@ function EnvChart({ title, series, pulse }: EnvChartProps) {
               color: "var(--text-body)",
               boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
             }}
-            cursor={{ stroke: "#94a3b8", strokeWidth: 1, strokeDasharray: "4 4" }}
             formatter={(value, name) => {
               const s = series.find((s) => s.key === name);
-              return [`${Math.round(Number(value))}`, s?.label ?? name];
+              return [`${value}`, s?.label ?? name];
             }}
           />
           <Legend
@@ -82,18 +98,16 @@ function EnvChart({ title, series, pulse }: EnvChartProps) {
             formatter={(value) => series.find((s) => s.key === value)?.label ?? value}
           />
           {series.map((s) => (
-            <Area
+            <Bar
               key={s.key}
-              type="monotone"
               dataKey={s.key}
-              stroke={s.color}
-              strokeWidth={2}
-              fill={`url(#grad-${s.key})`}
-              dot={false}
-              activeDot={{ r: 4, fill: s.color, stroke: "#fff", strokeWidth: 2 }}
+              fill={s.color}
+              radius={[3, 3, 0, 0]}
+              maxBarSize={14}
+              animationDuration={400}
             />
           ))}
-        </AreaChart>
+        </BarChart>
       </ResponsiveContainer>
     </Panel>
   );

@@ -47,7 +47,7 @@
   display: inline-flex;
   gap: 2px;
   padding: 3px;
-  background: #f1f5f9;
+  background: var(--border);
   border-radius: 8px;
 }
 
