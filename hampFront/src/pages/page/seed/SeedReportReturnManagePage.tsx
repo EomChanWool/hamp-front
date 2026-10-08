@@ -11,12 +11,14 @@ import {
   type SeedGoodsReceiptReturnUpdateRequest
 } from '@/api/seed/SeedGoodsReceiptReturn';
 import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
-import { SeedReturnPrintModal } from '@/components/modal/SeedReturnPrintModal';
 import '@pages/page/seed/Seed.css';
 import { Badge } from '@/components/common/Badge';
 import { formatDateTime } from '@/utils/common';
 
 const PENDING_PREVIEW_COUNT = 3;
+
+const DOWNLOAD_FILE_PREFIX = '씨드신고반납';
+const DOWNLOAD_FILE_EXT = 'docx';
 
 export function SeedReportReturnManagePage() {
   const [dataList, setDataList] = useState<SeedGoodsReceiptReturnItemResponse[]>([]);
@@ -51,11 +53,11 @@ export function SeedReportReturnManagePage() {
   const editQuantitiesRef = useRef<Record<number, number | ''>>({});
   const editHullQuantitiesRef = useRef<Record<number, number | ''>>({});
 
-  // 인쇄 대상 행 (null 이면 인쇄 모달 닫힘)
-  const [printItem, setPrintItem] = useState<SeedGoodsReceiptReturnItemResponse | null>(null);
+  //  - 페이지를 넘겨도 선택이 유지되도록 페이지 단위가 아닌 전체 기준으로 관리
+  const [selectedReturnIds, setSelectedReturnIds] = useState<number[]>([]);
 
-  // 모달에 넘기는 배열을 매 렌더마다 새로 만들면 출력일시가 계속 바뀌므로 메모이제이션
-  const printItems = useMemo(() => (printItem ? [printItem] : []), [printItem]);
+  // 다운로드 진행 중 여부 (중복 클릭 방지)
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const [searchFilters, setSearchFilters] = useState({
     itemCode: '',
@@ -237,9 +239,87 @@ export function SeedReportReturnManagePage() {
     loadPendingList();
   }, [loadPendingList]);
 
+  // ── 체크박스 선택 관련 ─────────────────────────────────────────────
+
+  // 선택 여부를 빠르게 확인하기 위한 Set
+  const selectedIdSet = useMemo(() => new Set(selectedReturnIds), [selectedReturnIds]);
+
+  // 현재 페이지 기준 "전체 선택" / "일부 선택" 상태 (헤더 체크박스용)
+  const isAllSelectedOnPage =
+    completedList.length > 0 &&
+    completedList.every((item) => selectedIdSet.has(item.returnId));
+
+  const isSomeSelectedOnPage =
+    !isAllSelectedOnPage &&
+    completedList.some((item) => selectedIdSet.has(item.returnId));
+
+  // 행 체크박스 토글
+  const handleToggleRow = useCallback((returnId: number) => {
+    setSelectedReturnIds((prev) =>
+      prev.includes(returnId)
+        ? prev.filter((id) => id !== returnId)
+        : [...prev, returnId]
+    );
+  }, []);
+
+  // 헤더 체크박스: 현재 페이지의 신고완료 건 전체 선택 / 해제
+  const handleToggleAllOnPage = useCallback(
+    (checked: boolean) => {
+      const pageIds = completedList.map((item) => item.returnId);
+
+      setSelectedReturnIds((prev) =>
+        checked
+          ? Array.from(new Set([...prev, ...pageIds]))
+          : prev.filter((id) => !pageIds.includes(id))
+      );
+    },
+    [completedList]
+  );
+
+  // ── 파일 다운로드 ──────────────────────────────────────────────────
+  //  - 체크한 returnId 들을 서버로 보내고, 응답(blob)을 파일로 저장
+  const handleDownload = async () => {
+    if (selectedReturnIds.length === 0) {
+      window.alert('다운로드할 신고완료 건을 선택해주세요.');
+      return;
+    }
+
+    if (isDownloading) return;
+    setIsDownloading(true);
+
+    try {
+      const blob = await SeedGoodsReceiptReturnApi.document({
+        returnIds: selectedReturnIds,
+      });
+
+      // 파일명: 씨드신고반납_yyyyMMdd.xlsx
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      const fileName = `${DOWNLOAD_FILE_PREFIX}_${yyyy}${mm}${dd}.${DOWNLOAD_FILE_EXT}`;
+
+      // blob -> 임시 URL -> a 태그 클릭으로 저장
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('씨드 신고반납 문서 다운로드 실패:', error);
+      window.alert('파일 다운로드에 실패했습니다.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const handleSearch = () => {
     setPage(0);
     setPendingExpanded(false);
+    setSelectedReturnIds([]); // 검색 조건이 바뀌면 선택 초기화
 
     const itemCode =
       itemCodeInputRef.current?.value.trim() ||
@@ -293,6 +373,7 @@ export function SeedReportReturnManagePage() {
 
     setPage(0);
     setPendingExpanded(false); // 초기화 시 신고대기는 접힘 상태로
+    setSelectedReturnIds([]); // 초기화 시 선택도 초기화
 
     setSearchFilters({
       itemCode: '',
@@ -421,6 +502,9 @@ export function SeedReportReturnManagePage() {
       delete editQuantitiesRef.current[item.returnId];
       delete editHullQuantitiesRef.current[item.returnId];
 
+      // 삭제한 건이 체크돼 있었다면 선택 목록에서도 제거
+      setSelectedReturnIds((prev) => prev.filter((id) => id !== item.returnId));
+
       window.alert('성공적으로 삭제되었습니다.');
       await loadCompletedList();
       await loadPendingList();
@@ -432,6 +516,37 @@ export function SeedReportReturnManagePage() {
 
   const completedColumns: ColumnDef<SeedGoodsReceiptReturnItemResponse>[] = useMemo(
     () => [
+      // 맨 앞 체크박스 컬럼
+      {
+        id: 'select',
+        header: () => (
+          <input
+            type="checkbox"
+            className="seedCheckbox"
+            aria-label="현재 페이지 전체 선택"
+            checked={isAllSelectedOnPage}
+            // 일부만 선택된 상태는 '-' 표시(indeterminate)
+            ref={(el) => {
+              if (el) el.indeterminate = isSomeSelectedOnPage;
+            }}
+            onChange={(e) => handleToggleAllOnPage(e.target.checked)}
+          />
+        ),
+        cell: ({ row }) => {
+          const { returnId } = row.original;
+
+          return (
+            <input
+              type="checkbox"
+              className="seedCheckbox"
+              aria-label={`신고 ID ${returnId} 선택`}
+              checked={selectedIdSet.has(returnId)}
+              onChange={() => handleToggleRow(returnId)}
+            />
+          );
+        },
+        enableSorting: false, // 체크박스 컬럼은 정렬 대상 아님
+      },
       {
         accessorKey: 'receiptBarcode',
         header: '입고 라벨',
@@ -586,14 +701,6 @@ export function SeedReportReturnManagePage() {
               <button
                 type="button"
                 className="miniButton"
-                onClick={() => setPrintItem(item)}
-              >
-                인쇄
-              </button>
-
-              <button
-                type="button"
-                className="miniButton"
                 onClick={() => handleStartEdit(item)}
               >
                 수정
@@ -611,7 +718,16 @@ export function SeedReportReturnManagePage() {
         },
       },
     ],
-    [editingId, editForm.returnDueDate]
+    // 체크박스 관련 값들을 의존성에 추가 (선택이 바뀌면 컬럼을 다시 만들어 체크 표시 갱신)
+    [
+      editingId,
+      editForm.returnDueDate,
+      selectedIdSet,
+      isAllSelectedOnPage,
+      isSomeSelectedOnPage,
+      handleToggleRow,
+      handleToggleAllOnPage,
+    ]
   );
 
 
@@ -919,6 +1035,23 @@ export function SeedReportReturnManagePage() {
                     <span className="seedSectionHeader__count">
                       {totalElements}
                     </span>
+
+                    {/* 제목 줄 오른쪽 끝: 선택한 건 파일 다운로드 버튼
+                        (margin-left: auto 로 오른쪽 끝 정렬 -> Seed.css 의 .seedSectionHeader__actions) */}
+                    <div className="seedSectionHeader__actions">
+                      <button
+                        type="button"
+                        className="seedDownloadButton"
+                        onClick={handleDownload}
+                        disabled={selectedReturnIds.length === 0 || isDownloading}
+                      >
+                        {isDownloading
+                          ? '다운로드 중...'
+                          : selectedReturnIds.length > 0
+                            ? `파일 다운로드 (${selectedReturnIds.length})`
+                            : '파일 다운로드'}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="seedCompletedTable">
@@ -944,12 +1077,6 @@ export function SeedReportReturnManagePage() {
           )}
         </div>
       </Panel>
-
-      <SeedReturnPrintModal
-        isOpen={printItem !== null}
-        onClose={() => setPrintItem(null)}
-        items={printItems}
-      />
     </section>
   );
 }

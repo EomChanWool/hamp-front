@@ -1291,6 +1291,79 @@
   flex-shrink: 0;
 }
 
+/* =========================================================================
+   신고완료 — 제목 줄 오른쪽 파일 다운로드 버튼 / 체크박스
+   ========================================================================= */
+
+/* 제목 줄 오른쪽 끝으로 밀기 */
+.seedSectionHeader__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.seedDownloadButton {
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid #0f8a52;
+  border-radius: 8px;
+  background: #0f8a52;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.seedDownloadButton:hover:not(:disabled) {
+  background: #15803d;
+  border-color: #15803d;
+}
+
+.seedDownloadButton:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* 선택된 건이 없을 때 */
+.seedDownloadButton:disabled {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+[data-theme="dark"] .seedDownloadButton:disabled {
+  background: #2a2d36;
+  border-color: #3a3e49;
+  color: #6b7280;
+}
+
+/* 체크박스 */
+.seedCheckbox {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  padding: 0;
+  margin: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  accent-color: #0f8a52;
+  vertical-align: middle;
+}
+
+/* 신고완료 테이블 첫 번째 컬럼(체크박스)은 좁게
+   - Custable.css 의 th, td { min-width: 90px } 를 덮어씀 */
+.seedCompletedTable th:first-child,
+.seedCompletedTable td:first-child {
+  width: 48px;
+  min-width: 48px;
+  padding-left: 16px;
+  padding-right: 8px;
+}
+
 /* ========================================
    씨드 신고반납 관리 - Dark Mode
 ======================================== */
