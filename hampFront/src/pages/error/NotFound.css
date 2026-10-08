@@ -1,0 +1,120 @@
+/* ================================
+   NotFound
+================================ */
+
+.notFoundPage {
+  min-height: 100vh;
+  background: url("/src/assets/images/login-bg.png") no-repeat center center;
+  background-size: cover;
+  display: grid;
+  place-items: center;
+  padding: 40px 20px;
+  box-sizing: border-box;
+}
+
+.notFoundPanel {
+  width: 100%;
+  max-width: 460px;
+}
+
+.notFoundContent {
+  width: 100%;
+  padding: 50px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
+
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.notFoundCode {
+  margin-bottom: 8px;
+
+  color: var(--primary-light);
+  font-size: 72px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -3px;
+}
+
+.notFoundContent h1 {
+  margin: 0 0 14px;
+
+  color: #e0e0e0;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.notFoundContent p {
+  margin: 0 0 30px;
+
+  color: #748094;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
+.notFoundContent .primaryButton {
+  width: 180px;
+  height: 40px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: var(--primary-hover);
+  color: #fff;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.notFoundContent .primaryButton:hover {
+  background: var(--primary);
+}
+
+.notFoundContent .primaryButton:active {
+  transform: translateY(1px);
+}
+
+/* ================================
+   반응형
+   480 : 작은 폰
+================================ */
+
+@media (max-width: 480px) {
+  .notFoundPage {
+    padding: 24px 16px;
+  }
+
+  .notFoundContent {
+    padding: 40px 24px;
+  }
+
+  .notFoundCode {
+    font-size: 60px;
+  }
+
+  .notFoundContent h1 {
+    font-size: 19px;
+  }
+
+  .notFoundContent p {
+    font-size: 12px;
+    margin-bottom: 26px;
+  }
+
+  .notFoundContent .primaryButton {
+    width: 160px;
+  }
+}

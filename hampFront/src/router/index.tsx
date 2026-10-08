@@ -1,5 +1,5 @@
 import type { ComponentType, SVGProps } from 'react'
-import { createBrowserRouter, Navigate, RouterProvider, type RouteObject } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, type RouteObject } from 'react-router-dom'
 import {
   AdjustmentsHorizontalIcon,
   ArchiveBoxIcon,
@@ -348,8 +348,6 @@ export const routeObj: RouteObject[] = [
           return strippedRoute
         }),
       ),
-
-      { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
   {
