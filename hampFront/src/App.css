@@ -497,14 +497,6 @@ button {
   gap: 16px;
 }
 
-.metricGrid > article:not(:first-child) {
-  min-height: 110px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  box-sizing: border-box;
-}
-
 .metricCard,
 .panel,
 .searchBand,
