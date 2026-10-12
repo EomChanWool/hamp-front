@@ -1,3 +1,4 @@
+import React from "react";
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef, type SortingState } from '@tanstack/react-table'
 import { ChevronUpIcon, ChevronDownIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid'
 import './Custable.css'
@@ -14,26 +15,34 @@ type CusTableProps<T> = {
   noDataMessage?: string
   sorting?: SortingState // 정렬 상태 (예: [{ id: 'defCode', desc: false }])
   onSortingChange?: (sorting: SortingState) => void // 정렬 변경 핸들러
+
+  // 행 아래에 표시할 확장 콘텐츠
+  expandedRowId?: string | null
+  getRowId?: (row: T) => string
+  renderExpandedRow?: (row: T) => React.ReactNode
 }
 
 /** xaas 스타일 컬럼 정의(ColumnDef) 기반 테이블. accessorKey로 실제 데이터 필드명을 그대로 사용한다 */
-export function CusTable<T>({ 
-  data, 
-  columns, 
-  onRowClick, 
+export function CusTable<T>({
+  data,
+  columns,
+  onRowClick,
   noDataMessage,
   sorting = [],
-  onSortingChange
+  onSortingChange,
+  expandedRowId,
+  getRowId,
+  renderExpandedRow,
 }: CusTableProps<T>) {
-  const table = useReactTable({ 
-    data, 
-    columns, 
+  const table = useReactTable({
+    data,
+    columns,
     state: { sorting },
     onSortingChange: (updater) => {
-      const nextSorting = typeof updater === 'function' 
-        ? updater(table.getState().sorting) 
+      const nextSorting = typeof updater === 'function'
+        ? updater(table.getState().sorting)
         : updater;
-      
+
       onSortingChange?.(nextSorting);
     },
     getCoreRowModel: getCoreRowModel(),
@@ -45,7 +54,7 @@ export function CusTable<T>({
   const handleSort = (columnId: string) => {
     const currentSorting = table.getState().sorting;
     const existingSort = currentSorting.find((s) => s.id === columnId);
-    
+
     let nextSorting: SortingState = [];
 
     if (!existingSort) {
@@ -53,7 +62,7 @@ export function CusTable<T>({
       nextSorting = [...currentSorting, { id: columnId, desc: false }];
     } else if (!existingSort.desc) {
       // 2. 이미 오름차순(asc)인 경우: 내림차순(desc)으로 변경
-      nextSorting = currentSorting.map((s) => 
+      nextSorting = currentSorting.map((s) =>
         s.id === columnId ? { ...s, desc: true } : s
       );
     } else {
@@ -82,10 +91,10 @@ export function CusTable<T>({
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
                 const canSort = header.column.getCanSort()
-                const sortDir = header.column.getIsSorted() 
+                const sortDir = header.column.getIsSorted()
 
                 return (
-                  <th 
+                  <th
                     key={header.id}
                     onClick={canSort ? () => handleSort(header.column.id) : undefined}
                     style={{ cursor: canSort ? 'pointer' : 'default' }}
@@ -110,26 +119,64 @@ export function CusTable<T>({
             </tr>
           ))}
         </thead>
+
         <tbody>
           {data.length === 0 && noDataMessage ? (
             <tr>
               <td colSpan={colCount}>{noDataMessage}</td>
             </tr>
           ) : (
-            table.getRowModel().rows.map((row) => (
-              <tr
-                key={row.id}
-                onClick={onRowClick ? (event) => onRowClick(row.original, event) : undefined}
-                style={{ cursor: onRowClick ? 'pointer' : 'default' }}
-                className={onRowClick ? "hover:bg-gray-50 transition-colors" : ""}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                ))}
-              </tr>
-            ))
+            table.getRowModel().rows.map((row) => {
+              const rowKey = getRowId
+                ? getRowId(row.original)
+                : row.id;
+
+              const isExpanded =
+                expandedRowId != null &&
+                expandedRowId === rowKey;
+
+              const expandedContent = renderExpandedRow?.(row.original);
+
+              return (
+                <React.Fragment key={row.id}>
+                  <tr
+                    onClick={
+                      onRowClick
+                        ? (event) => onRowClick(row.original, event)
+                        : undefined
+                    }
+                    style={{
+                      cursor: onRowClick ? "pointer" : "default",
+                    }}
+                    className={
+                      onRowClick
+                        ? "hover:bg-gray-50 transition-colors"
+                        : ""
+                    }
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+
+                  {isExpanded && expandedContent != null && (
+                    <tr className="cus-table-expanded-row">
+                      <td colSpan={colCount}>
+                        {expandedContent}
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })
           )}
         </tbody>
+
       </table>
     </div>
   )
