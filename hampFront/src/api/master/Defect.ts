@@ -3,19 +3,19 @@ import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
 /** 불량 등록 요청 */
 export interface DefectCreateRequest {
-  defCode: string;          
-  operCode?: string | null;  
-  defNm?: string | null;     
-  defType?: string | null;   
-  severity?: string | null; 
+  defCode: string;
+  operCode?: string | null;
+  defNm?: string | null;
+  defType?: string | null;
+  severity?: string | null;
 }
 
 /** 불량 정보 수정 요청 */
 export interface DefectUpdateRequest {
-  operCode?: string | null;  
-  defNm?: string | null;     
-  defType?: string | null;   
-  severity?: string | null;  
+  operCode?: string | null;
+  defNm?: string | null;
+  defType?: string | null;
+  severity?: string | null;
 }
 
 /** 불량 목록 조회 아이템 응답 */
@@ -27,7 +27,7 @@ export interface DefectResponse {
   severity: string;
   useYn: string;
   createdAt: string;
-  updatedAt: string; 
+  updatedAt: string;
 }
 
 /** 불량 상세 조회 응답 */
@@ -42,7 +42,7 @@ export interface DefectDetailResponse {
   defType: string;
   severity: string;
   useYn: string;
-  createdAt: string; 
+  createdAt: string;
   updatedAt: string;
 }
 
@@ -111,8 +111,15 @@ export const DefectApi = {
   },
 
   /** 불량 셀렉트 옵션 조회 */
-    getOptions: async (): Promise<ApiResponseListDefectOptionResponse> => {
-      const res = await apiClient.get<ApiResponseListDefectOptionResponse>('/defects/options');
-      return res.data;
-    },
+  getOptions: async (
+    operCode: string
+  ): Promise<ApiResponseListDefectOptionResponse> => {
+    const res = await apiClient.get<ApiResponseListDefectOptionResponse>(
+      '/defects/options',
+      {
+        params: { operCode },
+      }
+    );
+    return res.data;
+  },
 };
