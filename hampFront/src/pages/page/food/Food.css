@@ -400,6 +400,30 @@
 }
 
 
+.cus-table-expanded-row > td {
+  padding: 0 !important;
+  background: #fbfcfe;
+}
+
+.food-routing-item-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.food-routing-item-toggle {
+  color: #2877c7;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 /* ================================================
    반응형
    1024 : 태블릿 — 요약 그리드 4열→2열, 카드 패딩 축소

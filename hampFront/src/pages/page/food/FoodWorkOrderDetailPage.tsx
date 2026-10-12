@@ -5,7 +5,7 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { CusTable } from "@/components/table/CusTable";
 import { Badge } from "@/components/common/Badge";
 import Spinner from "@/components/common/Spinner";
-import { WorkOrderApi } from "@/api/WorkOrder";
+import { WorkOrderApi, type WorkOrderRoutingStepResponse } from "@/api/WorkOrder";
 import { UserApi, type UserOptionResponse } from "@/api/User";
 import { type SalesOrderStatusLineResponse } from "@/api/sales/SalesOrder";
 
@@ -44,6 +44,13 @@ export function FoodWorkOrderDetailPage() {
   // --- useRef 기반 지시수량 임시 저장소 (lineId를 키로 관리) ---
   const editQuantitiesRef = useRef<Record<string, number | ''>>({});
 
+  // 라우팅 아코디언 상태 추가
+  const [expandedRoutingLineId, setExpandedRoutingLineId] = useState<string | null>(null);
+
+  const [routingStepsByLineId, setRoutingStepsByLineId] = useState<
+    Record<string, WorkOrderRoutingStepResponse[]>
+  >({});
+
   useEffect(() => {
     const fetchUserOptions = async () => {
       try {
@@ -64,6 +71,17 @@ export function FoodWorkOrderDetailPage() {
     try {
       const response = await WorkOrderApi.getDetail(workId);
       const data = response.data as any;
+      const routingMap: Record<string, WorkOrderRoutingStepResponse[]> = {};
+
+      (data.lines ?? []).forEach((line: any) => {
+        routingMap[String(line.workOrderLineId)] = [...(line.routingSteps ?? [])]
+          .sort((a: WorkOrderRoutingStepResponse, b: WorkOrderRoutingStepResponse) =>
+            a.operSeq - b.operSeq
+          );
+      });
+
+      setRoutingStepsByLineId(routingMap);
+      setExpandedRoutingLineId(null);
 
       const mappedData: WorkOrderMaster = {
         workOrderNo: data.workId || workId,
@@ -261,17 +279,47 @@ export function FoodWorkOrderDetailPage() {
           </div>
         ),
       },
+
       {
         accessorKey: "itemNm",
         header: "품목",
-        cell: ({ row }) => (
-          <div className="food-cell-item-name">
-            {row.original.itemNm}
-            {row.original.itemCode && <span className="food-cell-item-code">({row.original.itemCode})</span>}
-          </div>
-        ),
+        cell: ({ row }) => {
+          const line = row.original;
+          const isExpanded =
+            expandedRoutingLineId === line.id;
+
+          return (
+            <button
+              type="button"
+              className="food-routing-item-button"
+              onClick={(event) => {
+                event.stopPropagation();
+
+                setExpandedRoutingLineId((prev) =>
+                  prev === line.id ? null : line.id
+                );
+              }}
+            >
+              <span className="food-cell-item-name">
+                {line.itemNm}
+                {line.itemCode && (
+                  <span className="food-cell-item-code">
+                    ({line.itemCode})
+                  </span>
+                )}
+              </span>
+
+              {!isEditing && (
+                <span className="food-routing-item-toggle">
+                  {isExpanded ? "접기 −" : "라우팅 보기 ＋"}
+                </span>
+              )}
+            </button>
+          );
+        },
       },
-       {
+
+      {
         accessorKey: "dueDate",
         header: "납기일자",
         cell: ({ row }) => (
@@ -336,7 +384,7 @@ export function FoodWorkOrderDetailPage() {
         },
       },
     ],
-    [selectedLines, activeLines, isEditing]
+    [selectedLines, activeLines, isEditing, expandedRoutingLineId]
   );
 
   const handleOpenLabelModal = () => {
@@ -471,11 +519,67 @@ export function FoodWorkOrderDetailPage() {
             </div>
           </div>
 
+
           <CusTable
             data={activeLines}
             columns={columns}
             noDataMessage="등록된 작업지시 라인이 없습니다."
+            getRowId={(line) => line.id}
+            expandedRowId={!isEditing ? expandedRoutingLineId : null}
+            renderExpandedRow={(line) => {
+              const steps = routingStepsByLineId[line.id] ?? [];
+
+              return (
+                <div className="food-routing-content">
+                  {steps.length === 0 ? (
+                    <p>등록된 라우팅 공정이 없습니다.</p>
+                  ) : (
+                    <ol className="food-routing-timeline">
+                      {steps.map((step) => (
+                        <li
+                          key={`${step.operCode}-${step.operSeq}`}
+                          className="food-routing-step"
+                        >
+                          <div className="food-routing-step-title">
+                            {step.operSeq}. {step.operNm}
+                            {step.finalYn === "Y" && (
+                              <span> (최종 공정)</span>
+                            )}
+                          </div>
+
+                          <div>공정 코드: {step.operCode}</div>
+
+                          <div>
+                            설비: {step.equipments
+                              ?.map((equipment) => equipment.eqNm)
+                              .join(", ") || "-"}
+                          </div>
+
+                          <div>
+                            상태: {step.done
+                              ? "완료"
+                              : step.inProgress
+                                ? "진행 중"
+                                : "대기"}
+                          </div>
+
+                          <div>
+                            투입량: {step.inputQty ?? "-"} /
+                            산출량: {step.outputQty ?? "-"} /
+                            불량량: {step.defectQty ?? "-"} /
+                            수율: {step.yieldRate == null
+                              ? "-"
+                              : `${step.yieldRate}%`}
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </div>
+              );
+            }}
           />
+
         </div>
 
         <div className="food-detail-footer">
