@@ -124,24 +124,35 @@ export function WorkOrderScanPage() {
     setIsDefectDropdownOpen(false);
   }, []);
 
+
   // 불량 옵션 조회
-  const loadDefectOptions = useCallback(async () => {
+  const loadDefectOptions = useCallback(async (operCode: string) => {
     setIsDefectOptionsLoading(true);
+
     try {
-      const res = await DefectApi.getOptions();
+      const res = await DefectApi.getOptions(operCode);
       setDefectOptions(res.data ?? []);
       setDefectOptionsError(null);
     } catch (err) {
       console.error('불량 유형 목록을 불러오지 못했습니다.', err);
       setDefectOptionsError('불량 유형을 불러오지 못했습니다.');
+      setDefectOptions([]);
     } finally {
       setIsDefectOptionsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadDefectOptions();
-  }, [loadDefectOptions]);
+    const operCode = pendingFinish?.operCode;
+
+    if (!operCode) {
+      setDefectOptions([]);
+      return;
+    }
+
+    loadDefectOptions(operCode);
+  }, [pendingFinish?.operCode, loadDefectOptions]);
+
 
   // defCode -> 불량명 (옵션에 없으면 코드 그대로 표시)
   const getDefectName = (defCode: string) =>
@@ -870,8 +881,13 @@ export function WorkOrderScanPage() {
                                           type="button"
                                           className={`workOrderDefectDropdownTrigger ${isDefectDropdownOpen ? 'isOpen' : ''}`}
                                           onClick={() => {
-                                            if (!isDefectDropdownOpen && !isDefectOptionsLoading && (defectOptionsError || defectOptions.length === 0)) {
-                                              loadDefectOptions();
+                                            if (
+                                              !isDefectDropdownOpen &&
+                                              !isDefectOptionsLoading &&
+                                              (defectOptionsError || defectOptions.length === 0) &&
+                                              pendingFinish?.operCode
+                                            ) {
+                                              loadDefectOptions(pendingFinish.operCode);
                                             }
                                             setIsDefectDropdownOpen((prev) => !prev);
                                             setFinishError(null);
@@ -894,7 +910,7 @@ export function WorkOrderScanPage() {
                                         {isDefectDropdownOpen && (
                                           <div className="workOrderDefectDropdownMenu">
                                             {defectOptionsError || defectOptions.length === 0 ? (
-                                              // [변경] 실패/빈 목록일 때 새로고침 없이 다시 불러올 수 있게 버튼 추가
+                                              // 실패/빈 목록일 때 새로고침 없이 다시 불러올 수 있게 버튼 추가
                                               <div className="workOrderDefectDropdownEmpty">
                                                 <div>
                                                   {isDefectOptionsLoading
@@ -905,7 +921,11 @@ export function WorkOrderScanPage() {
                                                   <button
                                                     type="button"
                                                     className="workOrderDefectRetryBtn"
-                                                    onClick={loadDefectOptions}
+                                                    onClick={() => {
+                                                      if (pendingFinish?.operCode) {
+                                                        loadDefectOptions(pendingFinish.operCode);
+                                                      }
+                                                    }}
                                                   >
                                                     다시 불러오기
                                                   </button>
