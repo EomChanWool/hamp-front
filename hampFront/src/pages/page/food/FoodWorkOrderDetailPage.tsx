@@ -353,16 +353,6 @@ export function FoodWorkOrderDetailPage() {
     setIsWorkOrderPrintModalOpen(true);
   };
 
-  const handleOpenAllLabelModal = () => {
-    if (workOrder.lines.length === 0) {
-      alert("인쇄할 라인이 없습니다.");
-      return;
-    }
-
-    setPrintLines(workOrder.lines);
-    setIsWorkOrderPrintModalOpen(true);
-  };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "DONE": return <Badge tone="good">완료</Badge>;
@@ -474,15 +464,6 @@ export function FoodWorkOrderDetailPage() {
                     onClick={handleOpenLabelModal}
                   >
                     선택 라벨 인쇄
-
-                  </button>
-
-                  <button
-                    type="button"
-                    className="ghostButton food-label-print-btn"
-                    onClick={handleOpenAllLabelModal}
-                  >
-                    전체 라벨 인쇄
 
                   </button>
                 </>
