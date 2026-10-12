@@ -1364,6 +1364,19 @@
   padding-right: 8px;
 }
 
+
+/* 신고완료 테이블 - 입고 라벨 아래 입고일시 */
+.itemCell__receivedAt {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+[data-theme="dark"] .itemCell__receivedAt {
+  color: #9ca3af;
+}
+
 /* ========================================
    씨드 신고반납 관리 - Dark Mode
 ======================================== */

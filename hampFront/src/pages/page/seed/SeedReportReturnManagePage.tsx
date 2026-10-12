@@ -551,12 +551,16 @@ export function SeedReportReturnManagePage() {
         accessorKey: 'receiptBarcode',
         header: '입고 라벨',
         cell: ({ row }) => {
-          const { receiptBarcode } = row.original;
+          const { receiptBarcode, receivedAt } = row.original;
 
           return (
             <div className="itemCell">
               <span className="itemCell__barcode">
                 {receiptBarcode ?? '-'}
+              </span>
+
+                <span className="itemCell__receivedAt">
+                입고 {receivedAt ? formatDateTime(receivedAt) : '-'}
               </span>
             </div>
           );
