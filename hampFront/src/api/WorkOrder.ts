@@ -44,6 +44,7 @@ export interface WorkOrderLineResponse {
     createdAt: string;
     updatedAt: string;
     barcode: string;
+    routingSteps: WorkOrderRoutingStepResponse[];
 }
 
 /** 작업지시 목록 조회 아이템 응답 (요약 정보 포함) */
