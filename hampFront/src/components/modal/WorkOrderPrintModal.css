@@ -478,6 +478,100 @@
     height: auto;
 }
 
+/* 공정순서 인쇄 영역 */
+.work-order-print-routing {
+    width: 100%;
+    margin: 12px auto 4px;
+    padding: 10px 12px;
+    box-sizing: border-box;
+    border: 1px solid #d5dfeb;
+    border-radius: 5px;
+    background: #fff;
+    color: #243449;
+    font-size: 11px;
+    line-height: 1.45;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+.work-order-print-routing h4 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 8px;
+    padding: 0 0 6px;
+    border-bottom: 1px solid #dce5ed;
+    color: #176b3a;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.work-order-print-routing-step {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr);
+    align-items: start;
+    gap: 7px;
+    padding: 5px 2px;
+    border-bottom: 1px solid #edf1f5;
+    overflow-wrap: anywhere;
+    break-inside: avoid;
+}
+
+.work-order-print-routing-step:last-child {
+    border-bottom: none;
+}
+
+.work-order-print-routing-step>strong {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    min-height: 18px;
+    box-sizing: border-box;
+    border-radius: 4px;
+    background: #e8f3eb;
+    color: #176b3a;
+    font-size: 10px;
+}
+
+.work-order-print-routing-step>span {
+    min-width: 0;
+}
+
+@media print {
+    .work-order-print-routing {
+        margin-top: 8px;
+        padding: 8px 10px;
+        box-shadow: none;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .work-order-print-routing-step {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
+
+.work-order-print-routing-step-info {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    min-width: 0;
+}
+
+.work-order-print-routing-step-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #243449;
+}
+
+.work-order-print-routing-step-detail {
+    font-size: 9px;
+    color: #68788c;
+    overflow-wrap: anywhere;
+}
+
 /* =========================================================
    Checklist
 ========================================================= */

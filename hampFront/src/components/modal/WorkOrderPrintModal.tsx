@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Barcode from "react-barcode";
 import "@/components/modal/WorkOrderPrintModal.css";
+import type { WorkOrderRoutingStepResponse } from "@/api/WorkOrder";
 
 export interface WorkOrderLineDetail {
     id: string;
@@ -16,6 +17,7 @@ export interface WorkOrderLineDetail {
     instructQty: number;
     barcode: string;
     unit?: string;
+    routingSteps?: WorkOrderRoutingStepResponse[];
 }
 
 export type WorkOrderStatus =
@@ -39,6 +41,7 @@ interface WorkOrderPrintModalProps {
     onClose: () => void;
     selectedLines: WorkOrderLineDetail[];
     workOrder: WorkOrderMaster;
+    includeRouting?: boolean;
 }
 
 const getStatusText = (status: WorkOrderStatus) => {
@@ -69,6 +72,7 @@ export function WorkOrderPrintModal({
     onClose,
     selectedLines,
     workOrder,
+    includeRouting = false,
 }: WorkOrderPrintModalProps) {
     const [printDateTime, setPrintDateTime] = useState("");
 
@@ -237,7 +241,7 @@ export function WorkOrderPrintModal({
                                 </tbody>
                             </table>
 
-                            {/* 품목별 바코드 (색상 명시: 다크모드와 무관하게 흰 배경 + 검정 바) */}
+                            {/* 품목별 바코드 */}
                             <div className="work-order-item-barcode">
                                 <Barcode
                                     value={line.barcode || "NO-BARCODE"}
@@ -250,6 +254,40 @@ export function WorkOrderPrintModal({
                                     lineColor="#000000"
                                 />
                             </div>
+
+                            {/* 공정순서: 포함 인쇄일 때만 표시 */}
+                            {includeRouting && (
+                                <div className="work-order-print-routing">
+                                    <h4>공정순서</h4>
+
+                                    {(line.routingSteps ?? [])
+                                        .slice()
+                                        .sort((a, b) => a.operSeq - b.operSeq)
+                                        .map((step) => (
+                                            <div
+                                                key={`${step.operCode}-${step.operSeq}`}
+                                                className="work-order-print-routing-step"
+                                            >
+                                                <strong>{String(step.operSeq).padStart(2, "0")}</strong>
+
+                                                <div className="work-order-print-routing-step-info">
+                                                    <span className="work-order-print-routing-step-name">
+                                                        {step.operNm}
+                                                    </span>
+
+                                                    <span className="work-order-print-routing-step-detail">
+                                                        {step.operCode}
+                                                        {step.equipments?.length
+                                                            ? ` · ${step.equipments
+                                                                .map((eq) => eq.eqNm)
+                                                                .join(", ")}`
+                                                            : ""}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

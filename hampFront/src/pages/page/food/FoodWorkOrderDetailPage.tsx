@@ -154,6 +154,7 @@ export function FoodWorkOrderDetailPage() {
   const [selectedLines, setSelectedLines] = useState<string[]>([]);
   const [printLines, setPrintLines] = useState<WorkOrderLineDetail[]>([]);
   const [isWorkOrderPrintModalOpen, setIsWorkOrderPrintModalOpen] = useState(false);
+  const [includeRouting, setIncludeRouting] = useState(false);
   const [isSalesOrderModalOpen, setIsSalesOrderModalOpen] = useState(false);
 
   // --- useRef 기반 지시수량 임시 저장소 (lineId를 키로 관리) ---
@@ -508,17 +509,21 @@ export function FoodWorkOrderDetailPage() {
     [selectedLines, activeLines, isEditing, expandedRoutingLineId]
   );
 
-  const handleOpenLabelModal = () => {
+  const handleOpenLabelModal = (withRouting = false) => {
     if (selectedLines.length === 0) {
       alert("인쇄할 라인을 최소 1개 이상 선택해주세요.");
       return;
     }
 
-    const linesToPrint = workOrder.lines.filter((l) =>
-      selectedLines.includes(l.id)
-    );
+    const linesToPrint = workOrder.lines
+      .filter((line) => selectedLines.includes(line.id))
+      .map((line) => ({
+        ...line,
+        routingSteps: routingStepsByLineId[line.id] ?? [],
+      }));
 
     setPrintLines(linesToPrint);
+    setIncludeRouting(withRouting);
     setIsWorkOrderPrintModalOpen(true);
   };
 
@@ -630,9 +635,17 @@ export function FoodWorkOrderDetailPage() {
                   <button
                     type="button"
                     className="ghostButton food-label-print-btn"
-                    onClick={handleOpenLabelModal}
+                    onClick={() => handleOpenLabelModal(false)}
                   >
                     선택 라벨 인쇄
+                  </button>
+
+                  <button
+                    type="button"
+                    className="ghostButton food-label-print-btn"
+                    onClick={() => handleOpenLabelModal(true)}
+                  >
+                    공정순서포함 인쇄
                   </button>
                 </>
               )}
@@ -716,6 +729,7 @@ export function FoodWorkOrderDetailPage() {
         onClose={() => setIsWorkOrderPrintModalOpen(false)}
         selectedLines={printLines}
         workOrder={workOrder}
+        includeRouting={includeRouting}
       />
     </section>
   );
