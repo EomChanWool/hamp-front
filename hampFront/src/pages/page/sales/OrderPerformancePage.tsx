@@ -223,6 +223,9 @@ export function OrderPerformancePage() {
   }, [period, groupBy]);
 
   const currentProgressPct = kpiData?.progressRate ?? 0;
+  const displayProgressPct = Number(
+    currentProgressPct.toFixed(2)
+  );
   const totalOrderQty = kpiData?.totalOrderQty ?? 0;
   const totalProducedQty = kpiData?.totalProducedQty ?? 0;
   const completedLineCount = kpiData?.completedLineCount ?? 0;
@@ -291,7 +294,7 @@ export function OrderPerformancePage() {
           label="총 생산수량"
           value={totalProducedQty.toLocaleString()}
           unit="EA"
-          sub={`주문 대비 ${currentProgressPct}%`}
+          sub={`주문 대비 ${displayProgressPct}%`}
         />
         <StatCard
           Icon={CheckCircleIcon}
