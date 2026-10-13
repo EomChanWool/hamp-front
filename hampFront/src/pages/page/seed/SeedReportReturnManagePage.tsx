@@ -1,24 +1,24 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ColumnDef, SortingState } from '@tanstack/react-table';
-import { Panel } from '@components/card/Panel';
-import { SearchBand, type SearchField } from '@components/search/SearchBand';
-import { CusTable } from '@components/table/CusTable';
-import { CusPagination } from '@components/table/CusPagination';
-import Spinner from '@/components/common/Spinner';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
+import { Panel } from "@components/card/Panel";
+import { SearchBand, type SearchField } from "@components/search/SearchBand";
+import { CusTable } from "@components/table/CusTable";
+import { CusPagination } from "@components/table/CusPagination";
+import Spinner from "@/components/common/Spinner";
 import {
   SeedGoodsReceiptReturnApi,
   type SeedGoodsReceiptReturnItemResponse,
-  type SeedGoodsReceiptReturnUpdateRequest
-} from '@/api/seed/SeedGoodsReceiptReturn';
-import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
-import '@pages/page/seed/Seed.css';
-import { Badge } from '@/components/common/Badge';
-import { formatDateTime } from '@/utils/common';
+  type SeedGoodsReceiptReturnUpdateRequest,
+} from "@/api/seed/SeedGoodsReceiptReturn";
+import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
+import "@pages/page/seed/Seed.css";
+import { Badge } from "@/components/common/Badge";
+import { formatDateTime } from "@/utils/common";
 
 const PENDING_PREVIEW_COUNT = 3;
 
-const DOWNLOAD_FILE_PREFIX = '씨드신고반납';
-const DOWNLOAD_FILE_EXT = 'docx';
+const DOWNLOAD_FILE_PREFIX = "씨드신고반납";
+const DOWNLOAD_FILE_EXT = "docx";
 
 export function SeedReportReturnManagePage() {
   const [dataList, setDataList] = useState<SeedGoodsReceiptReturnItemResponse[]>([]);
@@ -32,11 +32,7 @@ export function SeedReportReturnManagePage() {
   const [pendingExpanded, setPendingExpanded] = useState(false);
   const pendingTotalRef = useRef(0);
 
-  const completedList = useMemo(
-    () => dataList.filter((item) => item.processStatus === 1),
-    [dataList]
-  );
-
+  const completedList = useMemo(() => dataList.filter((item) => item.processStatus === 1), [dataList]);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -50,8 +46,8 @@ export function SeedReportReturnManagePage() {
   const [editForm, setEditForm] = useState<Partial<SeedGoodsReceiptReturnUpdateRequest>>({});
 
   // --- useRef 기반 수량 임시 저장소 (returnId를 키로 관리하여 포커스 튀김 방지) ---
-  const editQuantitiesRef = useRef<Record<number, number | ''>>({});
-  const editHullQuantitiesRef = useRef<Record<number, number | ''>>({});
+  const editQuantitiesRef = useRef<Record<number, number | "">>({});
+  const editHullQuantitiesRef = useRef<Record<number, number | "">>({});
 
   //  - 페이지를 넘겨도 선택이 유지되도록 페이지 단위가 아닌 전체 기준으로 관리
   const [selectedReturnIds, setSelectedReturnIds] = useState<number[]>([]);
@@ -60,9 +56,9 @@ export function SeedReportReturnManagePage() {
   const [isDownloading, setIsDownloading] = useState(false);
 
   const [searchFilters, setSearchFilters] = useState({
-    itemCode: '',
-    processStatus: '',
-    processStatusKeyword: '',
+    itemCode: "",
+    processStatus: "",
+    processStatusKeyword: "",
   });
 
   const itemCodeRef = useRef<HTMLSelectElement>(null);
@@ -76,7 +72,7 @@ export function SeedReportReturnManagePage() {
       const res = await ItemApi.getOptions({ productType: 0 });
       setItemOptions(res.data ?? []);
     } catch (error) {
-      console.error('품목 옵션 조회 실패:', error);
+      console.error("품목 옵션 조회 실패:", error);
     }
   }, []);
 
@@ -99,55 +95,49 @@ export function SeedReportReturnManagePage() {
         name: "processStatus",
       },
       {
-        type: 'select',
-        label: '품목',
+        type: "select",
+        label: "품목",
         ref: itemCodeRef,
-        name: 'itemCode',
+        name: "itemCode",
         options: [
-          { label: '전체', value: '' },
+          { label: "전체", value: "" },
           ...itemOptions.map((opt) => ({
-            label: `${opt.itemNm} (${opt.itemCode ?? '-'})`,
+            label: `${opt.itemNm} (${opt.itemCode ?? "-"})`,
             value: opt.itemCode,
           })),
         ],
       },
       {
-        type: 'select',
-        label: '처리상태',
+        type: "select",
+        label: "처리상태",
         ref: processStatusRef,
-        name: 'processStatus',
+        name: "processStatus",
         options: [
-          { label: '전체', value: '' },
-          { label: '신고대기', value: '0' },
-          { label: '신고완료', value: '1' },
+          { label: "전체", value: "" },
+          { label: "신고대기", value: "0" },
+          { label: "신고완료", value: "1" },
         ],
       },
     ],
-    [itemOptions]
+    [itemOptions],
   );
 
-  //  요약칩 '품목' 라벨
-  //  - 검색조건에 품목이 선택돼 있으면 "품목 · 품목명 (코드)" 로 표시
-  //  - 선택 안 했으면 "품목 · 전체"
-  //  - 품목 옵션에서 못 찾는 경우(직접 입력한 코드 등)는 코드만 표시
   const itemChipLabel = useMemo(() => {
-    if (!searchFilters.itemCode) return '품목 · 전체';
+    if (!searchFilters.itemCode) return "전체";
 
     const found = itemOptions.find((opt) => opt.itemCode === searchFilters.itemCode);
-    return found
-      ? `품목 · ${found.itemNm} (${found.itemCode})`
-      : `품목 · ${searchFilters.itemCode}`;
+    return found ? `${found.itemNm} (${found.itemCode})` : searchFilters.itemCode;
   }, [searchFilters.itemCode, itemOptions]);
 
   const sortParams = useMemo(() => {
-    return sorting.map((sort) => `${sort.id},${sort.desc ? 'desc' : 'asc'}`);
+    return sorting.map((sort) => `${sort.id},${sort.desc ? "desc" : "asc"}`);
   }, [sorting]);
 
   const loadCompletedList = useCallback(async () => {
     setIsLoading(true);
 
     try {
-      if (searchFilters.processStatusKeyword === '__INVALID__') {
+      if (searchFilters.processStatusKeyword === "__INVALID__") {
         setDataList([]);
         setTotalElements(0);
         setTotalPages(0);
@@ -175,8 +165,8 @@ export function SeedReportReturnManagePage() {
       setTotalElements(pageData?.totalElements ?? 0);
       setTotalPages(pageData?.totalPages ?? 0);
     } catch (error) {
-      console.error('씨드 신고완료 목록 조회 실패:', error);
-      window.alert('데이터를 불러오는 중 오류가 발생했습니다.');
+      console.error("씨드 신고완료 목록 조회 실패:", error);
+      window.alert("데이터를 불러오는 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -187,7 +177,7 @@ export function SeedReportReturnManagePage() {
   //  - 펼침: 전체 건수만큼 한 번에 조회 (page 는 항상 0)
   const loadPendingList = useCallback(async () => {
     try {
-      if (searchFilters.processStatusKeyword === '__INVALID__') {
+      if (searchFilters.processStatusKeyword === "__INVALID__") {
         setPendingList([]);
         setPendingTotalElements(0);
         pendingTotalRef.current = 0;
@@ -195,9 +185,7 @@ export function SeedReportReturnManagePage() {
       }
       const params: Record<string, any> = {
         page: 0,
-        size: pendingExpanded
-          ? Math.max(pendingTotalRef.current, PENDING_PREVIEW_COUNT)
-          : PENDING_PREVIEW_COUNT,
+        size: pendingExpanded ? Math.max(pendingTotalRef.current, PENDING_PREVIEW_COUNT) : PENDING_PREVIEW_COUNT,
         processStatus: 0,
       };
 
@@ -218,14 +206,14 @@ export function SeedReportReturnManagePage() {
       pendingTotalRef.current = total;
       setPendingTotalElements(total);
     } catch (error) {
-      console.error('씨드 신고대기 목록 조회 실패:', error);
-      window.alert('데이터를 불러오는 중 오류가 발생했습니다.');
+      console.error("씨드 신고대기 목록 조회 실패:", error);
+      window.alert("데이터를 불러오는 중 오류가 발생했습니다.");
     }
   }, [pendingExpanded, searchFilters.itemCode, searchFilters.processStatusKeyword, sortParams]);
 
   const visiblePendingList = useMemo(
     () => (pendingExpanded ? pendingList : pendingList.slice(0, PENDING_PREVIEW_COUNT)),
-    [pendingExpanded, pendingList]
+    [pendingExpanded, pendingList],
   );
 
   // 접힘 상태에서 "+N건 더보기" 에 표시할 숨은 건수
@@ -246,19 +234,14 @@ export function SeedReportReturnManagePage() {
 
   // 현재 페이지 기준 "전체 선택" / "일부 선택" 상태 (헤더 체크박스용)
   const isAllSelectedOnPage =
-    completedList.length > 0 &&
-    completedList.every((item) => selectedIdSet.has(item.returnId));
+    completedList.length > 0 && completedList.every((item) => selectedIdSet.has(item.returnId));
 
-  const isSomeSelectedOnPage =
-    !isAllSelectedOnPage &&
-    completedList.some((item) => selectedIdSet.has(item.returnId));
+  const isSomeSelectedOnPage = !isAllSelectedOnPage && completedList.some((item) => selectedIdSet.has(item.returnId));
 
   // 행 체크박스 토글
   const handleToggleRow = useCallback((returnId: number) => {
     setSelectedReturnIds((prev) =>
-      prev.includes(returnId)
-        ? prev.filter((id) => id !== returnId)
-        : [...prev, returnId]
+      prev.includes(returnId) ? prev.filter((id) => id !== returnId) : [...prev, returnId],
     );
   }, []);
 
@@ -268,19 +251,17 @@ export function SeedReportReturnManagePage() {
       const pageIds = completedList.map((item) => item.returnId);
 
       setSelectedReturnIds((prev) =>
-        checked
-          ? Array.from(new Set([...prev, ...pageIds]))
-          : prev.filter((id) => !pageIds.includes(id))
+        checked ? Array.from(new Set([...prev, ...pageIds])) : prev.filter((id) => !pageIds.includes(id)),
       );
     },
-    [completedList]
+    [completedList],
   );
 
   // ── 파일 다운로드 ──────────────────────────────────────────────────
   //  - 체크한 returnId 들을 서버로 보내고, 응답(blob)을 파일로 저장
   const handleDownload = async () => {
     if (selectedReturnIds.length === 0) {
-      window.alert('다운로드할 신고완료 건을 선택해주세요.');
+      window.alert("다운로드할 신고완료 건을 선택해주세요.");
       return;
     }
 
@@ -292,16 +273,16 @@ export function SeedReportReturnManagePage() {
         returnIds: selectedReturnIds,
       });
 
-      // 파일명: 씨드신고반납_yyyyMMdd.xlsx
+      // 파일명: 씨드신고반납_yyyyMMdd.docx
       const now = new Date();
       const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, '0');
-      const dd = String(now.getDate()).padStart(2, '0');
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
       const fileName = `${DOWNLOAD_FILE_PREFIX}_${yyyy}${mm}${dd}.${DOWNLOAD_FILE_EXT}`;
 
       // blob -> 임시 URL -> a 태그 클릭으로 저장
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = fileName;
       document.body.appendChild(a);
@@ -309,8 +290,8 @@ export function SeedReportReturnManagePage() {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('씨드 신고반납 문서 다운로드 실패:', error);
-      window.alert('파일 다운로드에 실패했습니다.');
+      console.error("씨드 신고반납 문서 다운로드 실패:", error);
+      window.alert("파일 다운로드에 실패했습니다.");
     } finally {
       setIsDownloading(false);
     }
@@ -321,40 +302,28 @@ export function SeedReportReturnManagePage() {
     setPendingExpanded(false);
     setSelectedReturnIds([]); // 검색 조건이 바뀌면 선택 초기화
 
-    const itemCode =
-      itemCodeInputRef.current?.value.trim() ||
-      itemCodeRef.current?.value.trim() ||
-      '';
+    const itemCode = itemCodeInputRef.current?.value.trim() || itemCodeRef.current?.value.trim() || "";
 
-    const processStatusInput =
-      processStatusInputRef.current?.value.trim() || '';
+    const processStatusInput = processStatusInputRef.current?.value.trim() || "";
 
-    const normalizedStatus = processStatusInput.replace(/\s/g, '');
+    const normalizedStatus = processStatusInput.replace(/\s/g, "");
 
-    let processStatus = '';
-    let processStatusKeyword = '';
+    let processStatus = "";
+    let processStatusKeyword = "";
 
     if (!normalizedStatus) {
       // 상단 input이 비어 있으면 기존 상세 select 사용
-      processStatus = processStatusRef.current?.value.trim() || '';
-    } else if (normalizedStatus === '신고') {
+      processStatus = processStatusRef.current?.value.trim() || "";
+    } else if (normalizedStatus === "신고") {
       // 신고 = 신고대기 + 신고완료
-      processStatusKeyword = '신고';
-    } else if (
-      normalizedStatus === '대기' ||
-      normalizedStatus === '신고대기' ||
-      normalizedStatus === '0'
-    ) {
-      processStatus = '0';
-    } else if (
-      normalizedStatus === '완료' ||
-      normalizedStatus === '신고완료' ||
-      normalizedStatus === '1'
-    ) {
-      processStatus = '1';
+      processStatusKeyword = "신고";
+    } else if (normalizedStatus === "대기" || normalizedStatus === "신고대기" || normalizedStatus === "0") {
+      processStatus = "0";
+    } else if (normalizedStatus === "완료" || normalizedStatus === "신고완료" || normalizedStatus === "1") {
+      processStatus = "1";
     } else {
       // 알 수 없는 검색어
-      processStatusKeyword = '__INVALID__';
+      processStatusKeyword = "__INVALID__";
     }
 
     setSearchFilters({
@@ -365,20 +334,20 @@ export function SeedReportReturnManagePage() {
   };
 
   const handleReset = () => {
-    if (itemCodeInputRef.current) itemCodeInputRef.current.value = '';
-    if (processStatusInputRef.current) processStatusInputRef.current.value = '';
+    if (itemCodeInputRef.current) itemCodeInputRef.current.value = "";
+    if (processStatusInputRef.current) processStatusInputRef.current.value = "";
 
-    if (itemCodeRef.current) itemCodeRef.current.value = '';
-    if (processStatusRef.current) processStatusRef.current.value = '';
+    if (itemCodeRef.current) itemCodeRef.current.value = "";
+    if (processStatusRef.current) processStatusRef.current.value = "";
 
     setPage(0);
     setPendingExpanded(false); // 초기화 시 신고대기는 접힘 상태로
     setSelectedReturnIds([]); // 초기화 시 선택도 초기화
 
     setSearchFilters({
-      itemCode: '',
-      processStatus: '',
-      processStatusKeyword: '',
+      itemCode: "",
+      processStatus: "",
+      processStatusKeyword: "",
     });
 
     setSorting([]);
@@ -396,8 +365,8 @@ export function SeedReportReturnManagePage() {
     editHullQuantitiesRef.current[item.returnId] = item.hullQty;
 
     setEditForm({
-      returnDueDate: item.returnDueDate ?? '',
-      reportDate: item.reportDate ?? '',
+      returnDueDate: item.returnDueDate ?? "",
+      reportDate: item.reportDate ?? "",
     });
   };
 
@@ -416,13 +385,13 @@ export function SeedReportReturnManagePage() {
       const finalReturnQty = editQuantitiesRef.current[item.returnId];
       const finalHullQty = editHullQuantitiesRef.current[item.returnId];
 
-      if (finalReturnQty === '' || Number(finalReturnQty) <= 0) {
-        window.alert('신고 수량을 입력해주세요.');
+      if (finalReturnQty === "" || Number(finalReturnQty) <= 0) {
+        window.alert("신고 수량을 입력해주세요.");
         return;
       }
 
-      if (finalHullQty === '') {
-        window.alert('껍질 수량을 입력해주세요.');
+      if (finalHullQty === "") {
+        window.alert("껍질 수량을 입력해주세요.");
         return;
       }
 
@@ -430,17 +399,17 @@ export function SeedReportReturnManagePage() {
       const hullQty = Number(finalHullQty);
 
       if (Number.isNaN(hullQty)) {
-        window.alert('껍질 수량은 숫자로 입력해주세요.');
+        window.alert("껍질 수량은 숫자로 입력해주세요.");
         return;
       }
 
       if (hullQty < 0) {
-        window.alert('껍질 수량은 0 이상으로 입력해주세요.');
+        window.alert("껍질 수량은 0 이상으로 입력해주세요.");
         return;
       }
 
       if (hullQty > returnQty) {
-        window.alert('껍질 수량은 신고 수량을 초과할 수 없습니다.');
+        window.alert("껍질 수량은 신고 수량을 초과할 수 없습니다.");
         return;
       }
 
@@ -454,7 +423,7 @@ export function SeedReportReturnManagePage() {
 
       await SeedGoodsReceiptReturnApi.update(item.returnId, payload);
 
-      window.alert('성공적으로 수정되었습니다.');
+      window.alert("성공적으로 수정되었습니다.");
 
       delete editQuantitiesRef.current[item.returnId];
       delete editHullQuantitiesRef.current[item.returnId];
@@ -465,8 +434,8 @@ export function SeedReportReturnManagePage() {
       await loadCompletedList();
       await loadPendingList();
     } catch (error) {
-      console.error('씨드 신고반납 수정 실패:', error);
-      window.alert('수정에 실패했습니다.');
+      console.error("씨드 신고반납 수정 실패:", error);
+      window.alert("수정에 실패했습니다.");
     }
   };
 
@@ -482,12 +451,12 @@ export function SeedReportReturnManagePage() {
         returnDueDate: item.returnDueDate,
         reportDate: item.reportDate,
       });
-      window.alert('승인 처리되었습니다.');
+      window.alert("승인 처리되었습니다.");
       await loadCompletedList();
       await loadPendingList();
     } catch (error) {
-      console.error('씨드 신고반납 승인 실패:', error);
-      window.alert('승인 처리에 실패했습니다.');
+      console.error("씨드 신고반납 승인 실패:", error);
+      window.alert("승인 처리에 실패했습니다.");
     }
   };
 
@@ -505,12 +474,12 @@ export function SeedReportReturnManagePage() {
       // 삭제한 건이 체크돼 있었다면 선택 목록에서도 제거
       setSelectedReturnIds((prev) => prev.filter((id) => id !== item.returnId));
 
-      window.alert('성공적으로 삭제되었습니다.');
+      window.alert("성공적으로 삭제되었습니다.");
       await loadCompletedList();
       await loadPendingList();
     } catch (error) {
-      console.error('씨드 신고반납 삭제 실패:', error);
-      window.alert('삭제에 실패했습니다.');
+      console.error("씨드 신고반납 삭제 실패:", error);
+      window.alert("삭제에 실패했습니다.");
     }
   };
 
@@ -518,7 +487,7 @@ export function SeedReportReturnManagePage() {
     () => [
       // 맨 앞 체크박스 컬럼
       {
-        id: 'select',
+        id: "select",
         header: () => (
           <input
             type="checkbox"
@@ -548,27 +517,23 @@ export function SeedReportReturnManagePage() {
         enableSorting: false, // 체크박스 컬럼은 정렬 대상 아님
       },
       {
-        accessorKey: 'receiptBarcode',
-        header: '입고 라벨',
+        accessorKey: "receiptBarcode",
+        header: "입고 라벨",
         cell: ({ row }) => {
           const { receiptBarcode, receivedAt } = row.original;
 
           return (
             <div className="itemCell">
-              <span className="itemCell__barcode">
-                {receiptBarcode ?? '-'}
-              </span>
+              <span className="itemCell__barcode">{receiptBarcode ?? "-"}</span>
 
-                <span className="itemCell__receivedAt">
-                입고 {receivedAt ? formatDateTime(receivedAt) : '-'}
-              </span>
+              <span className="itemCell__receivedAt">입고 {receivedAt ? formatDateTime(receivedAt) : "-"}</span>
             </div>
           );
         },
       },
       {
-        accessorKey: 'returnQty',
-        header: '신고수량',
+        accessorKey: "returnQty",
+        header: "신고수량",
         cell: ({ row }) => {
           const item = row.original;
           const isEditing = editingId === item.returnId;
@@ -582,22 +547,17 @@ export function SeedReportReturnManagePage() {
               type="number"
               min={1}
               className="seedTableEditInput"
-              defaultValue={
-                editQuantitiesRef.current[item.returnId] ?? item.returnQty
-              }
+              defaultValue={editQuantitiesRef.current[item.returnId] ?? item.returnQty}
               onChange={(e) => {
-                editQuantitiesRef.current[item.returnId] =
-                  e.target.value === ''
-                    ? ''
-                    : Number(e.target.value);
+                editQuantitiesRef.current[item.returnId] = e.target.value === "" ? "" : Number(e.target.value);
               }}
             />
           );
         },
       },
       {
-        accessorKey: 'hullQty',
-        header: '껍질수량',
+        accessorKey: "hullQty",
+        header: "껍질수량",
         cell: ({ row }) => {
           const item = row.original;
           const isEditing = editingId === item.returnId;
@@ -610,45 +570,37 @@ export function SeedReportReturnManagePage() {
             <input
               type="number"
               min={0}
-              max={
-                editQuantitiesRef.current[item.returnId] ??
-                item.returnQty
-              }
+              max={editQuantitiesRef.current[item.returnId] ?? item.returnQty}
               className="seedTableEditInput"
-              defaultValue={
-                editHullQuantitiesRef.current[item.returnId] ?? item.hullQty
-              }
+              defaultValue={editHullQuantitiesRef.current[item.returnId] ?? item.hullQty}
               onChange={(e) => {
-                editHullQuantitiesRef.current[item.returnId] =
-                  e.target.value === ''
-                    ? ''
-                    : Number(e.target.value);
+                editHullQuantitiesRef.current[item.returnId] = e.target.value === "" ? "" : Number(e.target.value);
               }}
             />
           );
         },
       },
       {
-        accessorKey: 'reportDate',
-        header: '신고일자',
-        cell: ({ row }) => row.original.reportDate ?? '-',
+        accessorKey: "reportDate",
+        header: "신고일자",
+        cell: ({ row }) => row.original.reportDate ?? "-",
       },
       {
-        accessorKey: 'returnDueDate',
-        header: '반납예정일',
+        accessorKey: "returnDueDate",
+        header: "반납예정일",
         cell: ({ row }) => {
           const item = row.original;
           const isEditing = editingId === item.returnId;
 
           if (!isEditing) {
-            return item.returnDueDate ?? '-';
+            return item.returnDueDate ?? "-";
           }
 
           return (
             <input
               type="date"
               className="seedTableEditInput"
-              value={editForm.returnDueDate ?? ''}
+              value={editForm.returnDueDate ?? ""}
               onChange={(e) =>
                 setEditForm((prev) => ({
                   ...prev,
@@ -660,8 +612,8 @@ export function SeedReportReturnManagePage() {
         },
       },
       {
-        accessorKey: 'processStatus',
-        header: '상태',
+        accessorKey: "processStatus",
+        header: "상태",
         cell: () => (
           <Badge tone="good">
             <span className="seedDoneBadge">
@@ -672,8 +624,8 @@ export function SeedReportReturnManagePage() {
         ),
       },
       {
-        id: 'actions',
-        header: '관리',
+        id: "actions",
+        header: "관리",
         cell: ({ row }) => {
           const item = row.original;
           const isEditing = editingId === item.returnId;
@@ -681,19 +633,11 @@ export function SeedReportReturnManagePage() {
           if (isEditing) {
             return (
               <div className="rowActions">
-                <button
-                  type="button"
-                  className="miniButton"
-                  onClick={() => handleSaveEdit(item)}
-                >
+                <button type="button" className="miniButton" onClick={() => handleSaveEdit(item)}>
                   저장
                 </button>
 
-                <button
-                  type="button"
-                  className="miniButton"
-                  onClick={() => handleCancelEdit(item.returnId)}
-                >
+                <button type="button" className="miniButton" onClick={() => handleCancelEdit(item.returnId)}>
                   취소
                 </button>
               </div>
@@ -702,19 +646,11 @@ export function SeedReportReturnManagePage() {
 
           return (
             <div className="rowActions">
-              <button
-                type="button"
-                className="miniButton"
-                onClick={() => handleStartEdit(item)}
-              >
+              <button type="button" className="miniButton" onClick={() => handleStartEdit(item)}>
                 수정
               </button>
 
-              <button
-                type="button"
-                className="miniButton danger"
-                onClick={() => handleDelete(item)}
-              >
+              <button type="button" className="miniButton danger" onClick={() => handleDelete(item)}>
                 삭제
               </button>
             </div>
@@ -731,17 +667,12 @@ export function SeedReportReturnManagePage() {
       isSomeSelectedOnPage,
       handleToggleRow,
       handleToggleAllOnPage,
-    ]
+    ],
   );
-
 
   return (
     <section className="screenStack">
-      <SearchBand
-        fields={searchFields}
-        onSearch={handleSearch}
-        onReset={handleReset}
-      />
+      <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
       <Panel title="씨드 신고반납 관리 목록">
         <div className="relative min-h-[300px]">
@@ -751,53 +682,24 @@ export function SeedReportReturnManagePage() {
             </div>
           ) : (
             <>
-              {/* 요약칩 */}
-              <div className="seedSummaryChips">
-                <div className="seedSummaryChip seedSummaryChip--item">
-                  <span className="seedSummaryChip__label">
-                    {itemChipLabel}
-                  </span>
-                </div>
-
-                <div className="seedSummaryChip">
-                  <span className="seedSummaryChip__count is-pending">
-                    {pendingTotalElements}
-                  </span>
-                  <span className="seedSummaryChip__label">
-                    신고대기
-                  </span>
-                </div>
-
-                <div className="seedSummaryChip">
-                  <span className="seedSummaryChip__count is-done">
-                    {totalElements}
-                  </span>
-                  <span className="seedSummaryChip__label">
-                    신고완료
-                  </span>
-                </div>
+              <div className="seedScope">
+                <span className="seedScope__label">조회 품목</span>
+                <span className="seedScope__value">{itemChipLabel}</span>
               </div>
 
               <div className="seedReportSections">
-
                 {/* 신고대기 */}
                 <section className="seedReportSection">
                   <div className="seedSectionHeader">
                     <span className="seedSectionHeader__dot seedSectionHeader__dot--pending" />
 
-                    <h2 className="seedSectionHeader__title">
-                      신고대기 · 승인 필요
-                    </h2>
+                    <h2 className="seedSectionHeader__title">신고대기 · 승인 필요</h2>
 
-                    <span className="seedSectionHeader__count">
-                      {pendingTotalElements}
-                    </span>
+                    <span className="seedSectionHeader__count">{pendingTotalElements}</span>
                   </div>
 
                   {pendingList.length === 0 ? (
-                    <div className="seedEmptyState">
-                      승인 대기 중인 신고가 없습니다.
-                    </div>
+                    <div className="seedEmptyState">승인 대기 중인 신고가 없습니다.</div>
                   ) : (
                     <>
                       <div className="seedPendingGrid">
@@ -805,97 +707,71 @@ export function SeedReportReturnManagePage() {
                           const isEditing = editingId === item.returnId;
 
                           return (
-                            <div
-                              key={item.returnId}
-                              className="seedPendingCard"
-                            >
-                              <div className="seedPendingCard__accent" />
-
+                            <div key={item.returnId} className={`seedPendingCard${isEditing ? " is-editing" : ""}`}>
                               <div className="seedPendingCard__body">
+                                {/* 헤더: 입고 라벨 / 입고일시 + 상태 */}
+                                <div className="seedPendingCard__head">
+                                  <div className="seedPendingCard__receipt">
+                                    <div className="seedPendingCard__barcode">{item.receiptBarcode ?? "-"}</div>
 
-                                {/* 입고 라벨 / 입고일시 */}
-                                <div className="seedPendingCard__receipt">
-                                  <div className="seedPendingCard__barcode">
-                                    {item.receiptBarcode ?? '-'}
+                                    <div className="seedPendingCard__receivedAt">
+                                      입고 {item.receivedAt ? formatDateTime(item.receivedAt) : "-"}
+                                    </div>
                                   </div>
 
-                                  <div className="seedPendingCard__receivedAt">
-                                    입고 {item.receivedAt ? formatDateTime(item.receivedAt) : '-'}
-                                  </div>
+                                  <span className="seedPendingCard__status">{isEditing ? "수정 중" : "승인 대기"}</span>
                                 </div>
 
                                 {isEditing ? (
                                   <>
                                     {/* 수정 모드 */}
                                     <div className="seedPendingEditGrid">
-
                                       <div className="seedPendingField">
-                                        <div className="seedPendingField__label">
-                                          신고수량
-                                        </div>
+                                        <div className="seedPendingField__label">신고수량</div>
 
                                         <input
                                           type="number"
                                           min={1}
                                           className="seedPendingInput"
-                                          defaultValue={
-                                            editQuantitiesRef.current[item.returnId] ??
-                                            item.returnQty
-                                          }
+                                          defaultValue={editQuantitiesRef.current[item.returnId] ?? item.returnQty}
                                           onChange={(e) => {
                                             editQuantitiesRef.current[item.returnId] =
-                                              e.target.value === ''
-                                                ? ''
-                                                : Number(e.target.value);
+                                              e.target.value === "" ? "" : Number(e.target.value);
                                           }}
                                         />
                                       </div>
 
                                       <div className="seedPendingField">
-                                        <div className="seedPendingField__label">
-                                          껍질수량
-                                        </div>
+                                        <div className="seedPendingField__label">껍질수량</div>
 
                                         <input
                                           type="number"
                                           min={0}
-                                          max={
-                                            editQuantitiesRef.current[item.returnId] ??
-                                            item.returnQty
-                                          }
+                                          max={editQuantitiesRef.current[item.returnId] ?? item.returnQty}
                                           className="seedPendingInput"
-                                          defaultValue={
-                                            editHullQuantitiesRef.current[item.returnId] ??
-                                            item.hullQty
-                                          }
+                                          defaultValue={editHullQuantitiesRef.current[item.returnId] ?? item.hullQty}
                                           onChange={(e) => {
                                             const value = e.target.value;
 
                                             editHullQuantitiesRef.current[item.returnId] =
-                                              value === '' ? '' : Number(value);
+                                              value === "" ? "" : Number(value);
                                           }}
                                         />
                                       </div>
 
                                       <div className="seedPendingField">
-                                        <div className="seedPendingField__label">
-                                          신고일자
-                                        </div>
+                                        <div className="seedPendingField__label">신고일자</div>
 
-                                        <div className="seedPendingField__value">
-                                          {item.reportDate ?? '-'}
-                                        </div>
+                                        <div className="seedPendingField__value">{item.reportDate ?? "-"}</div>
                                       </div>
 
                                       <div className="seedPendingField">
-                                        <div className="seedPendingField__label">
-                                          반납예정일
-                                        </div>
+                                        <div className="seedPendingField__label">반납예정일</div>
 
                                         <input
                                           type="date"
                                           className="seedPendingInput"
-                                          value={editForm.returnDueDate ?? ''}
+                                          value={editForm.returnDueDate ?? ""}
                                           onChange={(e) =>
                                             setEditForm({
                                               ...editForm,
@@ -904,7 +780,6 @@ export function SeedReportReturnManagePage() {
                                           }
                                         />
                                       </div>
-
                                     </div>
 
                                     <div className="seedPendingEditActions">
@@ -919,9 +794,7 @@ export function SeedReportReturnManagePage() {
                                       <button
                                         type="button"
                                         className="seedPendingButton seedPendingButton--cancel"
-                                        onClick={() =>
-                                          handleCancelEdit(item.returnId)
-                                        }
+                                        onClick={() => handleCancelEdit(item.returnId)}
                                       >
                                         취소
                                       </button>
@@ -929,58 +802,40 @@ export function SeedReportReturnManagePage() {
                                   </>
                                 ) : (
                                   <>
-                                    {/* 기본 표시 */}
+                                    {/* 핵심 수량 */}
                                     <div className="seedPendingStats">
-
                                       <div className="seedPendingStat">
-                                        <div className="seedPendingStat__value">
-                                          {item.returnQty}
-                                        </div>
-                                        <div className="seedPendingStat__label">
-                                          신고수량
-                                        </div>
+                                        <div className="seedPendingStat__label">신고수량</div>
+                                        <div className="seedPendingStat__value">{item.returnQty}</div>
                                       </div>
 
                                       <div className="seedPendingStat">
-                                        <div className="seedPendingStat__value">
-                                          {item.hullQty}
-                                        </div>
-                                        <div className="seedPendingStat__label">
-                                          껍질수량
-                                        </div>
+                                        <div className="seedPendingStat__label">껍질수량</div>
+                                        <div className="seedPendingStat__value">{item.hullQty}</div>
                                       </div>
-
-                                      <div className="seedPendingStat">
-                                        <div className="seedPendingStat__value seedPendingStat__value--date">
-                                          {item.reportDate
-                                            ? item.reportDate.slice(5)
-                                            : '-'}
-                                        </div>
-                                        <div className="seedPendingStat__label">
-                                          신고일자
-                                        </div>
-                                      </div>
-
-                                      <div className="seedPendingStat seedPendingStat--last">
-                                        <div className="seedPendingStat__value seedPendingStat__value--date">
-                                          {item.returnDueDate
-                                            ? item.returnDueDate.slice(5)
-                                            : '-'}
-                                        </div>
-                                        <div className="seedPendingStat__label">
-                                          반납예정
-                                        </div>
-                                      </div>
-
                                     </div>
 
+                                    {/* 날짜 정보 */}
+                                    <dl className="seedPendingMeta">
+                                      <div className="seedPendingMeta__row">
+                                        <dt className="seedPendingMeta__label">신고일자</dt>
+                                        <dd className="seedPendingMeta__value">{item.reportDate ?? "-"}</dd>
+                                      </div>
+
+                                      <div className="seedPendingMeta__row">
+                                        <dt className="seedPendingMeta__label">반납예정일</dt>
+                                        <dd className="seedPendingMeta__value">{item.returnDueDate ?? "-"}</dd>
+                                      </div>
+                                    </dl>
+
+                                    {/* 액션: 승인이 주 버튼, 수정/삭제는 보조 */}
                                     <div className="seedPendingActions">
                                       <button
                                         type="button"
                                         className="seedPendingButton seedPendingButton--approve"
                                         onClick={() => handleApprove(item)}
                                       >
-                                        ✓ 승인 처리
+                                        승인 처리
                                       </button>
 
                                       <button
@@ -1013,13 +868,9 @@ export function SeedReportReturnManagePage() {
                             type="button"
                             className="seedPendingToggle"
                             aria-expanded={pendingExpanded}
-                            onClick={() =>
-                              setPendingExpanded((prev) => !prev)
-                            }
+                            onClick={() => setPendingExpanded((prev) => !prev)}
                           >
-                            {pendingExpanded
-                              ? '접기 ▴'
-                              : `+${pendingHiddenCount}건 더보기 ▾`}
+                            {pendingExpanded ? "접기 ▴" : `+${pendingHiddenCount}건 더보기 ▾`}
                           </button>
                         </div>
                       )}
@@ -1032,13 +883,9 @@ export function SeedReportReturnManagePage() {
                   <div className="seedSectionHeader">
                     <span className="seedSectionHeader__dot seedSectionHeader__dot--done" />
 
-                    <h2 className="seedSectionHeader__title">
-                      신고완료
-                    </h2>
+                    <h2 className="seedSectionHeader__title">신고완료</h2>
 
-                    <span className="seedSectionHeader__count">
-                      {totalElements}
-                    </span>
+                    <span className="seedSectionHeader__count">{totalElements}</span>
 
                     {/* 제목 줄 오른쪽 끝: 선택한 건 파일 다운로드 버튼
                         (margin-left: auto 로 오른쪽 끝 정렬 -> Seed.css 의 .seedSectionHeader__actions) */}
@@ -1050,10 +897,10 @@ export function SeedReportReturnManagePage() {
                         disabled={selectedReturnIds.length === 0 || isDownloading}
                       >
                         {isDownloading
-                          ? '다운로드 중...'
+                          ? "다운로드 중..."
                           : selectedReturnIds.length > 0
                             ? `파일 다운로드 (${selectedReturnIds.length})`
-                            : '파일 다운로드'}
+                            : "파일 다운로드"}
                       </button>
                     </div>
                   </div>
@@ -1075,7 +922,6 @@ export function SeedReportReturnManagePage() {
                     onPageChange={handlePageChange}
                   />
                 </section>
-
               </div>
             </>
           )}
