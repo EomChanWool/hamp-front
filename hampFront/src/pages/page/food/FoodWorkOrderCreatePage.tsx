@@ -89,26 +89,29 @@ export function FoodWorkOrderCreatePage() {
   };
 
   // 모달에서 수주 라인을 선택했을 때 실행되는 핸들러
-  const handleSelectSalesOrderLine = (selected: SalesOrderStatusLineResponse) => {
+  const handleSelectSalesOrderLine = (
+    selected: SalesOrderStatusLineResponse
+  ) => {
     if (!activeLineId) return;
 
-    const defaultQty = Number(selected.orderQty || 0);
+    const defaultQty = Number(selected.orderQty ?? 0);
+
+    // 선택한 수주라인의 기본 수량 저장
     editQuantitiesRef.current[activeLineId] = defaultQty;
 
     setLines((prev) =>
-      prev.map((line) => {
-        if (line.id === activeLineId) {
-          return {
+      prev.map((line) =>
+        line.id === activeLineId
+          ? {
             ...line,
             salesOrderLineId: selected.salesOrderLineId,
             orderCode: selected.orderCode,
             itemCode: selected.itemCode,
             itemNm: selected.itemNm,
             instructQty: defaultQty,
-          };
-        }
-        return line;
-      })
+          }
+          : line
+      )
     );
   };
 
@@ -147,14 +150,20 @@ export function FoodWorkOrderCreatePage() {
         header: '지시수량',
         cell: ({ row }) => {
           const line = row.original;
+
           return (
             <input
+              key={`${line.id} - ${line.salesOrderLineId} - ${line.instructQty}`}
               type="number"
+              min="1"
               className="tableInput food-table-input-cell"
-              defaultValue={editQuantitiesRef.current[line.id] ?? line.instructQty}
+              defaultValue={
+                editQuantitiesRef.current[line.id] ?? line.instructQty
+              }
               disabled={isSubmitting}
               onChange={(e) => {
-                editQuantitiesRef.current[line.id] = e.target.value === '' ? '' : Number(e.target.value);
+                editQuantitiesRef.current[line.id] =
+                  e.target.value === '' ? '' : Number(e.target.value);
               }}
             />
           );
