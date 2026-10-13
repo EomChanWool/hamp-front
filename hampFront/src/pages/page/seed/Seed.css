@@ -11,7 +11,6 @@
   padding: 4px;
 }
 
-/* ── 클릭 가능한 KPI 카드 ───────────────────── */
 .screenStack .metricCard {
   position: relative;
   cursor: pointer;
@@ -52,7 +51,6 @@
   box-shadow: 0 0 0 1px #60a5fa;
 }
 
-/* 우측 화살표 = "누르면 이동/필터" 신호 */
 .inventorySummaryCard__go {
   margin-left: auto;
   flex-shrink: 0;
@@ -257,7 +255,7 @@
 }
 
 /* =========================================================================
-   탭 — 세그먼트 필(pill) 스타일
+   탭
    ========================================================================= */
 .seedTabGroup {
   display: flex;
@@ -335,7 +333,6 @@
   grid-template-columns: 1.6fr 0.8fr 0.9fr 0.9fr;
   gap: 8px;
   padding: 0 11px 10px;
-  /* 행 테두리 1px만큼 보정해서 컬럼 정렬 유지 */
   font-size: 12px;
   color: var(--text-muted, #94a3b8);
   border-bottom: 1px solid var(--border, #e2e8f0);
@@ -369,7 +366,6 @@
   transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
-/* 선택 표시용 좌측 바 */
 .seedItemRow::before {
   content: '';
   position: absolute;
@@ -557,30 +553,190 @@
 .seedTrendControls {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
-  /* 기존 flex-shrink:0 때문에 품목 select + 탭그룹이 절대 줄어들지
-     않아서, 좁은 화면에서 부모(.seedTrendPanel__header)가 줄바꿈돼도
-     이 블록 내부에서 다시 넘치던 문제 수정 */
+  margin-left: auto;
 }
 
-.seedTrendControls .seedSelect {
-  flex: 1 1 180px;
+.seedTrendControls .seedDropdown {
+  flex: 0 0 240px;
+  width: 240px;
   min-width: 0;
 }
 
-.seedSelect {
+/* =========================================================================
+   품목 선택 드롭다운
+   ========================================================================= */
+.seedDropdown {
+  position: relative;
+}
+
+.seedDropdown__trigger {
+  width: 100%;
   height: 36px;
   box-sizing: border-box;
-  padding: 0 12px;
-  font-size: 12px;
-  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 10px 0 12px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
   border: 1px solid var(--border-strong, #cbd5e1);
+  border-radius: 10px;
   background: var(--bg-card, #ffffff);
   color: var(--text-heading, #0f172a);
   cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+.seedDropdown__trigger:hover:not(:disabled) {
+  border-color: var(--text-muted, #94a3b8);
+}
+
+.seedDropdown__trigger:focus-visible {
+  outline: none;
+  border-color: var(--primary, #3b82f6);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary, #3b82f6) 20%, transparent);
+}
+
+.seedDropdown.is-open .seedDropdown__trigger {
+  border-color: var(--primary, #3b82f6);
+}
+
+.seedDropdown__trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.seedDropdown__value {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seedDropdown__chevron {
+  flex-shrink: 0;
+  color: var(--text-muted, #94a3b8);
+  transition: transform 0.15s ease;
+}
+
+.seedDropdown.is-open .seedDropdown__chevron {
+  transform: rotate(180deg);
+}
+
+.seedDropdown__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  min-width: 100%;
+  width: max-content;
+  max-width: 360px;
+  max-height: 280px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 6px;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 10px;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.seedDropdown__group + .seedDropdown__group {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border, #e2e8f0);
+}
+
+.seedDropdown__groupLabel {
+  padding: 6px 10px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted, #94a3b8);
+}
+
+.seedDropdown__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-body, #475569);
+  cursor: pointer;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+.seedDropdown__option.active {
+  background: var(--bg-subtle, #f1f5f9);
+  color: var(--text-heading, #0f172a);
+}
+
+.seedDropdown__option.selected {
+  color: var(--primary, #3b82f6);
+  font-weight: 600;
+}
+
+.seedDropdown__optionCode {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-muted, #94a3b8);
+}
+
+.seedDropdown__option.selected .seedDropdown__optionCode {
+  color: inherit;
+}
+
+.seedDropdown__optionName {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seedDropdown__check {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--primary, #3b82f6);
+}
+
+[data-theme="dark"] .seedDropdown__trigger {
+  background: var(--bg-card, #1e293b);
+}
+
+[data-theme="dark"] .seedDropdown__trigger:focus-visible,
+[data-theme="dark"] .seedDropdown.is-open .seedDropdown__trigger {
+  border-color: #60a5fa;
+}
+
+[data-theme="dark"] .seedDropdown__menu {
+  background: var(--bg-card, #1e293b);
+  border-color: #3a3e49;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .seedDropdown__group + .seedDropdown__group {
+  border-top-color: #3a3e49;
+}
+
+[data-theme="dark"] .seedDropdown__option.active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .seedDropdown__option.selected,
+[data-theme="dark"] .seedDropdown__check {
+  color: #60a5fa;
+}
+
+/* =========================================================================
+   추이 차트
+   ========================================================================= */
 .seedChartWrapper {
   display: flex;
   gap: 12px;
@@ -657,7 +813,7 @@
 }
 
 /* =========================================================================
-   차트 툴팁 스타일 
+   차트 툴팁
    ========================================================================= */
 .seedChartTooltip {
   position: absolute;
@@ -703,13 +859,11 @@
   color: #64748b;
 }
 
-/* 증가수량 (빨강) */
 .qtyIncreaseText {
   color: #ef4444;
   font-weight: 500;
 }
 
-/* 감소수량 (파랑) */
 .qtyDecreaseText {
   color: #3b82f6;
   font-weight: 500;
@@ -717,13 +871,7 @@
 
 /* =========================================================================
    반응형
-   1024 : 태블릿 — 차트/카드 여백 축소
-   900  : KPI 3열 → 1열 (기존)
-   720  : 재고 리스트 테이블 → 카드형 (기존)
-   480  : 폰 — 폰트/차트 높이 축소
    ========================================================================= */
-
-/* ---- ~1024px : 태블릿 ---- */
 @container content (max-width: 1024px) {
   .seedChartArea {
     height: 200px;
@@ -741,8 +889,6 @@
     gap: 6px;
   }
 
-  /* 3열(1줄)을 유지한 채로 카드 폭이 줄어들기 때문에,
-     입고/출고 칩 최소폭과 폰트를 함께 줄여서 줄바꿈/잘림을 방지 */
   .inventorySummaryCard__statChip {
     flex: 1 1 90px;
     padding: 6px 8px;
@@ -762,7 +908,6 @@
   }
 }
 
-/* ---- ~720px : 재고 리스트 테이블 → 카드형 ---- */
 @container content (max-width: 720px) {
   .seedTableHeader {
     display: none;
@@ -781,9 +926,6 @@
     grid-area: identity;
   }
 
-  /* 구분 뱃지(원료/반제품/완제품)에 grid-area가 지정되어 있지 않아
-     identity/stock/time 영역과 무관하게 혼자 튀어나오던 문제 수정.
-     이제 2번째 행 왼쪽(badge)에 자리를 잡고, 오른쪽엔 최근 갱신 시간이 옴 */
   .seedCategoryBadge {
     grid-area: badge;
     justify-self: start;
@@ -809,10 +951,26 @@
     min-width: 28px;
     font-size: 10px;
   }
+
+  .seedTrendControls {
+    flex-wrap: wrap;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .seedTrendControls .seedDropdown {
+    flex: 1 1 200px;
+    width: auto;
+  }
+
+  .seedDropdown__menu {
+    left: 0;
+    right: auto;
+    min-width: 100%;
+    max-width: min(360px, 100vw - 32px);
+  }
 }
 
-
-/* ---- ~640px : KPI 3열 → 1열 ---- */
 @container content (max-width: 640px) {
   .screenStack .metricGrid {
     flex-direction: column;
@@ -824,7 +982,6 @@
   }
 }
 
-/* ---- ~480px : 폰 ---- */
 @container content (max-width: 480px) {
   .inventorySummaryCard__valueArea span:first-child {
     font-size: 20px;
@@ -857,14 +1014,18 @@
     bottom: -18px;
   }
 
-  .seedSelect {
+  .seedDropdown__trigger {
     height: 32px;
-    font-size: 11px;
-    padding: 0 8px;
+    font-size: 12px;
+    padding: 0 8px 0 10px;
   }
 
-  .seedTrendControls .seedSelect {
+  .seedTrendControls .seedDropdown {
     flex: 1 1 100%;
+  }
+
+  .seedDropdown__menu {
+    max-width: 100%;
   }
 
   .seedTrendControls .seedTabGroup {
@@ -874,120 +1035,38 @@
 }
 
 /* =========================================================================
-   신고반납관리 — 요약칩 (품목 / 신고대기 / 신고완료)
+   신고반납관리 — 조회 조건
    ========================================================================= */
-.seedSummaryChips {
+.seedScope {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-}
-
-.seedSummaryChip {
-  display: inline-flex;
-  align-items: center;
   gap: 8px;
-  height: 44px;
-  box-sizing: border-box;
-  padding: 0 16px;
-  background: var(--bg-card, #ffffff);
-  border: 1px solid var(--border, #e2e8f0);
-  border-radius: 10px;
-  white-space: nowrap;
-}
-
-.seedSummaryChip__label {
+  padding: 4px 0 16px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
   font-size: 13px;
-  color: var(--text-body, #475569);
 }
 
-/* 품목 칩은 라벨만 있고 조금 더 진하게 */
-.seedSummaryChip--item .seedSummaryChip__label {
-  color: var(--text-heading, #0f172a);
+.seedScope__label {
+  color: var(--text-muted, #94a3b8);
+}
+
+.seedScope__value {
   font-weight: 500;
+  color: var(--text-heading, #0f172a);
 }
 
-.seedSummaryChip__count {
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-/* 신고대기 = 주황 / 신고완료 = 초록 (페이지 내 섹션 점 색상과 동일) */
-.seedSummaryChip__count.is-pending {
-  color: #f97316;
-}
-
-.seedSummaryChip__count.is-done {
-  color: #16a34a;
-}
-
-[data-theme="dark"] .seedSummaryChip__count.is-pending {
-  color: #fb923c;
-}
-
-[data-theme="dark"] .seedSummaryChip__count.is-done {
-  color: #4ade80;
-}
-
-/* 폰: 품목 칩은 한 줄 전체, 긴 품목명은 줄바꿈 허용 */
-@container content (max-width: 480px) {
-  .seedSummaryChip--item {
-    flex: 1 1 100%;
-    height: auto;
-    min-height: 44px;
-    padding: 10px 16px;
-    white-space: normal;
-  }
-}
-
-/* =========================================================================
-   신고대기 카드 — "+N건 더보기 ▾" / "접기 ▴" 토글 버튼 (알약형, 가운데 정렬)
-   ========================================================================= */
-.seedPendingToggleWrap {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.seedPendingToggle {
-  height: 36px;
-  padding: 0 18px;
-  border: 1px solid var(--border, #e2e8f0);
-  border-radius: 999px;
-  background: var(--bg-card, #ffffff);
-  color: #4f46e5;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.seedPendingToggle:hover {
-  background: var(--bg-subtle, #f8fafc);
-  border-color: var(--border-strong, #cbd5e1);
-}
-
-.seedPendingToggle:focus-visible {
-  outline: 2px solid var(--primary, #3b82f6);
-  outline-offset: 2px;
-}
-
-[data-theme="dark"] .seedPendingToggle {
-  color: #a5b4fc;
+[data-theme="dark"] .seedScope {
+  border-bottom-color: #3a3e49;
 }
 
 /* ========================================
    씨드 신고반납 관리
 ======================================== */
-
 .seedReportSections {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 24px;
 }
 
 .seedReportSection {
@@ -998,7 +1077,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 16px 0;
+  margin: 20px 0 16px;
 }
 
 .seedSectionHeader__dot {
@@ -1018,7 +1097,7 @@
 
 .seedSectionHeader__title {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #111827;
 }
@@ -1027,187 +1106,188 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 28px;
-  height: 28px;
+  min-width: 24px;
+  height: 24px;
   padding: 0 8px;
   border-radius: 999px;
   background: #f3f4f6;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #374151;
 }
 
 /* 신고대기 카드 */
-
 .seedPendingGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 
 .seedPendingCard {
-  position: relative;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 14px;
   background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.seedPendingCard__accent {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: #f97316;
+.seedPendingCard:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
+}
+
+.seedPendingCard.is-editing {
+  border-color: var(--primary, #3b82f6);
+  box-shadow: 0 0 0 1px var(--primary, #3b82f6);
 }
 
 .seedPendingCard__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   padding: 20px;
 }
 
+.seedPendingCard__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .seedPendingCard__receipt {
-  margin-bottom: 16px;
+  min-width: 0;
 }
 
 .seedPendingCard__barcode {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
-  color: #1d4ed8;
+  line-height: 1.4;
+  color: #111827;
+  word-break: break-all;
 }
 
 .seedPendingCard__receivedAt {
   margin-top: 4px;
   font-size: 12px;
+  line-height: 1.4;
   color: #6b7280;
 }
 
-/* 수량/날짜 영역 */
+.seedPendingCard__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.seedPendingCard__status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f97316;
+}
 
 .seedPendingStats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  overflow: hidden;
-  margin-bottom: 16px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fff;
-}
-
-.seedPendingStat {
-  padding: 12px 8px;
-  text-align: center;
-  border-right: 1px solid #e5e7eb;
-}
-
-.seedPendingStat--last {
-  border-right: 0;
-}
-
-.seedPendingStat__value {
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.seedPendingStat__value--date {
-  font-size: 18px;
-}
-
-.seedPendingStat__label {
-  margin-top: 4px;
-  font-size: 11px;
-  color: #6b7280;
-}
-
-/* 버튼 */
-
-.seedPendingActions {
-  display: flex;
-  gap: 8px;
-}
-
-.seedPendingButton {
-  border: 0;
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.seedPendingButton--approve {
-  flex: 1;
-  background: #0f8a52;
-  color: #fff;
-  font-weight: 600;
-}
-
-.seedPendingButton--approve:hover {
-  background: #15803d;
-}
-
-.seedPendingButton--edit {
-  background: #eff6ff;
-  color: #1d4ed8;
-}
-
-.seedPendingButton--edit:hover {
-  background: #dbeafe;
-}
-
-.seedPendingButton--delete {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-.seedPendingButton--delete:hover {
-  background: #fee2e2;
-}
-
-/* 수정 */
-
-.seedPendingEditGrid {
-  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.seedPendingField {
-  padding: 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border: 1px solid #eef0f3;
+  border-radius: 10px;
   background: #f9fafb;
 }
 
-.seedPendingField__label {
+.seedPendingStat {
+  min-width: 0;
+  padding: 10px 14px;
+  border-right: 1px solid #e5e7eb;
+}
+
+.seedPendingStat:last-child {
+  border-right: 0;
+}
+
+.seedPendingStat__label {
   margin-bottom: 4px;
   font-size: 12px;
+  line-height: 1.4;
   color: #6b7280;
 }
 
-.seedPendingField__value {
-  font-size: 14px;
+.seedPendingStat__value {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: #111827;
+}
+
+.seedPendingMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.seedPendingMeta__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.seedPendingMeta__label {
+  margin: 0;
+  color: #6b7280;
+}
+
+.seedPendingMeta__value {
+  margin: 0;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
   color: #1f2937;
 }
 
-.seedPendingInput {
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: #fff;
-  padding: 6px 8px;
-  font-size: 14px;
-}
-
+.seedPendingActions,
 .seedPendingEditActions {
   display: flex;
   gap: 8px;
+  margin-top: auto;
 }
 
+.seedPendingButton {
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.seedPendingButton:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+.seedPendingButton--approve,
 .seedPendingButton--save {
   flex: 1;
   background: #0f8a52;
@@ -1215,21 +1295,88 @@
   font-weight: 600;
 }
 
+.seedPendingButton--approve:hover,
 .seedPendingButton--save:hover {
   background: #15803d;
 }
 
+.seedPendingButton--edit,
 .seedPendingButton--cancel {
-  background: #f3f4f6;
+  border-color: #d1d5db;
+  background: #fff;
   color: #374151;
 }
 
+.seedPendingButton--edit:hover,
 .seedPendingButton--cancel:hover {
-  background: #e5e7eb;
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.seedPendingButton--delete {
+  border-color: #e5e7eb;
+  background: #fff;
+  color: #dc2626;
+}
+
+.seedPendingButton--delete:hover {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.seedPendingEditGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.seedPendingField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.seedPendingField__label {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #6b7280;
+}
+
+.seedPendingField__value {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.seedPendingInput {
+  width: 100%;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #111827;
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.seedPendingInput:focus {
+  outline: none;
+  border-color: var(--primary, #3b82f6);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary, #3b82f6) 20%, transparent);
 }
 
 /* 더보기 */
-
 .seedPendingToggleWrap {
   display: flex;
   justify-content: center;
@@ -1248,8 +1395,12 @@
   color: #374151;
 }
 
-/* 빈 상태 */
+.seedPendingToggle:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+}
 
+/* 빈 상태 */
 .seedEmptyState {
   padding: 40px 20px;
   border: 1px solid #e5e7eb;
@@ -1261,7 +1412,6 @@
 }
 
 /* 로딩 */
-
 .seedLoading {
   position: absolute;
   inset: 0;
@@ -1271,12 +1421,10 @@
 }
 
 /* 완료 테이블 */
-
 .seedCompletedTable {
   position: relative;
 }
 
-/* 신고완료 배지 내부 */
 .seedDoneBadge {
   display: inline-flex;
   align-items: center;
@@ -1292,10 +1440,8 @@
 }
 
 /* =========================================================================
-   신고완료 — 제목 줄 오른쪽 파일 다운로드 버튼 / 체크박스
+   신고완료 — 다운로드 버튼 / 체크박스
    ========================================================================= */
-
-/* 제목 줄 오른쪽 끝으로 밀기 */
 .seedSectionHeader__actions {
   margin-left: auto;
   display: flex;
@@ -1327,7 +1473,6 @@
   outline-offset: 2px;
 }
 
-/* 선택된 건이 없을 때 */
 .seedDownloadButton:disabled {
   background: #f3f4f6;
   border-color: #e5e7eb;
@@ -1341,7 +1486,6 @@
   color: #6b7280;
 }
 
-/* 체크박스 */
 .seedCheckbox {
   width: 16px;
   height: 16px;
@@ -1354,8 +1498,6 @@
   vertical-align: middle;
 }
 
-/* 신고완료 테이블 첫 번째 컬럼(체크박스)은 좁게
-   - Custable.css 의 th, td { min-width: 90px } 를 덮어씀 */
 .seedCompletedTable th:first-child,
 .seedCompletedTable td:first-child {
   width: 48px;
@@ -1364,8 +1506,6 @@
   padding-right: 8px;
 }
 
-
-/* 신고완료 테이블 - 입고 라벨 아래 입고일시 */
 .itemCell__receivedAt {
   display: block;
   margin-top: 4px;
@@ -1380,7 +1520,6 @@
 /* ========================================
    씨드 신고반납 관리 - Dark Mode
 ======================================== */
-
 [data-theme="dark"] .seedSectionHeader__title {
   color: #f3f4f6;
 }
@@ -1391,27 +1530,34 @@
   color: #e5e7eb;
 }
 
-/* ========================================
-   신고대기 카드
-======================================== */
-
 [data-theme="dark"] .seedPendingCard {
   background: #20232c;
   border-color: #383c47;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .seedPendingCard:hover {
+  border-color: #4a4f5c;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .seedPendingCard.is-editing {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 1px #60a5fa;
 }
 
 [data-theme="dark"] .seedPendingCard__barcode {
-  color: #60a5fa;
+  color: #f3f4f6;
 }
 
 [data-theme="dark"] .seedPendingCard__receivedAt {
   color: #9ca3af;
 }
 
-/* ========================================
-   카드 내부 통계
-======================================== */
+[data-theme="dark"] .seedPendingCard__status {
+  background: rgba(249, 115, 22, 0.14);
+  color: #fdba74;
+}
 
 [data-theme="dark"] .seedPendingStats {
   background: #252832;
@@ -1422,31 +1568,44 @@
   border-right-color: #3a3e49;
 }
 
-[data-theme="dark"] .seedPendingStat__value {
-  color: #f3f4f6;
-}
-
 [data-theme="dark"] .seedPendingStat__label {
   color: #9ca3af;
 }
 
-/* ========================================
-   신고대기 없음
-======================================== */
+[data-theme="dark"] .seedPendingStat__value {
+  color: #f3f4f6;
+}
 
-[data-theme="dark"] .seedEmptyState {
-  background: #20232c;
-  border-color: #383c47;
+[data-theme="dark"] .seedPendingMeta__label {
   color: #9ca3af;
 }
 
-/* ========================================
-   신고대기 수정 모드
-======================================== */
+[data-theme="dark"] .seedPendingMeta__value {
+  color: #e5e7eb;
+}
 
-[data-theme="dark"] .seedPendingField {
-  background: #252832;
-  border-color: #3a3e49;
+[data-theme="dark"] .seedPendingButton--edit,
+[data-theme="dark"] .seedPendingButton--cancel {
+  border-color: #454a57;
+  background: transparent;
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .seedPendingButton--edit:hover,
+[data-theme="dark"] .seedPendingButton--cancel:hover {
+  border-color: #5b6170;
+  background: #2a2d36;
+}
+
+[data-theme="dark"] .seedPendingButton--delete {
+  border-color: #454a57;
+  background: transparent;
+  color: #f87171;
+}
+
+[data-theme="dark"] .seedPendingButton--delete:hover {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.12);
 }
 
 [data-theme="dark"] .seedPendingField__label {
@@ -1454,7 +1613,8 @@
 }
 
 [data-theme="dark"] .seedPendingField__value {
-  color: #e5e7eb;
+  background: #2a2d36;
+  color: #9ca3af;
 }
 
 [data-theme="dark"] .seedPendingInput {
@@ -1465,12 +1625,14 @@
 
 [data-theme="dark"] .seedPendingInput:focus {
   border-color: #60a5fa;
-  outline: none;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
 }
 
-/* ========================================
-   더보기 / 접기
-======================================== */
+[data-theme="dark"] .seedEmptyState {
+  background: #20232c;
+  border-color: #383c47;
+  color: #9ca3af;
+}
 
 [data-theme="dark"] .seedPendingToggle {
   color: #9ca3af;
@@ -1480,18 +1642,7 @@
   color: #e5e7eb;
 }
 
-/* ========================================
-   모바일
-======================================== */
-
-@media (max-width: 767px) {
-  [data-theme="dark"] .seedPendingStat:nth-child(-n + 2) {
-    border-bottom-color: #3a3e49;
-  }
-}
-
 /* 반응형 */
-
 @media (max-width: 1199px) {
   .seedPendingGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1503,16 +1654,12 @@
     grid-template-columns: 1fr;
   }
 
-  .seedPendingStats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .seedPendingCard__body {
+    padding: 16px;
   }
 
-  .seedPendingStat:nth-child(2) {
-    border-right: 0;
-  }
-
-  .seedPendingStat:nth-child(-n + 2) {
-    border-bottom: 1px solid #e5e7eb;
+  .seedPendingStat {
+    padding: 12px 14px;
   }
 
   .seedPendingActions {
@@ -1521,5 +1668,10 @@
 
   .seedPendingButton--approve {
     flex-basis: 100%;
+  }
+
+  .seedPendingButton--edit,
+  .seedPendingButton--delete {
+    flex: 1;
   }
 }

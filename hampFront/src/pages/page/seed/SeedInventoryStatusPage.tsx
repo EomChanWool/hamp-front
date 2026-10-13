@@ -1,5 +1,14 @@
-import { useState, useEffect, useMemo } from 'react'
-import { CubeIcon, BeakerIcon, ArchiveBoxIcon, ArrowUpIcon, ArrowDownIcon, ChevronRightIcon } from '@heroicons/react/24/solid'
+import { useState, useEffect, useMemo, useRef, useId, type KeyboardEvent } from 'react'
+import {
+  CubeIcon,
+  BeakerIcon,
+  ArchiveBoxIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+  ChevronRightIcon,
+  ChevronDownIcon,
+  CheckIcon,
+} from '@heroicons/react/24/solid'
 import { KpiGrid, type KpiItem } from '@components/kpi/KpiGrid'
 import { Panel } from '@components/card/Panel'
 import { formatDateTime } from "@/utils/common";
@@ -27,6 +36,199 @@ const CATEGORY_ICON_MAP: Record<SeedInventoryStatusRow['category'], typeof CubeI
   '원료': CubeIcon,
   '반제품': BeakerIcon,
   '완제품': ArchiveBoxIcon,
+}
+
+/* =========================================================================
+   품목 선택 드롭다운 (div 기반 커스텀 select)
+   - 트리거 버튼 + role="listbox" 패널
+   - 키보드: ↑ ↓ Home End Enter Space Esc Tab
+   - 포커스는 항상 트리거에 두고 aria-activedescendant 로 활성 옵션을 알림
+   ========================================================================= */
+interface ItemSelectGroup {
+  label: SeedInventoryStatusRow['category']
+  items: SeedInventoryStatusRow[]
+}
+
+interface ItemSelectProps {
+  groups: ItemSelectGroup[]
+  value: string
+  onChange: (itemCode: string) => void
+  disabled?: boolean
+}
+
+function ItemSelect({ groups, value, onChange, disabled = false }: ItemSelectProps) {
+  const [open, setOpen] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(0)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+  const listId = useId()
+
+  const flatItems = useMemo(() => groups.flatMap((g) => g.items), [groups])
+  const selected = flatItems.find((item) => item.itemCode === value)
+
+  // 그룹별 시작 인덱스 (flat 인덱스 계산용)
+  const groupOffsets = useMemo(() => {
+    let offset = 0
+    return groups.map((g) => {
+      const start = offset
+      offset += g.items.length
+      return start
+    })
+  }, [groups])
+
+  const optionId = (index: number) => `${listId}-option-${index}`
+
+  const openList = () => {
+    if (disabled || flatItems.length === 0) return
+    setActiveIndex(Math.max(flatItems.findIndex((item) => item.itemCode === value), 0))
+    setOpen(true)
+  }
+
+  const selectIndex = (index: number) => {
+    const item = flatItems[index]
+    if (item) onChange(item.itemCode)
+    setOpen(false)
+  }
+
+  // 바깥 클릭 시 닫기
+  useEffect(() => {
+    if (!open) return
+    const handleMouseDown = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => document.removeEventListener('mousedown', handleMouseDown)
+  }, [open])
+
+  // 로딩 등으로 비활성화되면 닫기
+  useEffect(() => {
+    if (disabled) setOpen(false)
+  }, [disabled])
+
+  // 활성 옵션이 보이도록 스크롤
+  useEffect(() => {
+    if (!open) return
+    listRef.current
+      ?.querySelector<HTMLElement>('[data-active="true"]')
+      ?.scrollIntoView({ block: 'nearest' })
+  }, [open, activeIndex])
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+    const lastIndex = flatItems.length - 1
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        if (!open) openList()
+        else setActiveIndex((prev) => Math.min(prev + 1, lastIndex))
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        if (!open) openList()
+        else setActiveIndex((prev) => Math.max(prev - 1, 0))
+        break
+      case 'Home':
+        if (open) {
+          e.preventDefault()
+          setActiveIndex(0)
+        }
+        break
+      case 'End':
+        if (open) {
+          e.preventDefault()
+          setActiveIndex(lastIndex)
+        }
+        break
+      case 'Enter':
+      case ' ':
+        e.preventDefault()
+        if (open) selectIndex(activeIndex)
+        else openList()
+        break
+      case 'Escape':
+        if (open) {
+          e.preventDefault()
+          setOpen(false)
+        }
+        break
+      case 'Tab':
+        setOpen(false)
+        break
+      default:
+        break
+    }
+  }
+
+  return (
+    <div className={`seedDropdown${open ? ' is-open' : ''}`} ref={rootRef}>
+      <button
+        type="button"
+        role="combobox"
+        className="seedDropdown__trigger"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-activedescendant={open ? optionId(activeIndex) : undefined}
+        aria-label="재고 추이를 조회할 품목 선택"
+        disabled={disabled}
+        onClick={() => (open ? setOpen(false) : openList())}
+        onKeyDown={handleKeyDown}
+      >
+        <span className="seedDropdown__value">
+          {selected ? `${selected.itemCode} · ${selected.itemName}` : '품목 없음'}
+        </span>
+        <ChevronDownIcon className="seedDropdown__chevron" width={16} height={16} aria-hidden />
+      </button>
+
+      {open && (
+        <div
+          id={listId}
+          ref={listRef}
+          role="listbox"
+          className="seedDropdown__menu"
+          // 옵션 클릭 시 트리거 포커스가 빠지지 않도록 방지
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {groups.map((group, groupIndex) => (
+            <div
+              key={group.label}
+              role="group"
+              aria-label={group.label}
+              className="seedDropdown__group"
+            >
+              <div className="seedDropdown__groupLabel" aria-hidden>
+                {group.label}
+              </div>
+              {group.items.map((item, itemIndex) => {
+                const flatIndex = groupOffsets[groupIndex] + itemIndex
+                const isSelected = item.itemCode === value
+                const isActive = flatIndex === activeIndex
+
+                return (
+                  <div
+                    key={item.itemCode}
+                    id={optionId(flatIndex)}
+                    role="option"
+                    aria-selected={isSelected}
+                    data-active={isActive}
+                    className={`seedDropdown__option${isSelected ? ' selected' : ''}${isActive ? ' active' : ''}`}
+                    onMouseEnter={() => setActiveIndex(flatIndex)}
+                    onClick={() => selectIndex(flatIndex)}
+                  >
+                    <span className="seedDropdown__optionCode">{item.itemCode}</span>
+                    <span className="seedDropdown__optionName">{item.itemName}</span>
+                    {isSelected && (
+                      <CheckIcon className="seedDropdown__check" width={14} height={14} aria-hidden />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function SeedInventoryStatusPage() {
@@ -122,6 +324,18 @@ export function SeedInventoryStatusPage() {
     if (displayedItems.length === 0) return null
     return displayedItems[selectedIndex] || displayedItems[0]
   }, [displayedItems, selectedIndex])
+
+  // 드롭다운용 카테고리별 그룹 (품목이 없는 카테고리는 제외)
+  const itemSelectGroups = useMemo<ItemSelectGroup[]>(
+    () =>
+      (['원료', '반제품', '완제품'] as const)
+        .map((label) => ({
+          label,
+          items: displayedItems.filter((item) => item.category === label),
+        }))
+        .filter((group) => group.items.length > 0),
+    [displayedItems],
+  )
 
   useEffect(() => {
     if (!selectedItem) {
@@ -406,30 +620,15 @@ export function SeedInventoryStatusPage() {
               선택한 품목의 기간별 현재수량 변화 (현재수량 기준, kg)
             </div>
             <div className="seedTrendControls">
-              <select
-                className="seedSelect"
+              <ItemSelect
+                groups={itemSelectGroups}
                 value={selectedItem?.itemCode || ''}
-                onChange={(e) => {
-                  const foundIndex = displayedItems.findIndex((i) => i.itemCode === e.target.value)
+                onChange={(code) => {
+                  const foundIndex = displayedItems.findIndex((i) => i.itemCode === code)
                   if (foundIndex !== -1) setSelectedIndex(foundIndex)
                 }}
                 disabled={loading}
-              >
-                {(['원료', '반제품', '완제품'] as const).map((categoryName) => {
-                  const categoryItems = displayedItems.filter((item) => item.category === categoryName)
-                  if (categoryItems.length === 0) return null
-
-                  return (
-                    <optgroup key={categoryName} label={`[ ${categoryName} ]`}>
-                      {categoryItems.map((item) => (
-                        <option key={item.itemCode} value={item.itemCode}>
-                          {item.itemCode} · {item.itemName}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )
-                })}
-              </select>
+              />
 
               <div className="seedTabGroup">
                 {(['월별', '분기별', '연도별'] as const).map((tab) => (

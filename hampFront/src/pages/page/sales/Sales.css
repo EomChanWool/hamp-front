@@ -80,14 +80,19 @@
 /* 그룹 행 — 이름 / 진행바 / 수량이 한 줄에 나란히 배치되는 3열 그리드 */
 .groupList {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
 }
 
 .groupRow {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "name    name"
+    "pct     count"
+    "bar     bar"
+    "numbers numbers";
+  align-items: end;
   padding: 14px 16px;
   background: var(--bg-card, #fff);
   border: 1px solid var(--border);
@@ -106,23 +111,48 @@
   min-width: 0;
 }
 
+.groupHead,
+.groupFoot {
+  display: contents;
+}
+
 .groupName {
+  grid-area: name;
   min-width: 0;
-  font-size: 14px;
-  font-weight: 700;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
   color: var(--text-heading);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* 진행률 숫자 — 구간 색 (텍스트는 흰 배경 대비를 위해 바보다 한 단계 진하게) */
 .groupPct {
-  flex-shrink: 0;
-  font-size: 18px;
+  grid-area: pct;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.groupCount {
+  grid-area: count;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.groupNumbers {
+  grid-area: numbers;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--text-muted);
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 .pctHigh { color: #059669; }
@@ -138,6 +168,8 @@
   background: var(--border);
   border-radius: 3px;
   overflow: hidden;
+  grid-area: bar;
+  margin: 12px 0 8px;
 }
 
 .groupBarFill {
@@ -152,17 +184,6 @@
   justify-content: space-between;
   gap: 8px;
   font-size: 12px;
-}
-
-.groupCount {
-  color: var(--text-muted);
-}
-
-.groupNumbers {
-  font-weight: 600;
-  color: var(--text-heading);
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
 }
 
 .emptyState {
@@ -477,5 +498,29 @@
 
   .progressPct {
     min-width: auto;
+  }
+}
+
+@media (max-width: 1400px) {
+  .groupList {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  .groupList {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .groupList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .groupList {
+    grid-template-columns: 1fr;
   }
 }
