@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import Barcode from "react-barcode";
 import "@/components/modal/WorkOrderPrintModal.css";
 import type { WorkOrderRoutingStepResponse } from "@/api/WorkOrder";
+import { Badge } from "../common/Badge";
 
 export interface WorkOrderLineDetail {
     id: string;
@@ -283,6 +284,12 @@ export function WorkOrderPrintModal({
                                                                 .join(", ")}`
                                                             : ""}
                                                     </span>
+
+                                                    {step.finalYn === "N" ? (
+                                                        <Badge tone="good">일반공정</Badge>
+                                                    ) : (
+                                                        <Badge tone="info">최종공정</Badge>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
