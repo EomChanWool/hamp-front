@@ -399,36 +399,272 @@
   font-weight: 700;
 }
 
-
-.cus-table-expanded-row > td {
-  padding: 0 !important;
-  background: #fbfcfe;
+/* ==========================================
+   품목 셀 (행 클릭 → 공정순서도 아코디언 힌트 화살표)
+   ========================================== */
+.food-item-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.food-routing-item-button {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  width: 100%;
-  padding: 4px 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
+.food-item-chevron {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #94a3b8;
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.food-item-chevron.is-open {
+  transform: rotate(180deg);
+  color: #2877c7;
+}
+
+/* ==========================================
+   공정순서도 (행 확장 영역 / 세로 타임라인)
+   ========================================== */
+
+/* 확장 행 셀: CusTable 기본 패딩 제거 후 내부 콘텐츠에서 직접 여백 처리 */
+.cus-table-expanded-row > td {
+  padding: 0 !important;
+  background: #f8fafc;
+  cursor: default;
+}
+
+.food-routing-content {
+  padding: 20px 24px 24px;
   text-align: left;
 }
 
-.food-routing-item-toggle {
-  color: #2877c7;
-  font-size: 12px;
-  font-weight: 600;
+/* "공정순서도" 라벨 (좌측 포인트 바) */
+.food-routing-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.04em;
 }
 
-/* ================================================
-   반응형
-   1024 : 태블릿 — 요약 그리드 4열→2열, 카드 패딩 축소
-   640  : 폰 — 요약 그리드 1열, 라벨 모달 그리드 1열, 모달 여백 축소
-   ================================================ */
+.food-routing-label::before {
+  content: '';
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: #10b981;
+}
+
+.food-routing-empty {
+  margin: 0;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.food-routing-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* 단계 한 줄: [마커] [본문] */
+.food-routing-step {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding-bottom: 15px;
+}
+
+.food-routing-step:last-child {
+  padding-bottom: 0;
+}
+
+/* 마커 사이를 잇는 세로선 */
+.food-routing-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 34px;
+  bottom: -2px;
+  width: 2px;
+  background: #cbd5e1;
+}
+
+/* 번호 마커 */
+.food-routing-marker {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #10b981;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* 본문 (다음/진행중일 때 박스로 강조되므로 투명 테두리 + 동일 패딩 유지) */
+.food-routing-step-body {
+  flex: 1;
+  min-width: 0;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.food-routing-step-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 30px;
+}
+
+.food-routing-step-text {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  column-gap: 8px;
+}
+
+.food-routing-step-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  word-break: keep-all;
+}
+
+.food-routing-step-meta {
+  font-size: 12.5px;
+  color: #64748b;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+/* 우측 상태 태그 */
+.food-routing-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.food-routing-tag {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.food-routing-tag--next {
+  color: #1d4ed8;
+  background: rgba(59, 130, 246, 0.14);
+}
+
+.food-routing-tag--progress {
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.16);
+}
+
+.food-routing-tag--done {
+  color: #475569;
+  background: rgba(100, 116, 139, 0.14);
+}
+
+.food-routing-tag--final {
+  color: #15803d;
+  background: rgba(34, 197, 94, 0.16);
+}
+
+/* 상태별 마커 색 */
+.food-routing-step.is-final .food-routing-marker {
+  background: #16a34a;
+}
+
+.food-routing-step.is-done .food-routing-marker {
+  background: #059669;
+}
+
+.food-routing-step.is-done .food-routing-step-name {
+  color: #64748b;
+}
+
+.food-routing-step.is-done:not(:last-child)::after {
+  background: #10b981;
+}
+
+/* 다음 공정: 파란 링 + 박스 강조 */
+.food-routing-step.is-next .food-routing-marker {
+  background: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.22);
+}
+
+.food-routing-step.is-next .food-routing-step-body {
+  background: rgba(59, 130, 246, 0.07);
+  border-color: rgba(59, 130, 246, 0.45);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.12);
+}
+
+/* 진행중 공정: 주황 링 + 박스 강조 */
+.food-routing-step.is-inprogress .food-routing-marker {
+  background: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.22);
+}
+
+.food-routing-step.is-inprogress .food-routing-step-body {
+  background: rgba(245, 158, 11, 0.07);
+  border-color: rgba(245, 158, 11, 0.45);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.12);
+}
+
+/* 투입/산출/불량/수율 */
+.food-routing-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 2px 0 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.food-routing-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 6px 4px;
+  border-right: 1px solid #e2e8f0;
+}
+
+.food-routing-stat:last-child {
+  border-right: none;
+}
+
+.food-routing-stat-label {
+  margin-bottom: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.food-routing-stat-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+}
 
 /* ================================================
    반응형
@@ -464,6 +700,30 @@
 
   .food-detail-title {
     font-size: 20px;
+  }
+
+  /* 공정순서도: 좁은 화면에서는 태그를 아래로, 통계는 2열 */
+  .food-routing-content {
+    padding: 16px 14px 18px;
+  }
+
+  .food-routing-step-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 4px 0;
+  }
+
+  .food-routing-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .food-routing-stat:nth-child(2) {
+    border-right: none;
+  }
+
+  .food-routing-stat:nth-child(-n + 2) {
+    border-bottom: 1px solid #e2e8f0;
   }
 }
 
@@ -801,4 +1061,118 @@
 
 [data-theme="dark"] .food-cell-qty {
   color: var(--text-main);
+}
+
+/* 공정순서도(행 확장 영역) 다크모드 */
+[data-theme="dark"] .cus-table-expanded-row > td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="dark"] .food-item-chevron {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .food-item-chevron.is-open {
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .food-routing-label,
+[data-theme="dark"] .food-routing-step-meta {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .food-routing-empty {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .food-routing-step-name {
+  color: #f0f0f0;
+}
+
+[data-theme="dark"] .food-routing-step.is-done .food-routing-step-name {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .food-routing-step:not(:last-child)::after {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+[data-theme="dark"] .food-routing-step.is-done:not(:last-child)::after {
+  background: #10b981;
+}
+
+[data-theme="dark"] .food-routing-marker {
+  background: #34d399;
+  color: #052e1c;
+}
+
+[data-theme="dark"] .food-routing-step.is-final .food-routing-marker {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .food-routing-step.is-done .food-routing-marker {
+  background: #059669;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .food-routing-step.is-next .food-routing-marker {
+  background: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+}
+
+[data-theme="dark"] .food-routing-step.is-inprogress .food-routing-marker {
+  background: #f59e0b;
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="dark"] .food-routing-step.is-next .food-routing-step-body {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.22);
+}
+
+[data-theme="dark"] .food-routing-step.is-inprogress .food-routing-step-body {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.22);
+}
+
+[data-theme="dark"] .food-routing-tag--next {
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.2);
+}
+
+[data-theme="dark"] .food-routing-tag--progress {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.2);
+}
+
+[data-theme="dark"] .food-routing-tag--done {
+  color: #cbd5e1;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+[data-theme="dark"] .food-routing-tag--final {
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.18);
+}
+
+[data-theme="dark"] .food-routing-stats {
+  background: rgba(0, 0, 0, 0.18);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .food-routing-stat {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .food-routing-stat-label {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="dark"] .food-routing-stat-value {
+  color: rgba(255, 255, 255, 0.94);
 }

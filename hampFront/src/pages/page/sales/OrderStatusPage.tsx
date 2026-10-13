@@ -403,7 +403,9 @@ export function OrderStatusPage() {
                                         <span className="groupName" title={item.groupLabel}>
                                             {item.groupLabel}
                                         </span>
-                                        <span className={`groupPct ${pctToneClass}`}>{pct}%</span>
+                                        <span className={`groupPct ${pctToneClass}`}>
+                                            {Number(pct.toFixed(2))}%
+                                        </span>
                                     </div>
 
                                     <div

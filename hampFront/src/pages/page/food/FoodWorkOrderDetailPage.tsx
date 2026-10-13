@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Barcode from "react-barcode";
 import { type ColumnDef } from "@tanstack/react-table";
+import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import { CusTable } from "@/components/table/CusTable";
 import { Badge } from "@/components/common/Badge";
 import Spinner from "@/components/common/Spinner";
@@ -13,6 +14,120 @@ import { SalesOrderModal } from "@/components/modal/SalesOrderModal";
 import { type WorkOrderLineDetail, type WorkOrderMaster } from "@/components/modal/LabelPrintModal";
 import '@/pages/page/food/Food.css';
 import { WorkOrderPrintModal } from "@/components/modal/WorkOrderPrintModal";
+
+// ==========================================
+// 공정순서도 (세로 타임라인) 컴포넌트
+// ==========================================
+function RoutingTimeline({ steps }: { steps: WorkOrderRoutingStepResponse[] }) {
+  if (steps.length === 0) {
+    return (
+      <div className="food-routing-content">
+        <div className="food-routing-label">공정순서도</div>
+        <p className="food-routing-empty">등록된 라우팅 공정이 없습니다.</p>
+      </div>
+    );
+  }
+
+  // 진행 중인 공정이 없으면, 아직 끝나지 않은 첫 공정을 "다음" 공정으로 표시
+  const hasInProgress = steps.some((s) => s.inProgress && !s.done);
+  const nextSeq = hasInProgress
+    ? null
+    : steps.find((s) => !s.done)?.operSeq ?? null;
+
+  return (
+    <div className="food-routing-content">
+      <div className="food-routing-label">공정순서도</div>
+
+      <ol className="food-routing-timeline">
+        {steps.map((step) => {
+          const isFinal = step.finalYn === "Y";
+          const isDone = !!step.done;
+          const isInProgress = !isDone && !!step.inProgress;
+          const isNext = nextSeq === step.operSeq;
+
+          const equipmentText =
+            step.equipments?.map((eq) => eq.eqNm).join(", ") || "";
+
+          const hasPerformance =
+            isDone ||
+            isInProgress ||
+            step.inputQty != null ||
+            step.outputQty != null ||
+            step.defectQty != null;
+
+          const stateClass = isDone
+            ? "is-done"
+            : isInProgress
+              ? "is-inprogress"
+              : isNext
+                ? "is-next"
+                : "";
+
+          return (
+            <li
+              key={`${step.operCode}-${step.operSeq}`}
+              className={`food-routing-step ${stateClass} ${isFinal ? "is-final" : ""}`}
+            >
+              <span className="food-routing-marker">
+                {isDone ? "✓" : step.operSeq}
+              </span>
+
+              <div className="food-routing-step-body">
+                <div className="food-routing-step-head">
+                  <div className="food-routing-step-text">
+                    <span className="food-routing-step-name">{step.operNm}</span>
+                    <span className="food-routing-step-meta">
+                      ({step.operCode}
+                      {equipmentText && <> &nbsp;·&nbsp; {equipmentText}</>})
+                    </span>
+                  </div>
+
+                  <div className="food-routing-tags">
+                    {isDone && (
+                      <span className="food-routing-tag food-routing-tag--done">완료</span>
+                    )}
+                    {isInProgress && (
+                      <span className="food-routing-tag food-routing-tag--progress">진행중</span>
+                    )}
+                    {isNext && (
+                      <span className="food-routing-tag food-routing-tag--next">다음</span>
+                    )}
+                    {isFinal && (
+                      <span className="food-routing-tag food-routing-tag--final">최종공정</span>
+                    )}
+                  </div>
+                </div>
+
+                {hasPerformance && (
+                  <div className="food-routing-stats">
+                    <div className="food-routing-stat">
+                      <span className="food-routing-stat-label">투입</span>
+                      <span className="food-routing-stat-value">{step.inputQty ?? "-"}</span>
+                    </div>
+                    <div className="food-routing-stat">
+                      <span className="food-routing-stat-label">산출</span>
+                      <span className="food-routing-stat-value">{step.outputQty ?? "-"}</span>
+                    </div>
+                    <div className="food-routing-stat">
+                      <span className="food-routing-stat-label">불량</span>
+                      <span className="food-routing-stat-value">{step.defectQty ?? "-"}</span>
+                    </div>
+                    <div className="food-routing-stat">
+                      <span className="food-routing-stat-label">수율</span>
+                      <span className="food-routing-stat-value">
+                        {step.yieldRate == null ? "-" : `${step.yieldRate}%`}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
 
 // ==========================================
 // 메인 상세 페이지 컴포넌트
@@ -44,7 +159,7 @@ export function FoodWorkOrderDetailPage() {
   // --- useRef 기반 지시수량 임시 저장소 (lineId를 키로 관리) ---
   const editQuantitiesRef = useRef<Record<string, number | ''>>({});
 
-  // 라우팅 아코디언 상태 추가
+  // 라우팅 아코디언 상태 (펼쳐진 라인 id)
   const [expandedRoutingLineId, setExpandedRoutingLineId] = useState<string | null>(null);
 
   const [routingStepsByLineId, setRoutingStepsByLineId] = useState<
@@ -101,7 +216,7 @@ export function FoodWorkOrderDetailPage() {
           itemCode: l.itemCode || "",
           itemNm: l.itemNm || "",
           instructQty: Number(l.instructQty || 0),
-          barcode: l.barcode || `\({data.workId || workId}-\){l.workOrderLineId || (101 + idx)}`,
+          barcode: l.barcode || `${data.workId || workId}-${l.workOrderLineId || (101 + idx)}`,
         })),
       };
 
@@ -128,6 +243,7 @@ export function FoodWorkOrderDetailPage() {
     });
     editQuantitiesRef.current = initialQtyMap;
 
+    setExpandedRoutingLineId(null); // 수정 모드에서는 라우팅 아코디언 접기
     setIsEditing(true);
     setSelectedLines([]);
   };
@@ -220,6 +336,20 @@ export function FoodWorkOrderDetailPage() {
     }));
   };
 
+  // 행 클릭 시 라우팅(공정순서도) 아코디언 토글
+  const handleRowClick = (
+    line: WorkOrderLineDetail,
+    event: React.MouseEvent<HTMLTableRowElement>
+  ) => {
+    if (isEditing) return;
+
+    // 체크박스/버튼/입력창 등 상호작용 요소를 눌렀을 때는 아코디언을 토글하지 않음
+    const target = event.target as HTMLElement;
+    if (target.closest("input, button, select, a, label")) return;
+
+    setExpandedRoutingLineId((prev) => (prev === line.id ? null : line.id));
+  };
+
   const activeLines = isEditing ? editForm.lines : workOrder.lines;
 
   const columns = useMemo<ColumnDef<WorkOrderLineDetail>[]>(
@@ -285,21 +415,10 @@ export function FoodWorkOrderDetailPage() {
         header: "품목",
         cell: ({ row }) => {
           const line = row.original;
-          const isExpanded =
-            expandedRoutingLineId === line.id;
+          const isExpanded = expandedRoutingLineId === line.id;
 
           return (
-            <button
-              type="button"
-              className="food-routing-item-button"
-              onClick={(event) => {
-                event.stopPropagation();
-
-                setExpandedRoutingLineId((prev) =>
-                  prev === line.id ? null : line.id
-                );
-              }}
-            >
+            <div className="food-item-cell">
               <span className="food-cell-item-name">
                 {line.itemNm}
                 {line.itemCode && (
@@ -309,12 +428,14 @@ export function FoodWorkOrderDetailPage() {
                 )}
               </span>
 
+              {/* 행 클릭으로 펼쳐진다는 힌트 (조회 모드에서만) */}
               {!isEditing && (
-                <span className="food-routing-item-toggle">
-                  {isExpanded ? "접기 −" : "라우팅 보기 ＋"}
-                </span>
+                <ChevronDownIcon
+                  className={`food-item-chevron ${isExpanded ? "is-open" : ""}`}
+                  aria-hidden="true"
+                />
               )}
-            </button>
+            </div>
           );
         },
       },
@@ -512,72 +633,22 @@ export function FoodWorkOrderDetailPage() {
                     onClick={handleOpenLabelModal}
                   >
                     선택 라벨 인쇄
-
                   </button>
                 </>
               )}
             </div>
           </div>
 
-
           <CusTable
             data={activeLines}
             columns={columns}
             noDataMessage="등록된 작업지시 라인이 없습니다."
             getRowId={(line) => line.id}
+            onRowClick={!isEditing ? handleRowClick : undefined}
             expandedRowId={!isEditing ? expandedRoutingLineId : null}
-            renderExpandedRow={(line) => {
-              const steps = routingStepsByLineId[line.id] ?? [];
-
-              return (
-                <div className="food-routing-content">
-                  {steps.length === 0 ? (
-                    <p>등록된 라우팅 공정이 없습니다.</p>
-                  ) : (
-                    <ol className="food-routing-timeline">
-                      {steps.map((step) => (
-                        <li
-                          key={`${step.operCode}-${step.operSeq}`}
-                          className="food-routing-step"
-                        >
-                          <div className="food-routing-step-title">
-                            {step.operSeq}. {step.operNm}
-                            {step.finalYn === "Y" && (
-                              <span> (최종 공정)</span>
-                            )}
-                          </div>
-
-                          <div>공정 코드: {step.operCode}</div>
-
-                          <div>
-                            설비: {step.equipments
-                              ?.map((equipment) => equipment.eqNm)
-                              .join(", ") || "-"}
-                          </div>
-
-                          <div>
-                            상태: {step.done
-                              ? "완료"
-                              : step.inProgress
-                                ? "진행 중"
-                                : "대기"}
-                          </div>
-
-                          <div>
-                            투입량: {step.inputQty ?? "-"} /
-                            산출량: {step.outputQty ?? "-"} /
-                            불량량: {step.defectQty ?? "-"} /
-                            수율: {step.yieldRate == null
-                              ? "-"
-                              : `${step.yieldRate}%`}
-                          </div>
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                </div>
-              );
-            }}
+            renderExpandedRow={(line) => (
+              <RoutingTimeline steps={routingStepsByLineId[line.id] ?? []} />
+            )}
           />
 
         </div>
