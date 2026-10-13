@@ -17,6 +17,7 @@ interface WorkOrderLine {
   itemCode: string;
   itemNm: string;
   instructQty: number;
+  remainingQty: number;
 }
 
 export function FoodWorkOrderCreatePage() {
@@ -38,6 +39,17 @@ export function FoodWorkOrderCreatePage() {
 
   // --- useRef 기반 지시수량 임시 저장소 (line id를 키로 관리) ---
   const editQuantitiesRef = useRef<Record<string, number | ''>>({});
+
+  // 현재 입력된 지시수량 조회
+  const getCurrentQty = (line: WorkOrderLine): number => {
+    const value = editQuantitiesRef.current[line.id];
+
+    if (value === undefined || value === '') {
+      return NaN;
+    }
+
+    return Number(value);
+  };
 
   // 회원 옵션 데이터 조회
   useEffect(() => {
@@ -79,6 +91,7 @@ export function FoodWorkOrderCreatePage() {
       itemCode: "선택요망",
       itemNm: "수주라인을 선택해주세요.",
       instructQty: 0,
+      remainingQty: 0,
     };
     setLines((prev) => [...prev, newLine]);
   };
@@ -94,10 +107,38 @@ export function FoodWorkOrderCreatePage() {
   ) => {
     if (!activeLineId) return;
 
-    const defaultQty = Number(selected.orderQty ?? 0);
+    // 1. 이미 다른 작업지시 라인에서 선택한 수주라인인지 확인
+    const duplicated = lines.some(
+      (line) =>
+        line.id !== activeLineId &&
+        line.salesOrderLineId === selected.salesOrderLineId
+    );
 
-    // 선택한 수주라인의 기본 수량 저장
-    editQuantitiesRef.current[activeLineId] = defaultQty;
+    if (duplicated) {
+      alert("이미 추가된 수주라인입니다.");
+      return;
+    }
+
+    const orderQty = Number(selected.orderQty ?? 0);
+    const producedQty = Number(selected.producedQty ?? 0);
+    const progressRate = Number(selected.progressRate ?? 0);
+
+    // 2. 생산 완료 항목 선택 방지
+    if (progressRate >= 100) {
+      alert("이미 생산이 완료된 수주라인입니다.");
+      return;
+    }
+
+    // 3. 잔여 지시 가능 수량 계산
+    const remainingQty = Math.max(0, orderQty - producedQty);
+
+    if (remainingQty <= 0) {
+      alert("지시 가능한 잔여 수량이 없습니다.");
+      return;
+    }
+
+    // 4. 선택한 라인의 기본 지시수량 설정
+    editQuantitiesRef.current[activeLineId] = remainingQty;
 
     setLines((prev) =>
       prev.map((line) =>
@@ -108,11 +149,16 @@ export function FoodWorkOrderCreatePage() {
             orderCode: selected.orderCode,
             itemCode: selected.itemCode,
             itemNm: selected.itemNm,
-            instructQty: defaultQty,
+            instructQty: remainingQty,
+            remainingQty,
           }
           : line
       )
     );
+
+    // 선택 후 모달 닫기
+    setIsModalOpen(false);
+    setActiveLineId(null);
   };
 
   // 작업지시 라인 테이블 컬럼 정의
@@ -153,17 +199,19 @@ export function FoodWorkOrderCreatePage() {
 
           return (
             <input
-              key={`${line.id} - ${line.salesOrderLineId} - ${line.instructQty}`}
+              key={`${line.id}-${line.salesOrderLineId}`}
               type="number"
               min="1"
+              max={line.remainingQty}
+              step="1"
               className="tableInput food-table-input-cell"
-              defaultValue={
-                editQuantitiesRef.current[line.id] ?? line.instructQty
-              }
-              disabled={isSubmitting}
+              value={editQuantitiesRef.current[line.id] ?? line.instructQty}
+              disabled={isSubmitting || line.salesOrderLineId === 0}
               onChange={(e) => {
+                const value = e.target.value;
+
                 editQuantitiesRef.current[line.id] =
-                  e.target.value === '' ? '' : Number(e.target.value);
+                  value === "" ? "" : Number(value);
               }}
             />
           );
@@ -193,7 +241,7 @@ export function FoodWorkOrderCreatePage() {
         meta: { width: '60px' },
       },
     ],
-    [isSubmitting]
+    [isSubmitting, lines]
   );
 
   const validateForm = (): boolean => {
@@ -214,9 +262,22 @@ export function FoodWorkOrderCreatePage() {
         alert("모든 라인에 수주라인을 선택해주셔야 합니다.");
         return false;
       }
-      const currentQty = editQuantitiesRef.current[line.id];
-      if (currentQty === '' || Number(currentQty) <= 0) {
-        alert("지시수량은 0보다 커야 합니다.");
+      const currentQty = getCurrentQty(line);
+
+      if (!Number.isFinite(currentQty) || currentQty <= 0) {
+        alert("지시수량은 0보다 큰 숫자를 입력해주세요.");
+        return false;
+      }
+
+      if (!Number.isInteger(currentQty)) {
+        alert("지시수량은 정수로 입력해주세요.");
+        return false;
+      }
+
+      if (currentQty > line.remainingQty) {
+        alert(
+          `지시수량은 잔여 수량(${line.remainingQty})을 초과할 수 없습니다.`
+        );
         return false;
       }
     }
@@ -232,9 +293,9 @@ export function FoodWorkOrderCreatePage() {
     if (!validateForm()) return;
 
     // 제출 직전에 ref의 최신 입력값들을 반영
-    const finalizedLines = lines.map((l) => ({
-      salesOrderLineId: l.salesOrderLineId,
-      instructQty: Number(editQuantitiesRef.current[l.id]) || 0,
+    const finalizedLines = lines.map((line) => ({
+      salesOrderLineId: line.salesOrderLineId,
+      instructQty: getCurrentQty(line),
     }));
 
     const payload = {
