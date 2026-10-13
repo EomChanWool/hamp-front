@@ -335,7 +335,7 @@ export function OrderStatusPage() {
                                     style={{ width: `${safePct}%` }}
                                 />
                             </div>
-                            <span className="progressPct">{pct}%</span>
+                            <span className="progressPct">{Number(pct.toFixed(2))}%</span>
                         </div>
                     );
                 },
