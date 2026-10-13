@@ -96,15 +96,20 @@ export function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalPr
       {
         accessorKey: 'progressRate',
         header: '진행률',
-        cell: ({ row }) => (
-          <div>
-            {row.original.progressRate >= 100 ? (
-              <Badge tone="good">완료 ({row.original.progressRate}%)</Badge>
-            ) : (
-              <Badge tone="info">{row.original.progressRate}%</Badge>
-            )}
-          </div>
-        ),
+        cell: ({ row }) => {
+          const progressRate = Number(row.original.progressRate ?? 0)
+          const formattedRate = Number(progressRate.toFixed(2))
+
+          return (
+            <div>
+              {progressRate >= 100 ? (
+                <Badge tone="good">완료 ({formattedRate}%)</Badge>
+              ) : (
+                <Badge tone="info">{formattedRate}%</Badge>
+              )}
+            </div>
+          )
+        },
       },
       {
         id: 'action',
@@ -118,7 +123,7 @@ export function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalPr
               onClick={(e) => {
                 // 이벤트 버블링 방지 (행 클릭 이벤트가 중복으로 실행되는 것을 막음)
                 e.stopPropagation()
-                
+
                 onSelect(row.original)
                 onClose()
               }}
