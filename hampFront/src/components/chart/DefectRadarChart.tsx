@@ -34,19 +34,19 @@ interface ChartPoint {
 
 // ─── 타입별 고유 색상 ─────────────────────────────────────────────────────────
 const TYPE_COLORS: Record<string, { dark: string; light: string }> = {
-  이물:    { dark: "#6ee7b7", light: "#059669" },
-  중량미달: { dark: "#34d399", light: "#10b981" },
-  파손:    { dark: "#4ade80", light: "#16a34a" },
-  색상불량: { dark: "#86efac", light: "#22c55e" },
-  포장불량: { dark: "#a7f3d0", light: "#65a30d" },
-  기타:    { dark: "#5eead4", light: "#0d9488" },
+  이물:    { dark: "#57d3a1", light: "#2fa87a" },
+  중량미달: { dark: "#2bb3b8", light: "#1f8a8f" },
+  파손:    { dark: "#7cb7e8", light: "#3b82c4" },
+  색상불량: { dark: "#8b93f0", light: "#5b64d6" },
+  포장불량: { dark: "#c4b5f4", light: "#8a6fd1" },
+  기타:    { dark: "#94a3b8", light: "#64748b" },
 };
 
 // ─── 별 고유 색상 ─────────────────────────────────────────────────────────
 const BADGE_COLORS: Record<string, { dark: string; light: string }> = {
-  총불량:    { dark: "#fbbf24", light: "#d97706" },
-  평균불량률: { dark: "#60a5fa", light: "#2563eb" },
-  최다불량:  { dark: "#f87171", light: "#dc2626" },
+  총불량:    { dark: "#f0c36a", light: "#c98a3a" },
+  평균불량률: { dark: "#7cb7e8", light: "#3b82c4" },
+  최다불량:  { dark: "#f28b82", light: "#d9625a" },
 };
 
 // ─── CSS 변수 주입용 테마 맵 ──────────────────────────────────────────────────
