@@ -18,17 +18,17 @@ import { useRealtimePulse } from "@/hooks/useRealtimePulse";
 const DEF = mesScreens.facilityEnvironmentRealtime;
 
 const A_SERIES = [
-  { key: 'A동_온도',     label: '온도',    color: '#3b82f6', base: 55 },
-  { key: 'A동_습도',     label: '습도',    color: '#10b981', base: 42 },
-  { key: 'A동_CO2',      label: 'CO₂',     color: '#06b6d4', base: 25 },
-  { key: 'A동_미세먼지', label: '미세먼지', color: '#34d399', base: 18 },
+  { key: 'A동_온도',     label: '온도',    color: '#57d3a1', base: 55 },
+  { key: 'A동_습도',     label: '습도',    color: '#2b8a8f', base: 42 },
+  { key: 'A동_CO2',      label: 'CO₂',     color: '#7cb7e8', base: 25 },
+  { key: 'A동_미세먼지', label: '미세먼지', color: '#94a3b8', base: 18 },
 ]
 
 const B_SERIES = [
-  { key: 'B동_온도',     label: '온도',    color: '#8b5cf6', base: 48 }, // 바이올렛
-  { key: 'B동_습도',     label: '습도',    color: '#f59e0b', base: 30 }, // 앰버
-  { key: 'B동_CO2',      label: 'CO₂',     color: '#f43f5e', base: 20 }, // 로즈
-  { key: 'B동_미세먼지', label: '미세먼지', color: '#64748b', base: 12 }, // 슬레이트
+  { key: 'B동_온도',     label: '온도',    color: '#8b93f0', base: 48 },
+  { key: 'B동_습도',     label: '습도',    color: '#5b64d6', base: 30 },
+  { key: 'B동_CO2',      label: 'CO₂',     color: '#b4b9f7', base: 20 },
+  { key: 'B동_미세먼지', label: '미세먼지', color: '#64748b', base: 12 },
 ]
 
 /** 2시간 간격. 1시간 간격이 필요하면 '09:00', '11:00' ... 을 추가 */
