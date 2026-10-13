@@ -365,7 +365,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
             },
             {
                 accessorKey: 'returnDueDate',
-                header: '처리예정일',
+                header: '반납예정일',
                 enableSorting: false,
                 cell: ({ row }) => {
                     const item = row.original;
@@ -596,7 +596,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                                         />
                                     </div>
                                     <div className="reportFormDateItem">
-                                        <label className="reportFormSubLabel">처리예정일</label>
+                                        <label className="reportFormSubLabel">반납예정일</label>
                                         <input
                                             type="date"
                                             className="reportFormInput"
