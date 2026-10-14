@@ -1,7 +1,6 @@
 import { apiClient } from '@/api/apiClient';
 import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
-
 /** LOT 목록 조회 아이템 응답 */
 export interface LotResponse {
     lotCode: string;
@@ -29,7 +28,6 @@ export type PageLotResponse = PageResponse<LotResponse>;
 
 /** LOT 목록 페이징 API 최종 응답 타입 */
 export type ApiResponsePageLotResponse = ApiResponsePage<LotResponse>;
-
 
 // ── LOT 관리 API 함수 ────────────────────────────────────────────────────────
 

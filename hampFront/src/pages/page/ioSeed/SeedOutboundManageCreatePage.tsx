@@ -1,0 +1,398 @@
+import { useState, useMemo, useEffect, useRef, type SyntheticEvent, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { type ColumnDef } from '@tanstack/react-table';
+import { TrashIcon } from "@heroicons/react/24/outline";
+import { Badge } from "@/components/common/Badge";
+import { CusTable } from "@/components/table/CusTable";
+import { SalesOrderModal } from "@/components/modal/SalesOrderModal";
+import { SalesOrderApi, type SalesOrderOptionResponse, type SalesOrderStatusLineResponse } from "@/api/sales/SalesOrder";
+import { WorkOrderApi } from "@/api/WorkOrder";
+import { UserApi, type UserOptionResponse } from "@/api/User";
+import '@/pages/page/food/Food.css';
+
+interface WorkOrderLine {
+    id: string;
+    salesOrderLineId: number;
+    orderCode: string;
+    itemCode: string;
+    itemNm: string;
+    instructQty: number;
+    remainingQty: number;
+}
+
+export function SeedOutboundManageCreatePage() {
+    const navigate = useNavigate();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [activeLineId, setActiveLineId] = useState<string | null>(null);
+
+    // 옵션 목록 상태
+    const [userOptions, setUserOptions] = useState<UserOptionResponse[]>([]);
+    const [salesOrderOptions, setSalesOrderOptions] = useState<SalesOrderOptionResponse[]>([]);
+
+    const [form, setForm] = useState({
+        orderCode: "",
+        managerId: "",
+    });
+
+    const [lines, setLines] = useState<WorkOrderLine[]>([]);
+
+    // --- useRef 기반 지시수량 임시 저장소 (line id를 키로 관리) ---
+    const editQuantitiesRef = useRef<Record<string, number | ''>>({});
+
+    // 현재 입력된 지시수량 조회
+    const getCurrentQty = (line: WorkOrderLine): number => {
+        const value = editQuantitiesRef.current[line.id];
+
+        if (value === undefined || value === '') {
+            return NaN;
+        }
+
+        return Number(value);
+    };
+
+
+    const fetchOptions = useCallback(async () => {
+        try {
+            const [userRes, salesOrderRes] = await Promise.all([
+                UserApi.getOptions(),
+                SalesOrderApi.getOptions(),
+            ]);
+            setUserOptions(userRes.data ?? []);
+            setSalesOrderOptions(salesOrderRes.data ?? []);
+        } catch (error) {
+            console.error("옵션 목록 조회 실패:", error);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchOptions();
+    }, [fetchOptions]);
+
+    const handleChange = (key: string, value: string) => {
+        setForm((prev) => ({ ...prev, [key]: value }));
+    };
+
+    const handleRemoveLine = (id: string) => {
+        delete editQuantitiesRef.current[id];
+        setLines((prev) => prev.filter((line) => line.id !== id));
+    };
+
+    const handleAddLine = () => {
+        const newId = `line-${Date.now()}`;
+        // 신규 라인 추가 시 기본 수량 0을 ref에 등록
+        editQuantitiesRef.current[newId] = 0;
+
+        const newLine: WorkOrderLine = {
+            id: newId,
+            salesOrderLineId: 0,
+            orderCode: "수주선택 필요",
+            itemCode: "선택요망",
+            itemNm: "수주라인을 선택해주세요.",
+            instructQty: 0,
+            remainingQty: 0,
+        };
+        setLines((prev) => [...prev, newLine]);
+    };
+
+    const handleOpenModal = (lineId: string) => {
+        setActiveLineId(lineId);
+        setIsModalOpen(true);
+    };
+
+    // 모달에서 수주 라인을 선택했을 때 실행되는 핸들러
+    const handleSelectSalesOrderLine = (
+        selected: SalesOrderStatusLineResponse
+    ) => {
+        if (!activeLineId) return;
+
+        // 1. 이미 다른 작업지시 라인에서 선택한 수주라인인지 확인
+        const duplicated = lines.some(
+            (line) =>
+                line.id !== activeLineId &&
+                line.salesOrderLineId === selected.salesOrderLineId
+        );
+
+        if (duplicated) {
+            alert("이미 추가된 수주라인입니다.");
+            return;
+        }
+
+        const orderQty = Number(selected.orderQty ?? 0);
+        const producedQty = Number(selected.producedQty ?? 0);
+        const progressRate = Number(selected.progressRate ?? 0);
+
+        // 2. 생산 완료 항목 선택 방지
+        if (progressRate >= 100) {
+            alert("이미 생산이 완료된 수주라인입니다.");
+            return;
+        }
+
+        // 3. 잔여 지시 가능 수량 계산
+        const remainingQty = Math.max(0, orderQty - producedQty);
+
+        if (remainingQty <= 0) {
+            alert("지시 가능한 잔여 수량이 없습니다.");
+            return;
+        }
+
+        // 4. 선택한 라인의 기본 지시수량 설정
+        editQuantitiesRef.current[activeLineId] = remainingQty;
+
+        setLines((prev) =>
+            prev.map((line) =>
+                line.id === activeLineId
+                    ? {
+                        ...line,
+                        salesOrderLineId: selected.salesOrderLineId,
+                        orderCode: selected.orderCode,
+                        itemCode: selected.itemCode,
+                        itemNm: selected.itemNm,
+                        instructQty: remainingQty,
+                        remainingQty,
+                    }
+                    : line
+            )
+        );
+
+        // 선택 후 모달 닫기
+        setIsModalOpen(false);
+        setActiveLineId(null);
+    };
+
+    // 작업지시 라인 테이블 컬럼 정의
+    const workOrderColumns = useMemo<ColumnDef<WorkOrderLine>[]>(
+        () => [
+            {
+                accessorKey: 'orderCode',
+                header: '수주라인',
+                meta: { width: '450px' },
+                cell: ({ row }) => {
+                    const line = row.original;
+                    const isSelected = line.salesOrderLineId > 0;
+                    return (
+                        <button
+                            type="button"
+                            onClick={() => handleOpenModal(line.id)}
+                            className="tableInput food-order-select-btn"
+                        >
+                            {isSelected ? (
+                                <div className="food-order-selected-container">
+                                    <span className="food-order-code-text">{line.orderCode}</span>
+                                    <Badge tone="info">{line.itemCode}</Badge>
+                                    <span className="food-item-name-text">{line.itemNm}</span>
+                                </div>
+                            ) : (
+                                <span className="food-order-placeholder-text">클릭하여 수주라인을 선택하세요</span>
+                            )}
+                            <span className="food-order-change-text">(변경)</span>
+                        </button>
+                    );
+                },
+            },
+            {
+                accessorKey: 'instructQty',
+                header: '지시수량',
+                cell: ({ row }) => {
+                    const line = row.original;
+
+                    return (
+                        <input
+                            key={`${line.id}-${line.salesOrderLineId}`}
+                            type="number"
+                            min="1"
+                            max={line.remainingQty}
+                            step="1"
+                            className="tableInput food-table-input-cell"
+                            value={editQuantitiesRef.current[line.id] ?? line.instructQty}
+                            disabled={isSubmitting || line.salesOrderLineId === 0}
+                            onChange={(e) => {
+                                const value = e.target.value;
+
+                                editQuantitiesRef.current[line.id] =
+                                    value === "" ? "" : Number(value);
+                            }}
+                        />
+                    );
+                },
+                meta: { width: '150px' },
+            },
+            {
+                id: 'action',
+                header: '관리',
+                enableSorting: false,
+                cell: ({ row }) => {
+                    const line = row.original;
+                    return (
+                        <div style={{ textAlign: 'center' }}>
+                            <button
+                                type="button"
+                                onClick={() => handleRemoveLine(line.id)}
+                                disabled={isSubmitting}
+                                className="food-line-delete-btn"
+                                title="라인 삭제"
+                            >
+                                <TrashIcon className="food-delete-icon" />
+                            </button>
+                        </div>
+                    );
+                },
+                meta: { width: '60px' },
+            },
+        ],
+        [isSubmitting, lines]
+    );
+
+    const validateForm = (): boolean => {
+        if (!form.managerId) {
+            alert("담당자를 선택해주세요.");
+            return false;
+        }
+        if (lines.length === 0) {
+            alert("수주라인을 최소 1개 이상 추가해야 합니다.");
+            return false;
+        }
+        for (const line of lines) {
+            if (line.salesOrderLineId === 0) {
+                alert("모든 라인에 수주라인을 선택해주셔야 합니다.");
+                return false;
+            }
+            const currentQty = getCurrentQty(line);
+
+            if (!Number.isFinite(currentQty) || currentQty <= 0) {
+                alert("지시수량은 0보다 큰 숫자를 입력해주세요.");
+                return false;
+            }
+
+            if (!Number.isInteger(currentQty)) {
+                alert("지시수량은 정수로 입력해주세요.");
+                return false;
+            }
+
+            if (currentQty > line.remainingQty) {
+                alert(
+                    `지시수량은 잔여 수량(${line.remainingQty})을 초과할 수 없습니다.`
+                );
+                return false;
+            }
+        }
+        return true;
+    };
+
+    const handleCancel = () => {
+        navigate(-1);
+    };
+
+    const handleSubmit = async (e: SyntheticEvent) => {
+        e.preventDefault();
+        if (!validateForm()) return;
+
+        // 제출 직전에 ref의 최신 입력값들을 반영
+        const finalizedLines = lines.map((line) => ({
+            salesOrderLineId: line.salesOrderLineId,
+            instructQty: getCurrentQty(line),
+        }));
+
+        const payload = {
+            orderCode: form.orderCode,
+            managerId: form.managerId,
+            lines: finalizedLines,
+        };
+
+        // setIsSubmitting(true);
+        // try {
+        //     await WorkOrderApi.create(payload);
+        //     alert("작업지시가 성공적으로 등록되었습니다.");
+        //     navigate("/food/work-orders");
+        // } catch (error) {
+        //     console.error("작업지시 등록 실패:", error);
+        //     alert("작업지시 등록 중 오류가 발생했습니다.");
+        // } finally {
+        //     setIsSubmitting(false);
+        // }
+    };
+
+    return (
+        <section className="screenStack">
+            <div className="createCard">
+
+                {/* 헤더 영역 */}
+                <div className="createHeader">
+                    <h1 className="createTitle">출고지시서 등록</h1>
+                    <span className="createMeta">
+                        <span className="required">* 표시는 필수 입력 항목입니다</span>
+                    </span>
+                </div>
+
+                <form onSubmit={handleSubmit}>
+                    <div className="createBody">
+
+                        {/* 1. 기본 정보 섹션 */}
+                        <div className="createSection">
+                            <h2 className="createSectionTitle">기본정보</h2>
+                            <div className="createGrid2Cols">
+
+                                <div className="createField">
+                                    <label className="requiredLabel">담당자 <span className="required">*</span></label>
+                                    <select
+                                        className="tableInput"
+                                        value={form.managerId}
+                                        disabled={isSubmitting}
+                                        onChange={(e) => handleChange("managerId", e.target.value)}
+                                    >
+                                        <option value="" disabled>담당자 선택</option>
+                                        {userOptions.map((user) => (
+                                            <option key={user.userId} value={user.userId}>
+                                                {user.userNm} ({user.userId})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="createField">
+                                    <label className="requiredLabel">수주 <span className="required">*</span></label>
+                                    <select
+                                        className="tableInput"
+                                        value={form.orderCode}
+                                        disabled={isSubmitting}
+                                        onChange={(e) => handleChange("orderCode", e.target.value)}
+                                    >
+                                        <option value="" disabled>수주 선택</option>
+                                        {salesOrderOptions.map((order) => (
+                                            <option key={order.orderCode} value={order.orderCode}>
+                                                {order.bpNm} ({order.orderCode})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+
+
+                            </div>
+                        </div>
+
+                    </div>
+                    {/* 하단 버튼 영역 */}
+                    <div className="createFooter">
+                        <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
+                            취소
+                        </button>
+                        <button type="submit" className="primaryButton" disabled={isSubmitting}>
+                            {isSubmitting ? "등록 중..." : "저장"}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <SalesOrderModal
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setActiveLineId(null);
+                }}
+                onSelect={handleSelectSalesOrderLine}
+            />
+        </section>
+    );
+}
