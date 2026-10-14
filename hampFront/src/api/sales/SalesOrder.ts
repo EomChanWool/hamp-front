@@ -118,6 +118,12 @@ export interface SalesOrderPerformanceKpiResponse {
     completedLineCount: number;
 }
 
+/** 수주 옵션 조회 응답 */
+export interface SalesOrderOptionResponse {
+    orderCode: string;
+    bpNm: string;
+}
+
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 수주 단건/기본 응답 API 최종 응답 타입 */
@@ -146,6 +152,9 @@ export type ApiResponseListSalesOrderPerformanceTrendSeriesResponse = ApiRespons
 
 /** 수주실적현황 KPI API 최종 응답 타입 */
 export type ApiResponseSalesOrderPerformanceKpiResponse = ApiResponse<SalesOrderPerformanceKpiResponse>;
+
+/** 수주 옵션 목록 API 최종 응답 타입 */
+export type ApiResponseListSalesOrderOptionResponse = ApiResponse<SalesOrderOptionResponse[]>;
 
 // ── 수주 관리 API 함수 ────────────────────────────────────────────────────────
 
@@ -236,5 +245,11 @@ export const SalesOrderApi = {
     }): Promise<ApiResponseSalesOrderPerformanceKpiResponse> => {
         const res = await apiClient.get('/sales-orders/performance/kpi', { params });
         return res.data;
-    }
+    },
+
+    /** 수주 셀렉트 옵션 조회 */
+        getOptions: async (): Promise<ApiResponseListSalesOrderOptionResponse> => {
+        const res = await apiClient.get<ApiResponseListSalesOrderOptionResponse>('/sales-orders/options');
+        return res.data;
+    },
 };
