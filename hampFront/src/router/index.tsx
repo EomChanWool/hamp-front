@@ -72,6 +72,7 @@ import { SeedInventoryManagePage } from '@pages/page/seed/SeedInventoryManagePag
 //출고관리
 import { SeedInboundManagePage } from '@pages/page/ioSeed/SeedInboundManagePage'
 import { SeedOutboundManagePage } from '@pages/page/ioSeed/SeedOutboundManagePage'
+import { SeedOutboundManageCreatePage } from '@/pages/page/ioSeed/SeedOutboundManageCreatePage'
 import { InpiInboundManagePage } from '@pages/page/ioInpi/InpiInboundManagePage'
 import { InpiOutboundManagePage } from '@pages/page/ioInpi/InpiOutboundManagePage'
 
@@ -328,6 +329,7 @@ export const menuRoutes: MenuRouteGroup[] = [
     items: [
       { path: 'seed-inbound-manage', name: '씨드입고관리', element: <SeedInboundManagePage /> },
       { path: 'seed-outbound-manage', name: '씨드출고관리', element: <SeedOutboundManagePage /> },
+      { path: 'seed-outbound-manage/create', name: '출고지시 등록', element: <SeedOutboundManageCreatePage />, hidden: true },
       { path: 'inpi-inbound-manage', name: '인피입고관리', element: <InpiInboundManagePage /> },
       { path: 'inpi-outbound-manage', name: '인피출고관리', element: <InpiOutboundManagePage /> },
     ],
