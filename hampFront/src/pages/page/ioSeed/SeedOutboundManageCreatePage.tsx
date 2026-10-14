@@ -4,9 +4,8 @@ import { type ColumnDef } from '@tanstack/react-table';
 import { TrashIcon } from "@heroicons/react/24/outline";
 import { Badge } from "@/components/common/Badge";
 import { CusTable } from "@/components/table/CusTable";
-import { SalesOrderModal } from "@/components/modal/SalesOrderModal";
-import { SalesOrderApi, type SalesOrderOptionResponse, type SalesOrderStatusLineResponse } from "@/api/sales/SalesOrder";
-import { WorkOrderApi } from "@/api/WorkOrder";
+import { SalesOrderApi, type SalesOrderOptionResponse } from "@/api/sales/SalesOrder";
+import { ShipmentOrderApi, type ShipmentSalesOrderResponse } from "@/api/ShipmentOrder";
 import { UserApi, type UserOptionResponse } from "@/api/User";
 import '@/pages/page/food/Food.css';
 
@@ -24,9 +23,6 @@ export function SeedOutboundManageCreatePage() {
     const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [activeLineId, setActiveLineId] = useState<string | null>(null);
-
     // 옵션 목록 상태
     const [userOptions, setUserOptions] = useState<UserOptionResponse[]>([]);
     const [salesOrderOptions, setSalesOrderOptions] = useState<SalesOrderOptionResponse[]>([]);
@@ -35,6 +31,12 @@ export function SeedOutboundManageCreatePage() {
         orderCode: "",
         managerId: "",
     });
+
+    const [selectedSalesOrder, setSelectedSalesOrder] =
+        useState<ShipmentSalesOrderResponse | null>(null);
+
+    const [isLoadingSalesOrder, setIsLoadingSalesOrder] = useState(false);
+    const [salesOrderError, setSalesOrderError] = useState("");
 
     const [lines, setLines] = useState<WorkOrderLine[]>([]);
 
@@ -74,92 +76,35 @@ export function SeedOutboundManageCreatePage() {
         setForm((prev) => ({ ...prev, [key]: value }));
     };
 
+    const handleSalesOrderChange = async (orderCode: string) => {
+        handleChange("orderCode", orderCode);
+
+        // 선택 초기화
+        setSelectedSalesOrder(null);
+        setSalesOrderError("");
+
+        if (!orderCode) return;
+
+        try {
+            setIsLoadingSalesOrder(true);
+
+            const response =
+                await ShipmentOrderApi.getSalesOrderForShipment(orderCode);
+
+            setSelectedSalesOrder(response.data);
+        } catch (error) {
+            console.error("수주 정보 조회 실패:", error);
+            setSalesOrderError("수주 정보를 불러오지 못했습니다.");
+        } finally {
+            setIsLoadingSalesOrder(false);
+        }
+    };
+
     const handleRemoveLine = (id: string) => {
         delete editQuantitiesRef.current[id];
         setLines((prev) => prev.filter((line) => line.id !== id));
     };
 
-    const handleAddLine = () => {
-        const newId = `line-${Date.now()}`;
-        // 신규 라인 추가 시 기본 수량 0을 ref에 등록
-        editQuantitiesRef.current[newId] = 0;
-
-        const newLine: WorkOrderLine = {
-            id: newId,
-            salesOrderLineId: 0,
-            orderCode: "수주선택 필요",
-            itemCode: "선택요망",
-            itemNm: "수주라인을 선택해주세요.",
-            instructQty: 0,
-            remainingQty: 0,
-        };
-        setLines((prev) => [...prev, newLine]);
-    };
-
-    const handleOpenModal = (lineId: string) => {
-        setActiveLineId(lineId);
-        setIsModalOpen(true);
-    };
-
-    // 모달에서 수주 라인을 선택했을 때 실행되는 핸들러
-    const handleSelectSalesOrderLine = (
-        selected: SalesOrderStatusLineResponse
-    ) => {
-        if (!activeLineId) return;
-
-        // 1. 이미 다른 작업지시 라인에서 선택한 수주라인인지 확인
-        const duplicated = lines.some(
-            (line) =>
-                line.id !== activeLineId &&
-                line.salesOrderLineId === selected.salesOrderLineId
-        );
-
-        if (duplicated) {
-            alert("이미 추가된 수주라인입니다.");
-            return;
-        }
-
-        const orderQty = Number(selected.orderQty ?? 0);
-        const producedQty = Number(selected.producedQty ?? 0);
-        const progressRate = Number(selected.progressRate ?? 0);
-
-        // 2. 생산 완료 항목 선택 방지
-        if (progressRate >= 100) {
-            alert("이미 생산이 완료된 수주라인입니다.");
-            return;
-        }
-
-        // 3. 잔여 지시 가능 수량 계산
-        const remainingQty = Math.max(0, orderQty - producedQty);
-
-        if (remainingQty <= 0) {
-            alert("지시 가능한 잔여 수량이 없습니다.");
-            return;
-        }
-
-        // 4. 선택한 라인의 기본 지시수량 설정
-        editQuantitiesRef.current[activeLineId] = remainingQty;
-
-        setLines((prev) =>
-            prev.map((line) =>
-                line.id === activeLineId
-                    ? {
-                        ...line,
-                        salesOrderLineId: selected.salesOrderLineId,
-                        orderCode: selected.orderCode,
-                        itemCode: selected.itemCode,
-                        itemNm: selected.itemNm,
-                        instructQty: remainingQty,
-                        remainingQty,
-                    }
-                    : line
-            )
-        );
-
-        // 선택 후 모달 닫기
-        setIsModalOpen(false);
-        setActiveLineId(null);
-    };
 
     // 작업지시 라인 테이블 컬럼 정의
     const workOrderColumns = useMemo<ColumnDef<WorkOrderLine>[]>(
@@ -174,7 +119,6 @@ export function SeedOutboundManageCreatePage() {
                     return (
                         <button
                             type="button"
-                            onClick={() => handleOpenModal(line.id)}
                             className="tableInput food-order-select-btn"
                         >
                             {isSelected ? (
@@ -356,7 +300,7 @@ export function SeedOutboundManageCreatePage() {
                                         className="tableInput"
                                         value={form.orderCode}
                                         disabled={isSubmitting}
-                                        onChange={(e) => handleChange("orderCode", e.target.value)}
+                                        onChange={(e) => handleSalesOrderChange(e.target.value)}
                                     >
                                         <option value="" disabled>수주 선택</option>
                                         {salesOrderOptions.map((order) => (
@@ -365,6 +309,73 @@ export function SeedOutboundManageCreatePage() {
                                             </option>
                                         ))}
                                     </select>
+
+                                    {isLoadingSalesOrder && (
+                                        <p>수주 정보를 불러오는 중입니다...</p>
+                                    )}
+
+                                    {salesOrderError && (
+                                        <p className="errorMessage">{salesOrderError}</p>
+                                    )}
+
+                                    {selectedSalesOrder && (
+                                        <div className="salesOrderDetail">
+                                            <h3>수주 정보</h3>
+
+                                            <div>
+                                                <strong>수주번호:</strong>{" "}
+                                                {selectedSalesOrder.orderCode}
+                                            </div>
+
+                                            <div>
+                                                <strong>거래처:</strong>{" "}
+                                                {selectedSalesOrder.bpNm}
+                                            </div>
+
+                                            <div>
+                                                <strong>납기일:</strong>{" "}
+                                                {selectedSalesOrder.dueDate}
+                                            </div>
+
+                                            <div>
+                                                <strong>상태:</strong>{" "}
+                                                {selectedSalesOrder.status}
+                                            </div>
+
+                                            <div>
+                                                <strong>출고지시서 수:</strong>{" "}
+                                                {selectedSalesOrder.shipmentOrderCount}
+                                            </div>
+
+                                            <h3>품목별 생산 / 출고 현황</h3>
+
+                                            <table>
+                                                <thead>
+                                                    <tr>
+                                                        <th>품목코드</th>
+                                                        <th>품목명</th>
+                                                        <th>수주수량</th>
+                                                        <th>출고가능수량</th>
+                                                        <th>출고수량</th>
+                                                        <th>생산상태</th>
+                                                    </tr>
+                                                </thead>
+
+                                                <tbody>
+                                                    {selectedSalesOrder.lines.map((line) => (
+                                                        <tr key={line.salesOrderLineId}>
+                                                            <td>{line.itemCode}</td>
+                                                            <td>{line.itemNm}</td>
+                                                            <td>{line.orderQty}</td>
+                                                            <td>{line.availableQty}</td>
+                                                            <td>{line.shippedQty}</td>
+                                                            <td>{line.productionStatus}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
                                 </div>
 
 
@@ -384,15 +395,6 @@ export function SeedOutboundManageCreatePage() {
                     </div>
                 </form>
             </div>
-
-            <SalesOrderModal
-                isOpen={isModalOpen}
-                onClose={() => {
-                    setIsModalOpen(false);
-                    setActiveLineId(null);
-                }}
-                onSelect={handleSelectSalesOrderLine}
-            />
         </section>
     );
 }
