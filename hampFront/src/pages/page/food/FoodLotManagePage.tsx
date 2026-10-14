@@ -1,80 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTableSorting } from "@/hooks/useTableSorting";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@components/common/Badge";
 import { Panel } from "@components/card/Panel";
-import { RowDetailModal } from "@/components/modal/RowDetailModal";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
-import type { StatusTone } from "@/types";
 import { CheckIcon, ClockIcon } from "@heroicons/react/24/solid";
-
-interface LotRow {
-  lotNumber: string;
-  itemName: string;
-  producedDate: string;
-  materialLot: string;
-  producedQty: string;
-  currentStatus: "생산완료" | "검사대기" | "검사완료" | "출고완료";
-  shipped: "출고완료" | "미출고";
-}
-
-const dummyLots: LotRow[] = [
-  {
-    lotNumber: "LOT-F-2606-11",
-    itemName: "헴프 오일",
-    producedDate: "2026-06-20",
-    materialLot: "RM-8100",
-    producedQty: "700 kg",
-    currentStatus: "생산완료",
-    shipped: "출고완료",
-  },
-  {
-    lotNumber: "LOT-F-2606-12",
-    itemName: "헴프 분말",
-    producedDate: "2026-06-19",
-    materialLot: "RM-8101",
-    producedQty: "780 kg",
-    currentStatus: "검사대기",
-    shipped: "미출고",
-  },
-  {
-    lotNumber: "LOT-F-2606-13",
-    itemName: "단백질 바",
-    producedDate: "2026-06-18",
-    materialLot: "RM-8102",
-    producedQty: "860 kg",
-    currentStatus: "검사완료",
-    shipped: "미출고",
-  },
-  {
-    lotNumber: "LOT-F-2606-14",
-    itemName: "헴프 음료",
-    producedDate: "2026-06-17",
-    materialLot: "RM-8103",
-    producedQty: "940 kg",
-    currentStatus: "출고완료",
-    shipped: "출고완료",
-  },
-  {
-    lotNumber: "LOT-F-2606-15",
-    itemName: "씨드 그래놀라",
-    producedDate: "2026-06-16",
-    materialLot: "RM-8104",
-    producedQty: "1020 kg",
-    currentStatus: "생산완료",
-    shipped: "미출고",
-  },
-  {
-    lotNumber: "LOT-F-2606-16",
-    itemName: "헴프 캡슐",
-    producedDate: "2026-06-15",
-    materialLot: "RM-8105",
-    producedQty: "1100 kg",
-    currentStatus: "검사대기",
-    shipped: "미출고",
-  },
-];
+import { LotApi, type LotResponse } from "@/api/Lot";
+import { useSearchParams } from "react-router-dom";
+import type { StatusTone } from "@/types";
+import Spinner from "@/components/common/Spinner";
 
 const lotFlowPanel = {
   title: "LOT 흐름",
@@ -86,143 +22,251 @@ const lotFlowPanel = {
   ],
 };
 
-const PAGE_SIZE = 10;
-
-function currentStatusTone(value: string): StatusTone {
-  return value === "검사대기" ? "warn" : "good";
-}
-
-function shippedTone(value: string): StatusTone {
-  return value === "출고완료" ? "good" : "info";
-}
-
 export function FoodLotManagePage() {
-  const [filteredLots, setFilteredLots] = useState<LotRow[]>(dummyLots);
-  const [modalLot, setModalLot] = useState<LotRow | null>(null);
-  const [page, setPage] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
 
+  const [lots, setLots] = useState<LotResponse[]>([]);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 새로고침 초기화가 끝난 뒤에 목록 조회를 시작하기 위한 상태
+  const [isReady, setIsReady] = useState(false);
+
+  const { sorting, sortParams, handleSortingChange } = useTableSorting();
+
+  // [정확한 새로고침 감지]
+  // 브라우저가 닫히거나 새로고침(F5)될 때만 플래그 설정
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      sessionStorage.setItem("is_browser_reload", "true");
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
+  // 진입 시 실제 브라우저 새로고침 여부 확인 후 검색 조건 초기화
+  useEffect(() => {
+    const isReload = sessionStorage.getItem("is_browser_reload") === "true";
+
+    if (isReload) {
+      sessionStorage.removeItem("is_browser_reload");
+      if (searchParams.toString()) {
+        setSearchParams({}, { replace: true });
+        return;
+      }
+    }
+
+    setIsReady(true);
+  }, []);
+
+  // 새로고침 때문에 setSearchParams가 실행된 경우 조회 가능 상태로 변경
+  useEffect(() => {
+    const isReload = sessionStorage.getItem("is_browser_reload") === "true";
+    if (!isReload && !isReady) {
+      setIsReady(true);
+    }
+  }, [searchParams, isReady]);
+
+  // URL에서 현재 검색조건 추출
+  const currentPage = Number(searchParams.get("page") || "0");
+  const queryLotCode = searchParams.get("lotCode") || "";
+  const queryShipYn = searchParams.get("shipYn") || "";
+  const queryDateFrom = searchParams.get("productionDateFrom") || "";
+  const queryDateTo = searchParams.get("productionDateTo") || "";
+
+  // 검색 input refs
   const producedStartRef = useRef<HTMLInputElement>(null);
   const producedEndRef = useRef<HTMLInputElement>(null);
-  const lotNumberRef = useRef<HTMLInputElement>(null);
+  const lotCodeRef = useRef<HTMLInputElement>(null);
   const shippedRef = useRef<HTMLInputElement>(null);
 
+  // 검색 필드
   const searchFields: SearchField[] = [
-    { type: "date", label: "생산", startRef: producedStartRef, endRef: producedEndRef },
-    { type: "input", label: "LOT번호", ref: lotNumberRef, name: "equipmentName" },
-    { type: "input", label: "출고여부", ref: shippedRef, name: "equipmentName" },
+    {
+      type: "date",
+      label: "생산일자",
+      startRef: producedStartRef,
+      endRef: producedEndRef,
+    },
+    {
+      type: "input",
+      label: "LOT번호",
+      ref: lotCodeRef,
+      name: "lotCode",
+    },
+    {
+      type: "input",
+      label: "출고여부",
+      ref: shippedRef,
+      name: "shipYn",
+    },
   ];
 
-  const handleSearch = () => {
-    const producedStart = producedStartRef.current?.value ?? "";
-    const producedEnd = producedEndRef.current?.value ?? "";
-    const lotNumber = lotNumberRef.current?.value.trim() ?? "";
-    const shipped = shippedRef.current?.value.trim() ?? "";
+  // URL → SearchBand input 동기화
+  useEffect(() => {
+    if (producedStartRef.current) {
+      producedStartRef.current.value = queryDateFrom;
+    }
 
-    // 현재는 더미LOT에 필터로 걸러내고 있는데 추후에 api 연동할 것
-    setFilteredLots(
-      dummyLots.filter(
-        (lot) =>
-          (!producedStart || lot.producedDate >= producedStart) &&
-          (!producedEnd || lot.producedDate <= producedEnd) &&
-          (!lotNumber || lot.lotNumber.includes(lotNumber)) &&
-          (!shipped || lot.shipped.includes(shipped)),
-      ),
-    );
+    if (producedEndRef.current) {
+      producedEndRef.current.value = queryDateTo;
+    }
+
+    if (lotCodeRef.current) {
+      lotCodeRef.current.value = queryLotCode;
+    }
+
+    if (shippedRef.current) {
+      shippedRef.current.value = queryShipYn;
+    }
+  }, [queryDateFrom, queryDateTo, queryLotCode, queryShipYn]);
+
+  // LOT 목록 조회
+  const loadLots = useCallback(async () => {
+    if (!isReady) return;
+
+    setIsLoading(true);
+
+    try {
+      const params: {
+        page: number;
+        size: number;
+        sort?: string[];
+        lotCode?: string;
+        shipYn?: string;
+        productionDateFrom?: string;
+        productionDateTo?: string;
+      } = {
+        page: currentPage,
+        size: 10,
+      };
+
+      if (queryLotCode) params.lotCode = queryLotCode;
+      if (queryShipYn) params.shipYn = queryShipYn;
+      if (queryDateFrom) params.productionDateFrom = queryDateFrom;
+      if (queryDateTo) params.productionDateTo = queryDateTo;
+
+      if (sortParams.length > 0) {
+        params.sort = sortParams;
+      }
+
+      const response = await LotApi.getList(params);
+      const pageData = response.data;
+
+      setLots(pageData?.content ?? []);
+      setTotalElements(pageData?.totalElements ?? 0);
+      setTotalPages(pageData?.totalPages ?? 0);
+    } catch (error) {
+      console.error("LOT 목록 조회 실패:", error);
+      window.alert("LOT 목록을 불러오는 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    isReady,
+    currentPage,
+    queryLotCode,
+    queryShipYn,
+    queryDateFrom,
+    queryDateTo,
+    sortParams,
+  ]);
+
+  useEffect(() => {
+    void loadLots();
+  }, [loadLots]);
+
+  // 검색
+  const handleSearch = () => {
+    const nextParams = new URLSearchParams(searchParams);
+
+    nextParams.set("page", "0");
+
+    const values: Record<string, string> = {
+      lotCode: lotCodeRef.current?.value.trim() || "",
+      shipYn: shippedRef.current?.value.trim() || "",
+      productionDateFrom: producedStartRef.current?.value || "",
+      productionDateTo: producedEndRef.current?.value || "",
+    };
+
+    Object.entries(values).forEach(([key, value]) => {
+      if (value) {
+        nextParams.set(key, value);
+      } else {
+        nextParams.delete(key);
+      }
+    });
+
+    setSearchParams(nextParams);
   };
 
+  // 검색 초기화
   const handleReset = () => {
-    [producedStartRef, producedEndRef, lotNumberRef, shippedRef].forEach((ref) => {
+    [producedStartRef, producedEndRef, lotCodeRef, shippedRef].forEach((ref) => {
       if (ref.current) ref.current.value = "";
     });
-    setFilteredLots(dummyLots);
+
+    setSearchParams({ page: "0" }, { replace: true });
   };
 
-  const handleDelete = (lot: LotRow) => {
-    if (window.confirm(`${lot.lotNumber} LOT을 삭제할까요?`)) {
-      setFilteredLots((prev) => prev.filter((l) => l !== lot));
-      window.alert("mock data에서만 삭제되었습니다.");
-    }
+  // 페이지 이동
+  const handlePageChange = (newPage: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+
+    nextParams.set("page", String(newPage));
+
+    setSearchParams(nextParams);
   };
 
-  const handleSave = (updated: Record<string, string>) => {
-    setFilteredLots((prev) => prev.map((l) => (l === modalLot ? ({ ...l, ...updated } as LotRow) : l)));
-    setModalLot(null);
-    window.alert("화면 상태에만 저장되었습니다.");
-  };
-
-  // 검색 결과가 바뀌면 페이지를 처음으로 되돌리기
-  useEffect(() => {
-    setPage(0);
-  }, [filteredLots]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredLots.length / PAGE_SIZE));
-  const pagedLots = filteredLots.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
-
-  const columns: ColumnDef<LotRow>[] = useMemo(
+  // 테이블 컬럼
+  const columns: ColumnDef<LotResponse>[] = useMemo(
     () => [
-      { accessorKey: "lotNumber", header: "LOT번호" },
-      { accessorKey: "itemName", header: "품목명" },
-      { accessorKey: "producedDate", header: "생산일자" },
-      { accessorKey: "materialLot", header: "원료LOT" },
-      { accessorKey: "producedQty", header: "생산수량" },
+      {
+        accessorKey: "lotCode",
+        header: "LOT번호",
+      },
+      {
+        accessorKey: "productionDate",
+        header: "생산일자",
+      },
+      {
+        accessorKey: "productionQty",
+        header: "생산수량",
+      },
       {
         accessorKey: "currentStatus",
         header: "현재상태",
-        cell: ({ getValue }) => {
-          const value = getValue() as string;
-          return <Badge tone={currentStatusTone(value)}>{value}</Badge>;
-        },
       },
       {
-        accessorKey: "shipped",
+        accessorKey: "shipYn",
         header: "출고여부",
         cell: ({ getValue }) => {
-          const value = getValue() as string;
-          return <Badge tone={shippedTone(value)}>{value}</Badge>;
+          const val = getValue<number>();
+          return (
+            <Badge tone={val === 1 ? "good" : "muted"}>
+              {val === 1 ? "출고완료" : "미출고"}
+            </Badge>
+          );
         },
       },
       {
-        id: "actions",
-        header: "관리",
-        meta: { width: "150px" },
-        cell: ({ row }) => (
-          <div className="rowActions">
-            <button
-              type="button"
-              className="miniButton"
-              onClick={(e) => {
-                e.stopPropagation();
-                setModalLot(row.original);
-              }}
-            >
-              상세
-            </button>
-            <button
-              type="button"
-              className="miniButton danger"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDelete(row.original);
-              }}
-            >
-              삭제
-            </button>
-          </div>
-        ),
+        accessorKey: "labelPrintYn",
+        header: "라벨출력상태",
+        cell: ({ getValue }) => {
+          const val = getValue<number>();
+          return (
+            <Badge tone={val === 1 ? "good" : "muted"}>
+              {val === 1 ? "출력완료" : "미출력"}
+            </Badge>
+          );
+        },
       },
     ],
     [],
   );
-
-  const detailFields = [
-    { label: "LOT번호", key: "lotNumber" },
-    { label: "품목명", key: "itemName" },
-    { label: "생산일자", key: "producedDate" },
-    { label: "원료LOT", key: "materialLot" },
-    { label: "생산수량", key: "producedQty" },
-    { label: "현재상태", key: "currentStatus" },
-    { label: "출고여부", key: "shipped" },
-  ];
 
   return (
     <section className="screenStack">
@@ -250,18 +294,32 @@ export function FoodLotManagePage() {
 
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="식품 LOT관리 목록" action="등록" onAction={() => window.alert("mock 동작입니다.")}>
-        <CusTable data={pagedLots} columns={columns} onRowClick={setModalLot} />
-        <CusPagination page={page} totalPages={totalPages} totalCount={filteredLots.length} onPageChange={setPage} />
-      </Panel>
+      <Panel title="식품 LOT관리 목록">
+        <div className="relative min-h-[300px]">
+          {isLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              <CusTable
+                data={lots}
+                columns={columns}
+                sorting={sorting}
+                onSortingChange={handleSortingChange}
+                noDataMessage="조회된 LOT 데이터가 없습니다."
+              />
 
-      <RowDetailModal
-        isOpen={modalLot !== null}
-        onClose={() => setModalLot(null)}
-        onSave={handleSave}
-        fields={detailFields}
-        data={(modalLot ?? {}) as unknown as Record<string, string>}
-      />
+              <CusPagination
+                page={currentPage}
+                totalPages={totalPages}
+                totalCount={totalElements}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
+        </div>
+      </Panel>
     </section>
   );
 }
