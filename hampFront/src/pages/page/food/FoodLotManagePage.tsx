@@ -11,6 +11,7 @@ import { LotApi, type LotResponse } from "@/api/Lot";
 import { useSearchParams } from "react-router-dom";
 import type { StatusTone } from "@/types";
 import Spinner from "@/components/common/Spinner";
+import { LabelPrintModal, type WorkOrderLineDetail } from "@/components/modal/LabelPrintModal";
 
 const lotFlowPanel = {
   title: "LOT 흐름",
@@ -32,6 +33,11 @@ export function FoodLotManagePage() {
 
   // 새로고침 초기화가 끝난 뒤에 목록 조회를 시작하기 위한 상태
   const [isReady, setIsReady] = useState(false);
+
+  // 체크박스 선택된 행 ID 관리 (lotCode 기준)
+  const [selectedLotCodes, setSelectedLotCodes] = useState<string[]>([]);
+  // 라벨 인쇄 모달 오픈 여부
+  const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
 
   const { sorting, sortParams, handleSortingChange } = useTableSorting();
 
@@ -182,7 +188,6 @@ export function FoodLotManagePage() {
   // 검색
   const handleSearch = () => {
     const nextParams = new URLSearchParams(searchParams);
-
     nextParams.set("page", "0");
 
     const values: Record<string, string> = {
@@ -221,9 +226,49 @@ export function FoodLotManagePage() {
     setSearchParams(nextParams);
   };
 
+  const handleOpenLabelModal = () => {
+    if (selectedLotCodes.length === 0) {
+      window.alert("인쇄할 항목을 최소 1개 이상 선택해주세요.");
+      return;
+    }
+    setIsLabelModalOpen(true);
+  };
+
   // 테이블 컬럼
   const columns: ColumnDef<LotResponse>[] = useMemo(
     () => [
+      {
+        id: 'select',
+        header: () => (
+          <input
+            type="checkbox"
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedLotCodes(lots.map(l => l.lotCode));
+              } else {
+                setSelectedLotCodes([]);
+              }
+            }}
+            checked={selectedLotCodes.length === lots.length && lots.length > 0}
+            style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            checked={selectedLotCodes.includes(row.original.lotCode)}
+            onChange={() => {
+              setSelectedLotCodes(prev =>
+                prev.includes(row.original.lotCode)
+                  ? prev.filter(code => code !== row.original.lotCode)
+                  : [...prev, row.original.lotCode]
+              );
+            }}
+            style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+          />
+        ),
+        meta: { width: '50px' },
+      },
       {
         accessorKey: "lotCode",
         header: "LOT번호",
@@ -265,8 +310,24 @@ export function FoodLotManagePage() {
         },
       },
     ],
-    [],
+    [lots, selectedLotCodes],
   );
+
+  const selectedLabelLines: WorkOrderLineDetail[] = useMemo(() => {
+    return lots
+      .filter((l) => selectedLotCodes.includes(l.lotCode))
+      .map((l, idx) => ({
+        id: l.lotCode,
+        salesOrderLineId: 0,
+        orderCode: '', // 또는 필요한 정보
+        lineId: `#${idx + 1}`,
+        itemCode: '',
+        itemNm: '',
+        unit: '',
+        instructQty: 1,
+        barcode: l.lotCode, // 응답으로 온 barcode 사용 (없을 시 fcltCode Fallback)
+      }));
+  }, [lots, selectedLotCodes]);
 
   return (
     <section className="screenStack">
@@ -294,7 +355,18 @@ export function FoodLotManagePage() {
 
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
-      <Panel title="식품 LOT관리 목록">
+      <Panel title="식품 LOT관리 목록"
+        action={
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="ghostButton"
+              onClick={handleOpenLabelModal}
+            >
+              선택 라벨 인쇄 ({selectedLotCodes.length}건)
+            </button>
+          </div>
+        }>
         <div className="relative min-h-[300px]">
           {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -307,6 +379,12 @@ export function FoodLotManagePage() {
                 columns={columns}
                 sorting={sorting}
                 onSortingChange={handleSortingChange}
+                onRowClick={(_row, event) => {
+                  const target = event.target as HTMLElement;
+                  if (target.tagName === 'INPUT' && target.getAttribute('type') === 'checkbox') {
+                    return;
+                  }
+                }}
                 noDataMessage="조회된 LOT 데이터가 없습니다."
               />
 
@@ -320,6 +398,13 @@ export function FoodLotManagePage() {
           )}
         </div>
       </Panel>
+
+      <LabelPrintModal
+        isOpen={isLabelModalOpen}
+        onClose={() => setIsLabelModalOpen(false)}
+        selectedLines={selectedLabelLines}
+        workOrderNo="LOT-BARCODE"
+      />
     </section>
   );
 }
