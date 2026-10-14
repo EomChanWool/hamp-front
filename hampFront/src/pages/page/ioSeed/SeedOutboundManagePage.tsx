@@ -6,6 +6,7 @@ import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
 import { DashboardCharts } from '@components/chart/InOutChart'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 interface SeedOutboundRow {
   outboundNo: string
@@ -30,6 +31,9 @@ const dummySeedOutbound: SeedOutboundRow[] = [
 const PAGE_SIZE = 10
 
 export function SeedOutboundManagePage() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [filteredSeedOutbound, setFilteredSeedOutbound] = useState<SeedOutboundRow[]>(dummySeedOutbound)
   const [modalRow, setModalRow] = useState<SeedOutboundRow | null>(null)
   const [page, setPage] = useState(0)
@@ -150,7 +154,14 @@ export function SeedOutboundManagePage() {
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
       <DashboardCharts pageType="seedOutbound" />
-      <Panel title="씨드 출고관리 목록" action="등록" onAction={() => window.alert('mock 동작입니다.')}>
+      <Panel title="씨드 출고관리 목록" action="등록"
+        onAction={() => {
+          const queryString = searchParams.toString();
+          navigate(
+            `/io/seed-outbound-manage/create${queryString ? `?${queryString}` : ""
+            }`
+          );
+        }}>
         <CusTable data={pagedSeedOutbound} columns={columns} onRowClick={setModalRow} />
         <CusPagination page={page} totalPages={totalPages} totalCount={filteredSeedOutbound.length} onPageChange={setPage} />
       </Panel>
