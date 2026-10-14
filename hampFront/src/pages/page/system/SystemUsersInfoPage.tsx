@@ -1,28 +1,36 @@
 import { useEffect, useState } from "react";
-import { Panel } from "@components/card/Panel";
 import { Badge } from "@components/common/Badge";
 import { formatDateTime } from "@/utils/common";
 import { apiClient } from "@/api/apiClient";
 import { useAuth } from "@/context/AuthContext";
-import type { 
-  UserDetailResponse, 
-  ApiResponseUserDetailResponse, 
-  UserUpdateRequest 
-} from "@/api/User";
-import type { AuthGroupResponse, ApiResponseListAuthGroupResponse } from "@/api/auth/Auth";
+import type { UserDetailResponse, ApiResponseUserDetailResponse, UserUpdateRequest } from "@/api/User";
 import Spinner from "@/components/common/Spinner";
-import './SystemUser.css';
+import "./SystemUser.css";
 import { useNavigate } from "react-router-dom";
+
+const EMPTY_PASSWORD = { current: "", new: "", confirm: "" };
+
+/* 라벨-값 한 줄 (점선 구분) */
+function Row({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <div className="profileRow">
+      <div className="profileRowLabel">
+        {label}
+        {required && <span className="profileRequired">*</span>}
+      </div>
+      <div className="profileRowValue">{children}</div>
+    </div>
+  );
+}
 
 export function SystemUsersInfoPage() {
   const { user: authUser } = useAuth();
+  const navigate = useNavigate();
+
   const [user, setUser] = useState<UserDetailResponse | null>(null);
-  const [, setAuthGroups] = useState<AuthGroupResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const navigate = useNavigate();
 
   const [form, setForm] = useState({
     userNm: "",
@@ -30,48 +38,31 @@ export function SystemUsersInfoPage() {
     position: "",
     authIds: [] as string[],
   });
-
-  const [passwordForm, setPasswordForm] = useState({ current: "", new: "", confirm: "" });
-
-  const isBusy = isUpdating || isLoadingGroups;
+  const [passwordForm, setPasswordForm] = useState(EMPTY_PASSWORD);
 
   useEffect(() => {
     let isMounted = true;
     const loadData = async () => {
       if (!authUser?.userId) return;
       setIsLoading(true);
-      setIsLoadingGroups(true);
       try {
-        const [groupsRes, userRes] = await Promise.all([
-          apiClient.get<ApiResponseListAuthGroupResponse>("/auth-groups"),
-          apiClient.get<ApiResponseUserDetailResponse>(`/users/${encodeURIComponent(authUser.userId)}`)
-        ]);
-        if (isMounted) {
-          setAuthGroups(groupsRes.data.data ?? []);
-          const userData = userRes.data.data;
-          if (userData) {
-            setUser(userData);
-            setForm({
-              userNm: userData.userNm || "",
-              phone: userData.phone || "",
-              position: userData.position || "",
-              authIds: userData.authGroups?.map((g) => g.authId) || [],
-            });
-          }
-        }
+        const userRes = await apiClient.get<ApiResponseUserDetailResponse>(
+          `/users/${encodeURIComponent(authUser.userId)}`,
+        );
+        if (isMounted && userRes.data.data) setUser(userRes.data.data);
       } catch (e) {
         console.error(e);
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsLoadingGroups(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     };
     loadData();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [authUser?.userId]);
 
+  // 수정 모드 진입/취소 시 폼을 서버 값으로 초기화
   useEffect(() => {
     if (user && !isEditing) {
       setForm({
@@ -80,24 +71,37 @@ export function SystemUsersInfoPage() {
         position: user.position || "",
         authIds: user.authGroups?.map((g) => g.authId) || [],
       });
-      setPasswordForm({ current: "", new: "", confirm: "" });
+      setPasswordForm(EMPTY_PASSWORD);
     }
   }, [isEditing, user]);
 
   const handleSave = async () => {
     if (!user || isUpdating) return;
-    if (!form.userNm?.trim()) { alert("이름을 입력해주세요."); return; }
-    if (isEditing && passwordForm.new && passwordForm.new !== passwordForm.confirm) {
-      alert("새 비밀번호가 일치하지 않습니다.");
+    if (!form.userNm.trim()) {
+      alert("이름을 입력해주세요.");
       return;
+    }
+    if (passwordForm.new) {
+      if (!passwordForm.current) {
+        alert("현재 비밀번호를 입력해주세요.");
+        return;
+      }
+      if (passwordForm.new !== passwordForm.confirm) {
+        alert("새 비밀번호가 일치하지 않습니다.");
+        return;
+      }
     }
 
     setIsUpdating(true);
     try {
+      const userNm = form.userNm.trim();
+      const phone = form.phone.trim();
+      const position = form.position.trim();
+
       const updatePayload: UserUpdateRequest = {
-        userNm: form.userNm.trim(),
-        phone: form.phone?.trim() || null,
-        position: form.position?.trim() || null,
+        userNm,
+        phone: phone || null,
+        position: position || null,
         authIds: form.authIds,
       };
       await apiClient.put(`/users/${encodeURIComponent(user.userId)}`, updatePayload);
@@ -105,9 +109,11 @@ export function SystemUsersInfoPage() {
       if (passwordForm.new) {
         await apiClient.put(`/users/${encodeURIComponent(user.userId)}/password`, {
           currentPassword: passwordForm.current,
-          newPassword: passwordForm.new
+          newPassword: passwordForm.new,
         });
       }
+
+      setUser({ ...user, userNm, phone, position });
 
       alert("정보가 수정되었습니다.");
       setIsEditing(false);
@@ -119,120 +125,173 @@ export function SystemUsersInfoPage() {
     }
   };
 
-  if (isLoading) return <div className="screenStack"><Spinner /></div>;
+  if (isLoading)
+    return (
+      <div className="screenStack">
+        <Spinner />
+      </div>
+    );
   if (!user) return <div className="screenStack">사용자 정보를 불러올 수 없습니다.</div>;
+
+  const initial = (user.userNm || user.userId || "?").trim().charAt(0).toUpperCase();
 
   return (
     <section className="screenStack">
-      <Panel title={isEditing ? "내 정보 수정" : "내 정보 상세"}>
-        <form className="pageForm" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
-          
-          <div className="detailField">
-            <label>사용자ID</label>
-            <div className="detailValue">{user.userId}</div>
-          </div>
+      <div className="profilePage">
+        <nav className="profileCrumb" aria-label="breadcrumb">
+          <span>내 계정</span>
+          <span className="profileCrumbSep">/</span>
+          <strong>{isEditing ? "내 정보 수정" : "내 정보"}</strong>
+        </nav>
 
-          <div className="detailField">
-            {/* flex를 사용하여 필수 표시가 옆으로만 붙도록 설정 */}
-            <label style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              이름 {isEditing && <span style={{ color: "red" }}>*</span>}
-            </label>
-            {isEditing ? (
-              <input 
-                className="tableInput" 
-                style={{ height: '36px' }}
-                disabled={isUpdating}
-                value={form.userNm} 
-                onChange={(e) => setForm({...form, userNm: e.target.value})} 
-              />
-            ) : <div className="detailValue">{user.userNm}</div>}
-          </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSave();
+          }}
+        >
+          {/* ── Hero: 헤더 전체가 패턴 배경 ── */}
+          <header className="profileHero">
+            <div className="profileHeroBody">
+              <div className="profileIdentity">
+                <div className="profileAvatar" aria-hidden="true">
+                  {initial}
+                </div>
+                <h1 className="profileName">
+                  {user.userNm}
+                </h1>
+                <p className="profileSub">{user.userId}</p>
+              </div>
 
-          <div className="detailField">
-            <label>전화번호</label>
-            {isEditing ? (
-              <input 
-                className="tableInput" 
-                style={{ height: '36px' }}
-                disabled={isUpdating}
-                value={form.phone} 
-                onChange={(e) => setForm({...form, phone: e.target.value})} 
-              />
-            ) : <div className="detailValue">{user.phone || "-"}</div>}
-          </div>
-
-          <div className="detailField">
-            <label>부서</label>
-            {isEditing ? (
-              <input 
-                className="tableInput" 
-                style={{ height: '36px' }}
-                disabled={isUpdating}
-                value={form.position} 
-                onChange={(e) => setForm({...form, position: e.target.value})} 
-              />
-            ) : <div className="detailValue">{user.position || "-"}</div>}
-          </div>
-
-          <div className="detailField">
-            <label>사용여부</label>
-            <div className="detailValue">
-              <Badge tone={user.use ? "good" : "muted"}>
-                {user.use ? "사용" : "미사용"}
-              </Badge>
+              <div className="profileActions">
+                {isEditing ? (
+                  <>
+                    <button
+                      type="button"
+                      className="ghostButton"
+                      onClick={() => setIsEditing(false)}
+                      disabled={isUpdating}
+                    >
+                      취소
+                    </button>
+                    <button type="submit" className="primaryButton" disabled={isUpdating}>
+                      {isUpdating ? "저장 중..." : "저장"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button type="button" className="ghostButton" onClick={() => navigate(-1)}>
+                      이전
+                    </button>
+                    <button type="button" className="primaryButton" onClick={() => setIsEditing(true)}>
+                      수정
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          </header>
 
-          <div className="detailField">
-            <label>생성일시</label>
-            <div className="detailValue">{formatDateTime(user.createdAt)}</div>
-          </div>
+          {/* ── 기본 정보 ── */}
+          <section className="profileCard">
+            <h2 className="profileCardTitle">기본 정보</h2>
 
-          <div style={{ 
-            display: isEditing ? "block" : "none",
-            marginTop: isEditing ? "20px" : "0",
-            borderTop: isEditing ? "1px solid #eee" : "none",
-            paddingTop: isEditing ? "20px" : "0"
-          }}>
-            <div className="detailField">
-              <label>현재 비밀번호</label>
-              <input type="password" placeholder="변경 시 필수 입력" className="tableInput" style={{ height: '36px' }} disabled={isUpdating} value={passwordForm.current} onChange={(e) => setPasswordForm({...passwordForm, current: e.target.value})} />
-            </div>
-            <div className="detailField" style={{ marginTop: "12px" }}>
-              <label>새 비밀번호</label>
-              <input type="password" className="tableInput" style={{ height: '36px' }} disabled={isUpdating} value={passwordForm.new} onChange={(e) => setPasswordForm({...passwordForm, new: e.target.value})} />
-            </div>
-            <div className="detailField" style={{ marginTop: "12px" }}>
-              <label>새 비밀번호 확인</label>
-              <input type="password" className="tableInput" style={{ height: '36px' }} disabled={isUpdating} value={passwordForm.confirm} onChange={(e) => setPasswordForm({...passwordForm, confirm: e.target.value})} />
-            </div>
-          </div>
+            <Row label="사용자 ID">{user.userId}</Row>
 
-          <div className="pageFormFooterSpaceBetween" style={{ marginTop: "20px" }}>
-            <div />
-            <div style={{ display: "flex", gap: "8px" }}>
+            <Row label="이름" required={isEditing}>
               {isEditing ? (
-                <>
-                  <button type="button" className="ghostButton" onClick={() => setIsEditing(false)} disabled={isUpdating}>취소</button>
-                  <button type="button" className="primaryButton" onClick={handleSave} disabled={isBusy}>{isUpdating ? "저장 중..." : "저장"}</button>
-                </>
+                <input
+                  className="profileInput"
+                  disabled={isUpdating}
+                  value={form.userNm}
+                  onChange={(e) => setForm({ ...form, userNm: e.target.value })}
+                />
               ) : (
-                <>
-                <button
-                    type="button"
-                    className="ghostButton"
-                    onClick={() => navigate(-1)}
-                    disabled={isBusy}
-                  >
-                    이전
-                  </button>
-                <button type="button" className="primaryButton" onClick={() => setIsEditing(true)}>수정</button>
-                </>
+                user.userNm
               )}
-            </div>
-          </div>
+            </Row>
+
+            <Row label="전화번호">
+              {isEditing ? (
+                <input
+                  className="profileInput"
+                  type="tel"
+                  disabled={isUpdating}
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                />
+              ) : (
+                user.phone || "-"
+              )}
+            </Row>
+
+            <Row label="부서">
+              {isEditing ? (
+                <input
+                  className="profileInput"
+                  disabled={isUpdating}
+                  value={form.position}
+                  onChange={(e) => setForm({ ...form, position: e.target.value })}
+                />
+              ) : (
+                user.position || "-"
+              )}
+            </Row>
+
+            <Row label="사용 여부">
+              <Badge tone={user.use ? "good" : "muted"}>{user.use ? "사용" : "미사용"}</Badge>
+            </Row>
+
+            <Row label="생성일시">{formatDateTime(user.createdAt)}</Row>
+          </section>
+
+          {/* ── 보안 ── */}
+          <section className="profileCard">
+            <h2 className="profileCardTitle">보안</h2>
+
+            {isEditing ? (
+              <>
+                <Row label="현재 비밀번호">
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="변경 시에만 입력"
+                    className="profileInput"
+                    disabled={isUpdating}
+                    value={passwordForm.current}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                  />
+                </Row>
+                <Row label="새 비밀번호">
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    className="profileInput"
+                    disabled={isUpdating}
+                    value={passwordForm.new}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
+                  />
+                </Row>
+                <Row label="새 비밀번호 확인">
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    className="profileInput"
+                    disabled={isUpdating}
+                    value={passwordForm.confirm}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                  />
+                </Row>
+              </>
+            ) : (
+              <Row label="비밀번호">
+                <span className="profileMask">••••••••</span>
+                <span className="profileHint">수정 화면에서 변경할 수 있습니다.</span>
+              </Row>
+            )}
+          </section>
         </form>
-      </Panel>
+      </div>
     </section>
   );
 }
