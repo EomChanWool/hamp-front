@@ -3,6 +3,7 @@ import { Badge } from "@components/common/Badge";
 import { formatDateTime } from "@/utils/common";
 import { apiClient } from "@/api/apiClient";
 import { useAuth } from "@/context/AuthContext";
+import { AuthApi } from "@/api/auth/Auth";
 import type { UserDetailResponse, ApiResponseUserDetailResponse, UserUpdateRequest } from "@/api/User";
 import Spinner from "@/components/common/Spinner";
 import "./SystemUser.css";
@@ -76,6 +77,7 @@ export function SystemUsersInfoPage() {
   }, [isEditing, user]);
 
   const handleSave = async () => {
+
     if (!user || isUpdating) return;
     if (!form.userNm.trim()) {
       alert("이름을 입력해주세요.");
@@ -107,10 +109,14 @@ export function SystemUsersInfoPage() {
       await apiClient.put(`/users/${encodeURIComponent(user.userId)}`, updatePayload);
 
       if (passwordForm.new) {
-        await apiClient.put(`/users/${encodeURIComponent(user.userId)}/password`, {
+        const passwordRes = await AuthApi.changePassword({
           currentPassword: passwordForm.current,
           newPassword: passwordForm.new,
         });
+
+        if (passwordRes.status !== "OK") {
+          throw new Error(passwordRes.message || "비밀번호 변경에 실패했습니다.");
+        }
       }
 
       setUser({ ...user, userNm, phone, position });
@@ -147,6 +153,7 @@ export function SystemUsersInfoPage() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
+            console.trace("form onSubmit 실행됨");
             handleSave();
           }}
         >
@@ -174,7 +181,12 @@ export function SystemUsersInfoPage() {
                     >
                       취소
                     </button>
-                    <button type="submit" className="primaryButton" disabled={isUpdating}>
+                    <button
+                      type="button"
+                      className="primaryButton"
+                      disabled={isUpdating}
+                      onClick={handleSave}
+                    >
                       {isUpdating ? "저장 중..." : "저장"}
                     </button>
                   </>
@@ -183,7 +195,13 @@ export function SystemUsersInfoPage() {
                     <button type="button" className="ghostButton" onClick={() => navigate(-1)}>
                       이전
                     </button>
-                    <button type="button" className="primaryButton" onClick={() => setIsEditing(true)}>
+                    <button
+                      type="button"
+                      className="primaryButton"
+                      onClick={() => {
+                        setIsEditing(true);
+                      }}
+                    >
                       수정
                     </button>
                   </>
