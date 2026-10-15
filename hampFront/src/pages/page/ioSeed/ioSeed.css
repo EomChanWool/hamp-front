@@ -889,22 +889,6 @@
     min-width: 760px;
 }
 
-/* 체크박스 (Layout.css 의 input 기본 높이/패딩 덮어쓰기) */
-.seedOutCheckbox {
-    width: 18px;
-    height: 18px;
-    padding: 0;
-    margin: 0;
-    cursor: pointer;
-    accent-color: var(--primary);
-    vertical-align: middle;
-}
-
-.seedOutCheckbox:disabled {
-    cursor: not-allowed;
-    opacity: 0.4;
-}
-
 /* 품목 셀 */
 .seedOutItemCell {
     display: flex;

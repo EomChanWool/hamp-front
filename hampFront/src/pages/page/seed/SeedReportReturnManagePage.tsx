@@ -491,7 +491,7 @@ export function SeedReportReturnManagePage() {
         header: () => (
           <input
             type="checkbox"
-            className="seedCheckbox"
+            className="checkbox"
             aria-label="현재 페이지 전체 선택"
             checked={isAllSelectedOnPage}
             // 일부만 선택된 상태는 '-' 표시(indeterminate)
@@ -507,7 +507,7 @@ export function SeedReportReturnManagePage() {
           return (
             <input
               type="checkbox"
-              className="seedCheckbox"
+              className="checkbox"
               aria-label={`신고 ID ${returnId} 선택`}
               checked={selectedIdSet.has(returnId)}
               onChange={() => handleToggleRow(returnId)}

@@ -223,7 +223,7 @@ export function SeedOutboundManageCreatePage() {
                 header: () => (
                     <input
                         type="checkbox"
-                        className="seedOutCheckbox"
+                        className="checkbox"
                         checked={allChecked}
                         disabled={isSubmitting || shippableLines.length === 0}
                         onChange={toggleAll}
@@ -235,7 +235,7 @@ export function SeedOutboundManageCreatePage() {
                     return (
                         <input
                             type="checkbox"
-                            className="seedOutCheckbox"
+                            className="checkbox"
                             checked={qtyMap[line.salesOrderLineId] !== undefined}
                             disabled={isSubmitting || !isShippable(line)}
                             onChange={() => toggleLine(line)}
