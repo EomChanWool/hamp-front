@@ -511,6 +511,7 @@ export function SeedInboundManagePage() {
         header: () => (
           <input
             type="checkbox"
+            className="checkbox"
             onChange={(e) => {
               if (e.target.checked) {
                 setSelectedReceiptIds(receipts.map((r) => r.receiptId));
@@ -529,6 +530,7 @@ export function SeedInboundManagePage() {
           return (
             <input
               type="checkbox"
+              className="checkbox"
               checked={selectedReceiptIds.includes(row.original.receiptId)}
               onChange={() => {
                 setSelectedReceiptIds((prev) =>

@@ -16,9 +16,13 @@ import type {
   ChangePasswordRequest,
   ApiResponseTokenResponse,
 } from '@/api/auth/Auth'
+import Spinner from '@/components/common/Spinner'
+import { ensureBrowserSession } from '@/api/browserSession'
 
 interface AuthContextValue {
   isAuthenticated: boolean
+  /** 브라우저 재시작 판별 중 여부 */
+  isInitializing: boolean
   user: LoginResponse | null
   login: (credentials: LoginRequest) => Promise<LoginResponse>
   logout: () => Promise<void>
@@ -26,6 +30,19 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
+
+// 저장된 사용자 정보 복원
+const readSavedUser = (): LoginResponse | null => {
+  const savedUser = localStorage.getItem('user')
+  if (!savedUser) return null
+  try {
+    return JSON.parse(savedUser)
+  } catch (error) {
+    console.error('Failed to parse user from localStorage:', error)
+    localStorage.removeItem('user')
+    return null
+  }
+}
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 사용자의 직접 로그아웃 요청 중복 방지
@@ -37,22 +54,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 로그인 처리 중 잔여 401 에러 및 스토리지 이벤트로 인한 상태 리셋 방지
   const isLoggingIn = useRef(false)
 
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
-    () => !!localStorage.getItem('token'),
-  )
+  // 브라우저 재시작 판별이 끝나기 전에는 localStorage를 읽지 않습니다.
+  const [isInitializing, setIsInitializing] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
+  const [user, setUser] = useState<LoginResponse | null>(null)
 
-  // 저장된 사용자 정보 복원
-  const [user, setUser] = useState<LoginResponse | null>(() => {
-    const savedUser = localStorage.getItem('user')
-    if (!savedUser) return null
-    try {
-      return JSON.parse(savedUser)
-    } catch (error) {
-      console.error('Failed to parse user from localStorage:', error)
-      localStorage.removeItem('user')
-      return null
+  useEffect(() => {
+    let active = true
+
+    const initializeAuth = async () => {
+      try {
+        // 1. 브라우저 세션 판별이 먼저 완료되어야 합니다.
+        await ensureBrowserSession()
+
+        if (!active) return
+
+        // 2. 세션 판별 후 인증 정보를 읽습니다.
+        const token = localStorage.getItem('token')
+        const savedUser = readSavedUser()
+
+        setUser(token ? savedUser : null)
+        setIsAuthenticated(!!token && !!savedUser)
+      } catch (error) {
+        console.error('인증 초기화 실패:', error)
+
+        if (active) {
+          setUser(null)
+          setIsAuthenticated(false)
+        }
+      } finally {
+        if (active) {
+          setIsInitializing(false)
+        }
+      }
     }
-  })
+
+    initializeAuth()
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   // 클라이언트 인증 상태 및 로컬 저장소 초기화
   const clearAuthState = useCallback(() => {
@@ -236,17 +278,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const contextValue = useMemo<AuthContextValue>(
     () => ({
       isAuthenticated,
+      isInitializing,
       user,
       login,
       logout,
       changePassword,
     }),
-    [isAuthenticated, user, login, logout, changePassword],
+    [isAuthenticated, isInitializing, user, login, logout, changePassword],
   )
 
   return (
     <AuthContext.Provider value={contextValue}>
-      {children}
+      {isInitializing ? (
+        <div className="flex h-screen items-center justify-center">
+          <Spinner />
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   )
 }

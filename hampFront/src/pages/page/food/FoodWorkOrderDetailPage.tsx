@@ -362,6 +362,7 @@ export function FoodWorkOrderDetailPage() {
             header: () => (
               <input
                 type="checkbox"
+                className="checkbox"
                 onChange={(e) => {
                   if (e.target.checked) setSelectedLines(activeLines.map(l => l.id));
                   else setSelectedLines([]);
@@ -373,6 +374,7 @@ export function FoodWorkOrderDetailPage() {
             cell: ({ row }: { row: any }) => (
               <input
                 type="checkbox"
+                className="checkbox"
                 checked={selectedLines.includes(row.original.id)}
                 onChange={() => {
                   setSelectedLines(prev => prev.includes(row.original.id) ? prev.filter(i => i !== row.original.id) : [...prev, row.original.id]);

@@ -242,6 +242,7 @@ export function FoodLotManagePage() {
         header: () => (
           <input
             type="checkbox"
+            className="checkbox"
             onChange={(e) => {
               if (e.target.checked) {
                 setSelectedLotCodes(lots.map(l => l.lotCode));
@@ -256,6 +257,7 @@ export function FoodLotManagePage() {
         cell: ({ row }) => (
           <input
             type="checkbox"
+            className="checkbox"
             checked={selectedLotCodes.includes(row.original.lotCode)}
             onChange={() => {
               setSelectedLotCodes(prev =>

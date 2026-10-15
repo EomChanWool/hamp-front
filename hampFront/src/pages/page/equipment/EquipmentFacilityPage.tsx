@@ -288,6 +288,7 @@ export function EquipmentFacilityPage() {
         header: () => (
           <input
             type="checkbox"
+            className="checkbox"
             onChange={(e) => {
               if (e.target.checked) {
                 setSelectedFcltCodes(facilities.map(f => f.fcltCode));
@@ -302,6 +303,7 @@ export function EquipmentFacilityPage() {
         cell: ({ row }) => (
           <input
             type="checkbox"
+            className="checkbox"
             checked={selectedFcltCodes.includes(row.original.fcltCode)}
             onChange={() => {
               setSelectedFcltCodes(prev =>
