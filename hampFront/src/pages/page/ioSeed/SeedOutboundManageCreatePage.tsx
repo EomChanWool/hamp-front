@@ -10,32 +10,6 @@ import "@/pages/page/ioSeed/ioSeed.css";
 
 type ShipmentLine = ShipmentSalesOrderResponse["lines"][number];
 
-type MockShipmentOrder = {
-    shipmentOrderCode: string;
-    createdAt: string;
-    status: "WAIT" | "IN_PROGRESS" | "COMPLETED";
-    lines: {
-        itemNm: string;
-        shipQty: number;
-    }[];
-};
-
-// 개발용 샘플 데이터: 실제 API 연결 후 제거
-const MOCK_SHIPMENT_ORDERS: MockShipmentOrder[] = [
-    {
-        shipmentOrderCode: "OUT-20261014-01",
-        createdAt: "2026-10-14",
-        status: "WAIT",
-        lines: [{ itemNm: "품목 A", shipQty: 100 }],
-    },
-    {
-        shipmentOrderCode: "OUT-20261014-02",
-        createdAt: "2026-10-14",
-        status: "WAIT",
-        lines: [{ itemNm: "품목 C", shipQty: 20 }],
-    },
-];
-
 /** 잔여수량 = 주문수량 - 기출고수량 */
 const getRemainingQty = (line: ShipmentLine) =>
     Math.max(0, Number(line.orderQty ?? 0) - Number(line.shippedQty ?? 0));
@@ -84,12 +58,14 @@ export function SeedOutboundManageCreatePage() {
      * - key 존재 = 체크된 라인
      * - value = 입력 중인 출고수량(문자열)
      */
+    const [checkedLines, setCheckedLines] = useState<Record<number, boolean>>({});
     const [qtyMap, setQtyMap] = useState<Record<number, string>>({});
 
     const qtyMapRef = useRef(qtyMap);
+    const checkedLinesRef = useRef(checkedLines);
 
-    // 매 렌더링마다 최신 입력값을 참조
     qtyMapRef.current = qtyMap;
+    checkedLinesRef.current = checkedLines;
 
     // 수주 변경 시 이전 요청의 응답이 늦게 도착해도 무시하기 위한 요청 번호
     const requestSeqRef = useRef(0);
@@ -121,6 +97,7 @@ export function SeedOutboundManageCreatePage() {
         // 선택 초기화
         setSelectedSalesOrder(null);
         setSalesOrderError("");
+        setCheckedLines({});
         setQtyMap({});
 
         if (!orderCode) return;
@@ -172,41 +149,65 @@ export function SeedOutboundManageCreatePage() {
                         ? "partial"
                         : "none";
 
-    const selectedCount = Object.keys(qtyMap).length;
+    const selectedCount = Object.values(checkedLines).filter(Boolean).length;
+
     const allChecked =
         shippableLines.length > 0 &&
-        shippableLines.every((line) => qtyMap[line.salesOrderLineId] !== undefined);
+        shippableLines.every(
+            (line) => checkedLines[line.salesOrderLineId]
+        );
+
+    const allCheckedRef = useRef(allChecked);
+    allCheckedRef.current = allChecked;
 
     // 체크박스 토글 (체크 시 출고가능수량을 기본값으로 채움)
     const toggleLine = (line: ShipmentLine) => {
         if (!isShippable(line)) return;
-        setQtyMap((prev) => {
-            const next = { ...prev };
-            if (next[line.salesOrderLineId] !== undefined) {
-                delete next[line.salesOrderLineId];
-            } else {
-                next[line.salesOrderLineId] = String(line.availableQty);
+
+        const lineId = line.salesOrderLineId;
+
+        setCheckedLines((prev) => {
+            const checked = !prev[lineId];
+
+            // 체크할 때만 기본 수량 설정
+            if (checked) {
+                setQtyMap((qtyPrev) => ({
+                    ...qtyPrev,
+                    [lineId]: qtyPrev[lineId] ?? String(line.availableQty),
+                }));
             }
-            return next;
+
+            return {
+                ...prev,
+                [lineId]: checked,
+            };
         });
     };
 
     const toggleAll = () => {
         if (allChecked) {
-            setQtyMap({});
+            setCheckedLines({});
             return;
         }
 
-        const currentQtyMap = qtyMapRef.current;
-        const next: Record<number, string> = {};
+        setCheckedLines(
+            Object.fromEntries(
+                shippableLines.map((line) => [
+                    line.salesOrderLineId,
+                    true,
+                ])
+            )
+        );
 
-        shippableLines.forEach((line) => {
-            next[line.salesOrderLineId] =
-                currentQtyMap[line.salesOrderLineId] ??
-                String(line.availableQty);
+        setQtyMap((prev) => {
+            const next = { ...prev };
+
+            shippableLines.forEach((line) => {
+                next[line.salesOrderLineId] ??= String(line.availableQty);
+            });
+
+            return next;
         });
-
-        setQtyMap(next);
     };
 
     const handleQtyChange = (lineId: number, value: string) => {
@@ -224,7 +225,7 @@ export function SeedOutboundManageCreatePage() {
                     <input
                         type="checkbox"
                         className="checkbox"
-                        checked={allChecked}
+                        checked={allCheckedRef.current}
                         disabled={isSubmitting || shippableLines.length === 0}
                         onChange={toggleAll}
                         aria-label="전체 선택"
@@ -236,7 +237,7 @@ export function SeedOutboundManageCreatePage() {
                         <input
                             type="checkbox"
                             className="checkbox"
-                            checked={qtyMap[line.salesOrderLineId] !== undefined}
+                            checked={!!checkedLinesRef.current[line.salesOrderLineId]}
                             disabled={isSubmitting || !isShippable(line)}
                             onChange={() => toggleLine(line)}
                             aria-label={`${line.itemNm} 선택`}
@@ -301,7 +302,6 @@ export function SeedOutboundManageCreatePage() {
                 cell: ({ row }) => {
                     const line = row.original;
                     const currentQty = qtyMapRef.current[line.salesOrderLineId];
-                    const checked = currentQty !== undefined;
 
                     return (
                         <input
@@ -309,20 +309,28 @@ export function SeedOutboundManageCreatePage() {
                             min={1}
                             max={line.availableQty}
                             step={1}
-                            placeholder={checked ? "" : "-"}
+                            placeholder="-"
                             className="tableInput seedOutQtyInput"
                             value={currentQty ?? ""}
-                            disabled={isSubmitting || !checked}
-                            onChange={(e) =>
-                                handleQtyChange(line.salesOrderLineId, e.target.value)
-                            }
+                            disabled={isSubmitting}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                const lineId = line.salesOrderLineId;
+
+                                handleQtyChange(lineId, value);
+
+                                setCheckedLines((prev) => ({
+                                    ...prev,
+                                    [lineId]: value !== "",
+                                }));
+                            }}
                         />
                     );
                 },
             }
         ],
 
-        [isSubmitting, allChecked, shippableLines]
+        [isSubmitting, shippableLines]
     );
 
     const validateForm = (): boolean => {
@@ -373,7 +381,7 @@ export function SeedOutboundManageCreatePage() {
             orderCode: form.orderCode,
             managerId: form.managerId,
             lines: lines
-                .filter((line) => qtyMap[line.salesOrderLineId] !== undefined)
+                .filter((line) => checkedLines[line.salesOrderLineId])
                 .map((line) => ({
                     salesOrderLineId: line.salesOrderLineId,
                     shipQty: Number(qtyMap[line.salesOrderLineId]),
@@ -559,60 +567,6 @@ export function SeedOutboundManageCreatePage() {
                                     </button>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* 4. 해당 수주의 출고지시서 목록 (샘플) */}
-                {selectedSalesOrder && (
-                    <div className="createCard seedOutHistoryCard">
-                        <div className="seedOutHistoryBody">
-                            <h2 className="seedOutHistoryTitle">
-                                이 수주의 출고지시서 ({MOCK_SHIPMENT_ORDERS.length}건)
-                            </h2>
-
-                            {MOCK_SHIPMENT_ORDERS.length === 0 ? (
-                                <div className="seedOutHistoryEmpty">
-                                    등록된 출고지시서가 없습니다.
-                                </div>
-                            ) : (
-                                <div className="seedOutHistoryList">
-                                    {MOCK_SHIPMENT_ORDERS.map((order) => (
-                                        <div
-                                            key={order.shipmentOrderCode}
-                                            className="seedOutHistoryItem"
-                                        >
-                                            <div className="seedOutHistoryInfo">
-                                                <strong>{order.shipmentOrderCode}</strong>
-
-                                                <div className="seedOutHistoryProducts">
-                                                    {order.lines.map((line, index) => (
-                                                        <span key={`${line.itemNm}-${index}`}>
-                                                            {line.itemNm} {line.shipQty}개
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div className="seedOutHistoryMeta">
-                                                <span className="seedOutHistoryDate">
-                                                    {order.createdAt}
-                                                </span>
-
-                                                <span
-                                                    className={`seedOutHistoryStatus seedOutHistoryStatus--${order.status.toLowerCase()}`}
-                                                >
-                                                    {order.status === "WAIT"
-                                                        ? "WAIT"
-                                                        : order.status === "IN_PROGRESS"
-                                                            ? "진행 중"
-                                                            : "완료"}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
                         </div>
                     </div>
                 )}
