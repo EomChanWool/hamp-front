@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { type ColumnDef } from "@tanstack/react-table";
 import { CusTable } from "@/components/table/CusTable";
 import { SalesOrderApi, type SalesOrderOptionResponse } from "@/api/sales/SalesOrder";
-import { ShipmentOrderApi, type ShipmentSalesOrderResponse } from "@/api/ShipmentOrder";
+import { ShipmentOrderApi, type ShipmentOrderCreateRequest, type ShipmentSalesOrderResponse } from "@/api/ShipmentOrder";
 import { UserApi, type UserOptionResponse } from "@/api/User";
 import "@/pages/page/food/Food.css";
 import "@/pages/page/ioSeed/ioSeed.css";
@@ -46,6 +46,7 @@ export function SeedOutboundManageCreatePage() {
     const [form, setForm] = useState({
         orderCode: "",
         managerId: "",
+        shipDate: "",
     });
 
     const [selectedSalesOrder, setSelectedSalesOrder] =
@@ -185,7 +186,7 @@ export function SeedOutboundManageCreatePage() {
     };
 
     const toggleAll = () => {
-        if (allChecked) {
+        if (allCheckedRef.current) {
             setCheckedLines({});
             return;
         }
@@ -348,21 +349,27 @@ export function SeedOutboundManageCreatePage() {
         }
 
         for (const line of lines) {
-            const raw = qtyMap[line.salesOrderLineId];
-            if (raw === undefined) continue;
+            if (!checkedLines[line.salesOrderLineId]) continue;
 
-            const qty = raw === "" ? NaN : Number(raw);
+            const raw = qtyMap[line.salesOrderLineId];
+            const qty = raw === undefined || raw.trim() === ""
+                ? NaN
+                : Number(raw);
 
             if (!Number.isFinite(qty) || qty <= 0) {
                 alert(`[${line.itemNm}] 출고수량은 0보다 큰 숫자를 입력해주세요.`);
                 return false;
             }
+
             if (!Number.isInteger(qty)) {
                 alert(`[${line.itemNm}] 출고수량은 정수로 입력해주세요.`);
                 return false;
             }
-            if (qty > line.availableQty) {
-                alert(`[${line.itemNm}] 출고수량은 출고가능수량(${line.availableQty})을 초과할 수 없습니다.`);
+
+            if (qty > Number(line.availableQty)) {
+                alert(
+                    `[${line.itemNm}] 출고수량은 출고가능수량(${line.availableQty})을 초과할 수 없습니다.`
+                );
                 return false;
             }
         }
@@ -375,35 +382,36 @@ export function SeedOutboundManageCreatePage() {
 
     const handleSubmit = async (e: SyntheticEvent) => {
         e.preventDefault();
+
+        if (isSubmitting) return;
         if (!validateForm()) return;
 
-        const payload = {
+        const payload: ShipmentOrderCreateRequest = {
             orderCode: form.orderCode,
+            shipDate: form.shipDate,
             managerId: form.managerId,
             lines: lines
                 .filter((line) => checkedLines[line.salesOrderLineId])
                 .map((line) => ({
                     salesOrderLineId: line.salesOrderLineId,
-                    shipQty: Number(qtyMap[line.salesOrderLineId]),
+                    instructQty: Number(qtyMap[line.salesOrderLineId]),
                 })),
         };
 
-        // TODO: 출고지시서 등록 API 연결 (필드명은 백엔드 요청 DTO에 맞게 수정)
-        console.log("출고지시서 등록 payload:", payload);
+        setIsSubmitting(true);
 
-        // setIsSubmitting(true);
-        // try {
-        //   await ShipmentOrderApi.create(payload);
-        //   alert("출고지시서가 성공적으로 등록되었습니다.");
-        //   navigate("/seed/outbound-manage");
-        // } catch (error) {
-        //   console.error("출고지시서 등록 실패:", error);
-        //   alert("출고지시서 등록 중 오류가 발생했습니다.");
-        // } finally {
-        //   setIsSubmitting(false);
-        // }
+        try {
+            await ShipmentOrderApi.create(payload);
+
+            alert("출고지시서가 성공적으로 등록되었습니다.");
+            navigate("/io/seed-outbound-manage");
+        } catch (error) {
+            console.error("출고지시서 등록 실패:", error);
+            alert("출고지시서 등록 중 오류가 발생했습니다.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
-
     const shipmentCount = Number(selectedSalesOrder?.shipmentOrderCount ?? 0);
 
     return (
@@ -456,6 +464,20 @@ export function SeedOutboundManageCreatePage() {
                                         </option>
                                     ))}
                                 </select>
+                            </div>
+
+                            <div className="createField">
+                                <label className="requiredLabel">
+                                    출고일자 <span className="required">*</span>
+                                </label>
+                                <input
+                                    type="date"
+                                    className="tableInput"
+                                    value={form.shipDate}
+                                    onChange={(e) => handleChange("shipDate", e.target.value)}
+                                    disabled={isSubmitting}
+                                    required
+                                />
                             </div>
                         </div>
 
@@ -552,7 +574,7 @@ export function SeedOutboundManageCreatePage() {
                                 <div className="seedOutFooterActions">
                                     <button
                                         type="button"
-                                        className="miniButton"
+                                        className="ghostButton"
                                         onClick={handleCancel}
                                         disabled={isSubmitting}
                                     >
@@ -560,7 +582,7 @@ export function SeedOutboundManageCreatePage() {
                                     </button>
                                     <button
                                         type="submit"
-                                        className="seedOutSubmitBtn"
+                                        className="primaryButton"
                                         disabled={isSubmitting || selectedCount === 0}
                                     >
                                         {isSubmitting ? "등록 중..." : "출고지시서 등록"}
