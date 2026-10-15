@@ -673,7 +673,7 @@ export function FoodWorkOrderDetailPage() {
             {isEditing && (
               <button
                 type="button"
-                className="dangerButton"
+                className="btnDanger"
                 onClick={handleDeleteWorkOrder}
               >
                 지시서 삭제

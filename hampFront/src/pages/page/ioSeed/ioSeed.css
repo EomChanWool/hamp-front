@@ -956,36 +956,6 @@
     gap: 10px;
 }
 
-.seedOutSubmitBtn {
-    height: 44px;
-    padding: 0 28px;
-    border-radius: 8px;
-    background: #3949d4;
-    color: #fff;
-    font-size: 14px;
-    font-weight: 600;
-    white-space: nowrap;
-    transition: background 0.15s ease, opacity 0.15s ease;
-}
-
-.seedOutSubmitBtn:hover:not(:disabled) {
-    background: #2f3ab8;
-}
-
-.seedOutSubmitBtn:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-}
-
-[data-theme="dark"] .seedOutSubmitBtn {
-    background: var(--primary);
-    color: #0f1117;
-}
-
-[data-theme="dark"] .seedOutSubmitBtn:hover:not(:disabled) {
-    background: var(--primary-hover);
-}
-
 /* ---------- 반응형 ---------- */
 @container content (max-width: 640px) {
     .seedOutSummary {
