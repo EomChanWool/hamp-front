@@ -313,7 +313,7 @@ export function SeedOutboundManageCreatePage() {
                             placeholder="-"
                             className="tableInput seedOutQtyInput"
                             value={currentQty ?? ""}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || !isShippable(line)}
                             onChange={(e) => {
                                 const value = e.target.value;
                                 const lineId = line.salesOrderLineId;
@@ -427,7 +427,7 @@ export function SeedOutboundManageCreatePage() {
                     </div>
 
                     <div className="createBody">
-                        <div className="createGrid2Cols">
+                        <div className="createGrid3Cols">
                             <div className="createField">
                                 <label className="requiredLabel">
                                     담당자 <span className="required">*</span>

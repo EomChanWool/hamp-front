@@ -1,5 +1,5 @@
 import { apiClient } from '@/api/apiClient';
-import type { ApiResponse } from '@/api/Common';
+import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
 export interface ShipmentOrderLineRequest {
     salesOrderLineId: number;
@@ -33,6 +33,20 @@ export interface ShipmentOrderResponse {
     updatedAt: string;
 }
 
+export interface ShipmentOrderListResponse {
+    shipId: string;
+    orderCode: string;
+    bpNm: string;
+    shipDate: string;
+    status: string;
+    managerId: string;
+    managerNm: string;
+    lineCount: number;
+    totalInstructQty: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface ShipmentSalesOrderLineResponse {
     salesOrderLineId: number;
     itemCode: string;
@@ -60,6 +74,12 @@ export type ApiResponseShipmentSalesOrderResponse = ApiResponse<ShipmentSalesOrd
 /** 출고지시서 단건 조회/등록/수정 API 최종 응답 타입 */
 export type ApiResponseShipmentOrderResponse = ApiResponse<ShipmentOrderResponse>;
 
+/** 출고지시서 목록 페이징 데이터 타입 */
+export type PageShipmentOrderListResponse = PageResponse<ShipmentOrderListResponse>;
+
+/** 출고지시서 목록 페이징 API 최종 응답 타입 */
+export type ApiResponsePageShipmentOrderListResponse = ApiResponsePage<ShipmentOrderListResponse>;
+
 // ── 출고지시서 관리 API 함수 ────────────────────────────────────────────────────────
 
 export const ShipmentOrderApi = {
@@ -72,6 +92,28 @@ export const ShipmentOrderApi = {
     /** 출고지시서 등록 */
     create: async (data: ShipmentOrderCreateRequest): Promise<ApiResponseShipmentOrderResponse> => {
         const res = await apiClient.post<ApiResponseShipmentOrderResponse>('/shipment-orders', data);
+        return res.data;
+    },
+
+    /** 출고지시서 목록 조회 */
+    getList: async (params?: {
+        orderCode?: string;
+        status?: string;
+        managerId?: string;
+        shipDateFrom?: string;
+        shipDateTo?: string;
+        page?: number;
+        size?: number;
+        sort?: string | string[];
+        [key: string]: any;
+    }): Promise<ApiResponsePageShipmentOrderListResponse> => {
+        const res = await apiClient.get('/shipment-orders', { params });
+        return res.data;
+    },
+
+    /** 출고지시서 단건 조회 */
+    getDetail: async (shipId: string): Promise<ApiResponseShipmentOrderResponse> => {
+        const res = await apiClient.get(`/shipment-orders/${shipId}`);
         return res.data;
     },
 }
