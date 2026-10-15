@@ -149,7 +149,7 @@
   min-height: 0;
 }
 
-.sidebarWrap > .sidebar {
+.sidebarWrap>.sidebar {
   flex: 1;
 }
 
@@ -1152,6 +1152,12 @@
   gap: 16px 20px;
 }
 
+.createGrid3Cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 20px;
+}
+
 .createField {
   display: flex;
   flex-direction: column;
@@ -1912,6 +1918,10 @@
     grid-template-columns: 1fr;
   }
 
+  .facilityCreateFieldsCol .createGrid3Cols {
+    grid-template-columns: 1fr;
+  }
+
   .facilityCreateFieldGrid {
     grid-template-columns: 1fr;
   }
@@ -1948,6 +1958,10 @@
   }
 
   .createGrid2Cols {
+    grid-template-columns: 1fr;
+  }
+
+  .createGrid3Cols {
     grid-template-columns: 1fr;
   }
 

@@ -427,7 +427,7 @@ export function SeedOutboundManageCreatePage() {
                     </div>
 
                     <div className="createBody">
-                        <div className="createGrid2Cols">
+                        <div className="createGrid3Cols">
                             <div className="createField">
                                 <label className="requiredLabel">
                                     담당자 <span className="required">*</span>
