@@ -37,8 +37,11 @@ export function FoodWorkOrderCreatePage() {
 
   const [lines, setLines] = useState<WorkOrderLine[]>([]);
 
-  // --- useRef 기반 지시수량 임시 저장소 (line id를 키로 관리) ---
-  const editQuantitiesRef = useRef<Record<string, number | ''>>({});
+  const [editQuantities, setEditQuantities] =
+    useState<Record<string, number | ''>>({});
+
+  const editQuantitiesRef = useRef(editQuantities);
+  editQuantitiesRef.current = editQuantities;
 
   // 현재 입력된 지시수량 조회
   const getCurrentQty = (line: WorkOrderLine): number => {
@@ -74,15 +77,25 @@ export function FoodWorkOrderCreatePage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  // 라인 삭제
   const handleRemoveLine = (id: string) => {
-    delete editQuantitiesRef.current[id];
+    setEditQuantities((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+
     setLines((prev) => prev.filter((line) => line.id !== id));
   };
 
+  // 라인 추가
   const handleAddLine = () => {
     const newId = `line-${Date.now()}`;
-    // 신규 라인 추가 시 기본 수량 0을 ref에 등록
-    editQuantitiesRef.current[newId] = 0;
+
+    setEditQuantities((prev) => ({
+      ...prev,
+      [newId]: 0,
+    }));
 
     const newLine: WorkOrderLine = {
       id: newId,
@@ -93,6 +106,7 @@ export function FoodWorkOrderCreatePage() {
       instructQty: 0,
       remainingQty: 0,
     };
+
     setLines((prev) => [...prev, newLine]);
   };
 
@@ -138,7 +152,11 @@ export function FoodWorkOrderCreatePage() {
     }
 
     // 4. 선택한 라인의 기본 지시수량 설정
-    editQuantitiesRef.current[activeLineId] = remainingQty;
+    // 선택한 라인의 기본 지시수량을 상태에 저장
+    setEditQuantities((prev) => ({
+      ...prev,
+      [activeLineId]: remainingQty,
+    }));
 
     setLines((prev) =>
       prev.map((line) =>
@@ -156,7 +174,6 @@ export function FoodWorkOrderCreatePage() {
       )
     );
 
-    // 선택 후 모달 닫기
     setIsModalOpen(false);
     setActiveLineId(null);
   };
@@ -196,7 +213,6 @@ export function FoodWorkOrderCreatePage() {
         header: '지시수량',
         cell: ({ row }) => {
           const line = row.original;
-
           return (
             <input
               key={`${line.id}-${line.salesOrderLineId}`}
@@ -205,13 +221,19 @@ export function FoodWorkOrderCreatePage() {
               max={line.remainingQty}
               step="1"
               className="tableInput food-table-input-cell"
-              value={editQuantitiesRef.current[line.id] ?? line.instructQty}
+              value={
+                editQuantitiesRef.current[line.id] !== undefined
+                  ? editQuantitiesRef.current[line.id]
+                  : line.instructQty
+              }
               disabled={isSubmitting || line.salesOrderLineId === 0}
               onChange={(e) => {
                 const value = e.target.value;
 
-                editQuantitiesRef.current[line.id] =
-                  value === "" ? "" : Number(value);
+                setEditQuantities((prev) => ({
+                  ...prev,
+                  [line.id]: value === '' ? '' : Number(value),
+                }));
               }}
             />
           );
@@ -292,7 +314,7 @@ export function FoodWorkOrderCreatePage() {
     e.preventDefault();
     if (!validateForm()) return;
 
-    // 제출 직전에 ref의 최신 입력값들을 반영
+    // 제출 직전에 최신 입력 상태를 반영
     const finalizedLines = lines.map((line) => ({
       salesOrderLineId: line.salesOrderLineId,
       instructQty: getCurrentQty(line),
