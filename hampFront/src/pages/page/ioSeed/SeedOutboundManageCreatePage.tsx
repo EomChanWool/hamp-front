@@ -313,7 +313,7 @@ export function SeedOutboundManageCreatePage() {
                             placeholder="-"
                             className="tableInput seedOutQtyInput"
                             value={currentQty ?? ""}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || !isShippable(line)}
                             onChange={(e) => {
                                 const value = e.target.value;
                                 const lineId = line.salesOrderLineId;
