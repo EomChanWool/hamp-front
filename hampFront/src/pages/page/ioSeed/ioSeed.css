@@ -615,7 +615,7 @@
 }
 
 [data-theme="dark"] .progressBarFill {
-    background: #10b981; 
+    background: #10b981;
 }
 
 
@@ -768,5 +768,414 @@
 
     .reportModalFooter {
         margin: 14px 16px;
+    }
+}
+
+/* ==========================================================================
+   씨드출고관리 - 출고지시서 등록 페이지
+   (Layout.css 의 CSS 변수 / 다크모드 변수를 그대로 사용)
+   ========================================================================== */
+
+/* ---------- 안내 문구 ---------- */
+.seedOutStateText {
+    margin: 14px 0 0;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.seedOutStateText--error {
+    color: #c0293d;
+}
+
+[data-theme="dark"] .seedOutStateText--error {
+    color: #f87171;
+}
+
+/* ---------- 수주 요약 카드 ---------- */
+.seedOutSummary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 26px 32px;
+}
+
+.seedOutSummaryMain {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.seedOutSummaryTitle {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-heading);
+    word-break: break-word;
+}
+
+.seedOutSummaryCode {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.seedOutSummaryDue {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.seedOutPill {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 16px;
+    border-radius: 9999px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    background: #e9f0fa;
+    color: #2a5da8;
+}
+
+.seedOutPill--has {
+    background: #fcf3e0;
+    color: #9a6410;
+}
+
+[data-theme="dark"] .seedOutPill {
+    background: rgba(74, 134, 217, 0.14);
+    color: #7fadea;
+}
+
+[data-theme="dark"] .seedOutPill--has {
+    background: rgba(224, 160, 40, 0.14);
+    color: #e9b95b;
+}
+
+/* ---------- 수주라인 카드 ---------- */
+.seedOutLinesBody {
+    padding: 26px 32px 28px;
+}
+
+.seedOutLinesTitle {
+    margin: 0 0 18px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-heading);
+}
+
+/* 테이블: 헤더는 옅은 배경 대신 밑줄 스타일, 품목 컬럼은 좌측 정렬 */
+.seedOutTable th {
+    background: transparent;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.seedOutTable th:nth-child(2),
+.seedOutTable td:nth-child(2) {
+    text-align: left;
+}
+
+.seedOutTable td {
+    padding: 16px 12px;
+}
+
+.seedOutTable table {
+    min-width: 760px;
+}
+
+/* 체크박스 (Layout.css 의 input 기본 높이/패딩 덮어쓰기) */
+.seedOutCheckbox {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--primary);
+    vertical-align: middle;
+}
+
+.seedOutCheckbox:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+/* 품목 셀 */
+.seedOutItemCell {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    line-height: 1.3;
+}
+
+.seedOutItemName {
+    font-weight: 600;
+    color: var(--text-heading);
+}
+
+.seedOutItemCode {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.seedOutRemain {
+    font-weight: 700;
+    color: var(--text-heading);
+}
+
+/* 이번 출고수량 입력 */
+.seedOutQtyInput {
+    width: 110px;
+    height: 40px;
+    padding: 0 10px;
+    text-align: right;
+    font-size: 14px;
+    background: var(--bg-card);
+    color: var(--text-heading);
+}
+
+.seedOutQtyInput:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(87, 211, 161, 0.15);
+}
+
+.seedOutQtyInput:disabled {
+    background: var(--bg-subtle);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+/* 하단: 선택 개수 + 버튼 */
+.seedOutLinesFooter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 8px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+
+.seedOutSelectedCount {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.seedOutFooterActions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.seedOutSubmitBtn {
+    height: 44px;
+    padding: 0 28px;
+    border-radius: 8px;
+    background: #3949d4;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.seedOutSubmitBtn:hover:not(:disabled) {
+    background: #2f3ab8;
+}
+
+.seedOutSubmitBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+[data-theme="dark"] .seedOutSubmitBtn {
+    background: var(--primary);
+    color: #0f1117;
+}
+
+[data-theme="dark"] .seedOutSubmitBtn:hover:not(:disabled) {
+    background: var(--primary-hover);
+}
+
+/* ---------- 반응형 ---------- */
+@container content (max-width: 640px) {
+    .seedOutSummary {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 22px 20px;
+    }
+
+    .seedOutSummaryTitle {
+        font-size: 22px;
+    }
+
+    .seedOutLinesBody {
+        padding: 22px 20px;
+    }
+
+    .seedOutLinesFooter {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .seedOutFooterActions {
+        justify-content: flex-end;
+    }
+}
+
+/* 생산 및 출고 안내 박스 */
+.seedOutNotice {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 20px;
+    border: 1px solid #f59e0b;
+    border-radius: 12px;
+    background: #fff5df;
+    color: #1f2937;
+}
+
+.seedOutNoticeIcon {
+    display: flex;
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #f59e0b;
+    border-radius: 50%;
+    color: #b45309;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.seedOutNoticeContent {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.seedOutNoticeContent strong {
+    font-weight: 600;
+}
+
+.seedOutNoticeContent p {
+    margin: 3px 0 0;
+    color: #4b5563;
+}
+
+/* 출고지시서 이력 카드 */
+.seedOutHistoryBody {
+    padding: 28px 32px;
+}
+
+.seedOutHistoryTitle {
+    margin: 0 0 20px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.seedOutHistoryList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.seedOutHistoryItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 16px;
+    border-radius: 9px;
+    background: #f5f6fa;
+}
+
+.seedOutHistoryInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.seedOutHistoryInfo>strong {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.seedOutHistoryProducts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.seedOutHistoryMeta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.seedOutHistoryDate {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.seedOutHistoryStatus {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: #fff1d6;
+    color: #d97706;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.seedOutHistoryStatus--in_progress {
+    background: #e8edff;
+    color: #4057d6;
+}
+
+.seedOutHistoryStatus--completed {
+    background: #dff7ed;
+    color: #087f5b;
+}
+
+.seedOutHistoryEmpty {
+    padding: 36px 16px;
+    text-align: center;
+    color: #64748b;
+    font-size: 13px;
+    background: #f8fafc;
+    border-radius: 9px;
+}
+
+@media (max-width: 640px) {
+    .seedOutHistoryBody {
+        padding: 22px 16px;
+    }
+
+    .seedOutHistoryItem {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .seedOutHistoryMeta {
+        width: 100%;
+        justify-content: space-between;
     }
 }
