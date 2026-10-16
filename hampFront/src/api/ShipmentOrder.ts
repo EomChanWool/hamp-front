@@ -18,6 +18,7 @@ export interface ShipmentOrderLineResponse {
     salesOrderLineId: number;
     itemCode: string;
     itemNm: string;
+    unit: string;
     instructQty: number;
 }
 
@@ -51,6 +52,7 @@ export interface ShipmentSalesOrderLineResponse {
     salesOrderLineId: number;
     itemCode: string;
     itemNm: string;
+    unit: string;
     orderQty: number;
     availableQty: number;
     shippedQty: number;
@@ -65,6 +67,15 @@ export interface ShipmentSalesOrderResponse {
     lines: ShipmentSalesOrderLineResponse[];
     shipmentOrderCount: number;
 }
+
+// 바코드 스캔 응답 타입
+export interface ShipmentOrderScanResponse {
+    status: string;
+    code: string;
+    message?: string;
+    data: ShipmentOrderResponse | string;
+}
+
 
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
@@ -114,6 +125,21 @@ export const ShipmentOrderApi = {
     /** 출고지시서 단건 조회 */
     getDetail: async (shipId: string): Promise<ApiResponseShipmentOrderResponse> => {
         const res = await apiClient.get(`/shipment-orders/${shipId}`);
+        return res.data;
+    },
+
+    /** 출고지시서 바코드 직접 스캔 */
+    scan: async (
+        code: string,
+        zone: number,
+    ): Promise<ShipmentOrderScanResponse> => {
+        const res = await apiClient.get<ShipmentOrderScanResponse>(
+            '/shipment-orders/scan',
+            {
+                params: { code, zone },
+            },
+        );
+
         return res.data;
     },
 }
