@@ -217,6 +217,7 @@ export function FoodWorkOrderDetailPage() {
           itemCode: l.itemCode || "",
           itemNm: l.itemNm || "",
           instructQty: Number(l.instructQty || 0),
+          unit: l.unit || "",
           barcode: l.barcode || `${data.workId || workId}-${l.workOrderLineId || (101 + idx)}`,
         })),
       };
@@ -457,19 +458,34 @@ export function FoodWorkOrderDetailPage() {
         header: "지시수량",
         cell: ({ row }) => {
           const item = row.original;
-          if (isEditing) {
-            return (
-              <input
-                type="number"
-                className="food-line-input"
-                defaultValue={editQuantitiesRef.current[item.id] ?? item.instructQty}
-                onChange={(e) => {
-                  editQuantitiesRef.current[item.id] = e.target.value === '' ? '' : Number(e.target.value);
-                }}
-              />
-            );
-          }
-          return <div className="food-cell-qty">{item.instructQty}</div>;
+
+          return (
+            <div className="food-qty-unit-wrapper">
+              {isEditing ? (
+                <input
+                  type="number"
+                  className="food-line-input"
+                  defaultValue={
+                    editQuantitiesRef.current[item.id] ?? item.instructQty
+                  }
+                  onChange={(e) => {
+                    editQuantitiesRef.current[item.id] =
+                      e.target.value === ""
+                        ? ""
+                        : Number(e.target.value);
+                  }}
+                />
+              ) : (
+                <div className="food-cell-qty">
+                  {item.instructQty}
+                </div>
+              )}
+
+              <span className="food-qty-unit">
+                {item.unit || ""}
+              </span>
+            </div>
+          );
         },
       },
       {

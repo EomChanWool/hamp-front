@@ -59,8 +59,13 @@ export interface SalesOrderLineResponse {
     orderCode: string;
     itemCode: string;
     itemNm: string;
+    unit: string;
     orderQty: number;
     orderAmount: number;
+    produceQty: number;
+    availableQty: number;
+    shippedQty: number;
+    productionStatus: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -71,6 +76,7 @@ export interface SalesOrderStatusLineResponse {
     orderCode: string;
     itemCode: string;
     itemNm: string;
+    unit: string;
     orderQty: number;
     orderAmount: number;
     producedQty: number;

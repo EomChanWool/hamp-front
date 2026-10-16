@@ -12,7 +12,7 @@ import {
 import { KpiGrid, type KpiItem } from '@components/kpi/KpiGrid'
 import { Panel } from '@components/card/Panel'
 import { formatDateTime } from "@/utils/common";
-import { ItemStockApi, type ItemStockResponse, type ItemStockTrendResponse, type ItemStockSummaryResponse } from '@/api/seed/ItemStock' 
+import { ItemStockApi, type ItemStockResponse, type ItemStockTrendResponse, type ItemStockSummaryResponse } from '@/api/seed/ItemStock'
 import '@pages/page/seed/Seed.css'
 
 interface SeedInventoryStatusRow {
@@ -20,6 +20,7 @@ interface SeedInventoryStatusRow {
   itemName: string
   category: '원료' | '반제품' | '완제품'
   currentStock: number
+  unit: string;
   stockText: string
   updateTime: string
 }
@@ -263,9 +264,9 @@ export function SeedInventoryStatusPage() {
         const currentCategory = tabToCategoryMap[activeTab]
 
         const [listRes, summaryRes] = await Promise.all([
-          ItemStockApi.getList({ 
-            productType: 0, 
-            ...(currentCategory !== undefined && { category: currentCategory }) 
+          ItemStockApi.getList({
+            productType: 0,
+            ...(currentCategory !== undefined && { category: currentCategory })
           }),
           ItemStockApi.getSummary({ productType: 0 }),
         ])
@@ -282,6 +283,7 @@ export function SeedInventoryStatusPage() {
               itemName: item.itemNm,
               category: catStr,
               currentStock: item.currentQty,
+              unit: item.unit,
               stockText: `${item.currentQty.toLocaleString()} ${item.unit}`,
               updateTime: formatDateTime(item.lastUpdatedAt),
             }
@@ -348,9 +350,9 @@ export function SeedInventoryStatusPage() {
     const fetchTrend = async () => {
       try {
         const periodParam = trendTab === '월별' ? 'month' : trendTab === '분기별' ? 'quarter' : 'year'
-        const res = await ItemStockApi.getTrend(selectedItem.itemCode, { 
-          period: periodParam, 
-          productType: 0 
+        const res = await ItemStockApi.getTrend(selectedItem.itemCode, {
+          period: periodParam,
+          productType: 0
         })
         if (cancelled) return;
 
@@ -511,10 +513,10 @@ export function SeedInventoryStatusPage() {
   ]
 
   // activeTab 상태에 따라 KpiGrid에 매칭될 선택된 라벨 결정 ('전체'일 때는 선택 해제)
-  const currentSelectedLabel = 
+  const currentSelectedLabel =
     activeTab === '원료' ? '원료 재고' :
-    activeTab === '반제품' ? '반제품 재고' :
-    activeTab === '완제품' ? '완제품 재고' : undefined;
+      activeTab === '반제품' ? '반제품 재고' :
+        activeTab === '완제품' ? '완제품 재고' : undefined;
 
   return (
     // 로딩 중일 때 반투명 처리 및 클릭 차단 클래스 적용
@@ -602,8 +604,8 @@ export function SeedInventoryStatusPage() {
       </Panel>
 
       {/* 원료 / 반제품 / 완제품 재고 KPI — 아래로 이동 */}
-      <KpiGrid 
-        kpis={seedInventoryKpis} 
+      <KpiGrid
+        kpis={seedInventoryKpis}
         selectedLabel={currentSelectedLabel}
         onCardClick={(kpi) => {
           if (loading) return; // 로딩 중 클릭 방지
@@ -617,7 +619,7 @@ export function SeedInventoryStatusPage() {
         <div className="seedTrendPanel">
           <div className="seedTrendPanel__header">
             <div className="seedCaption">
-              선택한 품목의 기간별 현재수량 변화 (현재수량 기준, kg)
+              선택한 품목의 기간별 현재수량 변화 (현재수량 기준, {selectedItem?.unit || '단위 없음'})
             </div>
             <div className="seedTrendControls">
               <ItemSelect
@@ -668,7 +670,7 @@ export function SeedInventoryStatusPage() {
                   const isHovered = hoveredBar === data.label
 
                   return (
-                    <div 
+                    <div
                       key={`${data.label}-${index}`}
                       className="seedChartBarCol"
                       onMouseEnter={() => setHoveredBar(data.label)}
@@ -676,7 +678,7 @@ export function SeedInventoryStatusPage() {
                     >
                       {/* 마우스 호버 시 노출되는 커스텀 툴팁 UI */}
                       {isHovered && (
-                        <div 
+                        <div
                           className="seedChartTooltip"
                           style={{ bottom: `calc(${heightPercent}% + 12px)` }}
                         >
@@ -686,7 +688,9 @@ export function SeedInventoryStatusPage() {
                           <div className="seedChartTooltip__content">
                             <span className="seedChartTooltip__colorBox" />
                             <span className="seedChartTooltip__value">{data.value.toLocaleString()}</span>
-                            <span className="seedChartTooltip__unit">kg</span>
+                            <span className="seedChartTooltip__unit">
+                              {selectedItem?.unit || ''}
+                            </span>
                           </div>
                         </div>
                       )}

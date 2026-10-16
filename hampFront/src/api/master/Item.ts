@@ -92,6 +92,7 @@ export interface ItemDetailResponse {
 export interface ItemOptionResponse {
   itemCode: string;
   itemNm: string;
+  unit: string;
 }
 
 

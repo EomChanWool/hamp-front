@@ -80,7 +80,10 @@ export function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalPr
         header: '주문수량',
         cell: ({ row }) => (
           <div className="sales-order-qty-cell">
-            {row.original.orderQty?.toLocaleString()}
+            <span>{row.original.orderQty?.toLocaleString()}</span>
+            <span className="sales-order-qty-unit">
+              {row.original.unit || ''}
+            </span>
           </div>
         ),
       },
@@ -89,7 +92,10 @@ export function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalPr
         header: '생산완료수량',
         cell: ({ row }) => (
           <div className="sales-order-qty-cell bold">
-            {row.original.producedQty?.toLocaleString()}
+            <span>{row.original.producedQty?.toLocaleString()}</span>
+            <span className="sales-order-qty-unit">
+              {row.original.unit || ''}
+            </span>
           </div>
         ),
       },

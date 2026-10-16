@@ -123,6 +123,20 @@
   color: #94a3b8;
 }
 
+.sales-order-qty-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.sales-order-qty-unit {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: normal;
+}
+
 
 /* ==========================================
    [Dark Mode] 다크모드 대응 스타일

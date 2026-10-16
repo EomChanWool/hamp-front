@@ -15,6 +15,7 @@ export interface StockHistoryResponse {
     sthiId: number; // 재고이력 ID
     itemCode: string;
     itemNm: string; 
+    unit: string;
     category: number; // 구분 (0: 원료, 1: 반제품, 2: 완제품)
     ioType: string; // 처리구분 (예: 신고입고/신고입고취소/조정)
     increaseQty: number;

@@ -539,19 +539,25 @@ export function SeedReportReturnManagePage() {
           const isEditing = editingId === item.returnId;
 
           if (!isEditing) {
-            return item.returnQty;
+            return `${item.returnQty} KG`;
           }
 
           return (
-            <input
-              type="number"
-              min={1}
-              className="seedTableEditInput"
-              defaultValue={editQuantitiesRef.current[item.returnId] ?? item.returnQty}
-              onChange={(e) => {
-                editQuantitiesRef.current[item.returnId] = e.target.value === "" ? "" : Number(e.target.value);
-              }}
-            />
+            <div className="seedQuantityInput">
+              <input
+                type="number"
+                min={1}
+                className="seedPendingInput"
+                defaultValue={
+                  editQuantitiesRef.current[item.returnId] ?? item.returnQty
+                }
+                onChange={(e) => {
+                  editQuantitiesRef.current[item.returnId] =
+                    e.target.value === "" ? "" : Number(e.target.value);
+                }}
+              />
+              <span>KG</span>
+            </div>
           );
         },
       },
@@ -563,20 +569,25 @@ export function SeedReportReturnManagePage() {
           const isEditing = editingId === item.returnId;
 
           if (!isEditing) {
-            return item.hullQty;
+            return `${item.hullQty} KG`;
           }
 
           return (
-            <input
-              type="number"
-              min={0}
-              max={editQuantitiesRef.current[item.returnId] ?? item.returnQty}
-              className="seedTableEditInput"
-              defaultValue={editHullQuantitiesRef.current[item.returnId] ?? item.hullQty}
-              onChange={(e) => {
-                editHullQuantitiesRef.current[item.returnId] = e.target.value === "" ? "" : Number(e.target.value);
-              }}
-            />
+            <div className="seedQuantityInput">
+              <input
+                type="number"
+                min={1}
+                className="seedPendingInput"
+                defaultValue={
+                  editQuantitiesRef.current[item.returnId] ?? item.hullQty
+                }
+                onChange={(e) => {
+                  editQuantitiesRef.current[item.returnId] =
+                    e.target.value === "" ? "" : Number(e.target.value);
+                }}
+              />
+              <span>KG</span>
+            </div>
           );
         },
       },
@@ -729,34 +740,42 @@ export function SeedReportReturnManagePage() {
                                       <div className="seedPendingField">
                                         <div className="seedPendingField__label">신고수량</div>
 
-                                        <input
-                                          type="number"
-                                          min={1}
-                                          className="seedPendingInput"
-                                          defaultValue={editQuantitiesRef.current[item.returnId] ?? item.returnQty}
-                                          onChange={(e) => {
-                                            editQuantitiesRef.current[item.returnId] =
-                                              e.target.value === "" ? "" : Number(e.target.value);
-                                          }}
-                                        />
+                                        <div className="seedQuantityInput">
+                                          <input
+                                            type="number"
+                                            min={1}
+                                            className="seedPendingInput"
+                                            defaultValue={
+                                              editQuantitiesRef.current[item.returnId] ?? item.returnQty
+                                            }
+                                            onChange={(e) => {
+                                              editQuantitiesRef.current[item.returnId] =
+                                                e.target.value === "" ? "" : Number(e.target.value);
+                                            }}
+                                          />
+                                          <span className="seedQuantityInput__unit">KG</span>
+                                        </div>
                                       </div>
 
                                       <div className="seedPendingField">
                                         <div className="seedPendingField__label">껍질수량</div>
 
-                                        <input
-                                          type="number"
-                                          min={0}
-                                          max={editQuantitiesRef.current[item.returnId] ?? item.returnQty}
-                                          className="seedPendingInput"
-                                          defaultValue={editHullQuantitiesRef.current[item.returnId] ?? item.hullQty}
-                                          onChange={(e) => {
-                                            const value = e.target.value;
-
-                                            editHullQuantitiesRef.current[item.returnId] =
-                                              value === "" ? "" : Number(value);
-                                          }}
-                                        />
+                                        <div className="seedQuantityInput">
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            max={editQuantitiesRef.current[item.returnId] ?? item.returnQty}
+                                            className="seedPendingInput"
+                                            defaultValue={
+                                              editHullQuantitiesRef.current[item.returnId] ?? item.hullQty
+                                            }
+                                            onChange={(e) => {
+                                              editHullQuantitiesRef.current[item.returnId] =
+                                                e.target.value === "" ? "" : Number(e.target.value);
+                                            }}
+                                          />
+                                          <span className="seedQuantityInput__unit">KG</span>
+                                        </div>
                                       </div>
 
                                       <div className="seedPendingField">
@@ -806,12 +825,18 @@ export function SeedReportReturnManagePage() {
                                     <div className="seedPendingStats">
                                       <div className="seedPendingStat">
                                         <div className="seedPendingStat__label">신고수량</div>
-                                        <div className="seedPendingStat__value">{item.returnQty}</div>
+                                        <div className="seedPendingStat__value">
+                                          <span>{item.returnQty}</span>
+                                          <span className="seedPendingStat__unit">KG</span>
+                                        </div>
                                       </div>
 
                                       <div className="seedPendingStat">
                                         <div className="seedPendingStat__label">껍질수량</div>
-                                        <div className="seedPendingStat__value">{item.hullQty}</div>
+                                        <div className="seedPendingStat__value">
+                                          <span>{item.hullQty}</span>
+                                          <span className="seedPendingStat__unit">KG</span>
+                                        </div>
                                       </div>
                                     </div>
 

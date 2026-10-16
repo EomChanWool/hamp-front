@@ -419,62 +419,80 @@ export function SeedInventoryManagePage() {
                 accessorKey: 'increaseQty',
                 header: '증가수량',
                 cell: ({ row }) => {
-                    const isNew = row.original.sthiId === -999999;
-                    const isEditing = row.original.sthiId === editingId;
+                    const item = row.original;
+                    const isNew = item.sthiId === -999999;
+                    const isEditing = item.sthiId === editingId;
+                    const unit = item.unit || '';
 
                     if ((isNew || isEditing) && selectedDirection === 'INCREASE') {
                         return (
-                            <input
-                                className="tableInput"
-                                type="number"
-                                min="0.01"
-                                step="any"
-                                defaultValue={editFormRef.current.qty}
-                                onChange={(e) => {
-                                    editFormRef.current.qty = Number(e.target.value);
-                                }}
-                            />
+                            <div className="stockQtyInput">
+                                <input
+                                    className="tableInput"
+                                    type="number"
+                                    min="0.01"
+                                    step="any"
+                                    defaultValue={editFormRef.current.qty}
+                                    onChange={(e) => {
+                                        editFormRef.current.qty =
+                                            e.target.value === '' ? undefined : Number(e.target.value);
+                                    }}
+                                />
+                                {unit && (
+                                    <span className="stockQtyInput__unit">{unit}</span>
+                                )}
+                            </div>
                         );
                     }
+
                     if (isNew || isEditing) return '-';
 
-                    // 증가수량이 0보다 클 때 빨간색(qtyIncreaseText) 적용
-                    return row.original.increaseQty > 0 ? (
-                        <span className="qtyIncreaseText">+{row.original.increaseQty.toLocaleString()}</span>
-                    ) : (
-                        '-'
-                    );
+                    return item.increaseQty > 0 ? (
+                        <span className="qtyIncreaseText">
+                            +{item.increaseQty.toLocaleString()}
+                            {unit && <span className="stockQtyUnit"> {unit}</span>}
+                        </span>
+                    ) : '-';
                 },
             },
             {
                 accessorKey: 'decreaseQty',
                 header: '감소수량',
                 cell: ({ row }) => {
-                    const isNew = row.original.sthiId === -999999;
-                    const isEditing = row.original.sthiId === editingId;
+                    const item = row.original;
+                    const isNew = item.sthiId === -999999;
+                    const isEditing = item.sthiId === editingId;
+                    const unit = item.unit || '';
 
                     if ((isNew || isEditing) && selectedDirection === 'DECREASE') {
                         return (
-                            <input
-                                className="tableInput"
-                                type="number"
-                                min="0.01"
-                                step="any"
-                                defaultValue={editFormRef.current.qty}
-                                onChange={(e) => {
-                                    editFormRef.current.qty = Number(e.target.value);
-                                }}
-                            />
+                            <div className="stockQtyInput">
+                                <input
+                                    className="tableInput"
+                                    type="number"
+                                    min="0.01"
+                                    step="any"
+                                    defaultValue={editFormRef.current.qty}
+                                    onChange={(e) => {
+                                        editFormRef.current.qty =
+                                            e.target.value === '' ? undefined : Number(e.target.value);
+                                    }}
+                                />
+                                {unit && (
+                                    <span className="stockQtyInput__unit">{unit}</span>
+                                )}
+                            </div>
                         );
                     }
+
                     if (isNew || isEditing) return '-';
 
-                    // 감소수량이 0보다 클 때 파란색(qtyDecreaseText) 적용
-                    return row.original.decreaseQty > 0 ? (
-                        <span className="qtyDecreaseText">-{row.original.decreaseQty.toLocaleString()}</span>
-                    ) : (
-                        '-'
-                    );
+                    return item.decreaseQty != null && item.decreaseQty > 0 ? (
+                        <span className="qtyDecreaseText">
+                            -{item.decreaseQty.toLocaleString()}
+                            {unit && <span className="stockQtyUnit"> {unit}</span>}
+                        </span>
+                    ) : '-';
                 },
             },
             {
@@ -576,6 +594,9 @@ export function SeedInventoryManagePage() {
                 sthiId: -999999,
                 itemCode: '',
                 itemNm: '',
+                unit: itemOptions.find(
+                    (opt) => opt.itemCode === editFormRef.current.itemCode
+                )?.unit ?? '',
                 category: 0,
                 ioType: '조정',
                 increaseQty: 0,

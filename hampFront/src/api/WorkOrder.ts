@@ -40,6 +40,7 @@ export interface WorkOrderLineResponse {
     dueDate: string;
     itemCode: string;
     itemNm: string;
+    unit: string;
     instructQty: number;
     createdAt: string;
     updatedAt: string;
