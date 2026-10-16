@@ -9,6 +9,7 @@ import {
   type ShipmentOrderResponse,
   type ShipmentOrderLineResponse,
 } from "@/api/ShipmentOrder";
+import Barcode from "react-barcode";
 import "@/pages/page/food/Food.css";
 
 /** 상태 코드 → 뱃지 변환 */
@@ -120,7 +121,7 @@ export function SeedOutboundManageDetailPage() {
   // 렌더링
   // ------------------------------------------
   return (
-    <section className="screenStack relative min-h-[400px]">
+    <section className="screenStack relative min-h-[400px] shipment-detail-page">
       {/* 로딩 오버레이 */}
       {isLoading && (
         <div className="absolute inset-0 bg-white/60 z-50 flex items-center justify-center">
@@ -136,6 +137,24 @@ export function SeedOutboundManageDetailPage() {
             <span className="food-detail-subtitle">
               {shipment?.orderCode ? `수주번호 ${shipment.orderCode}` : ""}
             </span>
+          </div>
+
+
+          {/* 라벨 인쇄 전용 영역 */}
+          <div className="shipment-label-print-area">
+            <div className="shipment-label">
+              <div className="shipment-label-title">출고지시 라벨</div>
+
+              <Barcode
+                value={shipment?.shipId ?? ""}
+                format="CODE128"
+                width={1.2}
+                height={38}
+                fontSize={11}
+                displayValue={true}
+                margin={0}
+              />
+            </div>
           </div>
         </div>
 
@@ -167,6 +186,7 @@ export function SeedOutboundManageDetailPage() {
         <div style={{ marginBottom: "24px" }}>
           <div className="food-section-header">
             <h2 className="food-section-title">출고지시 라인</h2>
+
           </div>
 
           <CusTable
@@ -187,6 +207,8 @@ export function SeedOutboundManageDetailPage() {
           </div>
         </div>
       </div>
+
+
     </section>
   );
 }

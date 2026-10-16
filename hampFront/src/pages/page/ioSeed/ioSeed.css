@@ -876,11 +876,6 @@
     color: var(--text-muted);
 }
 
-.seedOutTable th:nth-child(2),
-.seedOutTable td:nth-child(2) {
-    text-align: left;
-}
-
 .seedOutTable td {
     padding: 16px 12px;
 }
