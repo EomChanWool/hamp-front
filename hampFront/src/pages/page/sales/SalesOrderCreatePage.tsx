@@ -223,32 +223,76 @@ export function SalesOrderCreatePage() {
                           </select>
                         </td>
                         <td>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            className="tableInput"
-                            style={{ textAlign: "right" }}
-                            value={line.orderQty}
-                            disabled={isSubmitting}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/[^0-9]/g, "");
-                              handleLineChange(idx, "orderQty", val === "" ? 0 : Number(val));
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              width: "100%",
                             }}
-                          />
+                          >
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              className="tableInput"
+                              style={{
+                                textAlign: "right",
+                                flex: 1,
+                                minWidth: 0,
+                              }}
+                              value={line.orderQty}
+                              disabled={isSubmitting}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, "");
+                                handleLineChange(
+                                  idx,
+                                  "orderQty",
+                                  val === "" ? 0 : Number(val)
+                                );
+                              }}
+                            />
+
+                            <span style={{ whiteSpace: "nowrap", minWidth: "40px" }}>
+                              {itemOptions.find(
+                                (opt) => opt.itemCode === line.itemCode
+                              )?.unit ?? ""}
+                            </span>
+                          </div>
                         </td>
                         <td>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            className="tableInput"
-                            style={{ textAlign: "right" }}
-                            value={line.orderAmount}
-                            disabled={isSubmitting}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/[^0-9]/g, "");
-                              handleLineChange(idx, "orderAmount", val === "" ? 0 : Number(val));
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              width: "100%",
                             }}
-                          />
+                          >
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              className="tableInput"
+                              style={{
+                                textAlign: "right",
+                                flex: 1,
+                                minWidth: 0,
+                              }}
+                              value={line.orderAmount}
+                              disabled={isSubmitting}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, "");
+                                handleLineChange(
+                                  idx,
+                                  "orderAmount",
+                                  val === "" ? 0 : Number(val)
+                                );
+                              }}
+                            />
+
+                            <span style={{ whiteSpace: "nowrap", minWidth: "24px" }}>
+                              원
+                            </span>
+                          </div>
                         </td>
                         <td style={{ textAlign: "center" }}>
                           <button

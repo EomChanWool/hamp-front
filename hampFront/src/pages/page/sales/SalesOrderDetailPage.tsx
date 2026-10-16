@@ -62,10 +62,10 @@ export function SalesOrderDetailPage() {
       fields: [
         {
           label: "납기일자", key: "dueDate", editable: true, renderEditor: (value, onchange, disabled) => (
-            <input 
-            type="date" 
-            className="tableInput" 
-            value={value ?? ""} onChange={(e) => onchange(e.target.value)} disabled={disabled} />
+            <input
+              type="date"
+              className="tableInput"
+              value={value ?? ""} onChange={(e) => onchange(e.target.value)} disabled={disabled} />
           )
         },
         { label: "상태", key: "status", editable: true },
@@ -142,7 +142,7 @@ export function SalesOrderDetailPage() {
   const addLine = () => {
     setForm((prev) => ({
       ...prev,
-      lines: [...(prev.lines || []), { itemCode: "", itemNm: "", orderQty: 0, orderAmount: 0 }],
+      lines: [...(prev.lines || []), { itemCode: "", itemNm: "", unit: "", orderQty: 0, orderAmount: 0 }],
     }));
   };
 
@@ -324,7 +324,26 @@ export function SalesOrderDetailPage() {
                           className="tableInput"
                           value={line.itemCode ?? ""}
                           disabled={isBusy}
-                          onChange={(e) => handleLineChange(idx, "itemCode", e.target.value)}
+                          onChange={(e) => {
+                            const selectedCode = e.target.value;
+                            const selected = itemOptions.find(
+                              (opt) => opt.itemCode === selectedCode
+                            );
+
+                            setForm((prev) => ({
+                              ...prev,
+                              lines: (prev.lines || []).map((line: any, i: number) =>
+                                i === idx
+                                  ? {
+                                    ...line,
+                                    itemCode: selectedCode,
+                                    itemNm: selected?.itemNm ?? "",
+                                    unit: selected?.unit ?? "",
+                                  }
+                                  : line
+                              ),
+                            }));
+                          }}
                         >
                           <option value="" disabled>품목을 선택해주세요</option>
                           {itemOptions.map((opt) => (
@@ -338,40 +357,77 @@ export function SalesOrderDetailPage() {
                       )}
                     </td>
                     <td>{line.itemNm || "-"}</td>
+
                     <td>
                       {isEditing ? (
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          className="tableInput"
-                          style={{ textAlign: "right" }}
-                          value={line.orderQty ?? 0}
-                          disabled={isBusy}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/[^0-9]/g, "");
-                            handleLineChange(idx, "orderQty", val === "" ? 0 : Number(val));
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            width: "100%",
                           }}
-                        />
+                        >
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            className="tableInput"
+                            style={{
+                              textAlign: "right",
+                              flex: 1,
+                              width: 0,
+                              minWidth: 0,
+                              boxSizing: "border-box",
+                            }}
+                            value={line.orderQty ?? 0}
+                            disabled={isBusy}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9]/g, "");
+                              handleLineChange(
+                                idx,
+                                "orderQty",
+                                val === "" ? 0 : Number(val)
+                              );
+                            }}
+                          />
+                          <span
+                            style={{
+                              width: "40px",
+                              flexShrink: 0,
+                              textAlign: "left",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {line.unit || ""}
+                          </span>
+                        </div>
                       ) : (
-                        (line.orderQty ?? 0).toLocaleString()
+                        `${(line.orderQty ?? 0).toLocaleString("ko-KR")}${line.unit ? ` ${line.unit}` : ""}`
                       )}
                     </td>
                     <td>
                       {isEditing ? (
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          className="tableInput"
-                          style={{ textAlign: "right" }}
-                          value={line.orderAmount ?? 0}
-                          disabled={isBusy}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/[^0-9]/g, "");
-                            handleLineChange(idx, "orderAmount", val === "" ? 0 : Number(val));
-                          }}
-                        />
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            className="tableInput"
+                            style={{ textAlign: "right" }}
+                            value={line.orderAmount ?? 0}
+                            disabled={isBusy}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9]/g, "");
+                              handleLineChange(
+                                idx,
+                                "orderAmount",
+                                val === "" ? 0 : Number(val)
+                              );
+                            }}
+                          />
+                          <span style={{ whiteSpace: "nowrap" }}>원</span>
+                        </div>
                       ) : (
-                        (line.orderAmount ?? 0).toLocaleString()
+                        `${(line.orderAmount ?? 0).toLocaleString("ko-KR")} 원`
                       )}
                     </td>
                     {isEditing && (
