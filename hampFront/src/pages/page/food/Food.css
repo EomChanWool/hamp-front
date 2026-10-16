@@ -103,6 +103,53 @@
   margin-top: 12px;
 }
 
+/* 지시수량 + 단위 정렬 */
+.food-qty-unit-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* 수정 모드 인풋 */
+.food-qty-unit-wrapper .food-line-input {
+  flex: 0 0 100px;
+  width: 100px;
+  min-width: 0;
+  box-sizing: border-box;
+  text-align: right;
+}
+
+/* 단위 공통 */
+.food-qty-unit {
+  display: inline-block;
+  width: 36px;
+  flex-shrink: 0;
+  text-align: left;
+  white-space: nowrap;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* 읽기 모드: 수량과 단위를 하나의 그룹으로 가운데 정렬 */
+.food-cell-qty-readonly {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  white-space: nowrap;
+}
+
+/* 읽기 모드 단위 */
+.food-cell-qty-readonly .food-qty-unit {
+  width: 36px;
+  flex-shrink: 0;
+  text-align: left;
+}
+
 /* ==========================================
    Food 작업지시 상세 페이지 추가 스타일
    ========================================== */
@@ -251,9 +298,12 @@
 /* 테이블 내부 flex 컨테이너 관련 */
 .food-cell-flex-wrap {
   display: flex;
-  align-items: center;     /* 가로 기준 가운데 정렬 */
-  justify-content: center; /* 세로 기준 가운데 정렬 (테이블 셀 높이가 여유 있을 때) */
-  text-align: center;      /* 내부 텍스트 자체도 가운데 정렬 */
+  align-items: center;
+  /* 가로 기준 가운데 정렬 */
+  justify-content: center;
+  /* 세로 기준 가운데 정렬 (테이블 셀 높이가 여유 있을 때) */
+  text-align: center;
+  /* 내부 텍스트 자체도 가운데 정렬 */
   gap: 8px;
 }
 
@@ -426,7 +476,7 @@
    ========================================== */
 
 /* 확장 행 셀: CusTable 기본 패딩 제거 후 내부 콘텐츠에서 직접 여백 처리 */
-.cus-table-expanded-row > td {
+.cus-table-expanded-row>td {
   padding: 0 !important;
   background: #f8fafc;
   cursor: default;
@@ -782,6 +832,7 @@
   letter-spacing: 0.04em;
   color: var(--text-muted, #94a3b8);
 }
+
 .lotFlow__step.is-done .lotFlow__no,
 .lotFlow__step.is-current .lotFlow__no {
   color: var(--primary, #3b82f6);
@@ -806,6 +857,7 @@
   transform: translateY(-50%);
   background: color-mix(in srgb, var(--primary, #3b82f6) 12%, var(--bg-card, #fff));
 }
+
 .lotFlow__step.is-done:not(:last-child) .lotFlow__rail::after {
   background: var(--primary, #3b82f6);
 }
@@ -844,6 +896,7 @@
   font-weight: 700;
   color: var(--text-heading, #0f172a);
 }
+
 .lotFlow__step.is-pending .lotFlow__label {
   color: var(--text-muted, #94a3b8);
 }
@@ -853,14 +906,17 @@
   background: #60a5fa;
   color: #0f172a;
 }
+
 [data-theme="dark"] .lotFlow__step.is-current .lotFlow__dot {
   border-color: #60a5fa;
   color: #60a5fa;
   box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.2);
 }
+
 [data-theme="dark"] .lotFlow__step.is-done:not(:last-child) .lotFlow__rail::after {
   background: #60a5fa;
 }
+
 [data-theme="dark"] .lotFlow__step.is-done .lotFlow__no,
 [data-theme="dark"] .lotFlow__step.is-current .lotFlow__no {
   color: #60a5fa;
@@ -887,9 +943,17 @@
     text-align: left;
   }
 
-  .lotFlow__no { grid-area: no; }
-  .lotFlow__label { grid-area: label; }
-  .lotFlow__step > :last-child { grid-area: badge; }
+  .lotFlow__no {
+    grid-area: no;
+  }
+
+  .lotFlow__label {
+    grid-area: label;
+  }
+
+  .lotFlow__step> :last-child {
+    grid-area: badge;
+  }
 
   .lotFlow__rail {
     grid-area: rail;
@@ -994,7 +1058,8 @@
 }
 
 [data-theme="dark"] .food-order-code-text {
-  color: #60a5fa; /* 다크모드용 파란색 계열 강조 */
+  color: #60a5fa;
+  /* 다크모드용 파란색 계열 강조 */
 }
 
 [data-theme="dark"] .food-item-name-text {
@@ -1064,7 +1129,7 @@
 }
 
 /* 공정순서도(행 확장 영역) 다크모드 */
-[data-theme="dark"] .cus-table-expanded-row > td {
+[data-theme="dark"] .cus-table-expanded-row>td {
   background: rgba(255, 255, 255, 0.03);
 }
 

@@ -18,6 +18,7 @@ interface WorkOrderLine {
   itemNm: string;
   instructQty: number;
   remainingQty: number;
+  unit: string;
 }
 
 export function FoodWorkOrderCreatePage() {
@@ -105,6 +106,7 @@ export function FoodWorkOrderCreatePage() {
       itemNm: "수주라인을 선택해주세요.",
       instructQty: 0,
       remainingQty: 0,
+      unit: "",
     };
 
     setLines((prev) => [...prev, newLine]);
@@ -169,6 +171,7 @@ export function FoodWorkOrderCreatePage() {
             itemNm: selected.itemNm,
             instructQty: remainingQty,
             remainingQty,
+            unit: selected.unit ?? "",
           }
           : line
       )
@@ -213,29 +216,36 @@ export function FoodWorkOrderCreatePage() {
         header: '지시수량',
         cell: ({ row }) => {
           const line = row.original;
-          return (
-            <input
-              key={`${line.id}-${line.salesOrderLineId}`}
-              type="number"
-              min="1"
-              max={line.remainingQty}
-              step="1"
-              className="tableInput food-table-input-cell"
-              value={
-                editQuantitiesRef.current[line.id] !== undefined
-                  ? editQuantitiesRef.current[line.id]
-                  : line.instructQty
-              }
-              disabled={isSubmitting || line.salesOrderLineId === 0}
-              onChange={(e) => {
-                const value = e.target.value;
 
-                setEditQuantities((prev) => ({
-                  ...prev,
-                  [line.id]: value === '' ? '' : Number(value),
-                }));
-              }}
-            />
+          return (
+            <div className="food-qty-unit-wrapper">
+              <input
+                key={`${line.id}-${line.salesOrderLineId}`}
+                type="number"
+                min="1"
+                max={line.remainingQty}
+                step="1"
+                className="tableInput food-table-input-cell"
+                value={
+                  editQuantitiesRef.current[line.id] !== undefined
+                    ? editQuantitiesRef.current[line.id]
+                    : line.instructQty
+                }
+                disabled={isSubmitting || line.salesOrderLineId === 0}
+                onChange={(e) => {
+                  const value = e.target.value;
+
+                  setEditQuantities((prev) => ({
+                    ...prev,
+                    [line.id]: value === '' ? '' : Number(value),
+                  }));
+                }}
+              />
+
+              <span className="food-qty-unit">
+                {line.unit}
+              </span>
+            </div>
           );
         },
         meta: { width: '150px' },
