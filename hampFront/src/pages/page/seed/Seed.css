@@ -1718,3 +1718,35 @@
     flex: 1;
   }
 }
+
+/* ========================================
+   씨드 재고관리
+======================================== */
+
+/* 수량 입력과 단위 */
+.stockQtyInput {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.stockQtyInput .tableInput {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+}
+
+.stockQtyInput__unit {
+    flex-shrink: 0;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* 조회 수량 옆 단위 */
+.stockQtyUnit {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 500;
+}

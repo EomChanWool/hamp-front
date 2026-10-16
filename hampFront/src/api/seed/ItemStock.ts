@@ -21,6 +21,7 @@ export interface ItemStockTrendPoint {
 export interface ItemStockTrendResponse {
     itemCode: string;
     itemNm: string;
+    unit: string;
     period: string; // 기간 단위 (month/quarter/year)
     points: ItemStockTrendPoint[];
 }
