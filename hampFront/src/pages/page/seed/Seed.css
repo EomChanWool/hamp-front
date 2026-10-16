@@ -647,7 +647,7 @@
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
 }
 
-.seedDropdown__group + .seedDropdown__group {
+.seedDropdown__group+.seedDropdown__group {
   margin-top: 4px;
   padding-top: 4px;
   border-top: 1px solid var(--border, #e2e8f0);
@@ -721,7 +721,7 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
-[data-theme="dark"] .seedDropdown__group + .seedDropdown__group {
+[data-theme="dark"] .seedDropdown__group+.seedDropdown__group {
   border-top-color: #3a3e49;
 }
 
@@ -1354,6 +1354,61 @@
   background: #f3f4f6;
   color: #6b7280;
   font-size: 14px;
+}
+
+.seedQuantityInput {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.seedQuantityInput>span {
+  flex-shrink: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* 수량 표시 */
+.seedPendingStat__value {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 조회 모드 단위 */
+.seedPendingStat__unit {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* 수정 모드 수량 입력 + 단위 */
+.seedQuantityInput {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* input이 단위 공간을 침범하지 않도록 */
+.seedQuantityInput .seedPendingInput {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+/* 수정 모드 KG */
+.seedQuantityInput__unit {
+  flex-shrink: 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .seedPendingInput {
