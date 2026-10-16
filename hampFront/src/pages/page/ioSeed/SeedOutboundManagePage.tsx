@@ -1,178 +1,366 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Panel } from '@components/card/Panel'
-import { RowDetailModal } from '@/components/modal/RowDetailModal'
-import { SearchBand, type SearchField } from '@components/search/SearchBand'
-import { CusTable } from '@components/table/CusTable'
-import { CusPagination } from '@components/table/CusPagination'
-import { DashboardCharts } from '@components/chart/InOutChart'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import type { ColumnDef } from "@tanstack/react-table";
+import { Panel } from "@components/card/Panel";
+import { SearchBand, type SearchField } from "@components/search/SearchBand";
+import { CusTable } from "@components/table/CusTable";
+import { CusPagination } from "@components/table/CusPagination";
+import { useTableSorting } from "@/hooks/useTableSorting";
+import Spinner from "@/components/common/Spinner";
+import { Badge } from "@components/common/Badge";
+import {
+  ShipmentOrderApi,
+  type ShipmentOrderListResponse,
+} from "@/api/ShipmentOrder";
+import "@/pages/page/food/Food.css";
 
-interface SeedOutboundRow {
-  outboundNo: string
-  itemName: string
-  lotNo: string
-  outboundQty: string
-  destination: string
-  manager: string
-  outboundTime: string
-  registeredAt: string
-}
+/**
+ * 출고지시서 상태 정의
+ * ※ 백엔드 상태 코드가 다르면 이 배열만 수정하면 검색 select / 뱃지 라벨이 함께 바뀝니다.
+ */
+const STATUS_OPTIONS = [
+  { label: "대기", value: "WAIT", tone: "muted" },
+  { label: "진행중", value: "PROGRESS", tone: "info" },
+  { label: "완료", value: "DONE", tone: "good" },
+  { label: "지연", value: "DELAY", tone: "danger" },
+] as const;
 
-const dummySeedOutbound: SeedOutboundRow[] = [
-  { outboundNo: 'OUT-5000', itemName: '헴프 오일', lotNo: 'LOT-SEED-202606-10', outboundQty: '80 kg', destination: '제 1 가공라인', manager: '김민준', outboundTime: '14:10:00', registeredAt: '2026-06-22 15:20' },
-  { outboundNo: 'OUT-5001', itemName: '헴프 분말', lotNo: 'LOT-SEED-202606-11', outboundQty: '95 kg', destination: '제 1 가공라인', manager: '이서연', outboundTime: '14:11:00', registeredAt: '2026-06-21 16:20' },
-  { outboundNo: 'OUT-5002', itemName: '단백질 바', lotNo: 'LOT-SEED-202606-12', outboundQty: '110 kg', destination: '제 1 가공라인', manager: '박지훈', outboundTime: '14:12:00', registeredAt: '2026-06-20 17:20' },
-  { outboundNo: 'OUT-5003', itemName: '헴프 음료', lotNo: 'LOT-SEED-202606-13', outboundQty: '125 kg', destination: '제 1 가공라인', manager: '최유진', outboundTime: '14:13:00', registeredAt: '2026-06-19 18:20' },
-  { outboundNo: 'OUT-5004', itemName: '씨드 그래놀라', lotNo: 'LOT-SEED-202606-14', outboundQty: '140 kg', destination: '제 1 가공라인', manager: '정도윤', outboundTime: '14:14:00', registeredAt: '2026-06-18 19:20' },
-  { outboundNo: 'OUT-5005', itemName: '헴프 캡슐', lotNo: 'LOT-SEED-202606-15', outboundQty: '155 kg', destination: '제 1 가공라인', manager: '한수아', outboundTime: '14:15:00', registeredAt: '2026-06-17 20:20' },
-]
-
-const PAGE_SIZE = 10
+/** 상태 코드 → { 라벨, 뱃지 톤 } 변환 (한글 값이 내려와도 대응) */
+const getStatusMeta = (status?: string) => {
+  const s = status?.trim();
+  const found = STATUS_OPTIONS.find((o) => o.value === s || o.label === s);
+  return found ?? { label: s || "-", value: s ?? "", tone: "muted" as const };
+};
 
 export function SeedOutboundManagePage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [filteredSeedOutbound, setFilteredSeedOutbound] = useState<SeedOutboundRow[]>(dummySeedOutbound)
-  const [modalRow, setModalRow] = useState<SeedOutboundRow | null>(null)
-  const [page, setPage] = useState(0)
+  // ------------------------------------------
+  // 목록 상태
+  // ------------------------------------------
+  const [shipments, setShipments] = useState<ShipmentOrderListResponse[]>([]);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const outboundNoRef = useRef<HTMLInputElement>(null)
-  const itemNameRef = useRef<HTMLInputElement>(null)
-  const lotNoRef = useRef<HTMLInputElement>(null)
-  const managerRef = useRef<HTMLInputElement>(null)
+  // 새로고침 초기화가 끝난 뒤에 목록 조회를 시작하기 위한 상태
+  const [isReady, setIsReady] = useState(false);
 
-  const searchFields: SearchField[] = [
-    { type: 'input', label: '출고번호', ref: outboundNoRef, name: "equipmentName" },
-    { type: 'input', label: '품명', ref: itemNameRef, name: "equipmentName" },
-    { type: 'input', label: 'Lot번호', ref: lotNoRef, name: "equipmentName" },
-    { type: 'input', label: '담당자', ref: managerRef, name: "equipmentName" },
-  ]
+  // 테이블 정렬 (공통 훅)
+  const { sorting, sortParams, handleSortingChange } = useTableSorting();
 
-  const handleSearch = () => {
-    const outboundNo = outboundNoRef.current?.value.trim() ?? ''
-    const itemName = itemNameRef.current?.value.trim() ?? ''
-    const lotNo = lotNoRef.current?.value.trim() ?? ''
-    const manager = managerRef.current?.value.trim() ?? ''
-
-    // 현재는 더미출고에 필터로 걸러내고 있는데 추후에 api 연동할 것
-    setFilteredSeedOutbound(
-      dummySeedOutbound.filter(
-        (row) =>
-          (!outboundNo || row.outboundNo.includes(outboundNo)) &&
-          (!itemName || row.itemName.includes(itemName)) &&
-          (!lotNo || row.lotNo.includes(lotNo)) &&
-          (!manager || row.manager.includes(manager)),
-      ),
-    )
-  }
-
-  const handleReset = () => {
-    ;[outboundNoRef, itemNameRef, lotNoRef, managerRef].forEach((ref) => {
-      if (ref.current) ref.current.value = ''
-    })
-    setFilteredSeedOutbound(dummySeedOutbound)
-  }
-
-  const handleDelete = (row: SeedOutboundRow) => {
-    if (window.confirm(`${row.outboundNo} 항목을 삭제할까요?`)) {
-      setFilteredSeedOutbound((prev) => prev.filter((r) => r !== row))
-      window.alert('mock data에서만 삭제되었습니다.')
-    }
-  }
-
-  const handleSave = (updated: Record<string, string>) => {
-    setFilteredSeedOutbound((prev) => prev.map((r) => (r === modalRow ? ({ ...r, ...updated } as SeedOutboundRow) : r)))
-    setModalRow(null)
-    window.alert('화면 상태에만 저장되었습니다.')
-  }
-
-  // 검색 결과가 바뀌면 페이지를 처음으로 되돌리기
+  // ------------------------------------------
+  // 브라우저 새로고침 감지 → 검색조건 초기화
+  // (FoodWorkOrdersPage 와 동일한 동작)
+  // ------------------------------------------
   useEffect(() => {
-    setPage(0)
-  }, [filteredSeedOutbound])
+    const handleBeforeUnload = () => {
+      sessionStorage.setItem("is_browser_reload", "true");
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
 
-  const totalPages = Math.max(1, Math.ceil(filteredSeedOutbound.length / PAGE_SIZE))
-  const pagedSeedOutbound = filteredSeedOutbound.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+  // URL 초기화가 끝나기를 기다리는 중인지 표시 (이전 검색조건으로 불필요한 조회가 나가는 것 방지)
+  const resetPendingRef = useRef(false);
 
-  const columns: ColumnDef<SeedOutboundRow>[] = useMemo(
+  // 진입 시 실제 새로고침이었다면 URL 검색조건을 비우고, 아니면 바로 조회 준비 완료
+  useEffect(() => {
+    const isReload = sessionStorage.getItem("is_browser_reload") === "true";
+
+    if (isReload) {
+      sessionStorage.removeItem("is_browser_reload");
+      if (searchParams.toString()) {
+        // URL 을 비운 뒤(아래 효과에서) 조회를 시작한다
+        resetPendingRef.current = true;
+        setSearchParams({}, { replace: true });
+        return;
+      }
+    }
+
+    setIsReady(true);
+  }, []);
+
+  // URL 이 비워지면 그때 조회 준비 완료 처리
+  useEffect(() => {
+    if (resetPendingRef.current && searchParams.toString() === "") {
+      resetPendingRef.current = false;
+      setIsReady(true);
+    }
+  }, [searchParams]);
+
+  // ------------------------------------------
+  // URL 에서 현재 검색조건 추출
+  // ------------------------------------------
+  const currentPage = Number(searchParams.get("page") || "0");
+  const queryOrderCode = searchParams.get("orderCode") || "";
+  const queryStatus = searchParams.get("status") || "";
+  const queryManagerId = searchParams.get("managerId") || "";
+  const queryShipDateFrom = searchParams.get("shipDateFrom") || "";
+  const queryShipDateTo = searchParams.get("shipDateTo") || "";
+
+  // 검색 input / select refs
+  const orderCodeRef = useRef<HTMLInputElement>(null);
+  const statusRef = useRef<HTMLSelectElement>(null);
+  const managerIdRef = useRef<HTMLInputElement>(null);
+  const shipDateFromRef = useRef<HTMLInputElement>(null);
+  const shipDateToRef = useRef<HTMLInputElement>(null);
+
+  // 검색 필드 정의
+  const searchFields: SearchField[] = [
+    {
+      type: "date",
+      label: "출고일자",
+      startRef: shipDateFromRef,
+      endRef: shipDateToRef,
+    },
+    {
+      type: "input",
+      label: "수주번호",
+      ref: orderCodeRef,
+      name: "orderCode",
+    },
+    {
+      type: "select",
+      label: "상태",
+      ref: statusRef,
+      options: [
+        { label: "전체", value: "" },
+        ...STATUS_OPTIONS.map((o) => ({ label: o.label, value: o.value })),
+      ],
+    },
+    {
+      type: "input",
+      label: "담당자",
+      ref: managerIdRef,
+      name: "managerId",
+    },
+  ];
+
+  // URL → SearchBand input / select 값 동기화 (뒤로가기 / 새로고침 후에도 검색값 유지)
+  useEffect(() => {
+    if (orderCodeRef.current) orderCodeRef.current.value = queryOrderCode;
+    if (statusRef.current) statusRef.current.value = queryStatus;
+    if (managerIdRef.current) managerIdRef.current.value = queryManagerId;
+    if (shipDateFromRef.current) shipDateFromRef.current.value = queryShipDateFrom;
+    if (shipDateToRef.current) shipDateToRef.current.value = queryShipDateTo;
+  }, [
+    queryOrderCode,
+    queryStatus,
+    queryManagerId,
+    queryShipDateFrom,
+    queryShipDateTo,
+  ]);
+
+  // ------------------------------------------
+  // 출고지시서 목록 조회
+  // ------------------------------------------
+  const loadShipments = useCallback(async () => {
+    if (!isReady) return;
+
+    setIsLoading(true);
+
+    try {
+      // 값이 있는 조건만 파라미터에 담는다
+      const params: Record<string, any> = {
+        page: currentPage,
+        size: 10,
+      };
+      if (queryOrderCode) params.orderCode = queryOrderCode;
+      if (queryStatus) params.status = queryStatus;
+      if (queryManagerId) params.managerId = queryManagerId;
+      if (queryShipDateFrom) params.shipDateFrom = queryShipDateFrom;
+      if (queryShipDateTo) params.shipDateTo = queryShipDateTo;
+      if (sortParams.length > 0) params.sort = sortParams;
+
+      const response = await ShipmentOrderApi.getList(params);
+      const pageData = response.data;
+
+      setShipments(pageData.content ?? []);
+      setTotalElements(pageData.totalElements ?? 0);
+      setTotalPages(pageData.totalPages ?? 0);
+    } catch (error) {
+      console.error("출고지시서 목록 조회 실패:", error);
+      window.alert("출고지시서 목록을 불러오는 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    isReady,
+    currentPage,
+    queryOrderCode,
+    queryStatus,
+    queryManagerId,
+    queryShipDateFrom,
+    queryShipDateTo,
+    sortParams,
+  ]);
+
+  useEffect(() => {
+    loadShipments();
+  }, [loadShipments]);
+
+  // ------------------------------------------
+  // 이벤트 핸들러
+  // ------------------------------------------
+
+  /** 검색 실행: 입력값을 URL 쿼리스트링에 반영 (조회는 URL 변경으로 트리거) */
+  const handleSearch = () => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", "0");
+
+    const fields: [string, string][] = [
+      ["orderCode", orderCodeRef.current?.value.trim() || ""],
+      ["status", statusRef.current?.value.trim() || ""],
+      ["managerId", managerIdRef.current?.value.trim() || ""],
+      ["shipDateFrom", shipDateFromRef.current?.value.trim() || ""],
+      ["shipDateTo", shipDateToRef.current?.value.trim() || ""],
+    ];
+
+    fields.forEach(([key, value]) => {
+      if (value) nextParams.set(key, value);
+      else nextParams.delete(key);
+    });
+
+    setSearchParams(nextParams);
+  };
+
+  /** 검색 초기화 */
+  const handleReset = () => {
+    [orderCodeRef, statusRef, managerIdRef, shipDateFromRef, shipDateToRef].forEach(
+      (ref) => {
+        if (ref.current) ref.current.value = "";
+      }
+    );
+    setSearchParams({ page: "0" }, { replace: true });
+  };
+
+  /** 페이지 이동 */
+  const handlePageChange = (newPage: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("page", String(newPage));
+    setSearchParams(nextParams);
+  };
+
+  /** 상세 페이지 이동 (현재 검색조건을 쿼리스트링으로 넘겨 목록 복귀 시 유지) */
+  const handleRowClick = (row: ShipmentOrderListResponse) => {
+    const queryString = searchParams.toString();
+    navigate(
+      `/io/seed-outbound-manage/${encodeURIComponent(row.shipId)}${queryString ? `?${queryString}` : ""
+      }`
+    );
+  };
+
+  /** 등록 페이지 이동 */
+  const handleCreate = () => {
+    const queryString = searchParams.toString();
+    navigate(
+      `/io/seed-outbound-manage/create${queryString ? `?${queryString}` : ""
+      }`
+    );
+  };
+
+  // ------------------------------------------
+  // 테이블 컬럼 정의
+  // ------------------------------------------
+  const columns: ColumnDef<ShipmentOrderListResponse>[] = useMemo(
     () => [
-      { accessorKey: 'outboundNo', header: '출고번호' },
-      { accessorKey: 'itemName', header: '품명' },
-      { accessorKey: 'lotNo', header: 'Lot번호' },
-      { accessorKey: 'outboundQty', header: '출고량' },
-      { accessorKey: 'destination', header: '출고목적지' },
-      { accessorKey: 'manager', header: '담당자' },
-      { accessorKey: 'outboundTime', header: '출고시간' },
-      { accessorKey: 'registeredAt', header: '등록일시' },
       {
-        id: 'actions',
-        header: '관리',
-        meta: { width: '150px' },
-        cell: ({ row }) => (
-          <div className="rowActions">
-            <button
-              type="button"
-              className="miniButton"
-              onClick={(e) => {
-                e.stopPropagation()
-                setModalRow(row.original)
-              }}
-            >
-              상세
-            </button>
-            <button
-              type="button"
-              className="miniButton danger"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleDelete(row.original)
-              }}
-            >
-              삭제
-            </button>
-          </div>
+        accessorKey: "shipId",
+        header: "출고지시ID",
+        cell: ({ getValue }) => (
+          <span className="food-table-code-cell">{getValue<string>() || "-"}</span>
         ),
       },
+      {
+        accessorKey: "orderCode",
+        header: "수주번호",
+        cell: ({ getValue }) => getValue<string>() || "-",
+      },
+      {
+        accessorKey: "bpNm",
+        header: "거래처",
+        cell: ({ getValue }) => getValue<string>() || "-",
+      },
+      {
+        accessorKey: "shipDate",
+        header: "출고일자",
+        cell: ({ getValue }) => getValue<string>() || "-",
+      },
+      {
+        accessorKey: "status",
+        header: "상태",
+        cell: ({ getValue }) => {
+          const meta = getStatusMeta(getValue<string>());
+          return <Badge tone={meta.tone}>{meta.label}</Badge>;
+        },
+      },
+      {
+        accessorKey: "managerNm",
+        header: "담당자",
+        cell: ({ row }) => {
+          const { managerNm, managerId } = row.original;
+          return managerNm ? `${managerNm} (${managerId})` : managerId || "-";
+        },
+      },
+      {
+        accessorKey: "lineCount",
+        header: "라인 수",
+        cell: ({ getValue }) => `${getValue<number>() ?? 0}건`,
+      },
+      {
+        accessorKey: "totalInstructQty",
+        header: "지시수량 합계",
+        cell: ({ getValue }) => {
+          const qty = getValue<number>();
+          return qty !== undefined && qty !== null ? qty.toLocaleString() : "0";
+        },
+      },
     ],
-    [],
-  )
+    []
+  );
 
-  const detailFields = [
-    { label: '출고번호', key: 'outboundNo' },
-    { label: '품명', key: 'itemName' },
-    { label: 'Lot번호', key: 'lotNo' },
-    { label: '출고량', key: 'outboundQty' },
-    { label: '출고목적지', key: 'destination' },
-    { label: '담당자', key: 'manager' },
-    { label: '출고시간', key: 'outboundTime' },
-    { label: '등록일시', key: 'registeredAt' },
-  ]
-
+  // ------------------------------------------
+  // 렌더링
+  // ------------------------------------------
   return (
     <section className="screenStack">
-      <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
-      <DashboardCharts pageType="seedOutbound" />
-      <Panel title="씨드 출고관리 목록" action="등록"
-        onAction={() => {
-          const queryString = searchParams.toString();
-          navigate(
-            `/io/seed-outbound-manage/create${queryString ? `?${queryString}` : ""
-            }`
-          );
-        }}>
-        <CusTable data={pagedSeedOutbound} columns={columns} onRowClick={setModalRow} />
-        <CusPagination page={page} totalPages={totalPages} totalCount={filteredSeedOutbound.length} onPageChange={setPage} />
-      </Panel>
-
-      <RowDetailModal
-        isOpen={modalRow !== null}
-        onClose={() => setModalRow(null)}
-        onSave={handleSave}
-        fields={detailFields}
-        data={(modalRow ?? {}) as unknown as Record<string, string>}
+      <SearchBand
+        fields={searchFields}
+        onSearch={handleSearch}
+        onReset={handleReset}
       />
+
+      <Panel title="씨드 출고지시서 목록" action="등록" onAction={handleCreate}>
+        <div className="relative min-h-[300px]">
+          {isLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              <CusTable
+                data={shipments}
+                columns={columns}
+                sorting={sorting}
+                onSortingChange={handleSortingChange}
+                onRowClick={handleRowClick}
+                noDataMessage="조회된 데이터가 없습니다."
+              />
+
+              <CusPagination
+                page={currentPage}
+                totalPages={totalPages}
+                totalCount={totalElements}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
+        </div>
+      </Panel>
     </section>
-  )
+  );
 }

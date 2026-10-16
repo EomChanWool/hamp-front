@@ -945,6 +945,11 @@
     border-top: 1px solid var(--border);
 }
 
+/* 수주 선택 전: 목록 버튼 오른쪽 정렬 */
+.seedOutLinesFooter--listOnly {
+    justify-content: flex-end;
+}
+
 .seedOutSelectedCount {
     font-size: 13px;
     color: var(--text-muted);

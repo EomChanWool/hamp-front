@@ -569,7 +569,9 @@ export function SeedOutboundManageCreatePage() {
                             </div>
 
                             <div className="seedOutLinesFooter">
-                                <span className="seedOutSelectedCount">{selectedCount}개 품목 선택됨</span>
+                                <span className="seedOutSelectedCount">
+                                    {selectedCount}개 품목 선택됨
+                                </span>
 
                                 <div className="seedOutFooterActions">
                                     <button
@@ -578,8 +580,9 @@ export function SeedOutboundManageCreatePage() {
                                         onClick={handleCancel}
                                         disabled={isSubmitting}
                                     >
-                                        취소
+                                        목록
                                     </button>
+
                                     <button
                                         type="submit"
                                         className="primaryButton"
@@ -589,6 +592,22 @@ export function SeedOutboundManageCreatePage() {
                                     </button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* 하단: 수주 선택 전 목록 버튼 */}
+                {!selectedSalesOrder && (
+                    <div className="seedOutLinesFooter seedOutLinesFooter--listOnly">
+                        <div className="seedOutFooterActions">
+                            <button
+                                type="button"
+                                className="ghostButton"
+                                onClick={handleCancel}
+                                disabled={isSubmitting}
+                            >
+                                목록
+                            </button>
                         </div>
                     </div>
                 )}
