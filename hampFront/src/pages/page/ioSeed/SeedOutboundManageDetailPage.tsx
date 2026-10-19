@@ -111,9 +111,15 @@ export function SeedOutboundManageDetailPage() {
       {
         accessorKey: "instructQty",
         header: "지시수량",
-        cell: ({ getValue }) => (
-          <div className="food-cell-qty">
-            {(getValue<number>() ?? 0).toLocaleString()}
+        cell: ({ row }) => (
+          <div className="shipment-qty-unit">
+            <span className="shipment-qty-value">
+              {(row.original.instructQty ?? 0).toLocaleString()}
+            </span>
+
+            <span className="shipment-qty-unit-label">
+              {row.original.unit ?? ""}
+            </span>
           </div>
         ),
       },

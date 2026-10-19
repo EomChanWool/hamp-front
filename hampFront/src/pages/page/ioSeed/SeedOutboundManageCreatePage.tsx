@@ -262,22 +262,45 @@ export function SeedOutboundManageCreatePage() {
                 id: "orderQty",
                 header: "주문수량",
                 enableSorting: false,
-                cell: ({ row }) => formatQty(row.original.orderQty),
+                cell: ({ row }) => (
+                    <div className="seed-out-qty-unit">
+                        <span className="seed-out-qty-value">
+                            {formatQty(row.original.orderQty)}
+                        </span>
+                        <span className="seed-out-qty-unit-label">
+                            {row.original.unit ?? ""}
+                        </span>
+                    </div>
+                ),
             },
             {
                 id: "shippedQty",
                 header: "기출고",
                 enableSorting: false,
-                cell: ({ row }) => formatQty(row.original.shippedQty),
+                cell: ({ row }) => (
+                    <div className="seed-out-qty-unit">
+                        <span className="seed-out-qty-value">
+                            {formatQty(row.original.shippedQty)}
+                        </span>
+                        <span className="seed-out-qty-unit-label">
+                            {row.original.unit ?? ""}
+                        </span>
+                    </div>
+                ),
             },
             {
                 id: "remainingQty",
                 header: "잔여",
                 enableSorting: false,
                 cell: ({ row }) => (
-                    <strong className="seedOutRemain">
-                        {formatQty(getRemainingQty(row.original))}
-                    </strong>
+                    <div className="seed-out-qty-unit">
+                        <strong className="seedOutRemain seed-out-qty-value">
+                            {formatQty(getRemainingQty(row.original))}
+                        </strong>
+                        <span className="seed-out-qty-unit-label">
+                            {row.original.unit ?? ""}
+                        </span>
+                    </div>
                 ),
             },
             {
@@ -293,7 +316,16 @@ export function SeedOutboundManageCreatePage() {
                 id: "availableQty",
                 header: "출고가능",
                 enableSorting: false,
-                cell: ({ row }) => formatQty(row.original.availableQty),
+                cell: ({ row }) => (
+                    <div className="seed-out-qty-unit">
+                        <span className="seed-out-qty-value">
+                            {formatQty(row.original.availableQty)}
+                        </span>
+                        <span className="seed-out-qty-unit-label">
+                            {row.original.unit ?? ""}
+                        </span>
+                    </div>
+                ),
             },
             {
                 id: "shipQty",
@@ -305,27 +337,32 @@ export function SeedOutboundManageCreatePage() {
                     const currentQty = qtyMapRef.current[line.salesOrderLineId];
 
                     return (
-                        <input
-                            type="number"
-                            min={1}
-                            max={line.availableQty}
-                            step={1}
-                            placeholder="-"
-                            className="tableInput seedOutQtyInput"
-                            value={currentQty ?? ""}
-                            disabled={isSubmitting || !isShippable(line)}
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                const lineId = line.salesOrderLineId;
+                        <div className="seed-out-qty-unit">
+                            <input
+                                type="number"
+                                min={1}
+                                max={line.availableQty}
+                                step={1}
+                                placeholder="-"
+                                className="tableInput seedOutQtyInput seed-out-qty-input"
+                                value={currentQty ?? ""}
+                                disabled={isSubmitting || !isShippable(line)}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    const lineId = line.salesOrderLineId;
 
-                                handleQtyChange(lineId, value);
+                                    handleQtyChange(lineId, value);
 
-                                setCheckedLines((prev) => ({
-                                    ...prev,
-                                    [lineId]: value !== "",
-                                }));
-                            }}
-                        />
+                                    setCheckedLines((prev) => ({
+                                        ...prev,
+                                        [lineId]: value !== "",
+                                    }));
+                                }}
+                            />
+                            <span className="seed-out-qty-unit-label">
+                                {line.unit ?? ""}
+                            </span>
+                        </div>
                     );
                 },
             }
