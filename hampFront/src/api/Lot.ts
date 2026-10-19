@@ -9,7 +9,7 @@ export interface LotResponse {
     productionQty: number;
     currentStatus: string;
     shipYn: number;
-    labelPrintStatus: number;
+    labelPrintYn: number;
     createdAt: string;
 }
 
