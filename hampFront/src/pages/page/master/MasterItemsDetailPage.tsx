@@ -63,8 +63,11 @@ export function MasterItemsDetailPage() {
 
   const handleFieldChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-    if (key === "category" && value === "0") {
+
+    // 원료(0) 또는 반제품(1)은 공정 라우팅을 사용하지 않음
+    if (key === "category" && (value === "0" || value === "1")) {
       syncRoutings([]);
+      setSelectedIndex(null);
     }
   };
 
@@ -256,11 +259,10 @@ export function MasterItemsDetailPage() {
     const selectedCategory =
       form.category !== "" ? (Number(form.category) as ItemCategory) : null;
 
-    if (selectedCategory === 1 || selectedCategory === 2) {
-      if (routings.length === 0) {
-        alert("반제품/완제품은 공정 라우팅을 최소 1개 이상 설정해야 합니다.");
-        return false;
-      }
+    // 완제품만 공정 라우팅 필수
+    if (selectedCategory === 2 && routings.length === 0) {
+      alert("완제품은 공정 라우팅을 최소 1개 이상 설정해야 합니다.");
+      return false;
     }
     return true;
   };
@@ -284,12 +286,12 @@ export function MasterItemsDetailPage() {
         unit: form.unit?.trim() ? form.unit.trim() : null,
         standard: form.standard?.trim() ? form.standard.trim() : null,
         routings:
-          selectedCategory === 1 || selectedCategory === 2
+          selectedCategory === 2
             ? routings.map((r) => ({
-                operCode: r.operCode?.trim() || null,
-                operSeq: r.operSeq ?? 1,
-                finalYn: r.finalYn || "N",
-              }))
+              operCode: r.operCode?.trim() || null,
+              operSeq: r.operSeq ?? 1,
+              finalYn: r.finalYn || "N",
+            }))
             : null,
       };
 
@@ -300,22 +302,22 @@ export function MasterItemsDetailPage() {
       setItem((prev) =>
         prev
           ? {
-              ...prev,
-              productType: updatePayload.productType ?? prev.productType,
-              category: updatePayload.category ?? prev.category,
-              itemNm: updatePayload.itemNm ?? prev.itemNm,
-              unit: updatePayload.unit ?? prev.unit,
-              standard: updatePayload.standard ?? prev.standard,
-              routings: updatePayload.routings
-                ? updatePayload.routings.map((r, idx) => ({
-                    routingId: 0,
-                    itemCode: prev.itemCode,
-                    operCode: r.operCode ?? "",
-                    operSeq: r.operSeq ?? idx + 1,
-                    finalYn: r.finalYn ?? "N",
-                  }))
-                : [],
-            }
+            ...prev,
+            productType: updatePayload.productType ?? prev.productType,
+            category: updatePayload.category ?? prev.category,
+            itemNm: updatePayload.itemNm ?? prev.itemNm,
+            unit: updatePayload.unit ?? prev.unit,
+            standard: updatePayload.standard ?? prev.standard,
+            routings: updatePayload.routings
+              ? updatePayload.routings.map((r, idx) => ({
+                routingId: 0,
+                itemCode: prev.itemCode,
+                operCode: r.operCode ?? "",
+                operSeq: r.operSeq ?? idx + 1,
+                finalYn: r.finalYn ?? "N",
+              }))
+              : [],
+          }
           : null
       );
 
@@ -366,7 +368,7 @@ export function MasterItemsDetailPage() {
   if (!item) return null;
 
   const currentCategory = isEditing ? form.category : item.category?.toString();
-  const isRoutingRequired = currentCategory === "1" || currentCategory === "2";
+  const isRoutingRequired = currentCategory === "2";
   const selectedRouting =
     selectedIndex !== null && routings[selectedIndex] ? routings[selectedIndex] : null;
   const selectedMatchedOp = selectedRouting
@@ -527,9 +529,8 @@ export function MasterItemsDetailPage() {
                           setDragOverIndex(null);
                         }}
                         onClick={() => setSelectedIndex(index)}
-                        className={`routing-list-item ${isSelected ? "is-selected" : ""} ${
-                          isDragOver ? "is-drag-over" : ""
-                        } ${isDragged ? "is-dragged" : ""}`}
+                        className={`routing-list-item ${isSelected ? "is-selected" : ""} ${isDragOver ? "is-drag-over" : ""
+                          } ${isDragged ? "is-dragged" : ""}`}
                       >
                         <div className="routing-item-left">
                           <span
