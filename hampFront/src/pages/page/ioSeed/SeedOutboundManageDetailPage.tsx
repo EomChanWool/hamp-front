@@ -10,6 +10,7 @@ import {
   type ShipmentOrderLineResponse,
 } from "@/api/ShipmentOrder";
 import Barcode from "react-barcode";
+import { ShipmentOrderPrintModal } from "@/components/modal/ShipmentOrderPrintModal";
 import "@/pages/page/food/Food.css";
 
 /** 상태 코드 → 뱃지 변환 */
@@ -41,6 +42,9 @@ export function SeedOutboundManageDetailPage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [shipment, setShipment] = useState<ShipmentOrderResponse | null>(null);
+
+  // 출고지시서 인쇄 모달 오픈 상태
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   /** 목록 페이지로 이동 (검색조건 유지) */
   const goToList = useCallback(() => {
@@ -130,17 +134,30 @@ export function SeedOutboundManageDetailPage() {
       )}
 
       <div className="createCard food-detail-card">
-        {/* 헤더: 출고지시ID + 연결 수주번호 */}
+        {/* 헤더: 출고지시ID + 연결 수주번호 + 출고지시서 인쇄 버튼 */}
         <div className="food-detail-header">
           <div>
-            <h1 className="food-detail-title">{shipment?.shipId ?? shipId}</h1>
+            <div className="shipment-title-row">
+              <h1 className="food-detail-title">{shipment?.shipId ?? shipId}</h1>
+
+              <button
+                type="button"
+                className="shipment-print-btn"
+                disabled={isLoading || !shipment}
+                onClick={() => setIsPrintModalOpen(true)}
+              >
+                출고지시서 인쇄
+              </button>
+            </div>
+
             <span className="food-detail-subtitle">
               {shipment?.orderCode ? `수주번호 ${shipment.orderCode}` : ""}
             </span>
           </div>
 
-
-          {/* 라벨 인쇄 전용 영역 */}
+          {/* 화면 확인/스캔용 바코드 (유지)
+              ※ 인쇄는 이제 출고지시서 양식(헤더 바코드 포함)으로 하므로
+                이 영역은 "화면에서 바로 스캔/확인" 용도로만 사용된다. */}
           <div className="shipment-label-print-area">
             <div className="shipment-label">
               <div className="shipment-label-title">출고지시 라벨</div>
@@ -186,7 +203,6 @@ export function SeedOutboundManageDetailPage() {
         <div style={{ marginBottom: "24px" }}>
           <div className="food-section-header">
             <h2 className="food-section-title">출고지시 라인</h2>
-
           </div>
 
           <CusTable
@@ -208,7 +224,14 @@ export function SeedOutboundManageDetailPage() {
         </div>
       </div>
 
-
+      {/* 출고지시서 인쇄 모달 (열릴 때만 마운트 → 출력일시 매번 갱신) */}
+      {isPrintModalOpen && (
+        <ShipmentOrderPrintModal
+          isOpen={isPrintModalOpen}
+          onClose={() => setIsPrintModalOpen(false)}
+          shipment={shipment}
+        />
+      )}
     </section>
   );
 }
