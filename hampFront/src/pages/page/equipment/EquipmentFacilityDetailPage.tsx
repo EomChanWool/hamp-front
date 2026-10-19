@@ -694,18 +694,13 @@ export function EquipmentFacilityDetailPage() {
         <LabelPrintModal
           isOpen={isLabelModalOpen}
           onClose={() => setIsLabelModalOpen(false)}
-          workOrderNo={form.fcltCode}
-          selectedLines={[
+          items={[
             {
               id: form.fcltCode,
-              salesOrderLineId: 0,
-              orderCode: form.eqCode || "",
-              lineId: "1",
-              itemCode: form.eqCode || "",
-              itemNm: form.fcltNm || "",
-              unit: "",
-              instructQty: 1,
               barcode: form.barcode || form.fcltCode,
+              title: form.fcltCode,
+              name: form.fcltNm || "",
+              code: form.eqCode || "",
             },
           ]}
         />

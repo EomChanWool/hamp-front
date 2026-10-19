@@ -17,7 +17,7 @@ import { FacilityApi, STATUS_TONE, STATUS_TYPE_LABEL } from "@/api/equipment/Fac
 import { EquipmentApi } from "@/api/master/Equipment";
 import { FactoryZoneApi } from "@/api/master/FactoryZone";
 import { Badge } from "@/components/common/Badge";
-import { LabelPrintModal, type WorkOrderLineDetail } from "@/components/modal/LabelPrintModal";
+import { LabelPrintModal, type LabelItem } from "@/components/modal/LabelPrintModal";
 
 export function EquipmentFacilityPage() {
   const navigate = useNavigate();
@@ -346,20 +346,15 @@ export function EquipmentFacilityPage() {
     [facilities, selectedFcltCodes]
   );
 
-  // 수정 포인트: f.barcode 값을 가져와서 모달 라벨 데이터로 전달
-  const selectedLabelLines: WorkOrderLineDetail[] = useMemo(() => {
+  const selectedLabelItems: LabelItem[] = useMemo(() => {
     return facilities
       .filter((f) => selectedFcltCodes.includes(f.fcltCode))
-      .map((f, idx) => ({
+      .map((f) => ({
         id: f.fcltCode,
-        salesOrderLineId: 0,
-        orderCode: f.eqNm || '', // 또는 필요한 정보
-        lineId: `#${idx + 1}`,
-        itemCode: f.fcltCode,
-        itemNm: f.fcltNm || '',
-        unit: '',
-        instructQty: 1,
-        barcode: f.barcode || f.fcltCode, // 응답으로 온 barcode 사용 (없을 시 fcltCode Fallback)
+        barcode: f.barcode || f.fcltCode,
+        title: f.fcltCode,
+        name: f.fcltNm || "",
+        code: f.eqNm || undefined,
       }));
   }, [facilities, selectedFcltCodes]);
 
@@ -423,8 +418,8 @@ export function EquipmentFacilityPage() {
       <LabelPrintModal
         isOpen={isLabelModalOpen}
         onClose={() => setIsLabelModalOpen(false)}
-        selectedLines={selectedLabelLines}
-        workOrderNo="FACILITY-BARCODE"
+        items={selectedLabelItems}
+        modalTitle="설비 라벨 인쇄 미리보기"
       />
     </section>
   );
