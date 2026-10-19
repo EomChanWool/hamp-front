@@ -287,19 +287,46 @@ export function OrderStatusPage() {
                 ),
             },
             {
-                accessorKey: 'orderQty',
-                header: '주문수량',
-                cell: ({ row }) => (row.original.orderQty ?? 0).toLocaleString()
+                accessorKey: "orderQty",
+                header: "주문수량",
+                cell: ({ row }) => (
+                    <div className="sales-qty-unit">
+                        <span className="sales-qty-value">
+                            {(row.original.orderQty ?? 0).toLocaleString("ko-KR")}
+                        </span>
+                        <span className="sales-qty-unit-label">
+                            {row.original.unit ?? ""}
+                        </span>
+                    </div>
+                ),
             },
             {
-                accessorKey: 'orderAmount',
-                header: '주문금액',
-                cell: ({ row }) => (row.original.orderAmount ?? 0).toLocaleString()
+                accessorKey: "orderAmount",
+                header: "주문금액",
+                cell: ({ row }) => (
+                    <div className="sales-qty-unit">
+                        <span className="sales-qty-value">
+                            {(row.original.orderAmount ?? 0).toLocaleString("ko-KR")}
+                        </span>
+                        <span className="sales-qty-unit-label">
+                            원
+                        </span>
+                    </div>
+                ),
             },
             {
-                accessorKey: 'producedQty',
-                header: '생산량',
-                cell: ({ row }) => (row.original.producedQty ?? 0).toLocaleString()
+                accessorKey: "producedQty",
+                header: "생산량",
+                cell: ({ row }) => (
+                    <div className="sales-qty-unit">
+                        <span className="sales-qty-value">
+                            {(row.original.producedQty ?? 0).toLocaleString("ko-KR")}
+                        </span>
+                        <span className="sales-qty-unit-label">
+                            {row.original.unit ?? ""}
+                        </span>
+                    </div>
+                ),
             },
             {
                 accessorKey: 'progressRate',

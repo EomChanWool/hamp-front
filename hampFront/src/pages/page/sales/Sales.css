@@ -36,9 +36,11 @@
 .legendHigh {
   background: #10b981;
 }
+
 .legendMid {
   background: #f59e0b;
 }
+
 .legendLow {
   background: #ef4444;
 }
@@ -99,6 +101,7 @@
   border-radius: 12px;
   transition: border-color 0.2s ease;
 }
+
 .groupRow:hover {
   border-color: var(--text-muted);
 }
@@ -155,12 +158,30 @@
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
-.pctHigh { color: #059669; }
-.pctMid  { color: #d97706; }
-.pctLow  { color: #dc2626; }
-[data-theme="dark"] .pctHigh { color: #34d399; }
-[data-theme="dark"] .pctMid  { color: #fbbf24; }
-[data-theme="dark"] .pctLow  { color: #f87171; }
+
+.pctHigh {
+  color: #059669;
+}
+
+.pctMid {
+  color: #d97706;
+}
+
+.pctLow {
+  color: #dc2626;
+}
+
+[data-theme="dark"] .pctHigh {
+  color: #34d399;
+}
+
+[data-theme="dark"] .pctMid {
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .pctLow {
+  color: #f87171;
+}
 
 .groupBarTrack {
   width: 100%;
@@ -212,9 +233,11 @@
 .barHigh {
   background: #10b981;
 }
+
 .barMid {
   background: #f59e0b;
 }
+
 .barLow {
   background: #ef4444;
 }
@@ -303,10 +326,39 @@
   font-size: 13px;
   color: var(--text-muted);
 }
+
 .opBar__desc strong {
   margin-right: 2px;
   font-weight: 700;
   color: var(--text-heading);
+}
+
+/* 수량 및 금액 + 단위 정렬 */
+.sales-qty-unit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* 수량 및 금액 */
+.sales-qty-value {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+/* 수량 단위 및 금액 단위 */
+.sales-qty-unit-label {
+  display: inline-block;
+  width: 36px;
+  flex-shrink: 0;
+  text-align: left;
+  white-space: nowrap;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 /* ══════════════════════════════════════════
@@ -325,6 +377,7 @@
   background: var(--border);
   overflow-x: auto;
 }
+
 .orderPerfDashboard__toggle button {
   flex-shrink: 0;
   height: 32px;
@@ -340,19 +393,23 @@
   cursor: pointer;
   transition: color 0.15s, background 0.15s, box-shadow 0.15s;
 }
+
 .orderPerfDashboard__toggle button:hover:not(.isActive):not(:disabled) {
   color: var(--text-heading);
 }
+
 .orderPerfDashboard__toggle button.isActive {
   background: var(--bg-card, #fff);
   color: var(--text-heading);
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
+
 .orderPerfDashboard__toggle button:focus-visible {
   outline: 2px solid #f59e0b;
   outline-offset: 2px;
 }
+
 .orderPerfDashboard__toggle button:disabled {
   cursor: default;
 }
@@ -382,12 +439,22 @@
   background: var(--bg-card, #fff);
   transition: border-color 0.2s ease;
 }
+
 .opKpi:hover {
   border-color: color-mix(in srgb, var(--k) 45%, var(--border));
 }
-.opKpi--blue  { --k: #3b82f6; }
-.opKpi--amber { --k: #f59e0b; }
-.opKpi--green { --k: #10b981; }
+
+.opKpi--blue {
+  --k: #3b82f6;
+}
+
+.opKpi--amber {
+  --k: #f59e0b;
+}
+
+.opKpi--green {
+  --k: #10b981;
+}
 
 .opKpi__main {
   display: flex;
@@ -414,6 +481,7 @@
   background: color-mix(in srgb, var(--k) 14%, transparent);
   color: var(--k);
 }
+
 .opKpi__icon svg {
   width: 18px;
   height: 18px;
@@ -435,6 +503,7 @@
   white-space: nowrap;
   font-family: 'montserrat', sans-serif;
 }
+
 .opKpi__value small {
   font-size: 13px;
   font-weight: 500;
@@ -470,6 +539,7 @@
   .opKpis {
     grid-template-columns: 1fr;
   }
+
   .opKpi__value {
     font-size: 24px;
   }

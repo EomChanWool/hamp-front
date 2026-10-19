@@ -229,7 +229,7 @@ export function FoodLotManagePage() {
         .map((l) => ({
           id: l.lotCode,
           barcode: l.lotCode,
-          title: "식품 LOT",
+          title: l.lotCode,
           name: l.productionDate ? `생산일자 ${l.productionDate}` : undefined,
           qty: l.productionQty,
           qtyLabel: "생산수량",

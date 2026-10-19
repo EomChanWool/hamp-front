@@ -28,6 +28,12 @@ export interface ShipmentOrderCreateRequest {
     lines: ShipmentOrderLineRequest[];
 }
 
+/** 출고지시서 스캔 등록 요청 */
+export interface ShipmentOrderScanConfirmRequest {
+    shipId: string;
+    lotCodes: string[];
+}
+
 /** 출고지시서 라인 응답 */
 export interface ShipmentOrderLineResponse {
     shipOrderLineId: number;
@@ -36,6 +42,8 @@ export interface ShipmentOrderLineResponse {
     itemNm: string;
     unit: string;
     instructQty: number;
+    scannedQty: number;
+    remainingQty: number;
 }
 
 /** 출고지시서 단건 응답 (lines 포함) - 태블릿 스캔 SSE 결과도 이 형태 그대로 내려옴 */
@@ -159,6 +167,12 @@ export const ShipmentOrderApi = {
         const res = await apiClient.get<ShipmentOrderScanResponse>('/shipment-orders/scan', {
             params: { code, zone },
         });
+        return res.data;
+    },
+
+    /** 출고지시서 스캔 확정 등록 */
+    confirmScan: async (data: ShipmentOrderScanConfirmRequest): Promise<ApiResponseShipmentOrderResponse> => {
+        const res = await apiClient.post<ApiResponseShipmentOrderResponse>('/shipment-orders/scan/confirm', data);
         return res.data;
     },
 };

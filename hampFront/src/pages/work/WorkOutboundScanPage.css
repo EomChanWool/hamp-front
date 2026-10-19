@@ -272,6 +272,100 @@
   font-size: 14px;
 }
 
+/* 출고 품목 카드 목록 */
+.workOutboundLineList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 기본 품목 카드 */
+.workOutboundItemCard {
+  padding: 16px 18px;
+  border-radius: 13px;
+  background: #202535;
+  border: 1px solid #30394d;
+}
+
+/* 스캔 완료 카드 */
+.workOutboundItemCard--done {
+  background: #123127;
+  border-color: #24bd83;
+}
+
+/* 품목명 및 수량 */
+.workOutboundItemHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.workOutboundItemIdentity {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-width: 0;
+}
+
+.workOutboundItemName {
+  color: #f4f6fa;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.workOutboundItemCode {
+  color: #9aa6be;
+  font-size: 11px;
+}
+
+.workOutboundItemQuantity {
+  flex-shrink: 0;
+  color: #f4f6fa;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.workOutboundItemQuantity span {
+  color: #9aa6be;
+  font-weight: 400;
+}
+
+/* 진행률 바 */
+.workOutboundProgressTrack {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #343b4f;
+}
+
+.workOutboundProgressFill {
+  height: 100%;
+  border-radius: inherit;
+  background: #42d49a;
+  transition: width 250ms ease;
+}
+
+/* 상태 안내 */
+.workOutboundItemMessage {
+  margin-top: 10px;
+  color: #9aa6be;
+  font-size: 12px;
+}
+
+.workOutboundItemCard--done .workOutboundItemMessage {
+  color: #a9c9ba;
+}
+
+.workOutboundItemCard--done .workOutboundItemCode {
+  color: #9cb5aa;
+}
+
+
 /* ── 모바일/저해상도 대응 ───────────────────────── */
 @media (max-width: 480px) {
 
@@ -295,5 +389,21 @@
 
   .workOutboundLineQty strong {
     font-size: 18px;
+  }
+
+  .workOutboundItemCard {
+    padding: 14px;
+  }
+
+  .workOutboundItemHeader {
+    gap: 8px;
+  }
+
+  .workOutboundItemName {
+    font-size: 14px;
+  }
+
+  .workOutboundItemQuantity {
+    font-size: 12px;
   }
 }

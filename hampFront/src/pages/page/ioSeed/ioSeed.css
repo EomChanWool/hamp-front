@@ -956,6 +956,71 @@
     gap: 10px;
 }
 
+/* 지시수량 + 단위 정렬 */
+.shipment-qty-unit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    white-space: nowrap;
+}
+
+/* 지시수량 */
+.shipment-qty-value {
+    flex-shrink: 0;
+    text-align: right;
+}
+
+/* 단위 */
+.shipment-qty-unit-label {
+    display: inline-block;
+    width: 36px;
+    flex-shrink: 0;
+    text-align: left;
+    white-space: nowrap;
+    color: #6b7280;
+    font-size: 13px;
+}
+
+/* 수량 + 단위 정렬 */
+.seed-out-qty-unit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    white-space: nowrap;
+}
+
+/* 읽기 모드 수량 */
+.seed-out-qty-value {
+    flex-shrink: 0;
+    text-align: right;
+}
+
+/* 단위 */
+.seed-out-qty-unit-label {
+    display: inline-block;
+    width: 36px;
+    flex-shrink: 0;
+    text-align: left;
+    white-space: nowrap;
+    color: #6b7280;
+    font-size: 13px;
+}
+
+/* 수정 모드 입력창 */
+.seed-out-qty-input {
+    flex: 0 0 100px;
+    width: 100px;
+    min-width: 0;
+    box-sizing: border-box;
+    text-align: right;
+}
+
 /* ---------- 반응형 ---------- */
 @container content (max-width: 640px) {
     .seedOutSummary {

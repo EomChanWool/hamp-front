@@ -25,11 +25,29 @@ const isScanFailure = (data: unknown): data is ShipmentScanFailure =>
   !!data && typeof data === 'object' && (data as { status?: string }).status === 'NG';
 
 // SSE 성공 응답은 래퍼 없이 출고지시서 객체 자체로 내려오므로 최소한의 형태만 검증한다
-const parseShipmentOrder = (data: unknown): ShipmentOrderResponse | null => {
-  if (!data || typeof data !== 'object') return null;
+const parseShipmentOrder = (
+  payload: unknown,
+): ShipmentOrderResponse | null => {
+  if (!payload || typeof payload !== 'object') return null;
 
-  const order = data as Partial<ShipmentOrderResponse>;
-  if (typeof order.shipId !== 'string' || !Array.isArray(order.lines)) return null;
+  const response = payload as {
+    data?: unknown;
+    shipId?: unknown;
+    lines?: unknown;
+  };
+
+  const candidate =
+    response.data && typeof response.data === 'object'
+      ? response.data
+      : payload;
+
+  if (!candidate || typeof candidate !== 'object') return null;
+
+  const order = candidate as Partial<ShipmentOrderResponse>;
+
+  if (typeof order.shipId !== 'string' || !Array.isArray(order.lines)) {
+    return null;
+  }
 
   return order as ShipmentOrderResponse;
 };
@@ -260,21 +278,68 @@ export function WorkOutboundScanPage() {
                     <div className="workOutboundLinesEmpty">등록된 출고 품목이 없습니다.</div>
                   ) : (
                     <div className="workOutboundLineList">
-                      {shipmentOrder.lines.map((line, index) => (
-                        <div className="workOutboundLine" key={line.shipOrderLineId}>
-                          <span className="workOutboundLineNo">{index + 1}</span>
+                      {shipmentOrder.lines.map((line) => {
+                        const instructedQty = Math.max(0, Number(line.instructQty) || 0);
+                        const scannedQty = Math.max(0, Number(line.scannedQty) || 0);
+                        const remainingQty = Math.max(
+                          0,
+                          Number(
+                            line.remainingQty ??
+                            Math.max(0, instructedQty - scannedQty),
+                          ) || 0,
+                        );
 
-                          <div className="workOutboundLineInfo">
-                            <strong>{line.itemNm}</strong>
-                            <span>{line.itemCode}</span>
-                          </div>
+                        const progress = instructedQty > 0
+                          ? Math.min(100, (scannedQty / instructedQty) * 100)
+                          : 0;
 
-                          <div className="workOutboundLineQty">
-                            <strong>{Number(line.instructQty).toLocaleString()}</strong>
-                            <span>{line.unit}</span>
+                        const isDone = remainingQty <= 0 && instructedQty > 0;
+
+                        return (
+                          <div
+                            className={`workOutboundItemCard ${isDone ? 'workOutboundItemCard--done' : ''
+                              }`}
+                            key={line.shipOrderLineId}
+                          >
+                            <div className="workOutboundItemHeader">
+                              <div className="workOutboundItemIdentity">
+                                <strong className="workOutboundItemName">
+                                  {line.itemNm}
+                                </strong>
+
+                                <span className="workOutboundItemCode">
+                                  {line.itemCode} · {line.unit}
+                                </span>
+                              </div>
+
+                              <div className="workOutboundItemQuantity">
+                                {scannedQty.toLocaleString()} <span>/ </span>
+                                {instructedQty.toLocaleString()}{line.unit}
+                              </div>
+                            </div>
+
+                            <div
+                              className="workOutboundProgressTrack"
+                              role="progressbar"
+                              aria-label={`${line.itemNm} 출고 스캔 진행률`}
+                              aria-valuemin={0}
+                              aria-valuemax={100}
+                              aria-valuenow={progress}
+                            >
+                              <div
+                                className="workOutboundProgressFill"
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+
+                            <div className="workOutboundItemMessage">
+                              {isDone
+                                ? '스캔 완료'
+                                : `잔여 ${remainingQty.toLocaleString()}${line.unit} 더 스캔 필요`}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
