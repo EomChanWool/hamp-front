@@ -1,0 +1,165 @@
+/* =========================================================
+   출고지시서 전용 스타일
+
+   공통(툴바/미리보기/A4/print)은 WorkOrderPrintModal.css 를 재사용하고,
+   여기에는 출고지시서에만 필요한 것만 둔다.
+========================================================= */
+
+/* ---------------------------------------------------------
+   [상세 페이지] 제목 옆 "출고지시서 인쇄" 버튼
+   (설비 상세의 barcodeActionBtn 위치/느낌과 동일)
+   → 원하면 Food.css 로 옮겨도 됨
+--------------------------------------------------------- */
+
+.shipment-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.shipment-print-btn {
+    appearance: none;
+    padding: 6px 12px;
+    border: 1px solid #166534;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #166534;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.shipment-print-btn:hover:not(:disabled),
+.shipment-print-btn:focus-visible:not(:disabled) {
+    background: #166534;
+    color: #ffffff;
+}
+
+.shipment-print-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------
+   [출고지시서 양식]
+--------------------------------------------------------- */
+
+/* 헤더 우측 바코드 */
+.ship-header-barcode {
+    margin-top: 4px;
+    line-height: 0;
+}
+
+.ship-header-barcode svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+/* 출고 정보 표: th/td 폭 고정 (4열) */
+.ship-info-table {
+    table-layout: fixed;
+}
+
+.ship-info-table th {
+    width: 17%;
+}
+
+.ship-info-table td {
+    width: 33%;
+}
+
+/* 라인 표 */
+.ship-line-table {
+    table-layout: fixed;
+}
+
+.ship-line-table th {
+    text-align: center;
+}
+
+.ship-line-table th,
+.ship-line-table td {
+    padding: 3px 5px;
+}
+
+.ship-line-table .col-no {
+    width: 34px;
+}
+
+.ship-line-table .col-id {
+    width: 80px;
+}
+
+.ship-line-table .col-qty {
+    width: 80px;
+}
+
+.ship-line-table .col-check {
+    width: 60px;
+}
+
+.ship-line-table .item-name {
+    color: #0f172a;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.ship-line-table .item-code {
+    margin-left: 4px;
+    color: #64748b;
+    font-size: 8px;
+    font-weight: 400;
+    font-family: "Courier New", monospace;
+}
+
+.ship-line-table .qty {
+    color: #166534;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.ship-line-table .print-checkbox {
+    width: 12px;
+    height: 12px;
+    vertical-align: middle;
+}
+
+/* 합계 행 */
+.work-order-print-root .ship-line-table .ship-total-row td {
+    background: #f8fafc;
+    color: #0f172a;
+    font-weight: 700;
+}
+
+/* 많은 라인(20개 이상)일 때 행 높이 한 단계 더 압축 */
+.work-order-print-sheet.is-dense .ship-line-table th,
+.work-order-print-sheet.is-dense .ship-line-table td {
+    padding: 2px 5px;
+}
+
+/* ---------------------------------------------------------
+   [PRINT]
+--------------------------------------------------------- */
+@media print {
+
+    /* 행 단위 분할 허용, 행 중간 잘림 방지 */
+    .work-order-print-pages .ship-line-table tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    /* 합계 행은 표 맨 아래에 한 번만 */
+    .work-order-print-pages .ship-line-table tfoot {
+        display: table-footer-group !important;
+    }
+
+    .work-order-print-pages .ship-header-barcode svg {
+        display: block !important;
+        max-width: 100% !important;
+        height: auto !important;
+    }
+}

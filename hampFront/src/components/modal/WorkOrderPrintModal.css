@@ -1,5 +1,11 @@
 /* =========================================================
-   작업지시서 인쇄 모달
+   작업지시서 / 출고지시서 공용 인쇄 모달 CSS
+
+   [중요] 출고지시서(ShipmentOrderPrintModal)도 이 파일의
+   .work-order-print-* 클래스를 그대로 재사용한다.
+   → print 규칙은 id(#work-order-print-root) 대신
+     class(.work-order-print-root) 기준으로 변경했다.
+   (나중에 시간 되면 파일명을 print-common.css 로 바꾸는 걸 추천)
 ========================================================= */
 
 .work-order-print-root {
@@ -40,23 +46,16 @@
 
 .work-order-print-toolbar {
     flex: 0 0 auto;
-
     width: 100%;
     box-sizing: border-box;
-
     padding: 14px 18px;
-
     background: #ffffff;
-
     border: 1px solid #dbe3ec;
     border-bottom: 0;
-
     border-radius: 10px 10px 0 0;
-
     display: flex;
     justify-content: space-between;
     align-items: center;
-
     gap: 16px;
 }
 
@@ -66,44 +65,32 @@
 
 .work-order-print-toolbar-info h2 {
     margin: 0;
-
     color: #334155;
-
     font-size: 16px;
     font-weight: 700;
 }
 
 .work-order-print-toolbar-info p {
     margin: 3px 0 0;
-
     color: #64748b;
-
     font-size: 11px;
 }
 
 .work-order-print-toolbar-actions {
     display: flex;
-
     flex-shrink: 0;
-
     gap: 7px;
 }
 
 .work-order-print-root .work-order-print-toolbar-actions button {
     appearance: none;
-
     padding: 8px 14px;
-
     border-radius: 6px;
-
     font-size: 12px;
     font-weight: 600;
-
     cursor: pointer;
-
     box-shadow: none;
     filter: none;
-
     transition: background-color 0.12s ease, border-color 0.12s ease;
 }
 
@@ -143,7 +130,6 @@
     background: #052e16;
 }
 
-
 /* =========================================================
    Preview Scroll
 ========================================================= */
@@ -160,6 +146,11 @@
 
 /* =========================================================
    A4
+
+   [변경] padding 16mm → 7mm
+   인쇄 시 @page margin(7mm) 과 동일하게 맞춰서
+   "미리보기 = 실제 인쇄 결과" 가 되도록 함.
+   (미리보기가 더 여유로워서 인쇄하면 장수가 달라지던 문제 방지)
 ========================================================= */
 
 .work-order-print-sheet {
@@ -168,7 +159,7 @@
     min-height: 297mm;
     box-sizing: border-box;
     margin: 0 auto;
-    padding: 16mm;
+    padding: 7mm;
     background: #ffffff;
     border: 1px solid #cbd5e1;
     border-radius: 4px;
@@ -177,74 +168,55 @@
 }
 
 /* =========================================================
-   Header
+   Header (압축: 여백/글자 축소)
 ========================================================= */
 
 .work-order-print-header {
     display: flex;
-
     justify-content: space-between;
     align-items: flex-start;
-
-    padding-bottom: 14px;
-    margin-bottom: 20px;
-
+    padding-bottom: 8px;
+    margin-bottom: 10px;
     border-bottom: 2px solid #166534;
 }
 
 .work-order-print-department {
     display: inline-block;
-
-    padding: 4px 9px;
-
+    padding: 3px 8px;
     background: #f0fdf4;
-
     border: 1px solid #bbf7d0;
     border-radius: 999px;
-
     color: #166534;
-
     font-size: 10px;
     font-weight: 700;
-
     letter-spacing: 0.08em;
 }
 
 .work-order-print-header h1 {
-    margin: 8px 0 0;
-
+    margin: 5px 0 0;
     color: #0f172a;
-
-    font-size: 25px;
+    font-size: 22px;
     font-weight: 800;
-
-    letter-spacing: 0.16em;
+    letter-spacing: 0.14em;
 }
 
 .work-order-print-header p {
-    margin: 4px 0 0;
-
+    margin: 2px 0 0;
     color: #64748b;
-
     font-size: 9px;
 }
 
 .work-order-print-header-right {
     display: flex;
     flex-direction: column;
-
     align-items: flex-end;
 }
 
 .work-order-print-meta {
-    margin-top: 7px;
-
+    margin-top: 4px;
     color: #475569;
-
     font-size: 9px;
-
-    line-height: 1.7;
-
+    line-height: 1.6;
     text-align: right;
 }
 
@@ -253,31 +225,24 @@
 ========================================================= */
 
 .work-order-print-section {
-    margin-bottom: 18px;
+    margin-bottom: 10px;
 }
 
 .work-order-print-section-title {
     display: flex;
     align-items: center;
-
-    gap: 7px;
-
-    margin: 0 0 7px;
-
+    gap: 6px;
+    margin: 0 0 5px;
     color: #334155;
-
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
 }
 
 .work-order-print-section-title>span {
     width: 5px;
-    height: 14px;
-
+    height: 12px;
     display: inline-block;
-
     background: #166534;
-
     border-radius: 3px;
 }
 
@@ -287,34 +252,26 @@
 
 .work-order-print-table {
     width: 100%;
-
     border-collapse: collapse;
-
     font-size: 9px;
 }
 
 .work-order-print-table th,
 .work-order-print-table td {
-    padding: 7px 8px;
-
+    padding: 4px 6px;
     border: 1px solid #cbd5e1;
-
     vertical-align: middle;
 }
 
 .work-order-print-table th {
     background: #f8fafc;
-
     color: #475569;
-
     font-weight: 600;
-
     text-align: left;
 }
 
 .work-order-print-table td {
     background: #ffffff;
-
     color: #334155;
 }
 
@@ -336,55 +293,67 @@
 }
 
 .work-order-print-table .mono {
-    font-family:
-        ui-monospace,
-        SFMono-Regular,
-        Menlo,
-        monospace;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .text-center {
     text-align: center !important;
 }
 
+/* 작업지시 정보 표 (8열 1행) */
+.info-table th {
+    width: 1%;
+    white-space: nowrap;
+}
+
 /* =========================================================
-   Line
+   Line (품목 표 - 바코드/공정순서 포함)
 ========================================================= */
+
+.line-table {
+    table-layout: fixed;
+}
+
+.line-table th {
+    text-align: center;
+}
 
 .line-table th,
 .line-table td {
-    padding: 6px 5px;
+    padding: 3px 5px;
 }
 
 .line-table .col-no {
     width: 35px;
-    text-align: center;
 }
 
 .line-table .col-bp {
-    width: 200px;
-    text-align: center;
+    width: 22%;
 }
 
-.line-table .col-item-code {
-    width: 250px;
-    text-align: center;
-}
-
+/* 품명 컬럼은 남는 폭 전부 사용 */
 .line-table .col-qty {
-    width: 70px;
-
-    text-align: center;
+    width: 62px;
 }
 
-.line-table .item-name {
+.line-table .col-due {
+    width: 85px;
+}
+
+.line-table .col-barcode {
+    width: 230px;
+}
+
+.line-table .item-name,
+.line-table .bp-name {
     color: #0f172a;
-
     font-weight: 600;
+    overflow-wrap: anywhere;
 }
 
-.line-table .item-code {
-    margin-left: 6px;
+.line-table .item-code,
+.line-table .bp-code {
+    margin-left: 4px;
     color: #64748b;
     font-size: 8px;
     font-weight: 400;
@@ -393,216 +362,121 @@
 
 .line-table .qty {
     color: #166534;
-
-    font-size: 16px;
+    font-size: 13px;
     font-weight: 700;
-
     text-align: center;
 }
 
-.line-table .dueDate {
-    width: 35px;
+/* 바코드 셀: 표 안으로 들어왔기 때문에 가운데 정렬 */
+.line-table .barcode-cell {
+    padding: 3px 4px;
     text-align: center;
+    line-height: 0;
 }
 
-.bp-name {
-    color: #0f172a;
-
-    font-weight: 600;
-
-}
-
-.bp-code {
-    margin-left: 6px;
-    color: #64748b;
-    font-size: 8px;
-    font-weight: 400;
-    font-family: "Courier New", monospace;
-}
-
-.order-line {
-    margin-top: 2px;
-
-    color: #64748b;
-
-    font-size: 8px;
-}
-
-.empty-row {
-    height: 60px;
-
-    color: #94a3b8 !important;
-
-    text-align: center;
-}
-
-/* =========================================================
-   품목별 정보 + 바코드
-========================================================= */
-
-.work-order-item-list {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
-.work-order-item-block {
-    box-sizing: border-box;
-
-    padding: 9px 10px;
-
-    border: 1px solid #cbd5e1;
-    border-radius: 5px;
-
-    background: #ffffff;
-
-    break-inside: avoid;
-    page-break-inside: avoid;
-}
-
-.work-order-item-barcode {
-    display: flex;
-
-    justify-content: center;
-    align-items: center;
-
-    min-height: 60px;
-
-    padding-top: 8px;
-}
-
-.work-order-item-barcode svg {
-    display: block;
-
+.line-table .barcode-cell svg {
+    display: inline-block;
     max-width: 100%;
     height: auto;
 }
 
-/* 공정순서 인쇄 영역 */
-.work-order-print-routing {
-    width: 100%;
-    margin: 12px auto 4px;
-    padding: 10px 12px;
-    box-sizing: border-box;
-    border: 1px solid #d5dfeb;
-    border-radius: 5px;
-    background: #fff;
-    color: #243449;
-    font-size: 11px;
-    line-height: 1.45;
-    page-break-inside: avoid;
-    break-inside: avoid;
+.empty-row {
+    height: 40px;
+    color: #94a3b8 !important;
+    text-align: center;
 }
 
-.work-order-print-routing h4 {
+/* 품목 1개(tbody) 가 페이지 중간에서 잘리지 않도록 */
+.line-group {
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.line-group tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+/* =========================================================
+   공정순서 (가로 칩, 줄바꿈)
+========================================================= */
+
+.line-table .routing-row td {
+    padding: 3px 5px 4px;
+    background: #fbfdfc;
+}
+
+.work-order-print-routing {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
-    margin: 0 0 8px;
-    padding: 0 0 6px;
-    border-bottom: 1px solid #dce5ed;
+    gap: 3px 4px;
+    color: #243449;
+    font-size: 9px;
+    line-height: 1.3;
+}
+
+.work-order-print-routing-label {
+    margin-right: 2px;
     color: #176b3a;
-    font-size: 13px;
+    font-size: 9px;
     font-weight: 700;
 }
 
 .work-order-print-routing-step {
-    display: grid;
-    grid-template-columns: 24px minmax(0, 1fr);
-    align-items: start;
-    gap: 7px;
-    padding: 5px 2px;
-    border-bottom: 1px solid #edf1f5;
-    overflow-wrap: anywhere;
-    break-inside: avoid;
-}
-
-.work-order-print-routing-step:last-child {
-    border-bottom: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1px 5px 1px 2px;
+    border: 1px solid #d5dfeb;
+    border-radius: 4px;
+    background: #ffffff;
 }
 
 .work-order-print-routing-step>strong {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 24px;
-    min-height: 24px;
-    box-sizing: border-box;
-    border-radius: 4px;
+    min-width: 16px;
+    height: 14px;
+    border-radius: 3px;
     background: #e8f3eb;
     color: #176b3a;
-    font-size: 10px;
+    font-size: 8px;
 }
 
-.work-order-print-routing-step>span {
-    min-width: 0;
-}
-
-@media print {
-    .work-order-print-routing {
-        margin-top: 8px;
-        padding: 8px 10px;
-        box-shadow: none;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    .work-order-print-routing-step {
-        break-inside: avoid;
-        page-break-inside: avoid;
-    }
-}
-
-/* 공정 정보 + 뱃지 */
-.work-order-print-routing-step-info {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 5px;
-    min-width: 0;
-    width: 100%;
-}
-
-/* 공정명 */
 .work-order-print-routing-step-name {
-    font-size: 11px;
-    font-weight: 600;
     color: #243449;
-    flex-shrink: 0;
-}
-
-/* 공정코드 및 설비 */
-.work-order-print-routing-step-detail {
     font-size: 9px;
-    color: #68788c;
-    overflow-wrap: anywhere;
-    min-width: 0;
+    font-weight: 600;
 }
 
-/* 뱃지 공통 */
-.work-order-print-routing-step-info .badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
+.work-order-print-routing-step-detail {
+    color: #68788c;
+    font-size: 8px;
+}
 
-    min-width: 68px;
-    height: 24px;
-    padding: 0 10px;
-    box-sizing: border-box;
+/* 일반/최종 태그 (Badge 대체, 인쇄용 경량 버전) */
+.work-order-print-routing-tag {
+    padding: 0 4px;
+    border-radius: 999px;
+    font-size: 7.5px;
+    font-weight: 700;
+    line-height: 12px;
+}
 
-    border-radius: 9999px;
-    font-size: 12.5px;
-    font-weight: 600;
-    line-height: 1;
-    white-space: nowrap;
+.work-order-print-routing-tag.is-normal {
+    background: #dcfce7;
+    color: #166534;
+}
 
-    margin-left: auto;
-    flex-shrink: 0;
+.work-order-print-routing-tag.is-final {
+    background: #dbeafe;
+    color: #1d4ed8;
 }
 
 /* =========================================================
-   Checklist
+   Checklist (현재 미사용 - 필요 시 재사용)
 ========================================================= */
 
 .checklist-table .col-check-no {
@@ -619,100 +493,76 @@
 
 .print-checkbox {
     display: inline-block;
-
     width: 14px;
     height: 14px;
-
     border: 1px solid #94a3b8;
 }
 
 /* =========================================================
-   Notice
+   Notice (압축)
 ========================================================= */
 
 .work-order-print-notice {
     box-sizing: border-box;
-
-    margin-bottom: 18px;
-
-    padding: 10px 12px;
-
+    margin-bottom: 10px;
+    padding: 6px 10px;
     background: #fffbeb;
-
     border: 1px solid #fcd34d;
     border-radius: 6px;
-
     color: #92400e;
-
     font-size: 9px;
 }
 
 .work-order-print-notice strong {
     display: block;
-
-    margin-bottom: 5px;
+    margin-bottom: 2px;
 }
 
 .work-order-print-notice-body {
     color: #a16207;
-
-    line-height: 1.7;
+    line-height: 1.5;
 }
 
 /* =========================================================
-   Signature
+   Signature (압축)
 ========================================================= */
 
 .work-order-print-sign-area {
     display: grid;
-
     grid-template-columns: repeat(3, 1fr);
-
     gap: 8px;
-
-    padding-top: 12px;
-
+    padding-top: 8px;
     border-top: 1px solid #cbd5e1;
 }
 
 .work-order-sign-box {
-    min-height: 65px;
-
-    padding: 8px;
-
+    min-height: 46px;
+    padding: 6px 8px;
     background: #f8fafc;
-
     border: 1px solid #cbd5e1;
     border-radius: 4px;
 }
 
 .work-order-sign-title {
-    margin-bottom: 22px;
-
+    margin-bottom: 12px;
     color: #475569;
-
     font-size: 9px;
     font-weight: 700;
-
     text-align: center;
 }
 
 .work-order-sign-row {
     display: flex;
-
     justify-content: space-between;
     align-items: center;
-
     padding: 0 7px;
-
     font-size: 8px;
 }
 
 .signature-space {
     display: inline-block;
-
     width: 60px;
-    height: 15px;
+    height: 12px;
 }
 
 /* =========================================================
@@ -720,13 +570,39 @@
 ========================================================= */
 
 .work-order-print-footer {
-    margin-top: 12px;
-
+    margin-top: 8px;
     color: #94a3b8;
-
     font-size: 7px;
-
     text-align: center;
+}
+
+/* =========================================================
+   Dense (품목 6개 이상일 때 한 단계 더 압축)
+========================================================= */
+
+.work-order-print-sheet.is-dense .work-order-print-header h1 {
+    font-size: 19px;
+}
+
+.work-order-print-sheet.is-dense .work-order-print-section {
+    margin-bottom: 7px;
+}
+
+.work-order-print-sheet.is-dense .line-table th,
+.work-order-print-sheet.is-dense .line-table td {
+    padding: 2px 4px;
+}
+
+.work-order-print-sheet.is-dense .line-table .qty {
+    font-size: 11px;
+}
+
+.work-order-print-sheet.is-dense .work-order-sign-box {
+    min-height: 38px;
+}
+
+.work-order-print-sheet.is-dense .work-order-sign-title {
+    margin-bottom: 8px;
 }
 
 /* =========================================================
@@ -740,7 +616,6 @@
 
     .work-order-print-toolbar {
         align-items: flex-start;
-
         flex-direction: column;
     }
 
@@ -756,10 +631,6 @@
         padding: 16px 8px 30px;
     }
 
-    /*
-     * A4 원본 크기는 유지.
-     * 화면이 좁으면 가로 스크롤.
-     */
     .work-order-print-sheet {
         width: 100%;
         max-width: 210mm;
@@ -775,9 +646,10 @@
 }
 
 /*
- * [변경] 전역 @page { size: A4 } 를 "이름 있는 @page" 로 변경.
- * 전역 @page 는 라벨 인쇄에까지 A4/7mm 여백을 강제하던 원인.
- * 아래 print 블록의 .work-order-print-sheet 에서 page: work-order 로 적용한다.
+ * 이름 있는 @page.
+ * 전역 @page 로 두면 라벨 인쇄(지브라 100x100)까지 A4/7mm 가 강제되므로
+ * .work-order-print-sheet 에서만 page: work-order 로 적용한다.
+ * (출고지시서도 같은 sheet 클래스를 쓰므로 자동 적용)
  */
 @page work-order {
     size: A4;
@@ -786,185 +658,111 @@
 
 @media print {
 
-    /* =====================================================
-     BODY
-  ===================================================== */
-
     html,
     body {
         margin: 0 !important;
         padding: 0 !important;
-
         width: 100% !important;
         height: auto !important;
-
         background: #ffffff !important;
     }
 
     /* =====================================================
-     기존 화면 UI 전부 숨김
-     라벨 인쇄 root(#label-print-root)는 예외 처리.
-     (이 규칙이 라벨 모달까지 숨겨서 흰 화면이 나오던 원인)
-  ===================================================== */
+       기존 화면 UI 전부 숨김
+       [변경] id → class 기준으로 바꿔서
+       작업지시서 / 출고지시서 root 둘 다 예외 처리됨.
+       라벨 인쇄 root(#label-print-root)도 기존대로 예외.
+    ===================================================== */
 
-    body>*:not(#work-order-print-root):not(#label-print-root) {
+    body>*:not(.work-order-print-root):not(#label-print-root) {
         display: none !important;
     }
 
-    /* =====================================================
-     ROOT
-  ===================================================== */
-
-    #work-order-print-root {
+    /* ROOT */
+    .work-order-print-root {
         display: block !important;
-
         position: static !important;
-
         width: 100% !important;
         height: auto !important;
-
         margin: 0 !important;
         padding: 0 !important;
-
         background: #ffffff !important;
     }
 
-    /* =====================================================
-     화면용 모달 제거
-  ===================================================== */
-
+    /* 화면용 모달 제거 */
     .work-order-print-modal {
         display: none !important;
     }
 
-    /* =====================================================
-     인쇄용 문서
-  ===================================================== */
-
+    /* 인쇄용 문서 */
     .work-order-print-pages {
         display: block !important;
-
         position: static !important;
-
         width: 100% !important;
         height: auto !important;
-
         margin: 0 !important;
         padding: 0 !important;
-
         background: #ffffff !important;
-
         overflow: visible !important;
     }
 
-    /* =====================================================
-     인쇄용 SHEET
-  ===================================================== */
-
+    /* 인쇄용 SHEET */
     .work-order-print-pages .work-order-print-sheet {
         page: work-order;
-        /* 위에서 정의한 A4 용지 설정 적용 */
-
         display: block !important;
-
         position: static !important;
-
         width: 100% !important;
         height: auto !important;
         min-height: 0 !important;
-
         margin: 0 !important;
         padding: 0 !important;
-
         box-sizing: border-box !important;
-
         background: #ffffff !important;
-
         border: 0 !important;
         border-radius: 0 !important;
-
         box-shadow: none !important;
-
         color: #000000 !important;
-
         visibility: visible !important;
-
         opacity: 1 !important;
-
         page-break-after: always;
         break-after: page;
     }
 
-    /* =====================================================
-     마지막 페이지
-  ===================================================== */
-
+    /* 마지막 sheet 뒤에는 빈 페이지가 생기지 않도록 */
     .work-order-print-pages .work-order-print-sheet:last-child {
         page-break-after: auto;
         break-after: auto;
     }
 
-    /* =====================================================
-     내부 요소 강제 표시
-  ===================================================== */
-
+    /* 내부 요소 강제 표시 */
     .work-order-print-pages .work-order-print-sheet * {
         visibility: visible !important;
         opacity: 1 !important;
     }
 
-    /* =====================================================
-     Header
-  ===================================================== */
-
-    .work-order-print-pages .work-order-print-header {
+    .work-order-print-pages .work-order-print-header,
+    .work-order-print-pages .work-order-print-sign-area {
         display: flex !important;
     }
-
-    /* =====================================================
-     Section
-  ===================================================== */
-
-    .work-order-print-pages .work-order-print-section {
-        display: block !important;
-    }
-
-    /* =====================================================
-     Notice
-  ===================================================== */
-
-    .work-order-print-pages .work-order-print-notice {
-        display: block !important;
-    }
-
-    /* =====================================================
-     Signature
-  ===================================================== */
 
     .work-order-print-pages .work-order-print-sign-area {
         display: grid !important;
     }
 
-    /* =====================================================
-     Footer
-  ===================================================== */
-
+    .work-order-print-pages .work-order-print-section,
+    .work-order-print-pages .work-order-print-notice,
     .work-order-print-pages .work-order-print-footer {
         display: block !important;
     }
 
-    /* =====================================================
-     Table
-  ===================================================== */
-
+    /* Table */
     .work-order-print-pages .work-order-print-table {
         display: table !important;
-
         width: 100% !important;
     }
 
     .work-order-print-pages .work-order-print-table thead {
-        display: table-header-group !important;
+        display: table-header-group !important; /* 페이지 넘어가면 헤더 반복 */
     }
 
     .work-order-print-pages .work-order-print-table tbody {
@@ -980,60 +778,28 @@
         display: table-cell !important;
     }
 
-    /* =====================================================
-     페이지 내부 분할 방지
-  ===================================================== */
+    /* 바코드 SVG */
+    .work-order-print-pages .line-table .barcode-cell svg {
+        display: inline-block !important;
+        max-width: 100% !important;
+        height: auto !important;
+    }
 
+    /* 페이지 내부 분할 방지 */
     .work-order-print-pages .work-order-print-header,
-    .work-order-print-pages .work-order-item-block,
     .work-order-print-pages .work-order-print-notice,
-    .work-order-print-pages .work-order-print-sign-area {
+    .work-order-print-pages .work-order-print-sign-area,
+    .work-order-print-pages .line-group,
+    .work-order-print-pages .line-group tr {
         break-inside: avoid;
         page-break-inside: avoid;
     }
 
-    /* =====================================================
-   품목별 바코드
-===================================================== */
-
-    .work-order-print-pages .work-order-item-list {
-        display: flex !important;
-
-        flex-direction: column !important;
-
-        gap: 14px !important;
-    }
-
-    .work-order-print-pages .work-order-item-block {
-        display: block !important;
-
-        box-sizing: border-box !important;
-
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-    }
-
-    .work-order-print-pages .work-order-item-barcode {
-        display: flex !important;
-
-        justify-content: center !important;
-        align-items: center !important;
-
-        min-height: 60px !important;
-
-        padding-top: 8px !important;
-
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
-
-    .work-order-print-pages .work-order-item-barcode svg {
-        display: block !important;
-
-        visibility: visible !important;
-        opacity: 1 !important;
-
-        max-width: 100% !important;
-        height: auto !important;
+    /* 공정순서 칩: 색 유지 */
+    .work-order-print-pages .work-order-print-routing,
+    .work-order-print-pages .work-order-print-routing-step,
+    .work-order-print-pages .work-order-print-routing-tag {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 }

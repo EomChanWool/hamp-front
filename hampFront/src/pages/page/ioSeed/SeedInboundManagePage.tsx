@@ -15,7 +15,7 @@ import {
 } from "@/api/ioSeed/SeedGoodsReceipt";
 import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
 import { ReportModal } from "@/components/modal/ReportModal";
-import { LabelPrintModal, type WorkOrderLineDetail } from "@/components/modal/LabelPrintModal";
+import { LabelPrintModal, type LabelItem } from "@/components/modal/LabelPrintModal";
 import "@/pages/page/ioSeed/ioSeed.css";
 
 // 백엔드 reportStatus 값: '미신고' / '부분신고' / '신고완료'
@@ -851,19 +851,18 @@ export function SeedInboundManagePage() {
     return receipts;
   }, [isCreatingNewRow, receipts]);
 
-  const selectedLabelLines: WorkOrderLineDetail[] = useMemo(() => {
+  const selectedLabelItems: LabelItem[] = useMemo(() => {
     return receipts
       .filter((r) => selectedReceiptIds.includes(r.receiptId))
-      .map((r, idx) => ({
+      .map((r) => ({
         id: String(r.receiptId),
-        salesOrderLineId: 0,
-        orderCode: r.itemCode,
-        lineId: `#${idx + 1}`,
-        itemCode: r.itemCode,
-        itemNm: r.itemNm || "",
-        unit: r.unit || "",
-        instructQty: r.goodQty || r.receiptQty,
         barcode: r.barcode || String(r.receiptId),
+        title: "씨드 입고",
+        name: r.itemNm || "",
+        code: r.itemCode,
+        qty: r.goodQty || r.receiptQty,
+        qtyLabel: "양품수량",
+        unit: r.unit || "",
       }));
   }, [receipts, selectedReceiptIds]);
 
@@ -916,8 +915,7 @@ export function SeedInboundManagePage() {
       <LabelPrintModal
         isOpen={isLabelModalOpen}
         onClose={() => setIsLabelModalOpen(false)}
-        selectedLines={selectedLabelLines}
-        workOrderNo="SEED-BARCODE"
+        items={selectedLabelItems}
       />
     </section>
   );

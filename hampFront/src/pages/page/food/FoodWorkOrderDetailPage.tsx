@@ -9,11 +9,9 @@ import Spinner from "@/components/common/Spinner";
 import { WorkOrderApi, type WorkOrderRoutingStepResponse } from "@/api/WorkOrder";
 import { UserApi, type UserOptionResponse } from "@/api/User";
 import { type SalesOrderStatusLineResponse } from "@/api/sales/SalesOrder";
-
 import { SalesOrderModal } from "@/components/modal/SalesOrderModal";
-import { type WorkOrderLineDetail, type WorkOrderMaster } from "@/components/modal/LabelPrintModal";
 import '@/pages/page/food/Food.css';
-import { WorkOrderPrintModal } from "@/components/modal/WorkOrderPrintModal";
+import { WorkOrderPrintModal, type WorkOrderLineDetail, type WorkOrderMaster } from "@/components/modal/WorkOrderPrintModal";
 
 // ==========================================
 // 공정순서도 (세로 타임라인) 컴포넌트

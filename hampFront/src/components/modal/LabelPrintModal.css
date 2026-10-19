@@ -3,64 +3,44 @@
 
    [규격] 지브라 라벨 100mm x 100mm  (가로 x 세로)
 
-   1) @page label 에 실제 라벨 크기(100mm 100mm) + margin 0 지정
-      → margin 이 0 이면 크롬이 머리글/바닥글을 그릴 자리가 없어 대부분 사라짐
-   2) 인쇄 시 그리드를 풀고 "카드 1개 = 페이지 1장"
-   3) 카드 높이를 라벨보다 0.5mm 작게 잡아 빈 페이지가 한 장 더 나오는 것을 방지
-   4) 카드 안 내용은 높이를 고정하고 넘치면 잘리게 해서 쪽 분리를 원천 차단
+   - @page label 에 라벨 크기 + margin 0 → 크롬 머리글/바닥글이 그려질 자리가 없어짐
+   - 인쇄 시 그리드를 풀고 "카드 1개 = 페이지 1장"
+   - 카드 높이를 라벨보다 0.5mm 작게 잡아 빈 페이지 방지
+   - 카드 내용은 높이 고정 + overflow hidden 으로 쪽 분리 차단
 
-   ──────────────────────────────────────────────────────────────────────────
-   [현장에서 확인하는 순서]
-   ──────────────────────────────────────────────────────────────────────────
-   STEP 1. 라벨 실측 규격 확인 (100 x 100 이 맞는지)
-   STEP 2. 규격이 다르면 아래 두 곳을 "같은 값"으로 수정
-           (a) :root 의 --label-w / --label-h
-           (b) @page label { size: 가로 세로; }   ※ @page 안에서는 var() 불가
-   STEP 3. Zebra 드라이버(프린터 기본 설정)의 용지 크기도 100 x 100 으로 설정
-   STEP 4. 크롬 인쇄창
-           - 여백: "없음"
-           - 배율: "100%"
-           - "머리글 및 바닥글": 반드시 체크 해제  ★ 날짜/프로젝트명/쪽수 제거
-           - 용지 크기: 100 x 100 (드라이버 용지)
-   STEP 5. 한 장 시험 출력 후 아래 표대로 숫자만 조정
+   [규격이 다를 때] 아래 두 곳을 "같은 값"으로 수정
+     (a) :root 의 --label-w / --label-h
+     (b) @page label { size: 가로 세로; }   ※ @page 안에서는 var() 불가
+     + Zebra 드라이버 용지 크기도 동일하게
+
+   [크롬 인쇄창] 여백 "없음" / 배율 100% / "머리글 및 바닥글" 체크 해제
 
    [증상별 조정표]
-   - 여전히 2장으로 나뉨          → 드라이버 용지가 100x100 인지 먼저 확인.
-                                    그래도 같으면 --label-barcode-h, 글자 크기, --label-pad-y 줄이기
-   - 라벨 아래쪽이 잘림           → 바코드 높이(--label-barcode-h)를 가장 먼저 줄임
-   - 내용이 위쪽에 몰림           → --label-pad-y 를 키우거나 바코드 높이를 키움
-   - 좌우가 잘림 / 치우침         → --label-pad-x 조정, 드라이버 용지 가로 확인
-   - 빈 라벨이 한 장 더 나옴      → 카드 높이 보정값(0.5mm)을 1mm 로 키움
-   - 바코드가 안 읽힘             → TSX 의 Barcode width={1.6} 값을 키우면 막대가 굵어짐
-   - 머리글/바닥글이 그대로 나옴  → 크롬 인쇄창 "머리글 및 바닥글" 체크 해제 (CSS 로 완전 차단 불가)
-   - 인쇄물이 작게/크게 나옴      → 크롬 배율 100%, 드라이버 배율 확인
+   - 2장으로 나뉨            → 드라이버 용지 100x100 확인 → --label-barcode-h, 글자 크기, --label-pad-y 줄이기
+   - 아래쪽이 잘림           → --label-barcode-h 를 가장 먼저 줄임
+   - 내용이 위쪽에 몰림      → --label-pad-y 또는 --label-barcode-h 키움
+   - 좌우 잘림/치우침        → --label-pad-x, 드라이버 용지 가로 확인
+   - 빈 라벨이 1장 더 나옴   → 카드 높이 보정값(0.5mm)을 1mm 로
+   - 바코드가 안 읽힘        → TSX 의 Barcode width 값을 키움
+   - 머리글/바닥글이 나옴    → 크롬 인쇄창에서 체크 해제 (CSS 로 완전 차단 불가)
    ========================================================================== */
 
 
 /* ==========================================
    [인쇄 크기 설정값]  ★ 여기만 바꾸면 대부분 해결 ★
-   (화면 미리보기에는 영향 없음, 인쇄할 때만 사용)
    ========================================== */
 :root {
-  /* 라벨 실측 규격 (100 x 100) */
   --label-w: 100mm;
-  /* 라벨 가로 */
   --label-h: 100mm;
-  /* 라벨 세로 */
 
-  /* 라벨 안쪽 여백 (프린터가 가장자리를 못 찍으면 키움) */
+  /* 라벨 안쪽 여백 */
   --label-pad-x: 5mm;
-  /* 좌우 */
   --label-pad-y: 5mm;
-  /* 상하 */
 
   /* 글자 크기 */
   --label-font-title: 14pt;
-  /* 작업지시번호 */
   --label-font-body: 12pt;
-  /* 품목명 (주문코드) */
   --label-font-qty: 12pt;
-  /* 지시수량 */
 
   /* 바코드 영역 높이 (가장 많이 조정하게 되는 값) */
   --label-barcode-h: 35mm;
@@ -71,15 +51,12 @@
 
 
 /* ==========================================
-   라벨 인쇄 미리보기 모달 CSS (화면용)
+   모달 (화면용)
    ========================================== */
 
-.food-label-modal-overlay {
+.label-modal__overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
@@ -87,7 +64,7 @@
   z-index: 1100;
 }
 
-.food-label-modal-container {
+.label-modal {
   background-color: #f8fafc;
   width: 850px;
   max-width: 95vw;
@@ -99,12 +76,12 @@
   transition: width 0.2s ease;
 }
 
-/* 라벨이 1개일 때 모달 전체 너비를 컴팩트하게 줄임 */
-.food-label-modal-container.single-item-modal {
+/* 라벨이 1개일 때 컴팩트하게 */
+.label-modal--single {
   width: 480px;
 }
 
-.food-label-modal-header {
+.label-modal__header {
   padding: 20px 24px;
   background-color: #ffffff;
   display: flex;
@@ -115,201 +92,192 @@
   gap: 10px;
 }
 
-.food-label-modal-breadcrumb {
-  font-size: 12px;
-  color: #64748b;
-  margin-bottom: 2px;
-}
-
-.food-label-modal-title {
+.label-modal__title {
   margin: 0 0 4px 0;
   font-size: 20px;
   font-weight: 700;
 }
 
-.food-label-modal-subtitle {
+.label-modal__subtitle {
   margin: 0;
   font-size: 13px;
   color: #64748b;
 }
 
-.food-label-modal-actions {
+.label-modal__actions {
   display: flex;
   gap: 8px;
   align-items: center;
 }
 
-.food-label-modal-btn-close {
+.label-modal__btn {
   font-size: 13px;
-  padding: 6px 12px;
+  padding: 6px 14px;
 }
 
-.food-label-modal-btn-print {
-  font-size: 13px;
-  padding: 6px 16px;
-}
-
-.food-label-modal-body {
+.label-modal__body {
   padding: 24px;
   overflow-y: auto;
   flex: 1;
 }
 
-.food-label-modal-grid {
+.label-modal__grid {
   display: grid;
-  /* 기본적으로 2열 구조를 갖되, 항목이 1개이거나 공간에 따라 유연하게 조절 */
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   justify-content: center;
 }
 
-/* 선택된 라벨이 딱 1개일 때 카드가 너무 넓게 퍼지지 않고 컴팩트하게 보이도록 처리 */
-.food-label-modal-grid.single-item {
+.label-modal__grid--single {
   grid-template-columns: 1fr;
   max-width: 400px;
   margin: 0 auto;
 }
 
-.food-label-card {
+/* ---- 라벨 카드 (화면 미리보기) ---- */
+
+.label-card {
   background-color: #ffffff;
   border: 1px dashed #cbd5e1;
   border-radius: 8px;
   padding: 20px;
 }
 
-.food-card-header-meta {
+.label-card__title {
   font-size: 14px;
   font-weight: 700;
   color: #0f172a;
   margin-bottom: 6px;
 }
 
-.food-card-body-meta {
+.label-card__name {
   font-size: 13px;
+  font-weight: 500;
   color: #334155;
   margin-bottom: 8px;
-  font-weight: 500;
 }
 
-.food-card-qty-meta {
+.label-card__code {
+  font-weight: 400;
+  color: #64748b;
+}
+
+.label-card__qty {
   font-size: 13px;
   font-weight: 600;
   color: #0f172a;
   margin-bottom: 12px;
 }
 
-.food-card-barcode-wrap {
+.label-card__qty strong {
+  font-weight: 700;
+}
+
+.label-card__barcode {
   border-top: 1px dashed #cbd5e1;
   padding-top: 8px;
 }
 
-.food-card-barcode-wrap svg {
+.label-card__barcode svg {
+  /* 짧은 바코드도 카드 가로폭만큼 늘어남 */
   width: 100% !important;
-  /* 짧은 바코드도 카드가 허용하는 가로 폭만큼 강제로 늘어남 */
   height: auto;
 }
 
 
-/* ================================================
-   라벨 인쇄 미리보기 모달 반응형 (Media Queries)
-   ================================================ */
+/* ==========================================
+   반응형
+   ========================================== */
 
 @media (max-width: 1024px) {
-  .food-label-modal-body {
+  .label-modal__body {
     padding: 20px;
   }
 }
 
 @media (max-width: 640px) {
-  .food-label-modal-grid {
+  .label-modal__grid {
     grid-template-columns: 1fr;
   }
 
-  .food-label-modal-header {
+  .label-modal__header {
     padding: 16px 18px;
   }
 
-  .food-label-modal-title {
+  .label-modal__title {
     font-size: 17px;
   }
 
-  .food-label-modal-body {
+  .label-modal__body {
     padding: 16px;
   }
 
-  .food-label-card {
+  .label-card {
     padding: 16px;
   }
 }
 
 
-/* ================================================
-   라벨 인쇄 미리보기 모달 다크모드 대응
-   ================================================ */
+/* ==========================================
+   다크모드
+   ========================================== */
 
-[data-theme="dark"] .food-label-modal-container {
+[data-theme="dark"] .label-modal {
   background-color: var(--bg-app);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
 }
 
-[data-theme="dark"] .food-label-modal-header {
+[data-theme="dark"] .label-modal__header {
   background-color: var(--bg-card);
   border-bottom-color: var(--border);
 }
 
-[data-theme="dark"] .food-label-modal-breadcrumb {
-  color: var(--text-muted);
-}
-
-[data-theme="dark"] .food-label-modal-title {
+[data-theme="dark"] .label-modal__title {
   color: var(--text-heading);
 }
 
-[data-theme="dark"] .food-label-modal-subtitle {
+[data-theme="dark"] .label-modal__subtitle {
   color: var(--text-muted);
 }
 
-[data-theme="dark"] .food-label-card {
+[data-theme="dark"] .label-card {
   background-color: var(--bg-card);
   border-color: var(--border);
 }
 
-[data-theme="dark"] .food-card-barcode-wrap {
-  border-top-color: var(--border);
-}
-
-[data-theme="dark"] .food-card-header-meta {
+[data-theme="dark"] .label-card__title {
   color: var(--text-heading);
 }
 
-[data-theme="dark"] .food-card-body-meta {
+[data-theme="dark"] .label-card__name {
   color: var(--text-body);
 }
 
-[data-theme="dark"] .food-card-qty-meta {
+[data-theme="dark"] .label-card__code {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .label-card__qty {
   color: var(--text-main);
 }
 
+[data-theme="dark"] .label-card__barcode {
+  border-top-color: var(--border);
+}
 
-/* ================================================
-   라벨 인쇄 전용 스타일 (Print Styles)
 
-   [작업지시서 인쇄 CSS와 공존하기 위한 규칙]
-   1) 전역 "body * { visibility: hidden }" 규칙은 쓰지 않는다.
-      (작업지시서 CSS의 display:none 규칙과 충돌하여 흰 화면이 되던 원인)
-   2) 전역 @page 대신 "이름 있는 @page(label)"를 사용한다.
-      → 작업지시서(A4)와 라벨이 서로의 용지 설정을 덮어쓰지 않는다.
-   3) 라벨 모달은 body 직계 #label-print-root 로 렌더링되며,
-      body 의 다른 요소만 숨긴다.
-   ================================================ */
+/* ==========================================
+   인쇄 전용 스타일
 
-/* ★ 라벨 용지 크기 — :root 의 --label-w / --label-h 와 반드시 같은 값
-   - 형식:  size: 가로 세로;   (100mm x 100mm)
-   - margin 은 반드시 0 :
-       크롬의 머리글/바닥글(날짜, 프로젝트명, 쪽수)은 페이지 여백 자리에 찍히므로
-       margin 0 이면 그릴 공간이 없어 사라짐.
-       안쪽 여백은 --label-pad-x / --label-pad-y 로 조정. */
+   [작업지시서 인쇄 CSS와 공존하는 규칙]
+   1) 전역 "body * { visibility: hidden }" 금지 (작업지시서 CSS 와 충돌)
+   2) 전역 @page 대신 이름 있는 @page(label) 사용 → A4 / 라벨 설정이 서로 덮어쓰지 않음
+   3) 라벨 모달은 body 직계 #label-print-root 로 렌더링 (id 변경 금지:
+      WorkOrderPrintModal.css 가 이 id 를 예외 처리함)
+   ========================================== */
+
+/* ★ :root 의 --label-w / --label-h 와 반드시 같은 값, margin 은 반드시 0 */
 @page label {
   size: 100mm 100mm;
   margin: 0;
@@ -317,9 +285,7 @@
 
 @media print {
 
-  /* ------------------------------------------------
-     1. 라벨/작업지시서 root 를 제외한 body 직계 요소 모두 숨김
-     ------------------------------------------------ */
+  /* 1. 라벨/작업지시서 root 를 제외한 body 직계 요소 숨김 */
   body>*:not(#label-print-root):not(#work-order-print-root) {
     display: none !important;
   }
@@ -328,16 +294,12 @@
   body {
     margin: 0 !important;
     padding: 0 !important;
-    /* width: 100% 대신 auto: 라벨 크기를 body 가 강제로 늘리지 않게 함 */
     width: auto !important;
     height: auto !important;
     background: #ffffff !important;
   }
 
-  /* ------------------------------------------------
-     2. 라벨 root: 화면용 fixed/flex 구조를 해제하고 일반 문서 흐름으로
-        page: label 을 root 에도 지정해 첫 페이지부터 라벨 용지로 인식시킴
-     ------------------------------------------------ */
+  /* 2. 화면용 fixed/flex 구조 해제 → 일반 문서 흐름 */
   #label-print-root {
     page: label;
     display: block !important;
@@ -349,7 +311,7 @@
     background: #ffffff !important;
   }
 
-  .food-label-modal-overlay {
+  .label-modal__overlay {
     position: static !important;
     display: block !important;
     width: auto !important;
@@ -358,10 +320,9 @@
     background: transparent !important;
   }
 
-  .food-label-modal-container,
-  .food-label-modal-container.single-item-modal {
+  .label-modal,
+  .label-modal--single {
     page: label;
-    /* 위에서 정의한 @page label 적용 */
     position: static !important;
     display: block !important;
     width: auto !important;
@@ -374,114 +335,93 @@
     overflow: visible !important;
   }
 
-  /* ------------------------------------------------
-     3. 모달 헤더(제목/버튼)는 인쇄 제외
-     ------------------------------------------------ */
-  .food-label-modal-header {
+  /* 3. 모달 헤더(제목/버튼) 인쇄 제외 */
+  .label-modal__header {
     display: none !important;
   }
 
-  /* ------------------------------------------------
-     4. 스크롤/여백 제거 + 그리드 해제
-        화면에서는 2열 그리드지만, 인쇄할 때는 라벨을 한 장씩 세로로 나열해야
-        "카드 1개 = 라벨 1장" 이 됨
-     ------------------------------------------------ */
-  .food-label-modal-body {
+  /* 4. 스크롤/여백 제거 + 그리드 해제 (카드 1개 = 라벨 1장) */
+  .label-modal__body {
     padding: 0 !important;
     overflow: visible !important;
   }
 
-  .food-label-modal-grid,
-  .food-label-modal-grid.single-item {
+  .label-modal__grid,
+  .label-modal__grid--single {
     display: block !important;
-    /* grid → block */
     max-width: none !important;
     margin: 0 !important;
     gap: 0 !important;
   }
 
-  /* ------------------------------------------------
-     5. 라벨 카드
-        - 카드 크기 = 라벨 크기로 고정
-        - overflow: hidden 으로 넘치는 내용이 다음 장을 만들지 않게 함
-          (넘치면 "잘려서" 보이므로 시험 출력에서 바로 알 수 있음)
-        - break-after: page 로 카드마다 새 페이지(=새 라벨) 시작
-     ------------------------------------------------ */
-  .food-label-card {
+  /* 5. 라벨 카드: 크기 고정 + 넘치면 잘림 + 카드마다 새 페이지 */
+  .label-card {
     page: label;
     box-sizing: border-box !important;
     width: var(--label-w) !important;
-    /* 용지 높이와 정확히 같으면 프린터 오차로 빈 라벨이 1장 더 나올 수 있어
-       0.5mm 작게 잡음. 그래도 빈 라벨이 나오면 1mm 로 키우세요. */
+    /* 용지 높이와 같으면 프린터 오차로 빈 라벨이 나올 수 있어 0.5mm 작게 */
     height: calc(var(--label-h) - 0.5mm) !important;
     padding: var(--label-pad-y) var(--label-pad-x) !important;
     margin: 0 !important;
     overflow: hidden !important;
     border: none !important;
-    /* 화면용 점선 테두리는 인쇄 안 함 */
     border-radius: 0 !important;
     background-color: #ffffff !important;
-    /* 다크모드여도 흰 배경 */
     color: #000000 !important;
-    /* 다크모드여도 검정 글씨 */
 
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
 
-    /* 카드마다 새 페이지 */
     break-after: page;
     page-break-after: always;
-    /* 카드 중간에서 안 잘리게 */
     break-inside: avoid;
     page-break-inside: avoid;
   }
 
-  /* 마지막 라벨 뒤에 빈 페이지(빈 라벨)가 생기지 않게 */
-  .food-label-card:last-child {
+  /* 마지막 라벨 뒤 빈 페이지 방지 */
+  .label-card:last-child {
     break-after: auto;
     page-break-after: auto;
   }
 
-  /* ------------------------------------------------
-     라벨 내부 글자 (크기는 :root 변수로 조정)
-     ------------------------------------------------ */
-  .food-label-card .food-card-header-meta {
+  /* 라벨 내부 글자 (크기는 :root 변수로 조정) */
+  .label-card .label-card__title {
     font-size: var(--label-font-title) !important;
     margin-bottom: var(--label-gap) !important;
     color: #000000 !important;
   }
 
-  .food-label-card .food-card-body-meta {
+  .label-card .label-card__name {
     font-size: var(--label-font-body) !important;
     margin-bottom: var(--label-gap) !important;
     color: #000000 !important;
-    /* 100x100 은 세로 여유가 있어 품목명을 최대 2줄까지 허용.
-       한 줄로 줄이려면 -webkit-line-clamp 를 1 로 바꾸세요. */
+
+    /* 최대 2줄. 1줄로 줄이려면 line-clamp 를 1 로 */
     display: -webkit-box;
     -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
     overflow: hidden;
   }
 
-  .food-label-card .food-card-qty-meta {
+  .label-card .label-card__code {
+    color: #000000 !important;
+  }
+
+  .label-card .label-card__qty {
     font-size: var(--label-font-qty) !important;
     margin-bottom: var(--label-gap) !important;
     color: #000000 !important;
   }
 
-  /* ------------------------------------------------
-        바코드 영역
-        화면용은 "width:100%; height:auto" 라서 가로가 넓을수록 세로도 커져
-        라벨 높이를 넘기기 쉬움 → 인쇄 시에는 높이를 고정
-        (막대 비율은 유지되고 가운데 정렬됨. 더 크게 하려면 --label-barcode-h 를 키움)
-     ------------------------------------------------ */
-  .food-label-card .food-card-barcode-wrap {
+  /* 바코드: 화면용 height:auto 는 라벨 높이를 넘기기 쉬워 인쇄 시 높이 고정 */
+  .label-card .label-card__barcode {
     border-top: none !important;
-    /* 점선 구분선 인쇄 안 함 */
     padding-top: 0 !important;
   }
 
-  .food-label-card .food-card-barcode-wrap svg {
+  .label-card .label-card__barcode svg {
     display: block !important;
     visibility: visible !important;
     width: 100% !important;
