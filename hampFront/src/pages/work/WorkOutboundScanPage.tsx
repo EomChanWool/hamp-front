@@ -221,7 +221,7 @@ export function WorkOutboundScanPage() {
                   </div>
                 </div>
                 <h1>스캔 대기 중</h1>
-                <p>품목 라벨을 스캐너로 찍으면 출고지시서가 이 화면에 자동으로 표시됩니다.</p>
+                <p>출고 라벨을 스캐너로 찍으면 출고지시서가 이 화면에 자동으로 표시됩니다.</p>
               </div>
             ) : (
               <div className="workOutboundResult">
