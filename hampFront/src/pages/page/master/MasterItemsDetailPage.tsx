@@ -19,6 +19,12 @@ import Spinner from "@/components/common/Spinner";
 import { OperationSelectModal } from "@/components/modal/OperationSelectModal";
 import { useItemRoutings } from "@/hooks/useItemRoutings";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
+import {
+  RoutingMaterialSection,
+  buildMaterialMap,
+  toMaterialRequests,
+  type RoutingMaterialDraft,
+} from "@/components/common/RoutingMatarialSection";
 import "./MasterItem.css";
 
 interface OperationOption {
@@ -49,6 +55,24 @@ export function MasterItemsDetailPage() {
     moveRouting,
   } = useItemRoutings();
 
+  //  공정코드(operCode)별 투입/산출 자재 목록
+  //  - 훅(useItemRoutings)은 건드리지 않고, 공정코드를 key 로 별도 보관합니다.
+  const [routingMaterials, setRoutingMaterials] = useState<Record<string, RoutingMaterialDraft[]>>({});
+
+  /** 특정 공정의 자재 목록 교체 */
+  const handleMaterialsChange = (operCode: string, next: RoutingMaterialDraft[]) => {
+    setRoutingMaterials((prev) => ({ ...prev, [operCode]: next }));
+  };
+
+  /** 특정 공정을 제외할 때 해당 공정의 자재도 함께 제거 */
+  const removeMaterialsOf = (operCode: string) => {
+    setRoutingMaterials((prev) => {
+      const next = { ...prev };
+      delete next[operCode];
+      return next;
+    });
+  };
+
   // 라우팅 UI(드래그/선택/상세패널) 상태
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -64,9 +88,10 @@ export function MasterItemsDetailPage() {
   const handleFieldChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
 
-    // 원료(0) 또는 반제품(1)은 공정 라우팅을 사용하지 않음
+    // 원료(0) 또는 반제품(1)은 공정 라우팅(+ 자재)을 사용하지 않음
     if (key === "category" && (value === "0" || value === "1")) {
       syncRoutings([]);
+      setRoutingMaterials({});
       setSelectedIndex(null);
     }
   };
@@ -174,8 +199,11 @@ export function MasterItemsDetailPage() {
                 handleRoutingChange(idx, "finalYn", "Y");
               }
             });
+            // 서버 응답의 공정별 자재(materials)를 화면용 맵으로 변환
+            setRoutingMaterials(buildMaterialMap(itemData.routings));
           } else {
             syncRoutings([]);
+            setRoutingMaterials({});
           }
         }
       } catch (error) {
@@ -198,6 +226,7 @@ export function MasterItemsDetailPage() {
     };
   }, [itemCode, navigate, location.search]);
 
+  // 수정 취소 시(또는 저장 후) 서버 기준 값으로 폼/라우팅/자재 복원
   useEffect(() => {
     if (item && !isEditing) {
       setForm({
@@ -218,8 +247,11 @@ export function MasterItemsDetailPage() {
             handleRoutingChange(idx, "finalYn", "Y");
           }
         });
+        // 자재도 서버 기준으로 복원
+        setRoutingMaterials(buildMaterialMap(item.routings));
       } else {
         syncRoutings([]);
+        setRoutingMaterials({});
       }
     }
   }, [isEditing, item]);
@@ -291,6 +323,8 @@ export function MasterItemsDetailPage() {
               operCode: r.operCode?.trim() || null,
               operSeq: r.operSeq ?? 1,
               finalYn: r.finalYn || "N",
+              // 현재 남아있는 공정의 자재만 전송
+              materials: toMaterialRequests(routingMaterials[r.operCode ?? ""]),
             }))
             : null,
       };
@@ -315,6 +349,14 @@ export function MasterItemsDetailPage() {
                 operCode: r.operCode ?? "",
                 operSeq: r.operSeq ?? idx + 1,
                 finalYn: r.finalYn ?? "N",
+                // 저장한 자재를 상세 데이터에도 반영 (취소/읽기 모드 복원 시 사용)
+                materials: (routingMaterials[r.operCode ?? ""] ?? []).map((m) => ({
+                  routingMtrlId: 0,
+                  itemCode: m.itemCode,
+                  itemNm: m.itemNm,
+                  unit: m.unit,
+                  ioType: m.ioType,
+                })),
               }))
               : [],
           }
@@ -374,6 +416,8 @@ export function MasterItemsDetailPage() {
   const selectedMatchedOp = selectedRouting
     ? operations.find((op) => op.operCode === selectedRouting.operCode)
     : null;
+  // 선택된 공정의 operCode (자재 맵의 key)
+  const selectedOperCode = selectedRouting?.operCode ?? "";
 
   return (
     <section className="screenStack">
@@ -591,6 +635,7 @@ export function MasterItemsDetailPage() {
                 <div className="routing-detail-panel">
                   {selectedRouting && selectedIndex !== null ? (
                     <div>
+                      {/* STEP 카드 */}
                       <div className="routing-step-card">
                         <div className="routing-step-badge">
                           <div className="routing-step-badge-title">STEP</div>
@@ -606,6 +651,7 @@ export function MasterItemsDetailPage() {
                         </div>
                       </div>
 
+                      {/* 앞으로 / 뒤로 빠른 이동 */}
                       <div className="routing-move-grid">
                         <button
                           type="button"
@@ -633,36 +679,49 @@ export function MasterItemsDetailPage() {
                         </button>
                       </div>
 
-                      <div className="routing-form-group">
-                        <label className="routing-label">공정명</label>
-                        <input
-                          type="text"
-                          className="tableInput routing-input-readonly"
-                          value={selectedMatchedOp ? selectedMatchedOp.operNm : ""}
-                          disabled
-                        />
+                      {/* 공정명 / 공정구분 → 한 줄(2열) 배치 */}
+                      <div className="routing-form-row">
+                        <div className="routing-form-group">
+                          <label className="routing-label">공정명</label>
+                          <input
+                            type="text"
+                            className="tableInput routing-input-readonly"
+                            value={selectedMatchedOp ? selectedMatchedOp.operNm : ""}
+                            disabled
+                          />
+                        </div>
+
+                        <div className="routing-form-group">
+                          <label className="routing-label">공정구분</label>
+                          <select
+                            className="tableInput routing-select"
+                            value={selectedRouting.finalYn ?? "N"}
+                            disabled={isBusy}
+                            onChange={(e) =>
+                              handleRoutingChange(selectedIndex, "finalYn", e.target.value)
+                            }
+                          >
+                            <option value="N">일반공정</option>
+                            <option value="Y">최종공정</option>
+                          </select>
+                        </div>
                       </div>
 
-                      <div className="routing-form-group last">
-                        <label className="routing-label">공정구분</label>
-                        <select
-                          className="tableInput routing-select"
-                          value={selectedRouting.finalYn ?? "N"}
-                          disabled={isBusy}
-                          onChange={(e) =>
-                            handleRoutingChange(selectedIndex, "finalYn", e.target.value)
-                          }
-                        >
-                          <option value="N">일반공정</option>
-                          <option value="Y">최종공정</option>
-                        </select>
-                      </div>
+                      {/* 이 공정의 투입(IN) / 산출(OUT) 자재 */}
+                      <RoutingMaterialSection
+                        resetKey={selectedOperCode}
+                        materials={routingMaterials[selectedOperCode] ?? []}
+                        onChange={(next) => handleMaterialsChange(selectedOperCode, next)}
+                        excludeItemCode={item.itemCode}
+                        disabled={isBusy}
+                      />
 
                       <button
                         type="button"
                         className="routing-delete-btn"
                         disabled={isBusy}
                         onClick={() => {
+                          removeMaterialsOf(selectedOperCode); // 자재도 함께 제거
                           handleRemoveRouting(selectedIndex);
                           setSelectedIndex(null);
                         }}
@@ -681,9 +740,13 @@ export function MasterItemsDetailPage() {
                 {routings.map((route, index) => {
                   const matchedOp = operations.find((op) => op.operCode === route.operCode);
                   const isFinal = route.finalYn === "Y";
+                  // 읽기 모드에서도 공정별 투입/산출 자재를 요약 표시
+                  const mats = routingMaterials[route.operCode ?? ""] ?? [];
+                  const inMats = mats.filter((m) => m.ioType === "IN");
+                  const outMats = mats.filter((m) => m.ioType === "OUT");
 
                   return (
-                    <div key={`${route.operCode}-${index}`} className="routing-list-item">
+                    <div key={`${route.operCode}-${index}`} className="routing-list-item is-readonly">
                       <div className="routing-item-left">
                         <span className="routing-seq">
                           {String(route.operSeq ?? index + 1).padStart(2, "0")}
@@ -693,6 +756,33 @@ export function MasterItemsDetailPage() {
                           {matchedOp ? matchedOp.operNm : ""}
                         </span>
                       </div>
+
+                      {mats.length > 0 && (
+                        <div className="routing-mtrl-summary">
+                          {inMats.length > 0 && (
+                            <div className="routing-mtrl-summary-group">
+                              <span className="routing-mtrl-summary-tag is-in">IN</span>
+                              {inMats.map((m) => (
+                                <span key={`IN-${m.itemCode}`} className="routing-mtrl-chip is-in" title={m.itemCode}>
+                                  {m.itemNm}
+                                  {m.unit && <small>{m.unit}</small>}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {outMats.length > 0 && (
+                            <div className="routing-mtrl-summary-group">
+                              <span className="routing-mtrl-summary-tag is-out">OUT</span>
+                              {outMats.map((m) => (
+                                <span key={`OUT-${m.itemCode}`} className="routing-mtrl-chip is-out" title={m.itemCode}>
+                                  {m.itemNm}
+                                  {m.unit && <small>{m.unit}</small>}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       <div className="routing-item-right">
                         <span className={`routing-type-badge ${isFinal ? "is-final" : ""}`}>
