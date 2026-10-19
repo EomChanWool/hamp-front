@@ -1,0 +1,299 @@
+/* ================================
+   WORK OUTBOUND SCAN (출고처리 스캔 화면)
+================================ */
+
+.workOutboundResult {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── 출고지시서 요약 카드 ───────────────────────── */
+.workOutboundSummaryCard {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 20px;
+  margin-top: 12px;
+}
+
+.workOutboundCardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+/* 출고지시서 번호 (모노스페이스) */
+.workOutboundId {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--primary-light, #93c5fd);
+  word-break: break-all;
+}
+
+/* 상태 칩 - 기본(WAIT)은 회색, 상태별로 색만 바뀐다 */
+.workOutboundStatusChip {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(148, 163, 184, 0.18);
+  color: #cbd5e1;
+}
+
+.workOutboundStatusChip--PROGRESS {
+  background: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+}
+
+.workOutboundStatusChip--DONE {
+  background: rgba(34, 197, 94, 0.18);
+  color: #4ade80;
+}
+
+.workOutboundStatusChip--DELAY {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+}
+
+.workOutboundSummaryCard h2 {
+  margin: 0 0 14px;
+  color: #f0f0f0;
+  font-size: 22px;
+  font-weight: 700;
+  word-break: keep-all;
+}
+
+/* 출고일 / 담당자 / 품목 수 - 3열 정보 그리드 */
+.workOutboundInfoGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.workOutboundInfoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.workOutboundInfoItem span {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.workOutboundInfoItem strong {
+  color: #f0f0f0;
+  font-size: 17px;
+  font-weight: 600;
+  word-break: keep-all;
+}
+
+/* 총 지시수량 */
+.workOutboundQtyRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 13.5px;
+  color: #94a3b8;
+}
+
+.workOutboundQtyRow strong {
+  color: var(--primary-light, #93c5fd);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 19px;
+  text-align: right;
+}
+
+/* ── 상태별 안내 배너 ───────────────────────────── */
+.workOutboundBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  word-break: keep-all;
+}
+
+.workOutboundBanner::before {
+  content: '';
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* 대기 */
+.workOutboundBanner--wait {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: var(--primary-light, #93c5fd);
+}
+
+/* 진행중 */
+.workOutboundBanner--progress {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #f59e0b;
+}
+
+/* 완료 */
+.workOutboundBanner--done {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #4ade80;
+}
+
+/* 지연 / 스캔 오류 - 같은 빨간 톤 */
+.workOutboundBanner--delay,
+.workOutboundBanner--error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+/* ── 출고 품목 목록 ───────────────────────────── */
+.workOutboundLinesSection {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+/* 섹션 라벨 - 작업지시 화면의 "공정순서도" 라벨과 같은 모양 */
+.workOutboundLinesLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.04em;
+}
+
+.workOutboundLinesLabel::before {
+  content: '';
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--primary);
+}
+
+.workOutboundLinesEmpty {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.workOutboundLineList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 품목 한 줄: [번호] [품목명/코드] [수량 단위] */
+.workOutboundLine {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.workOutboundLineNo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.workOutboundLineInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.workOutboundLineInfo strong {
+  color: #f0f0f0;
+  font-size: 18px;
+  font-weight: 600;
+  word-break: keep-all;
+}
+
+.workOutboundLineInfo span {
+  color: #94a3b8;
+  font-size: 13.5px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+/* 수량은 오른쪽 끝에 정렬 */
+.workOutboundLineQty {
+  flex-shrink: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.workOutboundLineQty strong {
+  color: var(--primary-light, #93c5fd);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.workOutboundLineQty span {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+/* ── 모바일/저해상도 대응 ───────────────────────── */
+@media (max-width: 480px) {
+
+  .workOutboundSummaryCard,
+  .workOutboundLinesSection {
+    padding: 16px;
+  }
+
+  .workOutboundInfoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .workOutboundLine {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .workOutboundLineInfo strong {
+    font-size: 16px;
+  }
+
+  .workOutboundLineQty strong {
+    font-size: 18px;
+  }
+}
