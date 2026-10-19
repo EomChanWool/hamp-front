@@ -95,7 +95,9 @@ export function MasterItemsCreatePage() {
 
   const handleChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-    if (key === "category" && value === "0") {
+
+    // 원료 또는 반제품이면 공정 라우팅 초기화
+    if (key === "category" && (value === "0" || value === "1")) {
       syncRoutings([]);
     }
   };
@@ -117,11 +119,13 @@ export function MasterItemsCreatePage() {
       alert("품목 코드를 입력해주세요.");
       return false;
     }
-    const selectedCategory = form.category !== "" ? (Number(form.category) as ItemCategory) : null;
-    if ((selectedCategory === 1 || selectedCategory === 2) && routings.length === 0) {
-      alert("반제품/완제품 등록 시 공정 라우팅을 최소 1개 이상 추가해야 합니다.");
+
+    // 완제품만 공정 라우팅 필수
+    if (form.category === "2" && routings.length === 0) {
+      alert("완제품 등록 시 공정 라우팅을 최소 1개 이상 추가해야 합니다.");
       return false;
     }
+
     return true;
   };
 
@@ -142,12 +146,12 @@ export function MasterItemsCreatePage() {
       itemNm: form.itemNm.trim() || null,
       unit: form.unit.trim() || null,
       standard: form.standard.trim() || null,
-      routings: (selectedCategory === 1 || selectedCategory === 2)
+      routings: selectedCategory === 2
         ? routings.map((r) => ({
-            operCode: r.operCode?.trim() || null,
-            operSeq: r.operSeq,
-            finalYn: r.finalYn || "N",
-          }))
+          operCode: r.operCode?.trim() || null,
+          operSeq: r.operSeq,
+          finalYn: r.finalYn || "N",
+        }))
         : null,
     };
 
@@ -165,7 +169,7 @@ export function MasterItemsCreatePage() {
     }
   };
 
-  const isRoutingRequired = form.category === "1" || form.category === "2";
+  const isRoutingRequired = form.category === "2";
   const selectedRouting = selectedIndex !== null && routings[selectedIndex] ? routings[selectedIndex] : null;
   const selectedMatchedOp = selectedRouting ? operations.find((op) => op.operCode === selectedRouting.operCode) : null;
 

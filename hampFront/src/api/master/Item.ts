@@ -29,6 +29,12 @@ export interface ItemRoutingRequest {
   operCode?: string | null;
   operSeq?: number | null;
   finalYn?: string | null;
+  materials?: RoutingMaterialRequest[] | null;
+}
+
+export interface RoutingMaterialRequest {
+  itemCode: string;
+  ioType: string;
 }
 
 /** 공정 라우팅 응답 */
@@ -38,6 +44,7 @@ export interface ItemRoutingResponse {
   operCode: string;
   operSeq: number;
   finalYn: string;
+  materials: RoutingMaterialResponse[];
 }
 
 /** 품목 등록 요청 */
@@ -72,6 +79,14 @@ export interface ItemResponse {
   useYn: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface RoutingMaterialResponse {
+  routingMtrlId: number;
+  itemCode: string;
+  itemNm: string;
+  unit: string;
+  ioType: string;
 }
 
 /** 품목 상세 조회 응답 */
@@ -157,7 +172,7 @@ export const ItemApi = {
 
  /** 품목 셀렉트 옵션 조회 */
   getOptions: async (params?: {
-    productType?: number; // 0: 씨드, 1: 인피 (안 보내면 전체)
+    productType?: number; // 0: 씨드, 1: 섬유 (안 보내면 전체)
     [key: string]: any;
   }): Promise<ApiResponseListItemOptionResponse> => {
     const res = await apiClient.get<ApiResponseListItemOptionResponse>('/items/options', { params });
