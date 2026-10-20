@@ -160,6 +160,9 @@ interface RoutingMaterialSectionProps {
   productType?: 0 | 1;
   // 최종공정 여부 (Y: 최종공정, N: 일반공정)
   finalYn: string;
+
+  // 신규 등록 중인 품목 정보
+  currentItem?: ItemOptionResponse;
 }
 
 export function RoutingMaterialSection({
@@ -170,6 +173,7 @@ export function RoutingMaterialSection({
   resetKey,
   productType,
   finalYn,
+  currentItem,
 }: RoutingMaterialSectionProps) {
   const [inOptions, setInOptions] = useState<ItemOptionResponse[]>([]);
   const [outOptions, setOutOptions] = useState<ItemOptionResponse[]>([]);
@@ -236,12 +240,25 @@ export function RoutingMaterialSection({
     [inOptions, excludeItemCode, used]
   );
 
-  const availableOutOptions = useMemo(
-    () => outOptions.filter(
-      (o) => !used.has(o.itemCode) || o.itemCode === excludeItemCode
-    ),
-    [outOptions, excludeItemCode, used]
-  );
+  const availableOutOptions = useMemo(() => {
+    const options = [...outOptions];
+
+    // 최종공정이면 현재 등록 중인 품목을 산출 옵션에 추가
+    if (
+      finalYn === "Y" &&
+      currentItem?.itemCode &&
+      currentItem.itemNm &&
+      !options.some((o) => o.itemCode === currentItem.itemCode)
+    ) {
+      options.unshift(currentItem);
+    }
+
+    return options.filter(
+      (o) =>
+        !used.has(o.itemCode) ||
+        o.itemCode === currentItem?.itemCode
+    );
+  }, [outOptions, used, finalYn, currentItem]);
 
   const inList = materials.filter((m) => m.ioType === "IN");
   const outList = materials.filter((m) => m.ioType === "OUT");

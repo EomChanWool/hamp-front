@@ -527,6 +527,15 @@ export function MasterItemsCreatePage() {
                             excludeItemCode={form.itemCode.trim()}
                             productType={form.productType === "" ? undefined : form.productType}
                             finalYn={selectedRouting?.finalYn ?? "N"}
+                            currentItem={
+                              form.itemCode.trim() && form.itemNm.trim()
+                                ? {
+                                  itemCode: form.itemCode.trim(),
+                                  itemNm: form.itemNm.trim(),
+                                  unit: form.unit.trim(),
+                                }
+                                : undefined
+                            }
                             disabled={isSubmitting}
                           />
 
