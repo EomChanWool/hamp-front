@@ -713,6 +713,8 @@ export function MasterItemsDetailPage() {
                         materials={routingMaterials[selectedOperCode] ?? []}
                         onChange={(next) => handleMaterialsChange(selectedOperCode, next)}
                         excludeItemCode={item.itemCode}
+                        productType={item.productType}
+                        finalYn={selectedRouting?.finalYn ?? "N"}
                         disabled={isBusy}
                       />
 

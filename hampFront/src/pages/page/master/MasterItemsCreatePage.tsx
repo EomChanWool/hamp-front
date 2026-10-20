@@ -36,7 +36,7 @@ export function MasterItemsCreatePage() {
 
   const [form, setForm] = useState<{
     itemCode: string;
-    productType: string;
+    productType: ProductType | "";
     category: string;
     itemNm: string;
     unit: string;
@@ -525,6 +525,8 @@ export function MasterItemsCreatePage() {
                             materials={routingMaterials[selectedOperCode] ?? []}
                             onChange={(next) => handleMaterialsChange(selectedOperCode, next)}
                             excludeItemCode={form.itemCode.trim()}
+                            productType={form.productType === "" ? undefined : form.productType}
+                            finalYn={selectedRouting?.finalYn ?? "N"}
                             disabled={isSubmitting}
                           />
 
