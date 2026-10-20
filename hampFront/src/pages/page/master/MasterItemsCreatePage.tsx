@@ -511,7 +511,34 @@ export function MasterItemsCreatePage() {
                                 className="tableInput routing-select"
                                 value={selectedRouting.finalYn ?? "N"}
                                 disabled={isSubmitting}
-                                onChange={(e) => handleRoutingChange(selectedIndex, "finalYn", e.target.value)}
+                                onChange={(e) => {
+                                  const nextFinalYn = e.target.value;
+                                  const operCode = selectedOperCode;
+
+                                  if (
+                                    selectedRouting.finalYn === "Y" &&
+                                    nextFinalYn === "N"
+                                  ) {
+                                    setRoutingMaterials((prev) => {
+                                      const currentMaterials = prev[operCode] ?? [];
+
+                                      // 최종공정에서 일반공정으로 변경 시
+                                      // 해당 공정의 산출 자재(OUT) 제거
+                                      return {
+                                        ...prev,
+                                        [operCode]: currentMaterials.filter(
+                                          (m) => m.ioType !== "OUT"
+                                        ),
+                                      };
+                                    });
+                                  }
+
+                                  handleRoutingChange(
+                                    selectedIndex,
+                                    "finalYn",
+                                    nextFinalYn
+                                  );
+                                }}
                               >
                                 <option value="N">일반공정</option>
                                 <option value="Y">최종공정</option>
