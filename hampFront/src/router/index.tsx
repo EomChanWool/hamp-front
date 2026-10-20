@@ -15,9 +15,12 @@ import {
   WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline'
 
+import { RootLayout } from '@/pages/layout/RootLayout'
 import { MainLayout } from '@pages/layout/MainLayout'
 import { LoginPage } from '@pages/auth/LoginPage'
 import { NotFound } from '@pages/error/NotFound'
+import { ServerDown } from '@pages/error/ServerDown'
+import { ApiError } from '@pages/error/ApiError'
 
 // 초기 비밀번호 변경 페이지
 import { ChangePasswordPage } from '@pages/auth/ChangePasswordPage'
@@ -121,12 +124,7 @@ import { WorkOrderScanPage } from '@/pages/work/WorkOrderScanPage'
 import { WorkOutboundScanPage } from '@/pages/work/WorkOutboundScanPage'
 import { WorkTabletType } from '@/pages/work/WorkTabletType'
 
-
-const RootRouter = () => {
-  const router = createBrowserRouter(routeObj)
-  return <RouterProvider router={router} />
-}
-
+const RootRouter = () => <RouterProvider router={router} />
 export default RootRouter
 
 export interface CustomRouteObject extends Omit<RouteObject, 'children'> {
@@ -340,44 +338,42 @@ export const menuRoutes: MenuRouteGroup[] = [
 
 export const routeObj: RouteObject[] = [
   {
-    path: '/',
-    element: <MainLayout />,
+    element: <RootLayout />,
     children: [
-      { index: true, element: <MainDashboardPage /> },
+      {
+        path: '/',
+        element: <MainLayout />,
+        children: [
+          { index: true, element: <MainDashboardPage /> },
+          ...menuRoutes.flatMap((group) =>
+            group.items.map((item) => {
+              const fullPath = `${group.path}/${item.path}`.replace(/\/+/g, '/')
+              const [strippedRoute] = stripCustomFields([{ ...item, path: fullPath }])
+              return strippedRoute
+            }),
+          ),
+        ],
+      },
+      { path: '/work/login', element: <WorkTabletLoginPage /> },
+      {
+        element: <WorkTabletGuard />,
+        children: [
+          { path: '/work', element: <WorkTabletType /> },
+          { path: '/work/home', element: <WorkTabletHome /> },
+          { path: '/work/seed-report-scan', element: <WorkSeedReportScanPage /> },
+          { path: '/work/work-order-scan', element: <WorkOrderScanPage /> },
+          { path: '/work/outbound-scan', element: <WorkOutboundScanPage /> },
+        ],
+      },
+      { path: '/login', element: <LoginPage /> },
+      { path: '/change-password', element: <ChangePasswordPage /> },
 
-      ...menuRoutes.flatMap((group) =>
-        group.items.map((item) => {
-          const fullPath = `${group.path}/${item.path}`.replace(/\/+/g, '/')
-          const [strippedRoute] = stripCustomFields([{ ...item, path: fullPath }])
-          return strippedRoute
-        }),
-      ),
+      // 에러 페이지 (MainLayout 밖: 서버가 죽어도 사이드바/헤더 API 호출 없이 뜸)
+      { path: '/server-down', element: <ServerDown /> },
+      { path: '/api-error', element: <ApiError /> },
+      { path: '*', element: <NotFound /> },
     ],
-  },
-  {
-    path: '/work/login',
-    element: <WorkTabletLoginPage />,
-  },
-  {
-    element: <WorkTabletGuard />,
-    children: [
-      { path: '/work', element: <WorkTabletType /> },
-      { path: '/work/home', element: <WorkTabletHome /> },
-      { path: '/work/seed-report-scan', element: <WorkSeedReportScanPage /> },
-      { path: '/work/work-order-scan', element: <WorkOrderScanPage /> },
-      { path: '/work/outbound-scan', element: <WorkOutboundScanPage /> },
-    ],
-  },
-  {
-    path: '/login',
-    element: <LoginPage />,
-  },
-  {
-    path: '/change-password',
-    element: <ChangePasswordPage />,
-  },
-  {
-    path: '*',
-    element: <NotFound />,
   },
 ]
+
+const router = createBrowserRouter(routeObj)
