@@ -1,24 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Navigate, Outlet, useNavigate } from 'react-router-dom'
+import { Navigate, Outlet } from 'react-router-dom'
 import { AppShell } from '@pages/layout/AppShell'
 import { useAuth } from '@/context/AuthContext'
-import { setApiNavigator } from '@/api/apiClient'
 import './Layout.css';
 
 export function MainLayout() {
   const { isAuthenticated } = useAuth()
   const [theme, setTheme] = useState<'dark' | 'light'>('light')
-  const navigate = useNavigate()
-
-  useEffect(() => {
-    // 1. 서버 다운 리다이렉트용 네비게이터 주입
-    setApiNavigator(
-      navigate,
-      () => window.location.pathname + window.location.search + window.location.hash
-    )
-
-  }, [navigate])
-
+  
   // 테마(Theme) 상태 반영
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)

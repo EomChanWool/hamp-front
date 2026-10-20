@@ -1,6 +1,7 @@
 import { apiClient } from '@/api/apiClient';
 import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 import type { EquipmentOptionResponse } from '@/api/master/Equipment';
+import type { ItemOptionResponse } from '@/api/master/Item';
 
 // 도메인 상수 및 타입 (Literal Types)
 
@@ -131,12 +132,19 @@ export interface WorkOrderPerformanceScanResponse {
     operNm: string;
     operSeq: number;
     perfId: number | null;
+    requiredMaterials?: ItemOptionResponse[];
 }
 
 /** 설비 스캔으로 받은 공정을 투입수량과 함께 시작 확정할 때 보내는 요청 */
 export interface WorkOrderPerformanceStartRequest {
     zone: ZoneType;
     operCode: string;
+    materials: WorkOrderPerformanceMaterialQtyRequest[];
+}
+
+/** 설비 스캔으로 받은 공정에 투입 자재와 산출자재를 보내는 요청 */
+export interface WorkOrderPerformanceMaterialQtyRequest {
+    itemCode: string;
     qty: number;
 }
 
@@ -150,16 +158,9 @@ export interface WorkOrderPerformanceDefectRequest {
 export interface WorkOrderPerformanceFinishRequest {
     zone: ZoneType;
     operCode: string;
-    qty: number;
+    materials: WorkOrderPerformanceMaterialQtyRequest[];
     defects?: WorkOrderPerformanceDefectRequest[];
 }
-
-/** 작업지시 공정 시작 요청 */
-export interface WorkOrderPerformanceStartRequest {
-    operCode: string;
-    qty: number;
-}
-
 
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
@@ -257,12 +258,6 @@ export const WorkOrderApi = {
     /** 설비 스캔으로 받은 공정을 종료 확정 */
     finishPerformance: async (data: WorkOrderPerformanceFinishRequest): Promise<ApiResponse<null>> => {
         const res = await apiClient.post('/work-orders/performance/finish', data);
-        return res.data;
-    },
-
-    /** 공정 시작 확정 (투입수량 등록) */
-    performanceStart: async (data: WorkOrderPerformanceStartRequest): Promise<ApiResponse<string>> => {
-        const res = await apiClient.post('/work-orders/performance/start', data);
         return res.data;
     },
 };
