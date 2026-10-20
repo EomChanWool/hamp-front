@@ -1,0 +1,42 @@
+.errorActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+/* notFoundContent 안의 기존 버튼 margin이 있다면 여기서 상쇄 */
+.errorActions .primaryButton,
+.errorActions .secondaryButton {
+  margin-top: 0;
+}
+
+.secondaryButton {
+  width: 180px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondaryButton:hover {
+  background: #f1f5f9;
+}
+
+.errorDetail {
+  margin: 20px auto 0;
+  padding: 10px 14px;
+  max-width: 420px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #475569;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: left;
+  word-break: break-all;
+}
