@@ -22,6 +22,9 @@ export const CATEGORY_LABEL: Record<ItemCategory, string> = {
   2: '완제품',
 } as const;
 
+/** 자재 입출 구분 (IN: 투입, OUT: 산출) */
+export type MaterialIoType = 'IN' | 'OUT';
+
 // Sub Models (공정 라우팅)
 
 /** 공정 라우팅 요청 */
@@ -32,9 +35,10 @@ export interface ItemRoutingRequest {
   materials?: RoutingMaterialRequest[] | null;
 }
 
+/** 공정 라우팅 투입산출 자재 요청 */
 export interface RoutingMaterialRequest {
   itemCode: string;
-  ioType: string;
+  ioType: MaterialIoType;
 }
 
 /** 공정 라우팅 응답 */
@@ -81,12 +85,13 @@ export interface ItemResponse {
   updatedAt: string;
 }
 
+/** 공정 라우팅 투입산출 자재 응답 */
 export interface RoutingMaterialResponse {
   routingMtrlId: number;
   itemCode: string;
   itemNm: string;
   unit: string;
-  ioType: string;
+  ioType: MaterialIoType;
 }
 
 /** 품목 상세 조회 응답 */
@@ -173,6 +178,7 @@ export const ItemApi = {
  /** 품목 셀렉트 옵션 조회 */
   getOptions: async (params?: {
     productType?: number; // 0: 씨드, 1: 섬유 (안 보내면 전체)
+    category?: ItemCategory[]; // 0: 원료, 1: 반제품, 2: 완제품
     [key: string]: any;
   }): Promise<ApiResponseListItemOptionResponse> => {
     const res = await apiClient.get<ApiResponseListItemOptionResponse>('/items/options', { params });

@@ -216,7 +216,7 @@
   border: 1px solid var(--border, #d1d5db);
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease-in-use;
+  transition: all 0.2s ease-in-out;
 }
 
 .inlineTypeButton:hover {
@@ -267,7 +267,7 @@
   border: 1px solid var(--border, #d1d5db);
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease-in-use;
+  transition: all 0.2s ease-in-out;
 }
 
 .typeCardButton:hover {
@@ -328,6 +328,8 @@
 
 /* 레이아웃 */
 .routing-layout-grid { display: grid; grid-template-columns: 1fr 500px; gap: 20px; align-items: start; }
+/* grid 자식이 내용(긴 자재명 등) 때문에 칸을 밀어내며 넘치는 것 방지 */
+.routing-layout-grid > * { min-width: 0; }
 .routing-w-100 { width: 100%; }
 
 /* 좌측: 공정 리스트 박스 */
@@ -370,7 +372,7 @@
 .routing-arrow-icon { width: 16px; height: 16px; color: #374151; }
 
 /* 우측: 상세 편집 패널 */
-.routing-detail-panel { border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.routing-detail-panel { border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); min-width: 0; }
 .routing-empty-panel { text-align: center; color: #9ca3af; padding: 40px 0; }
 
 /* 상세 패널 내부 UI */
@@ -387,11 +389,89 @@
 .routing-move-btn:hover:not(:disabled) { background: #f9fafb; }
 
 /* 폼 요소 */
+/* 공정명 / 공정구분을 한 줄(2열)로 배치하는 행 */
+.routing-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.routing-form-row > * { min-width: 0; } /* 인풋이 칸을 밀어내지 않도록 */
 .routing-form-group { margin-bottom: 16px; }
-.routing-form-group.last { margin-bottom: 24px; }
+.routing-form-row .routing-form-group { margin-bottom: 0; }
 .routing-label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
 .routing-input-readonly { background-color: #f3f4f6; cursor: not-allowed; }
 .routing-select { width: 100%; padding: 8px; background: #fff; }
+
+/* ========================================================
+   공정별 투입(IN) / 산출(OUT) 자재 영역
+======================================================== */
+
+/* 섹션 전체 (위쪽 구분선 + 아래 여백) */
+.routing-mtrl-section { margin-bottom: 20px; padding-top: 16px; border-top: 1px solid var(--border, #e5e7eb); }
+.routing-mtrl-title { font-size: 14px; font-weight: 700; color: var(--text-heading, #111827); margin-bottom: 12px; }
+
+/* IN / OUT 한 묶음 */
+.routing-mtrl-group + .routing-mtrl-group { margin-top: 16px; }
+.routing-mtrl-group-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+.routing-mtrl-group-title { font-size: 13px; font-weight: 700; }
+.routing-mtrl-group-title.is-in { color: #16a34a; }   /* 투입: 초록 */
+.routing-mtrl-group-title.is-out { color: #dc2626; }  /* 산출: 빨강 */
+
+/* 점선 알약 버튼 (miniButton primary 와 같은 초록 계열) */
+.routing-mtrl-add-btn {
+  padding: 4px 12px; font-size: 12px; font-weight: 600; white-space: nowrap;
+  border: 1px dashed #10b981; border-radius: 999px;
+  background: #f0fdf4; color: #047857; cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.routing-mtrl-add-btn:hover:not(:disabled) { background: #d1fae5; }
+.routing-mtrl-add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* 품목 선택 select ([+ 추가] 눌렀을 때 노출) */
+.routing-mtrl-picker { width: 100%; margin-bottom: 8px; }
+
+/* 자재 목록 - 약 3~4행 높이를 넘으면 스크롤 (높이는 필요에 맞게 조정) */
+.routing-mtrl-list {
+  display: flex; flex-direction: column; gap: 6px;
+  max-height: 176px; overflow-y: auto; padding-right: 2px;
+  scrollbar-width: thin;
+}
+
+/* 자재 1행: [품목코드] 품목명 단위 ............ 삭제 */
+.routing-mtrl-item {
+  display: flex; align-items: center; gap: 10px; min-width: 0;
+  padding: 8px 12px; border: 1px solid var(--border, #e5e7eb); border-radius: 8px; background: var(--bg-subtle, #f9fafb);
+}
+.routing-mtrl-item > :first-child { flex-shrink: 0; } /* 코드 칩은 줄어들지 않게 */
+
+/* 품목코드 칩 (라이트: IN 파랑 / OUT 초록 톤) */
+.routing-mtrl-code { padding: 2px 8px; border: 1px solid transparent; border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.routing-mtrl-code.is-in  { background: #eff6ff; color: #16a34a; border-color: rgba(22, 163, 74, 0.15); }
+.routing-mtrl-code.is-out { background: #ecfdf5; color: #dc2626; border-color: rgba(239, 68, 68, 0.12); }
+
+.routing-mtrl-name { font-size: 14px; font-weight: 700; color: var(--text-body, #1f2937); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.routing-mtrl-unit { font-size: 12px; color: var(--text-muted, #6b7280); flex-shrink: 0; }
+.routing-mtrl-remove { margin-left: auto; flex-shrink: 0; padding: 2px 4px; border: none; background: transparent; color: #dc2626; font-size: 13px; font-weight: 700; cursor: pointer; }
+.routing-mtrl-remove:hover:not(:disabled) { text-decoration: underline; }
+.routing-mtrl-remove:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* 자재가 없을 때 */
+.routing-mtrl-empty { padding: 12px 0; text-align: center; font-size: 13px; color: #9ca3af; border: 1px dashed var(--border, #e5e7eb); border-radius: 8px; }
+
+/* --------------------------------------------------------
+  읽기 모드: 공정 정보 옆(가운데)에 IN/OUT 자재 칩 나열
+   한 줄 구성: [순번 코드 공정명] [IN 칩.. OUT 칩..] ........ [공정구분]
+-------------------------------------------------------- */
+.routing-list-item.is-readonly { cursor: default; flex-wrap: nowrap; }  /* 읽기 전용이라 grab 커서 제거, 웹에서는 한 줄 */
+.routing-list-item.is-readonly .routing-item-left { flex: 0 1 260px; }  /* 공정 정보 영역 폭 고정 → 자재 칩 시작 위치가 행마다 정렬됨 */
+
+.routing-mtrl-summary { flex: 1 1 0; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
+.routing-mtrl-summary-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.routing-mtrl-summary-tag { min-width: 28px; font-size: 12px; font-weight: 700; }
+.routing-mtrl-summary-tag.is-in { color: #16a34a; }
+.routing-mtrl-summary-tag.is-out { color: #dc2626; }
+
+/* 자재 칩 (품목명 + 단위) */
+.routing-mtrl-chip { display: inline-flex; align-items: baseline; gap: 4px; padding: 2px 10px; border: 1px solid transparent; border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.routing-mtrl-chip small { font-size: 11px; font-weight: 500; opacity: 0.75; }
+.routing-mtrl-chip.is-in  { background: rgba(22, 163, 74, 0.15); color: #16a34a; border-color: rgba(22, 163, 74, 0.15); }
+.routing-mtrl-chip.is-out { background: rgba(239, 68, 68, 0.12); color: #dc2626; border-color: rgba(239, 68, 68, 0.12); }
 
 /* 삭제 버튼 */
 .routing-delete-btn { width: 100%; padding: 10px; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
@@ -449,6 +529,11 @@
     grid-template-columns: 1fr;
   }
 
+  /* 폰 폭에서는 공정명/공정구분을 다시 세로로 */
+  .routing-form-row {
+    grid-template-columns: 1fr;
+  }
+
   .routing-detail-panel {
     padding: 16px;
   }
@@ -456,6 +541,13 @@
   .routing-list-item {
     padding: 10px;
   }
+}
+
+/* 읽기 모드: 컨테이너가 좁으면 자재 요약을 다음 줄로 내려서 표시 */
+@container content (max-width: 700px) {
+  .routing-list-item.is-readonly { flex-wrap: wrap; }
+  .routing-list-item.is-readonly .routing-item-left { flex: 1 1 auto; }
+  .routing-mtrl-summary { flex-basis: 100%; order: 3; }
 }
 
 /* ========================================================
@@ -591,6 +683,78 @@
 [data-theme="dark"] .routing-select:focus {
   border-color: #57d3a1;
   box-shadow: 0 0 0 3px rgba(87, 211, 161, 0.15);
+}
+
+/* 투입/산출 자재 영역 (다크모드) - 시안 이미지 스타일 */
+[data-theme="dark"] .routing-mtrl-section {
+  border-top: 1px solid var(--border);
+}
+
+[data-theme="dark"] .routing-mtrl-title {
+  color: var(--text-heading);
+}
+
+[data-theme="dark"] .routing-mtrl-group-title.is-in,
+[data-theme="dark"] .routing-mtrl-summary-tag.is-in {
+  color: #4ade80;
+}
+
+[data-theme="dark"] .routing-mtrl-group-title.is-out,
+[data-theme="dark"] .routing-mtrl-summary-tag.is-out {
+  color: #f87171;
+}
+
+[data-theme="dark"] .routing-mtrl-add-btn {
+  background: transparent;
+  border-color: rgba(87, 211, 161, 0.55);
+  color: #57d3a1;
+}
+
+[data-theme="dark"] .routing-mtrl-add-btn:hover:not(:disabled) {
+  background: var(--primary-light);
+}
+
+[data-theme="dark"] .routing-mtrl-item {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+}
+
+/* 다크: 코드 칩은 IN/OUT 구분 없이 회색 칩 (시안과 동일) */
+[data-theme="dark"] .routing-mtrl-code.is-in,
+[data-theme="dark"] .routing-mtrl-code.is-out {
+  background: #252a36;
+  color: var(--text-body);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .routing-mtrl-name {
+  color: var(--text-main);
+}
+
+[data-theme="dark"] .routing-mtrl-unit {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .routing-mtrl-remove {
+  color: #f87171;
+}
+
+[data-theme="dark"] .routing-mtrl-empty {
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+
+/* 다크: 읽기 모드 자재 칩 */
+[data-theme="dark"] .routing-mtrl-chip.is-in {
+  background: rgba(96, 165, 250, 0.12);
+  color: #4ade80;
+  border-color: rgba(96, 165, 250, 0.3);
+}
+
+[data-theme="dark"] .routing-mtrl-chip.is-out {
+  background: var(--primary-light);
+  color: #f87171;
+  border-color: rgba(87, 211, 161, 0.25);
 }
 
 /* 삭제 버튼 (기존 miniButton.danger 스타일 계승) */
