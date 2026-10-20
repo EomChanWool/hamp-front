@@ -68,11 +68,29 @@ export const setLogoutCallback = (
 
 let refreshPromise: Promise<string> | null = null
 
-// ── Server-down redirect ────────────────────────────────────────────────────
+// ── 에러 페이지 이동 ────────────────────────────────────────────────────────
+//
+//  에러 종류별 페이지
+//   - 'server-down' : /server-down  (5xx, 네트워크 단절, 타임아웃)
+//   - 'api-error'   : /api-error    (API 404 중 비즈니스 응답이 아닌 것 = 엔드포인트 없음)
+//   - (라우팅 404)  : '*' → NotFound (프론트 라우트에 없는 주소, 여기서 다루지 않음)
+
+type ErrorPageKind = 'server-down' | 'api-error'
+
+const ERROR_PATHS: Record<ErrorPageKind, string> = {
+  'server-down': '/server-down',
+  'api-error': '/api-error',
+}
+
+interface ErrorPageInfo {
+  status?: number
+  method?: string
+  url?: string
+}
 
 let navigateFn: NavigateFunction | null = null
 let getCurrentPathFn: (() => string) | null = null
-let isServerDownRedirecting = false
+let isErrorRedirecting = false
 
 export const setApiNavigator = (
   navigate: NavigateFunction,
@@ -84,64 +102,78 @@ export const setApiNavigator = (
 
 const getCurrentPath = () =>
   getCurrentPathFn?.() ??
-  window.location.pathname +
-  window.location.search +
-  window.location.hash
+  window.location.pathname + window.location.search + window.location.hash
 
-let isAlerting = false // 중복 얼럿 방지용
+const isOnErrorPage = (path: string) =>
+  Object.values(ERROR_PATHS).some((p) => path.startsWith(p))
 
-const goServerDown = () => {
-  // 만약 네비게이터가 없거나 아직 페이지가 준비되지 않았다면 임시 얼럿 및 새로고침 실행
+const goErrorPage = (kind: ErrorPageKind, info: ErrorPageInfo = {}) => {
+  if (isErrorRedirecting) return
+
+  const nowPath = getCurrentPath()
+  if (isOnErrorPage(nowPath)) return
+
+  isErrorRedirecting = true
+  setTimeout(() => {
+    isErrorRedirecting = false
+  }, 500)
+
+  // "다시 시도" 시 돌아올 경로
+  sessionStorage.setItem('preServerDownPath', nowPath)
+
+  // 아직 navigate 가 등록되지 않은 경우(앱 초기 로딩 등)에는 하드 이동
   if (!navigateFn) {
-    if (isAlerting) return
-    isAlerting = true
-    alert('서버 연결에 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.')
-    window.location.reload()
+    window.location.replace(ERROR_PATHS[kind])
     return
   }
 
-  if (isServerDownRedirecting) return
-
-  const nowPath = getCurrentPath()
-
-  if (nowPath.startsWith('/server-down')) return
-
-  isServerDownRedirecting = true
-
-  sessionStorage.setItem('preServerDownPath', nowPath)
-
-  navigateFn('/server-down', {
+  navigateFn(ERROR_PATHS[kind], {
     replace: true,
-    state: { from: nowPath },
+    state: { from: nowPath, ...info },
   })
-
-  setTimeout(() => {
-    isServerDownRedirecting = false
-  }, 500)
 }
 
-const isServerDownError = (error: unknown) => {
-  if (!axios.isAxiosError(error)) return false
+// ── 에러 분류 ───────────────────────────────────────────────────────────────
+
+/** 백엔드가 내려준 비즈니스 에러(JSON 의 code/message)인지 */
+const hasBusinessBody = (data: unknown): boolean => {
+  if (typeof data !== 'object' || data === null) return false
+  const { code, message } = data as { code?: unknown; message?: unknown }
+  return !!(code || message)
+}
+
+/**
+ * 공통 에러 페이지로 보낼 에러인지 분류한다.
+ * null 이면 호출한 화면에서 직접 처리하도록 reject 한다.
+ */
+const classifyError = (error: unknown): ErrorPageKind | null => {
+  if (!axios.isAxiosError(error)) return null
 
   const status = error.response?.status
   const code = error.code
-  const url = error.config?.url ?? ''
-  const responseData = error.response?.data
+  const data = error.response?.data
 
-  // 1. 서버가 죽었거나 네트워크 오류인 경우 (500번대, 네트워크 에러)
-  if (status && [500, 502, 503, 504].includes(status)) return true
-  if (code && ['ECONNABORTED', 'ERR_NETWORK'].includes(code)) return true
-  
-  // 2. 404 에러 처리 (라우팅 실패 등)
-  if (status === 404 && url.startsWith('/')) {
-    const isBusinessError = !!(responseData?.code || responseData?.message)
-    
-    if (!isBusinessError) {
-      return true
+  // 사용자가 취소한 요청은 무시
+  if (code === 'ERR_CANCELED') return null
+
+  // 1. 네트워크 단절 / 타임아웃 (응답 자체가 없음)
+  if (!error.response) {
+    if (code && ['ECONNABORTED', 'ETIMEDOUT', 'ERR_NETWORK'].includes(code)) {
+      return 'server-down'
     }
+    return null
   }
 
-  return false
+  // 2. 게이트웨이/서버 다운 계열
+  if (status && [502, 503, 504].includes(status)) return 'server-down'
+
+  // 3. 500: 백엔드 비즈니스 예외(JSON code/message)면 화면에서 처리, 아니면 서버 장애
+  if (status === 500) return hasBusinessBody(data) ? null : 'server-down'
+
+  // 4. 404: 비즈니스 응답(데이터 없음 등)이면 화면에서 처리, 아니면 API 엔드포인트 없음
+  if (status === 404) return hasBusinessBody(data) ? null : 'api-error'
+
+  return null
 }
 
 // ── Request Header 토큰 추출 헬퍼 함수 ───────────────────────────────────────
@@ -158,20 +190,25 @@ const extractRequestToken = (config: any): string | undefined => {
   return authHeader?.replace(/^Bearer\s+/i, '')
 }
 
-// ── Response interceptor ────────────────────────────────────────────────    
+// ── Response interceptor ────────────────────────────────────────────────
 
 apiClient.interceptors.response.use(
   (response) => response,
 
   async (error) => {
-    // 1. 서버 다운 또는 네트워크 단절 에러 처리
-    if (isServerDownError(error)) {
-      goServerDown()
-      // 서버 다운 페이지로 전환되므로, 호출한 페이지의 catch 알림을 억제합니다.
+    // 1. 서버 다운 / API 404 → 전용 에러 페이지
+    const errorKind = classifyError(error)
+    if (errorKind) {
+      goErrorPage(errorKind, {
+        status: error.response?.status,
+        method: error.config?.method,
+        url: error.config?.url,
+      })
+      // 에러 페이지로 전환되므로, 호출한 페이지의 catch 알림을 억제합니다.
       return new Promise(() => {})
     }
 
-    // ── 3. 403 Forbidden 에러 핸들링 ──────────────────────────────
+    // 2. 403 Forbidden 에러 핸들링
     if (axios.isAxiosError(error) && error.response?.status === 403) {
       const errorMessage =
         error.response?.data?.message || '접근 권한이 없습니다.'
@@ -187,7 +224,7 @@ apiClient.interceptors.response.use(
       return new Promise(() => {})
     }
 
-    // 2. 401 Unauthorized 에러 핸들링
+    // 3. 401 Unauthorized 에러 핸들링
     if (axios.isAxiosError(error) && error.response?.status === 401) {
       const originalRequest = error.config
       const errorCode = error.response?.data?.code
@@ -223,12 +260,12 @@ apiClient.interceptors.response.use(
       // 초기 비밀번호 변경 필요 시 강제 리다이렉트
       if (errorCode === 'PASSWORD_CHANGE_REQUIRED') {
         const nowPath = getCurrentPath()
-        
+
         // 무한 리다이렉트 방지
         if (!nowPath.includes('/change-password')) {
           navigateFn?.('/change-password', { replace: true })
         }
-        
+
         // 화면 전환이 일어나므로 개별 컴포넌트의 catch(에러 토스트 등) 차단
         return new Promise(() => {})
       }
