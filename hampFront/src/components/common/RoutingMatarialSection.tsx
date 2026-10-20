@@ -156,6 +156,10 @@ interface RoutingMaterialSectionProps {
   disabled?: boolean;
   /** 공정이 바뀔 때 [+ 추가] 열림 상태를 초기화하기 위한 key (보통 operCode) */
   resetKey?: string;
+  // 현재 품목 종류 (0: 식품, 1: 섬유)
+  productType?: 0 | 1;
+  // 최종공정 여부 (Y: 최종공정, N: 일반공정)
+  finalYn: string;
 }
 
 export function RoutingMaterialSection({
@@ -164,31 +168,80 @@ export function RoutingMaterialSection({
   excludeItemCode,
   disabled,
   resetKey,
+  productType,
+  finalYn,
 }: RoutingMaterialSectionProps) {
-  const [options, setOptions] = useState<ItemOptionResponse[]>([]);
+  const [inOptions, setInOptions] = useState<ItemOptionResponse[]>([]);
+  const [outOptions, setOutOptions] = useState<ItemOptionResponse[]>([]);
 
-  // 품목 셀렉트 옵션 조회 (마운트 시 1회)
+  // 투입/산출 자재 옵션 조회
   useEffect(() => {
     let alive = true;
+
     const fetchOptions = async () => {
+      // 제품 종류가 선택되지 않았으면 조회하지 않음
+      if (productType === undefined) {
+        setInOptions([]);
+        setOutOptions([]);
+        return;
+      }
+
       try {
-        const res = await ItemApi.getOptions();
-        if (alive) setOptions(res.data ?? []);
+        const [inRes, outRes] = await Promise.all([
+          // 투입: 원료 + 반제품
+          ItemApi.getOptions({
+            productType,
+            category: [0, 1],
+          }),
+
+          // 산출: 최종공정이면 완제품만, 일반공정이면 원료 + 반제품
+          ItemApi.getOptions({
+            productType,
+            category: finalYn === "Y" ? [2] : [0, 1],
+          }),
+        ]);
+
+        if (alive) {
+          setInOptions(inRes.data ?? []);
+          setOutOptions(outRes.data ?? []);
+        }
       } catch (error) {
         console.error("품목 옵션 목록 조회 실패:", error);
+
+        if (alive) {
+          setInOptions([]);
+          setOutOptions([]);
+        }
       }
     };
+
     fetchOptions();
+
     return () => {
       alive = false;
     };
-  }, []);
+  }, [productType, finalYn]);
 
-  // 이 공정에서 이미 쓰인 품목 + 자기 자신은 선택지에서 제외
-  const availableOptions = useMemo(() => {
-    const used = new Set(materials.map((m) => m.itemCode));
-    return options.filter((o) => o.itemCode !== excludeItemCode && !used.has(o.itemCode));
-  }, [options, materials, excludeItemCode]);
+  // 이미 사용 중인 품목 + 자기 자신 제외
+  const used = useMemo(
+    () => new Set(materials.map((m) => m.itemCode)),
+    [materials]
+  );
+
+  const availableInOptions = useMemo(
+    () =>
+      inOptions.filter(
+        (o) => o.itemCode !== excludeItemCode && !used.has(o.itemCode)
+      ),
+    [inOptions, excludeItemCode, used]
+  );
+
+  const availableOutOptions = useMemo(
+    () => outOptions.filter(
+      (o) => !used.has(o.itemCode) || o.itemCode === excludeItemCode
+    ),
+    [outOptions, excludeItemCode, used]
+  );
 
   const inList = materials.filter((m) => m.ioType === "IN");
   const outList = materials.filter((m) => m.ioType === "OUT");
@@ -213,7 +266,7 @@ export function RoutingMaterialSection({
         ioType="IN"
         title="투입 자재 (IN)"
         list={inList}
-        availableOptions={availableOptions}
+        availableOptions={availableInOptions}
         disabled={disabled}
         onAdd={(o) => handleAdd("IN", o)}
         onRemove={(code) => handleRemove("IN", code)}
@@ -224,7 +277,7 @@ export function RoutingMaterialSection({
         ioType="OUT"
         title="산출 자재 (OUT)"
         list={outList}
-        availableOptions={availableOptions}
+        availableOptions={availableOutOptions}
         disabled={disabled}
         onAdd={(o) => handleAdd("OUT", o)}
         onRemove={(code) => handleRemove("OUT", code)}
