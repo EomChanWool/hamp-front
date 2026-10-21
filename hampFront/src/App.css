@@ -1534,12 +1534,6 @@ textarea.tableInput {
   color: var(--text-body);
 }
 
-.dateQuickRange button.active {
-  background: var(--primary-light);
-  border-color: var(--primary);
-  color: var(--text-heading);
-}
-
 /* ---------- Custom Select ---------- */
 
 .searchBand select.selectNative {

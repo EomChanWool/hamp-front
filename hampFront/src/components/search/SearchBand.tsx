@@ -280,13 +280,24 @@ const formatDate = (date: Date) => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
+// 대상 월에 같은 날이 없으면 그 달 말일로 맞춤 (예: 3/31의 1개월 전 → 2/28)
+const subtractMonths = (date: Date, months: number) => {
+  const year = date.getFullYear();
+  const month = date.getMonth() - months;
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  return new Date(year, month, Math.min(date.getDate(), lastDay));
+};
+
 const getQuickRangeStart = (key: QuickRangeKey, today: Date) => {
-  const start = new Date(today);
-  if (key === "1w") start.setDate(start.getDate() - 7);
-  if (key === "1m") start.setMonth(start.getMonth() - 1);
-  if (key === "3m") start.setMonth(start.getMonth() - 3);
-  if (key === "6m") start.setMonth(start.getMonth() - 6);
-  return start;
+  if (key === "1w") {
+    const start = new Date(today);
+    start.setDate(start.getDate() - 7);
+    return start;
+  }
+  if (key === "1m") return subtractMonths(today, 1);
+  if (key === "3m") return subtractMonths(today, 3);
+  if (key === "6m") return subtractMonths(today, 6);
+  return new Date(today);
 };
 
 export function SearchBand({
@@ -298,9 +309,6 @@ export function SearchBand({
   const panelId = useId();
   const [resetKey, setResetKey] = useState(0);
   const [expanded, setExpanded] = useState(initialExpanded);
-  const [quickRanges, setQuickRanges] = useState<
-    Record<number, QuickRangeKey>
-  >({});
   const keywordRef = useRef<HTMLInputElement>(null);
   const scopeRef = useRef<HTMLSelectElement>(null);
 
@@ -344,7 +352,6 @@ export function SearchBand({
     if (keywordRef.current) keywordRef.current.value = "";
     if (scopeRef.current) scopeRef.current.value = "0";
     onReset?.();
-    setQuickRanges({});
     setResetKey((prev) => prev + 1);
   };
 
@@ -355,11 +362,7 @@ export function SearchBand({
     }
   };
 
-  const applyQuickRange = (
-    field: SearchDateField,
-    index: number,
-    key: QuickRangeKey,
-  ) => {
+  const applyQuickRange = (field: SearchDateField, key: QuickRangeKey) => {
     const today = new Date();
     if (field.startRef.current) {
       field.startRef.current.value = formatDate(getQuickRangeStart(key, today));
@@ -367,16 +370,6 @@ export function SearchBand({
     if (field.endRef.current) {
       field.endRef.current.value = formatDate(today);
     }
-    setQuickRanges((prev) => ({ ...prev, [index]: key }));
-  };
-
-  const clearQuickRange = (index: number) => {
-    setQuickRanges((prev) => {
-      if (!(index in prev)) return prev;
-      const next = { ...prev };
-      delete next[index];
-      return next;
-    });
   };
 
   const renderField = (field: SearchField, index: number) => {
@@ -432,7 +425,6 @@ export function SearchBand({
               type="date"
               defaultValue=""
               name={field.name ? `${field.name}Start` : undefined}
-              onChange={() => clearQuickRange(index)}
             />
             <span aria-hidden="true">~</span>
             <input
@@ -440,7 +432,6 @@ export function SearchBand({
               type="date"
               defaultValue=""
               name={field.name ? `${field.name}End` : undefined}
-              onChange={() => clearQuickRange(index)}
             />
           </div>
         )}
@@ -461,9 +452,7 @@ export function SearchBand({
             <button
               key={range.key}
               type="button"
-              className={quickRanges[index] === range.key ? "active" : undefined}
-              aria-pressed={quickRanges[index] === range.key}
-              onClick={() => applyQuickRange(field, index, range.key)}
+              onClick={() => applyQuickRange(field, range.key)}
             >
               {range.label}
             </button>
