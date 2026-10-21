@@ -28,13 +28,11 @@ export function MasterEquipmentCreatePage() {
 
   // 폼 상태 관리
   const [form, setForm] = useState<{
-    eqCode: string;
     operCode: string;
     eqNm: string;
     eqType: string;
     manufacturer: string;
   }>({
-    eqCode: "",
     operCode: "",
     eqNm: "",
     eqType: "",
@@ -51,28 +49,11 @@ export function MasterEquipmentCreatePage() {
     navigate(queryString ? `/master/equipment?${queryString}` : "/master/equipment");
   };
 
-  // 유효성 검사
-  const validateForm = (): boolean => {
-    const trimmedCode = form.eqCode.trim();
-    if (!trimmedCode) {
-      alert("장비 코드를 입력해주세요.");
-      return false;
-    }
-    if (trimmedCode.length > 30) {
-      alert("장비 코드는 최대 30자까지 입력 가능합니다.");
-      return false;
-    }
-    return true;
-  };
-
   // 제출 핸들러
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) return;
-
     const payload: EquipmentCreateRequest = {
-      eqCode: form.eqCode.trim(),
       operCode: form.operCode.trim() || null,
       eqNm: form.eqNm.trim() || null,
       eqType: form.eqType.trim() || null,
@@ -110,20 +91,7 @@ export function MasterEquipmentCreatePage() {
             <div className="createSection">
               <h2 className="createSectionTitle">기본정보</h2>
               <div className="createGrid2Cols">
-                <div className="createField">
-                  <label className="requiredLabel">
-                    장비코드 <span className="required">*</span>
-                  </label>
-                  <input
-                    className="tableInput"
-                    value={form.eqCode}
-                    disabled={isSubmitting}
-                    onChange={(e) => handleChange("eqCode", e.target.value)}
-                    placeholder="예: EQ001"
-                    maxLength={30}
-                  />
-                </div>
-
+    
                 <div className="createField">
                   <label>공정명</label>
                   <select
