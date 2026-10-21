@@ -3,10 +3,8 @@ import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
 /** 수주 등록 요청 */
 export interface SalesOrderCreateRequest {
-    orderCode: string;
     bpCode: string;
     dueDate?: string | null;
-    status?: string | null;
     note?: string | null;
     lines?: SalesOrderLineRequest[];
 }

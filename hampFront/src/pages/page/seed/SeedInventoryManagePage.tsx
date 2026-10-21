@@ -12,8 +12,11 @@ import {
     type StockHistoryResponse,
     type StockAdjustmentRequest,
 } from '@/api/seed/StockHistory';
-import { ItemApi, type ItemOptionResponse } from '@/api/master/Item';
+import { ItemApi, type ItemOptionResponse, type ItemCategory } from '@/api/master/Item';
 import { PenIcon, RotateIcon, TriangleIcon } from "@/components/icons/CustomIcons";
+
+/** 검색/등록에 노출할 품목 구분 (0: 원료, 2: 완제품 / 1: 반제품 제외) */
+const SELECTABLE_CATEGORIES: ItemCategory[] = [0, 2];
 
 export function SeedInventoryManagePage() {
     const [historyList, setHistoryList] = useState<StockHistoryResponse[]>([]);
@@ -72,7 +75,11 @@ export function SeedInventoryManagePage() {
 
     const fetchItemOptions = useCallback(async () => {
         try {
-            const res = await ItemApi.getOptions({ productType: 0 });
+            // 씨드(0) 품목 중 반제품(1) 제외: 원료(0), 완제품(2)만 조회
+            const res = await ItemApi.getOptions({
+                productType: 0,
+                category: SELECTABLE_CATEGORIES,
+            });
             setItemOptions(res.data ?? []);
         } catch (error) {
             console.error('품목 옵션 조회 실패:', error);
@@ -105,7 +112,6 @@ export function SeedInventoryManagePage() {
                 options: [
                     { label: '전체', value: '' },
                     { label: '원료', value: '0' },
-                    { label: '반제품', value: '1' },
                     { label: '완제품', value: '2' },
                 ],
             },
