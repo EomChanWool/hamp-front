@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useEffect,
   useId,
   useRef,
@@ -262,6 +263,32 @@ function SearchSelect({
 
 const SCOPE_LIMIT = 2;
 
+const QUICK_RANGES = [
+  { key: "today", label: "오늘" },
+  { key: "1w", label: "1주" },
+  { key: "1m", label: "1개월" },
+  { key: "3m", label: "3개월" },
+  { key: "6m", label: "6개월" },
+] as const;
+
+type QuickRangeKey = (typeof QUICK_RANGES)[number]["key"];
+
+const formatDate = (date: Date) => {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+const getQuickRangeStart = (key: QuickRangeKey, today: Date) => {
+  const start = new Date(today);
+  if (key === "1w") start.setDate(start.getDate() - 7);
+  if (key === "1m") start.setMonth(start.getMonth() - 1);
+  if (key === "3m") start.setMonth(start.getMonth() - 3);
+  if (key === "6m") start.setMonth(start.getMonth() - 6);
+  return start;
+};
+
 export function SearchBand({
   fields,
   onSearch,
@@ -271,6 +298,9 @@ export function SearchBand({
   const panelId = useId();
   const [resetKey, setResetKey] = useState(0);
   const [expanded, setExpanded] = useState(initialExpanded);
+  const [quickRanges, setQuickRanges] = useState<
+    Record<number, QuickRangeKey>
+  >({});
   const keywordRef = useRef<HTMLInputElement>(null);
   const scopeRef = useRef<HTMLSelectElement>(null);
 
@@ -314,6 +344,7 @@ export function SearchBand({
     if (keywordRef.current) keywordRef.current.value = "";
     if (scopeRef.current) scopeRef.current.value = "0";
     onReset?.();
+    setQuickRanges({});
     setResetKey((prev) => prev + 1);
   };
 
@@ -322,6 +353,30 @@ export function SearchBand({
       e.preventDefault();
       handleSearch();
     }
+  };
+
+  const applyQuickRange = (
+    field: SearchDateField,
+    index: number,
+    key: QuickRangeKey,
+  ) => {
+    const today = new Date();
+    if (field.startRef.current) {
+      field.startRef.current.value = formatDate(getQuickRangeStart(key, today));
+    }
+    if (field.endRef.current) {
+      field.endRef.current.value = formatDate(today);
+    }
+    setQuickRanges((prev) => ({ ...prev, [index]: key }));
+  };
+
+  const clearQuickRange = (index: number) => {
+    setQuickRanges((prev) => {
+      if (!(index in prev)) return prev;
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
   };
 
   const renderField = (field: SearchField, index: number) => {
@@ -337,7 +392,7 @@ export function SearchBand({
       );
     }
 
-    return (
+    const fieldLabel = (
       <label
         key={`${field.label}-${index}`}
         className={[
@@ -377,6 +432,7 @@ export function SearchBand({
               type="date"
               defaultValue=""
               name={field.name ? `${field.name}Start` : undefined}
+              onChange={() => clearQuickRange(index)}
             />
             <span aria-hidden="true">~</span>
             <input
@@ -384,10 +440,36 @@ export function SearchBand({
               type="date"
               defaultValue=""
               name={field.name ? `${field.name}End` : undefined}
+              onChange={() => clearQuickRange(index)}
             />
           </div>
         )}
       </label>
+    );
+
+    if (field.type !== "date") return fieldLabel;
+
+    return (
+      <Fragment key={`${field.label}-${index}`}>
+        {fieldLabel}
+        <div
+          className="dateQuickRange"
+          role="group"
+          aria-label={`${field.label} 빠른 기간 선택`}
+        >
+          {QUICK_RANGES.map((range) => (
+            <button
+              key={range.key}
+              type="button"
+              className={quickRanges[index] === range.key ? "active" : undefined}
+              aria-pressed={quickRanges[index] === range.key}
+              onClick={() => applyQuickRange(field, index, range.key)}
+            >
+              {range.label}
+            </button>
+          ))}
+        </div>
+      </Fragment>
     );
   };
 
