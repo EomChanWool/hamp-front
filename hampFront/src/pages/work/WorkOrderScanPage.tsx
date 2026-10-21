@@ -10,7 +10,14 @@ import {
 import axios from 'axios';
 import { apiClient } from '@/api/apiClient';
 import { WorkOrderApi } from '@/api/WorkOrder';
-import type { WorkOrderLineScanResponse, WorkOrderPerformanceDefectRequest, WorkOrderPerformanceScanResponse, ZoneType } from '@/api/WorkOrder';
+import type {
+  WorkOrderLineScanResponse,
+  WorkOrderPerformanceDefectRequest,
+  WorkOrderPerformanceMaterialQtyRequest,
+  WorkOrderPerformanceScanResponse,
+  ZoneType,
+} from '@/api/WorkOrder';
+import type { ItemOptionResponse } from '@/api/master/Item';
 import { DefectApi, type DefectOptionResponse } from '@/api/master/Defect';
 import { isValidWorkZone } from '@/utils/common';
 import '@/pages/work/WorkTabletHome.css';
@@ -18,11 +25,27 @@ import '@/pages/work/WorkSeedReportScanPage.css';
 import '@/pages/work/WorkOrderScanPage.css';
 
 type ConnectionStatus = 'connecting' | 'open' | 'closed';
-type FinishInputType = 'GOOD' | 'DEFECT';
+
+type FinishInputType = 'OUTPUT' | 'DEFECT';
 
 interface ScanFailure {
   code: string;
   message: string;
+}
+
+/** 화면 표시용 자재 입력 내역 (전송용 payload 와 달리 이름/단위까지 들고 있음) */
+interface MaterialSummary {
+  itemCode: string;
+  itemNm: string;
+  unit: string;
+  qty: number;
+}
+
+/** 이번 화면에서 방금 처리한 공정의 투입/산출 내역 (다음 재스캔 전까지 즉시 보여주기 위한 용도) */
+interface LocalPerformance {
+  inputs?: MaterialSummary[];
+  outputs?: MaterialSummary[];
+  defectQty?: number;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -33,6 +56,20 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const KEYPAD_KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', 'back'];
+
+const getStartMaterials = (scan: WorkOrderPerformanceScanResponse): ItemOptionResponse[] =>
+  scan.requiredMaterials ?? [];
+
+const getFinishMaterials = (scan: WorkOrderPerformanceScanResponse): ItemOptionResponse[] =>
+  scan.requiredMaterials ?? [];
+
+/** 키패드 입력을 문자열에 반영 (소수점 1개, 최대 10자리) */
+const applyKeypad = (prev: string, key: string) => {
+  if (key === 'back') return prev.slice(0, -1);
+  if (key === '.' && prev.includes('.')) return prev;
+  if (prev.length >= 10) return prev;
+  return prev + key;
+};
 
 function NumericKeypad({ onPress }: { onPress: (key: string) => void }) {
   return (
@@ -48,6 +85,45 @@ function NumericKeypad({ onPress }: { onPress: (key: string) => void }) {
         </button>
       ))}
     </div>
+  );
+}
+
+function MaterialQtyInput({
+  materials,
+  values,
+  activeCode,
+  onSelect,
+  onKeyPress,
+}: {
+  materials: ItemOptionResponse[];
+  values: Record<string, string>;
+  activeCode: string;
+  onSelect: (itemCode: string) => void;
+  onKeyPress: (key: string) => void;
+}) {
+  if (materials.length === 0) {
+    return <div className="workOrderMaterialEmpty">등록된 자재가 없습니다.</div>;
+  }
+
+  return (
+    <>
+      <div className="workOrderMaterialList">
+        {materials.map((m) => (
+          <button
+            key={m.itemCode}
+            type="button"
+            className={`workOrderMaterialRow ${activeCode === m.itemCode ? 'active' : ''}`}
+            onClick={() => onSelect(m.itemCode)}
+          >
+            <span className="workOrderMaterialName">{m.itemNm}</span>
+            <strong className="workOrderMaterialQty">
+              {values[m.itemCode] || '0'} <span>{m.unit}</span>
+            </strong>
+          </button>
+        ))}
+      </div>
+      <NumericKeypad onPress={onKeyPress} />
+    </>
   );
 }
 
@@ -68,17 +144,19 @@ export function WorkOrderScanPage() {
   const [scanResult, setScanResult] = useState<WorkOrderLineScanResponse | null>(null);
   const [scanFailure, setScanFailure] = useState<ScanFailure | null>(null);
 
-  // 설비 스캔으로 "공정 시작 가능"을 받은 상태 - 투입수량을 입력받아 확정해야 실제로 기록됨
+  // 설비 스캔으로 "공정 시작 가능"을 받은 상태 - 투입자재 수량을 입력받아 확정해야 실제로 기록됨
   const [pendingStart, setPendingStart] = useState<WorkOrderPerformanceScanResponse | null>(null);
-  const [qtyInput, setQtyInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
 
-  // 설비 재스캔 후 공정 종료 실적을 입력받기 위한 상태
+  // 설비 재스캔 후 공정 종료 실적(산출자재/불량)을 입력받기 위한 상태
   const [pendingFinish, setPendingFinish] = useState<WorkOrderPerformanceScanResponse | null>(null);
 
-  const [finishInputType, setFinishInputType] = useState<FinishInputType>('GOOD');
-  const [goodQty, setGoodQty] = useState('');
+  const [materialQtys, setMaterialQtys] = useState<Record<string, string>>({});
+  const [activeItemCode, setActiveItemCode] = useState('');
+
+  const [finishInputType, setFinishInputType] = useState<FinishInputType>('OUTPUT');
+
   const [defectQty, setDefectQty] = useState('');
   const [selectedDefectCode, setSelectedDefectCode] = useState('');
   const [defectEntries, setDefectEntries] = useState<WorkOrderPerformanceDefectRequest[]>([]);
@@ -98,32 +176,36 @@ export function WorkOrderScanPage() {
   const [completedOperCodes, setCompletedOperCodes] = useState<Set<string>>(new Set());
   const [completedBanner, setCompletedBanner] = useState<string | null>(null);
 
-  // 방금 이 화면에서 시작 확정한 공정과 그때 입력한 투입수량 - 다음 재스캔 전까지 "진행중" 표시와
-  // 투입수량을 즉시 보여주기 위한 용도 (재스캔하면 서버가 내려주는 step.inProgress/inputQty가
-  // DB 기준으로 대신 알려줌)
+  // 방금 이 화면에서 시작 확정한 공정 - 다음 재스캔 전까지 "진행중" 표시를 즉시 보여주기 위한 용도
   const [startedOperCode, setStartedOperCode] = useState<string | null>(null);
-  const [startedInputQty, setStartedInputQty] = useState<number | null>(null);
 
-  // 투입수량을 아코디언으로 펼쳐서 보고 있는 공정 코드들
+  const [localPerformance, setLocalPerformance] = useState<Record<string, LocalPerformance>>({});
+
+  // 공정 실적을 아코디언으로 펼쳐서 보고 있는 공정 코드들
   const [expandedOperCodes, setExpandedOperCodes] = useState<Set<string>>(new Set());
+
+  /** 자재 입력 상태 초기화 */
+  const resetMaterialInput = useCallback(() => {
+    setMaterialQtys({});
+    setActiveItemCode('');
+  }, []);
 
   const resetStartForm = useCallback(() => {
     setPendingStart(null);
-    setQtyInput('');
     setStartError(null);
-  }, []);
+    resetMaterialInput();
+  }, [resetMaterialInput]);
 
   const resetFinishForm = useCallback(() => {
     setPendingFinish(null);
-    setFinishInputType('GOOD');
-    setGoodQty('');
+    setFinishInputType('OUTPUT');
     setDefectQty('');
     setSelectedDefectCode('');
     setDefectEntries([]);
     setFinishError(null);
     setIsDefectDropdownOpen(false);
-  }, []);
-
+    resetMaterialInput();
+  }, [resetMaterialInput]);
 
   // 불량 옵션 조회
   const loadDefectOptions = useCallback(async (operCode: string) => {
@@ -152,7 +234,6 @@ export function WorkOrderScanPage() {
 
     loadDefectOptions(operCode);
   }, [pendingFinish?.operCode, loadDefectOptions]);
-
 
   // defCode -> 불량명 (옵션에 없으면 코드 그대로 표시)
   const getDefectName = (defCode: string) =>
@@ -198,14 +279,16 @@ export function WorkOrderScanPage() {
           resetFinishForm();
           resetStartForm();
           setPendingStart(data);
+          setActiveItemCode(getStartMaterials(data)[0]?.itemCode ?? '');
           return;
         }
 
-        // FINISH_READY - 바로 종료하지 않고 양품/불량 입력 화면을 띄운다.
+        // FINISH_READY - 바로 종료하지 않고 산출자재/불량 입력 화면을 띄운다.
         if (data.action === 'FINISH_READY') {
           resetStartForm();
           resetFinishForm();
           setPendingFinish(data);
+          setActiveItemCode(getFinishMaterials(data)[0]?.itemCode ?? '');
         }
 
         return;
@@ -221,7 +304,7 @@ export function WorkOrderScanPage() {
 
       setCompletedOperCodes(new Set());
       setStartedOperCode(null);
-      setStartedInputQty(null);
+      setLocalPerformance({});
       setExpandedOperCodes(new Set());
     });
 
@@ -250,42 +333,51 @@ export function WorkOrderScanPage() {
 
   // 새 스캔을 무시해야 하는 상태를 ref에 최신으로 반영
   useEffect(() => {
-    const hasStartInput = pendingStart !== null && qtyInput !== '';
+    const hasMaterialInput = Object.values(materialQtys).some((v) => v !== '');
+    const hasStartInput = pendingStart !== null && hasMaterialInput;
     const hasFinishInput =
-      pendingFinish !== null && (goodQty !== '' || defectQty !== '' || defectEntries.length > 0);
+      pendingFinish !== null && (hasMaterialInput || defectQty !== '' || defectEntries.length > 0);
 
     shouldIgnoreScanRef.current = isSubmitting || hasStartInput || hasFinishInput;
-  }, [isSubmitting, pendingStart, qtyInput, pendingFinish, goodQty, defectQty, defectEntries]);
+  }, [isSubmitting, pendingStart, pendingFinish, materialQtys, defectQty, defectEntries]);
 
-  const handleKeypadPress = useCallback((key: string) => {
-    if (key === 'back') {
-      setQtyInput((prev) => prev.slice(0, -1));
-      return;
-    }
-    setQtyInput((prev) => {
-      if (key === '.' && prev.includes('.')) return prev;
-      if (prev.length >= 10) return prev;
-      return prev + key;
-    });
+  // 자재 키패드 - 시작(투입)/종료(산출) 공용. 현재 선택된 자재의 수량 문자열을 수정
+  const handleMaterialKeyPress = useCallback(
+    (key: string) => {
+      if (!activeItemCode) return;
+      setMaterialQtys((prev) => ({
+        ...prev,
+        [activeItemCode]: applyKeypad(prev[activeItemCode] ?? '', key),
+      }));
+    },
+    [activeItemCode],
+  );
+
+  // 불량 수량 전용 키패드 (기존 handleFinishKeypadPress 에서 양품 분기 제거)
+  const handleDefectKeypadPress = useCallback((key: string) => {
+    setDefectQty((prev) => applyKeypad(prev, key));
   }, []);
 
-  const handleFinishKeypadPress = useCallback(
-    (key: string) => {
-      const setter = finishInputType === 'GOOD' ? setGoodQty : setDefectQty;
+  const buildMaterialPayload = (
+    materials: ItemOptionResponse[],
+    { requireAll }: { requireAll: boolean },
+  ): { payload: WorkOrderPerformanceMaterialQtyRequest[]; summary: MaterialSummary[] } | null => {
+    const rows = materials.map((m) => ({
+      itemCode: m.itemCode,
+      itemNm: m.itemNm,
+      unit: m.unit,
+      qty: Number(materialQtys[m.itemCode] || 0),
+    }));
 
-      if (key === 'back') {
-        setter((prev) => prev.slice(0, -1));
-        return;
-      }
+    if (rows.some((row) => Number.isNaN(row.qty) || row.qty < 0)) return null;
+    if (requireAll && rows.some((row) => row.qty <= 0)) return null;
 
-      setter((prev) => {
-        if (key === '.' && prev.includes('.')) return prev;
-        if (prev.length >= 10) return prev;
-        return prev + key;
-      });
-    },
-    [finishInputType],
-  );
+    const filled = rows.filter((row) => row.qty > 0);
+    return {
+      payload: filled.map(({ itemCode, qty }) => ({ itemCode, qty })),
+      summary: filled,
+    };
+  };
 
   const handleAddDefect = () => {
     const qty = Number(defectQty);
@@ -338,64 +430,55 @@ export function WorkOrderScanPage() {
     });
   };
 
-  const updateFinishedStepPerformance = useCallback(
-    ({
-      operCode,
-      inputQty,
-      outputQty,
-      defectQty,
-      yieldRate,
-    }: {
-      operCode: string;
-      inputQty: number | null;
-      outputQty: number;
-      defectQty: number;
-      yieldRate: number;
-    }) => {
-      setScanResult((prev) => {
-        if (!prev) return prev;
+  const markStepFinished = useCallback((operCode: string, totalDefectQty: number) => {
+    setScanResult((prev) => {
+      if (!prev) return prev;
 
-        return {
-          ...prev,
-          routingSteps: prev.routingSteps.map((step) =>
-            step.operCode === operCode
-              ? {
-                ...step,
-                done: true,
-                inProgress: false,
-                inputQty,
-                outputQty,
-                defectQty,
-                yieldRate,
-              }
-              : step,
-          ),
-        };
-      });
-    },
-    [],
-  );
+      return {
+        ...prev,
+        routingSteps: prev.routingSteps.map((step) =>
+          step.operCode === operCode
+            ? { ...step, done: true, inProgress: false, defectQty: totalDefectQty }
+            : step,
+        ),
+      };
+    });
+  }, []);
 
   const handleConfirmStart = async () => {
     if (!pendingStart) return;
 
-    const qty = Number(qtyInput);
-    if (!qtyInput || Number.isNaN(qty) || qty <= 0) {
-      setStartError('투입수량을 올바르게 입력해 주세요.');
+    const materials = getStartMaterials(pendingStart);
+    const built = buildMaterialPayload(materials, { requireAll: true });
+
+    if (!built) {
+      setStartError('모든 투입자재의 수량을 올바르게 입력해 주세요.');
       return;
     }
 
-    const unit = scanResult?.unit ?? '';
-    if (!window.confirm(`${pendingStart.operNm} 공정을 투입수량 ${qty.toLocaleString()}${unit}으로 시작하시겠습니까?`)) {
+    const summaryText = built.summary
+      .map((m) => `${m.itemNm} ${m.qty.toLocaleString()}${m.unit}`)
+      .join('\n');
+
+    if (!window.confirm(`${pendingStart.operNm} 공정을 아래 투입자재로 시작하시겠습니까?\n\n${summaryText}`)) {
       return;
     }
 
     setIsSubmitting(true);
     setStartError(null);
     try {
-      await WorkOrderApi.startPerformance({ zone: Number(zone) as ZoneType, operCode: pendingStart.operCode, qty });
+      await WorkOrderApi.startPerformance({
+        zone: Number(zone) as ZoneType,
+        operCode: pendingStart.operCode,
+        materials: built.payload,
+      });
+
       setStartedOperCode(pendingStart.operCode);
-      setStartedInputQty(qty);
+      // 방금 입력한 투입자재를 화면에 즉시 표시 (재스캔 전까지)
+      setLocalPerformance((prev) => ({
+        ...prev,
+        [pendingStart.operCode]: { ...prev[pendingStart.operCode], inputs: built.summary },
+      }));
       resetStartForm();
     } catch (err) {
       const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
@@ -408,14 +491,15 @@ export function WorkOrderScanPage() {
   const handleConfirmFinish = async () => {
     if (!pendingFinish) return;
 
-    const good = Number(goodQty || 0);
-    const totalDefectQty = defectEntries.reduce((sum, entry) => sum + entry.qty, 0);
-    const totalQty = good + totalDefectQty;
+    const materials = getFinishMaterials(pendingFinish);
+    const built = buildMaterialPayload(materials, { requireAll: false });
 
-    if (Number.isNaN(good) || good < 0) {
-      setFinishError('양품 수량을 올바르게 입력해 주세요.');
+    if (!built) {
+      setFinishError('산출자재 수량을 올바르게 입력해 주세요.');
       return;
     }
+
+    const totalDefectQty = defectEntries.reduce((sum, entry) => sum + entry.qty, 0);
 
     // 현재 불량 입력창에 값을 입력해놓고
     // "불량 내역 추가"를 누르지 않은 상태
@@ -424,23 +508,22 @@ export function WorkOrderScanPage() {
       return;
     }
 
-    if (totalQty <= 0) {
-      setFinishError('양품 또는 불량 수량을 입력해 주세요.');
+    // 산출자재도 불량도 하나도 없으면 종료할 수 없음
+    if (built.payload.length === 0 && defectEntries.length === 0) {
+      setFinishError('산출자재 또는 불량 수량을 입력해 주세요.');
       return;
     }
 
-    if (scanResult && totalQty > scanResult.instructQty) {
-      setFinishError(
-        `생산수량은 지시수량 ${scanResult.instructQty.toLocaleString()} ${scanResult.unit}을 초과할 수 없습니다.`,
-      );
-      return;
-    }
+    const outputText =
+      built.summary.length > 0
+        ? built.summary.map((m) => `${m.itemNm} ${m.qty.toLocaleString()}${m.unit}`).join('\n')
+        : '없음';
 
     if (
       !window.confirm(
         `${pendingFinish.operNm} 공정을 종료하시겠습니까?\n\n` +
-        `양품 ${good.toLocaleString()} ${scanResult?.unit ?? ''}\n` +
-        `불량 ${totalDefectQty.toLocaleString()} ${scanResult?.unit ?? ''}`,
+        `[산출자재]\n${outputText}\n\n` +
+        `[불량] ${totalDefectQty.toLocaleString()} ${defectUnit}`,
       )
     ) {
       return;
@@ -453,7 +536,7 @@ export function WorkOrderScanPage() {
       await WorkOrderApi.finishPerformance({
         zone: Number(zone) as ZoneType,
         operCode: pendingFinish.operCode,
-        qty: good,
+        materials: built.payload,
         ...(defectEntries.length > 0
           ? {
             defects: defectEntries.map((entry) => ({
@@ -464,33 +547,18 @@ export function WorkOrderScanPage() {
           : {}),
       });
 
-      // ------------------------------------------------------------
-      // 중요:
-      // 서버 저장 성공 직후 현재 화면의 routingSteps도 같이 갱신한다.
-      // 그렇지 않으면 서버에는 양품/불량이 저장됐는데
-      // 현재 scanResult는 이전 값을 계속 가지고 있게 된다.
-      // ------------------------------------------------------------
+      // 서버 저장 성공 직후 현재 화면의 공정 상태도 같이 갱신한다.
+      markStepFinished(pendingFinish.operCode, totalDefectQty);
 
-      const currentStep = scanResult?.routingSteps.find(
-        (step) => step.operCode === pendingFinish.operCode,
-      );
-
-      const inputQty =
-        currentStep?.inputQty ??
-        (startedOperCode === pendingFinish.operCode ? startedInputQty : null);
-
-      const yieldRate =
-        inputQty !== null && inputQty > 0
-          ? Number(((good / inputQty) * 100).toFixed(2))
-          : 0;
-
-      updateFinishedStepPerformance({
-        operCode: pendingFinish.operCode,
-        inputQty,
-        outputQty: good,
-        defectQty: totalDefectQty,
-        yieldRate,
-      });
+      // 방금 입력한 산출자재를 화면에 즉시 표시 (재스캔 전까지)
+      setLocalPerformance((prev) => ({
+        ...prev,
+        [pendingFinish.operCode]: {
+          ...prev[pendingFinish.operCode],
+          outputs: built.summary,
+          defectQty: totalDefectQty,
+        },
+      }));
 
       // 기존 완료 상태도 유지
       setCompletedOperCodes((prev) => {
@@ -500,15 +568,11 @@ export function WorkOrderScanPage() {
       });
 
       setStartedOperCode(null);
-      setStartedInputQty(null);
-
       setCompletedBanner(`${pendingFinish.operNm} 공정이 종료되었습니다.`);
 
       resetFinishForm();
     } catch (err) {
-      const message = axios.isAxiosError(err)
-        ? err.response?.data?.message
-        : undefined;
+      const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
 
       setFinishError(message || '공정 종료 처리에 실패했습니다.');
     } finally {
@@ -548,6 +612,25 @@ export function WorkOrderScanPage() {
   const isFoodZone = zone === '1';
   const zoneLabel = isFoodZone ? '식품동' : '섬유동';
   const zoneVariant = isFoodZone ? 'food' : 'crop';
+
+  // 폼에서 쓸 자재 목록 (pending 이 없으면 빈 배열)
+  const startMaterials = pendingStart ? getStartMaterials(pendingStart) : [];
+  const finishMaterials = pendingFinish ? getFinishMaterials(pendingFinish) : [];
+  // 불량 단위는 전체 완제품 단위가 아니라 현재 공정의 산출자재 단위를 따른다.
+  // 산출자재가 여러 개면 현재 선택된 자재를 우선하고, 선택값이 없으면 첫 산출자재를 사용한다.
+  const defectUnit =
+    finishMaterials.find((material) => material.itemCode === activeItemCode)?.unit ??
+    finishMaterials[0]?.unit ??
+    scanResult?.unit ??
+    '';
+
+  /** 자재 내역을 셀 안에 줄바꿈으로 나열 (투입량/양품량 칸 공용) */
+  const renderMaterialLines = (list: MaterialSummary[]) =>
+    list.map((m) => (
+      <span key={m.itemCode} className="workOrderRoutingPerformanceLine">
+        {m.itemNm} {m.qty.toLocaleString()} {m.unit}
+      </span>
+    ));
 
   return (
     <div className="workTabletPage">
@@ -702,16 +785,19 @@ export function WorkOrderScanPage() {
                         const isPending = pendingStart?.operCode === step.operCode;
                         // inProgress: 시작은 했는데 아직 종료(완료) 전인 상태 - done이면 더 이상 진행중이 아니므로 제외
                         const isInProgress = !isDone && (step.inProgress || startedOperCode === step.operCode);
-                        // 투입수량: 재스캔 후엔 서버가 DB 기준으로 내려주지만, 방금 이 화면에서 시작한
-                        // 공정은 아직 재스캔 전이라 서버 값이 없어 직전에 입력한 값을 그대로 보여준다
-                        const displayInputQty =
-                          step.inputQty ?? (startedOperCode === step.operCode ? startedInputQty : null);
+
+                        const local = localPerformance[step.operCode];
+                        const localInputs = local?.inputs ?? [];
+                        const localOutputs = local?.outputs ?? [];
+                        const displayDefectQty = step.defectQty ?? local?.defectQty ?? null;
 
                         const hasPerformance =
-                          displayInputQty !== null ||
+                          step.inputQty !== null ||
                           step.outputQty !== null ||
-                          step.defectQty !== null ||
-                          step.yieldRate !== null;
+                          displayDefectQty !== null ||
+                          step.yieldRate !== null ||
+                          localInputs.length > 0 ||
+                          localOutputs.length > 0;
 
                         const isExpanded = expandedOperCodes.has(step.operCode);
                         const isNext = !isPending && nextStep?.operCode === step.operCode;
@@ -746,9 +832,11 @@ export function WorkOrderScanPage() {
                                       <div className="workOrderRoutingPerformanceCell">
                                         <span className="workOrderRoutingPerformanceLabel">투입량</span>
                                         <strong className="workOrderRoutingPerformanceValue">
-                                          {displayInputQty !== null
-                                            ? `${displayInputQty.toLocaleString()} ${scanResult.unit}`
-                                            : '-'}
+                                          {step.inputQty !== null
+                                            ? `${step.inputQty.toLocaleString()} ${scanResult.unit}`
+                                            : localInputs.length > 0
+                                              ? renderMaterialLines(localInputs)
+                                              : '-'}
                                         </strong>
                                       </div>
 
@@ -757,15 +845,17 @@ export function WorkOrderScanPage() {
                                         <strong className="workOrderRoutingPerformanceValue">
                                           {step.outputQty !== null
                                             ? `${step.outputQty.toLocaleString()} ${scanResult.unit}`
-                                            : '-'}
+                                            : localOutputs.length > 0
+                                              ? renderMaterialLines(localOutputs)
+                                              : '-'}
                                         </strong>
                                       </div>
 
                                       <div className="workOrderRoutingPerformanceCell">
                                         <span className="workOrderRoutingPerformanceLabel">불량량</span>
                                         <strong className="workOrderRoutingPerformanceValue">
-                                          {step.defectQty !== null
-                                            ? `${step.defectQty.toLocaleString()} ${scanResult.unit}`
+                                          {displayDefectQty !== null
+                                            ? `${displayDefectQty.toLocaleString()} ${scanResult.unit}`
                                             : '-'}
                                         </strong>
                                       </div>
@@ -812,14 +902,18 @@ export function WorkOrderScanPage() {
                                 )}
                               </div>
 
+                              {/* ───────── 공정 시작: 투입자재 수량 입력 ───────── */}
                               {isPending && (
                                 <div className="workOrderPerformanceForm">
-                                  <div className="workOrderPerformanceLabel">투입수량 입력</div>
-                                  <div className="workScanQtyDisplay">
-                                    {qtyInput || '0'} <span>{scanResult.unit}</span>
-                                  </div>
+                                  <div className="workOrderPerformanceLabel">투입자재 수량 입력</div>
 
-                                  <NumericKeypad onPress={handleKeypadPress} />
+                                  <MaterialQtyInput
+                                    materials={startMaterials}
+                                    values={materialQtys}
+                                    activeCode={activeItemCode}
+                                    onSelect={setActiveItemCode}
+                                    onKeyPress={handleMaterialKeyPress}
+                                  />
 
                                   {startError && <div className="workScanErrorMsg">{startError}</div>}
 
@@ -843,20 +937,22 @@ export function WorkOrderScanPage() {
                                   </div>
                                 </div>
                               )}
+
+                              {/* ───────── 공정 종료: 산출자재 / 불량 입력 ───────── */}
                               {pendingFinish?.operCode === step.operCode && (
                                 <div className="workOrderFinishForm">
-                                  {/* 양품 / 불량 입력 선택 */}
+                                  {/* 산출자재 / 불량 입력 선택 */}
                                   <div className="workOrderFinishTabs">
                                     <button
                                       type="button"
-                                      className={finishInputType === 'GOOD' ? 'active' : ''}
+                                      className={finishInputType === 'OUTPUT' ? 'active' : ''}
                                       onClick={() => {
-                                        setFinishInputType('GOOD');
+                                        setFinishInputType('OUTPUT');
                                         setIsDefectDropdownOpen(false);
                                         setFinishError(null);
                                       }}
                                     >
-                                      양품 입력
+                                      산출자재 입력
                                     </button>
 
                                     <button
@@ -870,6 +966,20 @@ export function WorkOrderScanPage() {
                                       불량 입력
                                     </button>
                                   </div>
+
+                                  {/* 산출자재 탭: 자재별 수량 입력 (키패드 포함) */}
+                                  {finishInputType === 'OUTPUT' && (
+                                    <>
+                                      <div className="workOrderFinishLabel">산출자재 수량</div>
+                                      <MaterialQtyInput
+                                        materials={finishMaterials}
+                                        values={materialQtys}
+                                        activeCode={activeItemCode}
+                                        onSelect={setActiveItemCode}
+                                        onKeyPress={handleMaterialKeyPress}
+                                      />
+                                    </>
+                                  )}
 
                                   {/* 불량 입력을 선택했을 때만 불량 유형 선택 */}
                                   {finishInputType === 'DEFECT' && (
@@ -902,8 +1012,7 @@ export function WorkOrderScanPage() {
                                           </span>
 
                                           <ChevronDownIcon
-                                            className={`workOrderDefectDropdownIcon ${isDefectDropdownOpen ? 'isOpen' : ''
-                                              }`}
+                                            className={`workOrderDefectDropdownIcon ${isDefectDropdownOpen ? 'isOpen' : ''}`}
                                           />
                                         </button>
 
@@ -957,38 +1066,39 @@ export function WorkOrderScanPage() {
                                     </div>
                                   )}
 
-                                  {/* 현재 입력 중인 수량 */}
-                                  <div className="workOrderFinishLabel">
-                                    {finishInputType === 'GOOD' ? '산출량 (양품)' : '불량 수량'}
-                                  </div>
-
-                                  <div className="workScanQtyDisplay">
-                                    {(finishInputType === 'GOOD' ? goodQty : defectQty) || '0'}
-                                    <span>{scanResult.unit}</span>
-                                  </div>
-
-                                  {/* 숫자 키패드 */}
-                                  <NumericKeypad onPress={handleFinishKeypadPress} />
-
-                                  {/* 불량 내역 추가 */}
+                                  {/* 불량 탭: 불량 수량 표시 + 키패드 + 추가 버튼 (산출자재 탭에서는 숨김) */}
                                   {finishInputType === 'DEFECT' && (
-                                    <button
-                                      type="button"
-                                      className="workOrderAddDefectBtn"
-                                      onClick={handleAddDefect}
-                                    >
-                                      불량 내역 추가
-                                    </button>
+                                    <>
+                                      <div className="workOrderFinishLabel">불량 수량</div>
+
+                                      <div className="workScanQtyDisplay">
+                                        {defectQty || '0'}
+                                        <span>{defectUnit}</span>
+                                      </div>
+
+                                      <NumericKeypad onPress={handleDefectKeypadPress} />
+
+                                      <button
+                                        type="button"
+                                        className="workOrderAddDefectBtn"
+                                        onClick={handleAddDefect}
+                                      >
+                                        불량 내역 추가
+                                      </button>
+                                    </>
                                   )}
 
-                                  {/* 현재까지 입력된 불량 내역 */}
+                                  {/* 현재까지 입력된 산출자재 / 불량 내역 요약 */}
                                   <div className="workOrderDefectSummary">
-                                    <div className="workOrderDefectSummaryRow">
-                                      <span>산출량(양품)</span>
-                                      <strong>
-                                        {Number(goodQty || 0).toLocaleString()} {scanResult.unit}
-                                      </strong>
-                                    </div>
+                                    {/* 산출량(양품) 1줄 → 산출자재별 N줄 */}
+                                    {finishMaterials.map((m) => (
+                                      <div key={m.itemCode} className="workOrderDefectSummaryRow">
+                                        <span>산출 · {m.itemNm}</span>
+                                        <strong>
+                                          {Number(materialQtys[m.itemCode] || 0).toLocaleString()} {m.unit}
+                                        </strong>
+                                      </div>
+                                    ))}
 
                                     <div className="workOrderDefectSummaryHead">
                                       <span>불량 내역</span>
@@ -1012,7 +1122,7 @@ export function WorkOrderScanPage() {
                                               <span>{defectName}</span>
 
                                               <span className="workOrderDefectItemQty">
-                                                · {entry.qty.toLocaleString()} {scanResult.unit}
+                                                · {entry.qty.toLocaleString()} {defectUnit}
                                               </span>
                                             </div>
 

@@ -938,3 +938,77 @@
   font-size: 15px;
   font-weight: 800;
 }
+
+/* ================================================================
+   자재별 수량 입력 스타일
+================================================================ */
+
+/* ── 자재 입력 목록 (시작: 투입자재 / 종료: 산출자재 공용) ───── */
+.workOrderMaterialList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workOrderMaterialRow {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 지금 키패드로 입력 중인 자재 */
+.workOrderMaterialRow.active {
+  border-color: rgba(59, 130, 246, 0.6);
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--primary-light, #93c5fd);
+}
+
+.workOrderMaterialName {
+  min-width: 0;
+  word-break: keep-all;
+}
+
+.workOrderMaterialQty {
+  flex-shrink: 0;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.workOrderMaterialQty span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.workOrderMaterialEmpty {
+  padding: 14px;
+  color: #94a3b8;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ── 공정실적 카드: 자재가 여러 개일 때 칸 안에서 줄바꿈 ───── */
+.workOrderRoutingPerformanceLine {
+  display: block;
+  white-space: normal;
+  word-break: keep-all;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 600;
+}
