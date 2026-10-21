@@ -224,7 +224,6 @@ export function MasterOperationPage() {
         if (isCreatingNewRow) return;
         setEditingOperCode(null);
         editFormRef.current = {
-            operCode: "",
             depCode: "",
             operNm: "",
             stdTime: "",
@@ -240,16 +239,9 @@ export function MasterOperationPage() {
     const handleSaveCreate = async () => {
         if (isUpdating) return;
 
-        const newOperCode = editFormRef.current.operCode?.trim();
-        if (!newOperCode) {
-            window.alert("공정코드를 입력해주세요.");
-            return;
-        }
-
         setIsUpdating(true);
         try {
             const payload: OperationCreateRequest = {
-                operCode: newOperCode,
                 depCode: editFormRef.current.depCode?.trim() ?? "",
                 operNm: editFormRef.current.operNm?.trim() ?? "",
                 stdTime: editFormRef.current.stdTime?.toString().trim() ?? "",
@@ -358,18 +350,9 @@ export function MasterOperationPage() {
                 accessorKey: "operCode",
                 header: "공정코드",
                 cell: ({ row }) => {
-                    if (row.original.operCode === "__NEW_ROW__") {
-                        return (
-                            <input
-                                className="tableInput"
-                                defaultValue={editFormRef.current.operCode ?? ""}
-                                onChange={(e) => {
-                                    editFormRef.current.operCode = e.target.value;
-                                }}
-                                placeholder="공정코드 입력"
-                                autoFocus
-                            />
-                        );
+                    const isNewRow = row.original.operCode === "__NEW_ROW__";
+                    if (isNewRow) {
+                        return <span style={{ color: "#999" }}>(자동 채번)</span>;
                     }
                     return row.original.operCode;
                 },
