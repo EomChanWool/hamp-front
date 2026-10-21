@@ -55,8 +55,7 @@ export function MasterFactoryZonePage() {
   const [isCreatingNewRow, setIsCreatingNewRow] = useState(false);
 
   // 타이핑 시 리렌더링 방지 폼 Ref
-  const editFormRef = useRef<FactoryZoneUpdateRequest & { facCode?: string }>({
-    facCode: "",
+  const editFormRef = useRef<FactoryZoneUpdateRequest>({
     facNm: "",
     location: "",
     note: "",
@@ -188,7 +187,6 @@ export function MasterFactoryZonePage() {
     if (isCreatingNewRow) return;
     setEditingFacCode(null);
     editFormRef.current = {
-      facCode: "",
       facNm: "",
       location: "",
       note: "",
@@ -203,17 +201,9 @@ export function MasterFactoryZonePage() {
   // 인라인 신규 등록 API 저장
   const handleSaveCreate = async () => {
     if (isUpdating) return;
-
-    const newFacCode = editFormRef.current.facCode?.trim();
-    if (!newFacCode) {
-      window.alert("공장코드를 입력해주세요.");
-      return;
-    }
-
     setIsUpdating(true);
     try {
       const payload: FactoryZoneCreateRequest = {
-        facCode: newFacCode,
         facNm: editFormRef.current.facNm?.trim() || null,
         location: editFormRef.current.location?.trim() || null,
         note: editFormRef.current.note?.trim() || null,
@@ -318,18 +308,9 @@ export function MasterFactoryZonePage() {
         accessorKey: "facCode",
         header: "공장코드",
         cell: ({ row }) => {
-          if (row.original.facCode === "__NEW_ROW__") {
-            return (
-              <input
-                className="tableInput"
-                defaultValue={editFormRef.current.facCode ?? ""}
-                onChange={(e) => {
-                  editFormRef.current.facCode = e.target.value;
-                }}
-                placeholder="공장코드 입력"
-                autoFocus
-              />
-            );
+          const isNewRow = row.original.facCode === "__NEW_ROW__";
+          if (isNewRow) {
+            return <span style={{ color: "#999" }}>(자동 채번)</span>; 
           }
           return row.original.facCode;
         },
