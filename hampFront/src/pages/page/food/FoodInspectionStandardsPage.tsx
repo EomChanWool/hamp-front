@@ -35,21 +35,33 @@ export function FoodInspectionStandardsPage() {
 
   const itemNameRef = useRef<HTMLInputElement>(null)
   const inspectionTypeRef = useRef<HTMLInputElement>(null)
-  const inUseRef = useRef<HTMLInputElement>(null)
-  const appliedDateRef = useRef<HTMLInputElement>(null)
+  const inUseRef = useRef<HTMLSelectElement>(null)
+  const appliedStartRef = useRef<HTMLInputElement>(null)
+  const appliedEndRef = useRef<HTMLInputElement>(null)
 
   const searchFields: SearchField[] = [
     { type: 'input', label: '품목명', ref: itemNameRef, name: "equipmentName" },
     { type: 'input', label: '검사유형', ref: inspectionTypeRef, name: "equipmentName" },
-    { type: 'input', label: '사용여부', ref: inUseRef, name: "equipmentName" },
-    { type: 'input', label: '적용 시작일', ref: appliedDateRef, name: "equipmentName" },
+    {
+      type: 'select',
+      label: '사용여부',
+      ref: inUseRef,
+      name: 'inUse',
+      options: [
+        { label: '전체', value: '' },
+        { label: '사용', value: '사용' },
+        { label: '미사용', value: '미사용' },
+      ],
+    },
+    { type: 'date', label: '적용일', startRef: appliedStartRef, endRef: appliedEndRef, name: 'appliedDate' },
   ]
 
   const handleSearch = () => {
     const itemName = itemNameRef.current?.value.trim() ?? ''
     const inspectionType = inspectionTypeRef.current?.value.trim() ?? ''
     const inUse = inUseRef.current?.value.trim() ?? ''
-    const appliedDate = appliedDateRef.current?.value.trim() ?? ''
+    const appliedStart = appliedStartRef.current?.value ?? ''
+    const appliedEnd = appliedEndRef.current?.value ?? ''
 
     // 현재는 더미검사기준서에 필터로 걸러내고 있는데 추후에 api 연동할 것
     setFilteredStandards(
@@ -57,14 +69,15 @@ export function FoodInspectionStandardsPage() {
         (standard) =>
           (!itemName || standard.itemName.includes(itemName)) &&
           (!inspectionType || standard.inspectionType.includes(inspectionType)) &&
-          (!inUse || standard.inUse.includes(inUse)) &&
-          (!appliedDate || standard.appliedDate.includes(appliedDate)),
+          (!inUse || standard.inUse === inUse) &&
+          (!appliedStart || standard.appliedDate >= appliedStart) &&
+          (!appliedEnd || standard.appliedDate <= appliedEnd),
       ),
     )
   }
 
   const handleReset = () => {
-    ;[itemNameRef, inspectionTypeRef, inUseRef, appliedDateRef].forEach((ref) => {
+    ;[itemNameRef, inspectionTypeRef, inUseRef, appliedStartRef, appliedEndRef].forEach((ref) => {
       if (ref.current) ref.current.value = ''
     })
     setFilteredStandards(dummyInspectionStandards)
