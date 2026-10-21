@@ -283,6 +283,7 @@ export function SeedOutboundManagePage() {
       {
         accessorKey: "bpNm",
         header: "거래처",
+        enableSorting: false,
         cell: ({ getValue }) => getValue<string>() || "-",
       },
       {
@@ -301,6 +302,7 @@ export function SeedOutboundManagePage() {
       {
         accessorKey: "managerNm",
         header: "담당자",
+        enableSorting: false,
         cell: ({ row }) => {
           const { managerNm, managerId } = row.original;
           return managerNm ? `${managerNm} (${managerId})` : managerId || "-";
@@ -309,11 +311,13 @@ export function SeedOutboundManagePage() {
       {
         accessorKey: "lineCount",
         header: "라인 수",
+        enableSorting: false,
         cell: ({ getValue }) => `${getValue<number>() ?? 0}건`,
       },
       {
         accessorKey: "totalInstructQty",
         header: "지시수량 합계",
+        enableSorting: false,
         cell: ({ getValue }) => {
           const qty = getValue<number>();
           return qty !== undefined && qty !== null ? qty.toLocaleString() : "0";

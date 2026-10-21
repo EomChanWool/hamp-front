@@ -519,6 +519,7 @@ export function SeedReportReturnManagePage() {
       {
         accessorKey: "receiptBarcode",
         header: "입고 라벨",
+        enableSorting: false,
         cell: ({ row }) => {
           const { receiptBarcode, receivedAt } = row.original;
 
