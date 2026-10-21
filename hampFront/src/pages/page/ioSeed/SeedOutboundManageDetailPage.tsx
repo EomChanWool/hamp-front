@@ -81,51 +81,52 @@ export function SeedOutboundManageDetailPage() {
   // 출고지시 라인 테이블 컬럼
   // ------------------------------------------
   const columns = useMemo<ColumnDef<ShipmentOrderLineResponse>[]>(
-    () => [
-      {
-        accessorKey: "shipOrderLineId",
-        header: "출고라인ID",
-        cell: ({ getValue }) => (
-          <span className="food-table-code-cell">#{getValue<number>()}</span>
-        ),
-      },
-      {
-        accessorKey: "salesOrderLineId",
-        header: "수주라인ID",
-        cell: ({ getValue }) => `#${getValue<number>()}`,
-      },
-      {
-        accessorKey: "itemNm",
-        header: "품목",
-        cell: ({ row }) => (
-          <span className="food-cell-item-name">
-            {row.original.itemNm || "-"}
-            {row.original.itemCode && (
-              <span className="food-cell-item-code">
-                ({row.original.itemCode})
-              </span>
-            )}
+  () => [
+    {
+      accessorKey: "salesOrderLineId",
+      header: "연결 수주라인",
+      cell: ({ row }) => (
+        <div className="food-cell-flex-wrap">
+          <span className="food-cell-order-code">
+            {shipment?.orderCode ?? "-"}
           </span>
-        ),
-      },
-      {
-        accessorKey: "instructQty",
-        header: "지시수량",
-        cell: ({ row }) => (
-          <div className="shipment-qty-unit">
-            <span className="shipment-qty-value">
-              {(row.original.instructQty ?? 0).toLocaleString()}
+          <span className="food-cell-line-badge">
+            {row.original.salesOrderLineId}
+          </span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "itemNm",
+      header: "품목",
+      cell: ({ row }) => (
+        <span className="food-cell-item-name">
+          {row.original.itemNm || "-"}
+          {row.original.itemCode && (
+            <span className="food-cell-item-code">
+              ({row.original.itemCode})
             </span>
-
-            <span className="shipment-qty-unit-label">
-              {row.original.unit ?? ""}
-            </span>
-          </div>
-        ),
-      },
-    ],
-    []
-  );
+          )}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "instructQty",
+      header: "지시수량",
+      cell: ({ row }) => (
+        <div className="shipment-qty-unit">
+          <span className="shipment-qty-value">
+            {(row.original.instructQty ?? 0).toLocaleString()}
+          </span>
+          <span className="shipment-qty-unit-label">
+            {row.original.unit ?? ""}
+          </span>
+        </div>
+      ),
+    },
+  ],
+  [shipment?.orderCode]
+);
 
   // ------------------------------------------
   // 렌더링
@@ -182,7 +183,7 @@ export function SeedOutboundManageDetailPage() {
         </div>
 
         {/* 요약 정보 */}
-        <div className="food-summary-grid-box">
+        <div className="seedOut-summary-grid-box">
           <div>
             <div className="food-summary-label">출고일자</div>
             <div className="food-summary-value">{shipment?.shipDate || "-"}</div>
@@ -202,6 +203,14 @@ export function SeedOutboundManageDetailPage() {
           <div>
             <div className="food-summary-label">라인 수</div>
             <div className="food-summary-value">{lines.length}건</div>
+          </div>
+          <div>
+            <div className="food-summary-label">거래처명</div>
+            <div className="food-summary-value">{shipment?.bpNm || "-"}</div>
+          </div>
+          <div>
+            <div className="food-summary-label">납기일자</div>
+            <div className="food-summary-value">{shipment?.dueDate || "-"}</div>
           </div>
         </div>
 
