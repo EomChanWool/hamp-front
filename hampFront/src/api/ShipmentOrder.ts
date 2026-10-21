@@ -44,12 +44,22 @@ export interface ShipmentOrderLineResponse {
     instructQty: number;
     scannedQty: number;
     remainingQty: number;
+    lots: ShipmentOrderLineLotDetailResponse[];
+}
+
+/** 출고지시서 LOT 상세 응답 */
+export interface ShipmentOrderLineLotDetailResponse {
+    lotCode: string;
+    qty: number;
+    scannedAt: string;
 }
 
 /** 출고지시서 단건 응답 (lines 포함) - 태블릿 스캔 SSE 결과도 이 형태 그대로 내려옴 */
 export interface ShipmentOrderResponse {
     shipId: string;
     orderCode: string;
+    bpNm: string;
+    dueDate: string;
     shipDate: string;
     status: string; // ShipmentOrderStatus 값이 오지만, 서버 값 확장에 대비해 string으로 받음
     managerId: string;
