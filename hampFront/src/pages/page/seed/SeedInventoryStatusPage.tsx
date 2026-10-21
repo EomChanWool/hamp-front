@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useId, type KeyboardEvent } from 'react'
 import {
   CubeIcon,
-  BeakerIcon,
   ArchiveBoxIcon,
   ArrowUpIcon,
   ArrowDownIcon,
@@ -15,28 +14,41 @@ import { formatDateTime } from "@/utils/common";
 import { ItemStockApi, type ItemStockResponse, type ItemStockTrendResponse, type ItemStockSummaryResponse } from '@/api/seed/ItemStock'
 import '@pages/page/seed/Seed.css'
 
+type SeedCategory = '원료' | '완제품'
+
 interface SeedInventoryStatusRow {
   itemCode: string
   itemName: string
-  category: '원료' | '반제품' | '완제품'
+  category: SeedCategory
   currentStock: number
   unit: string;
   stockText: string
   updateTime: string
 }
 
-// 카테고리 → CSS modifier 클래스 매핑 (raw / semi / finished)
-const CATEGORY_CLASS_MAP: Record<SeedInventoryStatusRow['category'], 'raw' | 'semi' | 'finished'> = {
+// 카테고리 → CSS modifier 클래스 매핑 (raw / finished)
+const CATEGORY_CLASS_MAP: Record<SeedCategory, 'raw' | 'finished'> = {
   '원료': 'raw',
-  '반제품': 'semi',
   '완제품': 'finished',
 }
 
 // 카테고리 → Heroicons 아이콘 매핑
-const CATEGORY_ICON_MAP: Record<SeedInventoryStatusRow['category'], typeof CubeIcon> = {
+const CATEGORY_ICON_MAP: Record<SeedCategory, typeof CubeIcon> = {
   '원료': CubeIcon,
-  '반제품': BeakerIcon,
   '완제품': ArchiveBoxIcon,
+}
+
+// 백엔드 category 코드 → 카테고리 문자열 (1 = 반제품은 화면에서 사용하지 않음)
+const CATEGORY_CODE_MAP: Record<number, SeedCategory | undefined> = {
+  0: '원료',
+  2: '완제품',
+}
+
+// 탭 문자열 → 백엔드 category 코드
+const TAB_TO_CATEGORY: Record<'전체' | SeedCategory, number | undefined> = {
+  '전체': undefined,
+  '원료': 0,
+  '완제품': 2,
 }
 
 /* =========================================================================
@@ -46,7 +58,7 @@ const CATEGORY_ICON_MAP: Record<SeedInventoryStatusRow['category'], typeof CubeI
    - 포커스는 항상 트리거에 두고 aria-activedescendant 로 활성 옵션을 알림
    ========================================================================= */
 interface ItemSelectGroup {
-  label: SeedInventoryStatusRow['category']
+  label: SeedCategory
   items: SeedInventoryStatusRow[]
 }
 
@@ -233,7 +245,7 @@ function ItemSelect({ groups, value, onChange, disabled = false }: ItemSelectPro
 }
 
 export function SeedInventoryStatusPage() {
-  const [activeTab, setActiveTab] = useState<'전체' | '원료' | '반제품' | '완제품'>('전체')
+  const [activeTab, setActiveTab] = useState<'전체' | SeedCategory>('전체')
   const [selectedIndex, setSelectedIndex] = useState<number>(0)
   const [trendTab, setTrendTab] = useState<'월별' | '분기별' | '연도별'>('월별')
 
@@ -246,14 +258,6 @@ export function SeedInventoryStatusPage() {
   // 차트 막대 마우스 호버 시 툴팁 표시를 위한 상태 (현재 마우스가 올라간 데이터의 label 보관)
   const [hoveredBar, setHoveredBar] = useState<string | null>(null)
 
-  // 탭 문자열을 백엔드 category 코드(number)로 변환하는 매핑
-  const tabToCategoryMap: Record<'전체' | '원료' | '반제품' | '완제품', number | undefined> = {
-    '전체': undefined,
-    '원료': 0,
-    '반제품': 1,
-    '완제품': 2,
-  }
-
   // 1. 탭(`activeTab`)이 변경될 때마다 백엔드 API를 호출하여 해당 품목 리스트 및 요약 정보 조회
   useEffect(() => {
     let cancelled = false;
@@ -261,7 +265,7 @@ export function SeedInventoryStatusPage() {
     const fetchData = async () => {
       setLoading(true)
       try {
-        const currentCategory = tabToCategoryMap[activeTab]
+        const currentCategory = TAB_TO_CATEGORY[activeTab]
 
         const [listRes, summaryRes] = await Promise.all([
           ItemStockApi.getList({
@@ -274,20 +278,18 @@ export function SeedInventoryStatusPage() {
         if (cancelled) return;
 
         if (listRes && listRes.data) {
-          const mappedItems: SeedInventoryStatusRow[] = listRes.data.map((item: ItemStockResponse) => {
-            const categoryMap: Record<number, '원료' | '반제품' | '완제품'> = { 0: '원료', 1: '반제품', 2: '완제품' }
-            const catStr = categoryMap[item.category] || '원료'
-
-            return {
+          const mappedItems: SeedInventoryStatusRow[] = listRes.data
+            // '전체' 탭에서도 반제품(category 1)은 제외
+            .filter((item: ItemStockResponse) => CATEGORY_CODE_MAP[item.category] !== undefined)
+            .map((item: ItemStockResponse) => ({
               itemCode: item.itemCode,
               itemName: item.itemNm,
-              category: catStr,
+              category: CATEGORY_CODE_MAP[item.category] as SeedCategory,
               currentStock: item.currentQty,
               unit: item.unit,
               stockText: `${item.currentQty.toLocaleString()} ${item.unit}`,
               updateTime: formatDateTime(item.lastUpdatedAt),
-            }
-          })
+            }))
           setItems(mappedItems)
         }
 
@@ -330,7 +332,7 @@ export function SeedInventoryStatusPage() {
   // 드롭다운용 카테고리별 그룹 (품목이 없는 카테고리는 제외)
   const itemSelectGroups = useMemo<ItemSelectGroup[]>(
     () =>
-      (['원료', '반제품', '완제품'] as const)
+      (['원료', '완제품'] as const)
         .map((label) => ({
           label,
           items: displayedItems.filter((item) => item.category === label),
@@ -442,12 +444,11 @@ export function SeedInventoryStatusPage() {
   }
 
   const rawSummary = getCategorySummaryValues(0)
-  const semiSummary = getCategorySummaryValues(1)
   const finSummary = getCategorySummaryValues(2)
 
   // KPI 카드 콘텐츠 렌더 헬퍼 (뱃지 아이콘 + 라벨 + 화살표 + 값 + 입출고 요약)
   const renderSummaryCard = (
-    category: SeedInventoryStatusRow['category'],
+    category: SeedCategory,
     summary: { currentQty: string; todayIncrease: string; todayDecrease: string },
   ) => {
     const cls = CATEGORY_CLASS_MAP[category]
@@ -499,12 +500,6 @@ export function SeedInventoryStatusPage() {
       render: () => renderSummaryCard('원료', rawSummary),
     },
     {
-      label: '반제품 재고',
-      value: '',
-      tone: 'muted',
-      render: () => renderSummaryCard('반제품', semiSummary),
-    },
-    {
       label: '완제품 재고',
       value: '',
       tone: 'muted',
@@ -515,19 +510,18 @@ export function SeedInventoryStatusPage() {
   // activeTab 상태에 따라 KpiGrid에 매칭될 선택된 라벨 결정 ('전체'일 때는 선택 해제)
   const currentSelectedLabel =
     activeTab === '원료' ? '원료 재고' :
-      activeTab === '반제품' ? '반제품 재고' :
-        activeTab === '완제품' ? '완제품 재고' : undefined;
+      activeTab === '완제품' ? '완제품 재고' : undefined;
 
   return (
     // 로딩 중일 때 반투명 처리 및 클릭 차단 클래스 적용
     <section className={`screenStack${loading ? ' screenStack--loading' : ''}`}>
-      {/* 품목별 현재 재고 패널 — 위로 이동, 탭버튼을 타이틀과 같은 줄 우측에 배치 */}
+      {/* 품목별 현재 재고 패널 — 탭버튼을 타이틀과 같은 줄 우측에 배치 */}
       <Panel
         title={
           <div className="seedStatusPanel__titleRow">
             <span>품목별 현재 재고</span>
             <div className="seedTabGroup">
-              {(['전체', '원료', '반제품', '완제품'] as const).map((tab) => (
+              {(['전체', '원료', '완제품'] as const).map((tab) => (
                 <button
                   key={tab}
                   type="button"
@@ -603,14 +597,13 @@ export function SeedInventoryStatusPage() {
         </div>
       </Panel>
 
-      {/* 원료 / 반제품 / 완제품 재고 KPI — 아래로 이동 */}
+      {/* 원료 / 완제품 재고 KPI */}
       <KpiGrid
         kpis={seedInventoryKpis}
         selectedLabel={currentSelectedLabel}
         onCardClick={(kpi) => {
           if (loading) return; // 로딩 중 클릭 방지
           if (kpi.label.includes('원료')) setActiveTab('원료');
-          else if (kpi.label.includes('반제품')) setActiveTab('반제품');
           else if (kpi.label.includes('완제품')) setActiveTab('완제품');
         }}
       />
