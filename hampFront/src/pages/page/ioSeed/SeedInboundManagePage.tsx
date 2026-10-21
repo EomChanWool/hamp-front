@@ -712,6 +712,7 @@ export function SeedInboundManagePage() {
       {
         accessorKey: "reportStatus",
         header: "진행상태",
+        enableSorting: false,
         meta: { width: "250px" },
         cell: ({ row }) => {
           const isNewRow = row.original.receiptId === -999999;

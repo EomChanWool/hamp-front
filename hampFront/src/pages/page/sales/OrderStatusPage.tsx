@@ -317,6 +317,7 @@ export function OrderStatusPage() {
             {
                 accessorKey: "producedQty",
                 header: "생산량",
+                enableSorting: false,
                 cell: ({ row }) => (
                     <div className="sales-qty-unit">
                         <span className="sales-qty-value">
@@ -331,6 +332,7 @@ export function OrderStatusPage() {
             {
                 accessorKey: 'progressRate',
                 header: '진행률',
+                enableSorting: false,
                 cell: ({ row }) => {
                     const pct = row.original.progressRate;
 

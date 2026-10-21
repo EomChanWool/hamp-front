@@ -381,6 +381,7 @@ export function FoodWorkOrdersPage() {
       {
         accessorKey: "managerNm",
         header: "담당자",
+        enableSorting: false,
         cell: ({ row }) => {
           const managerNm = row.original.managerNm;
           const managerId = row.original.managerId;
@@ -390,6 +391,7 @@ export function FoodWorkOrdersPage() {
       {
         accessorKey: "orderCodes",
         header: "연결 수주",
+        enableSorting: false,
         cell: ({ getValue }) => {
           const codes = getValue<string[]>();
           return codes && codes.length > 0 ? codes.join(", ") : "-";
@@ -398,6 +400,7 @@ export function FoodWorkOrdersPage() {
       {
         accessorKey: "itemNms",
         header: "대상 품목",
+        enableSorting: false,
         cell: ({ getValue }) => {
           const items = getValue<string[]>();
           return items && items.length > 0 ? items.join(", ") : "-";
@@ -406,6 +409,7 @@ export function FoodWorkOrdersPage() {
       {
         accessorKey: "totalInstructQty",
         header: "지시수량 합계",
+        enableSorting: false,
         cell: ({ getValue }) => {
           const qty = getValue<number>();
           return qty !== undefined && qty !== null ? qty.toLocaleString() : "0";

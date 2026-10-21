@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useEffect,
   useId,
   useRef,
@@ -262,6 +263,43 @@ function SearchSelect({
 
 const SCOPE_LIMIT = 2;
 
+const QUICK_RANGES = [
+  { key: "today", label: "오늘" },
+  { key: "1w", label: "1주" },
+  { key: "1m", label: "1개월" },
+  { key: "3m", label: "3개월" },
+  { key: "6m", label: "6개월" },
+] as const;
+
+type QuickRangeKey = (typeof QUICK_RANGES)[number]["key"];
+
+const formatDate = (date: Date) => {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+// 대상 월에 같은 날이 없으면 그 달 말일로 맞춤 (예: 3/31의 1개월 전 → 2/28)
+const subtractMonths = (date: Date, months: number) => {
+  const year = date.getFullYear();
+  const month = date.getMonth() - months;
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  return new Date(year, month, Math.min(date.getDate(), lastDay));
+};
+
+const getQuickRangeStart = (key: QuickRangeKey, today: Date) => {
+  if (key === "1w") {
+    const start = new Date(today);
+    start.setDate(start.getDate() - 7);
+    return start;
+  }
+  if (key === "1m") return subtractMonths(today, 1);
+  if (key === "3m") return subtractMonths(today, 3);
+  if (key === "6m") return subtractMonths(today, 6);
+  return new Date(today);
+};
+
 export function SearchBand({
   fields,
   onSearch,
@@ -324,6 +362,16 @@ export function SearchBand({
     }
   };
 
+  const applyQuickRange = (field: SearchDateField, key: QuickRangeKey) => {
+    const today = new Date();
+    if (field.startRef.current) {
+      field.startRef.current.value = formatDate(getQuickRangeStart(key, today));
+    }
+    if (field.endRef.current) {
+      field.endRef.current.value = formatDate(today);
+    }
+  };
+
   const renderField = (field: SearchField, index: number) => {
     if (field.type === "select") {
       return (
@@ -337,7 +385,7 @@ export function SearchBand({
       );
     }
 
-    return (
+    const fieldLabel = (
       <label
         key={`${field.label}-${index}`}
         className={[
@@ -388,6 +436,29 @@ export function SearchBand({
           </div>
         )}
       </label>
+    );
+
+    if (field.type !== "date") return fieldLabel;
+
+    return (
+      <Fragment key={`${field.label}-${index}`}>
+        {fieldLabel}
+        <div
+          className="dateQuickRange"
+          role="group"
+          aria-label={`${field.label} 빠른 기간 선택`}
+        >
+          {QUICK_RANGES.map((range) => (
+            <button
+              key={range.key}
+              type="button"
+              onClick={() => applyQuickRange(field, range.key)}
+            >
+              {range.label}
+            </button>
+          ))}
+        </div>
+      </Fragment>
     );
   };
 

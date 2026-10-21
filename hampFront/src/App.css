@@ -1502,6 +1502,38 @@ textarea.tableInput {
   font-weight: 500;
 }
 
+.dateQuickRange {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+}
+
+.dateQuickRange button {
+  height: 32px;
+  padding: 0 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.dateQuickRange button:hover {
+  background: var(--bg-subtle);
+  border-color: #cbd5e1;
+  color: var(--text-body);
+}
+
 /* ---------- Custom Select ---------- */
 
 .searchBand select.selectNative {
