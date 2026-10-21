@@ -3,7 +3,6 @@ import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
 /** 공정 등록 요청 */
 export interface OperationCreateRequest {
-  operCode: string;
   depCode: string;
   operNm?: string | null;
   stdTime?: string | null;

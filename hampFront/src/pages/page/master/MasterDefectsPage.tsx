@@ -57,8 +57,7 @@ export function MasterDefectsPage() {
   const [isCreatingNewRow, setIsCreatingNewRow] = useState(false);
 
   // 타이핑 시 리렌더링 방지 폼 Ref
-  const editFormRef = useRef<DefectUpdateRequest & { defCode?: string }>({
-    defCode: "",
+  const editFormRef = useRef<DefectUpdateRequest>({
     operCode: "",
     defNm: "",
     defType: "",
@@ -213,7 +212,6 @@ export function MasterDefectsPage() {
     if (isCreatingNewRow) return;
     setEditingDefCode(null);
     editFormRef.current = {
-      defCode: "",
       operCode: "",
       defNm: "",
       defType: "",
@@ -230,16 +228,9 @@ export function MasterDefectsPage() {
   const handleSaveCreate = async () => {
     if (isUpdating) return;
 
-    const newDefCode = editFormRef.current.defCode?.trim();
-    if (!newDefCode) {
-      window.alert("불량코드를 입력해주세요.");
-      return;
-    }
-
     setIsUpdating(true);
     try {
       const payload: DefectCreateRequest = {
-        defCode: newDefCode,
         operCode: editFormRef.current.operCode?.trim() || null,
         defNm: editFormRef.current.defNm?.trim() || null,
         defType: editFormRef.current.defType?.trim() || null,
@@ -333,18 +324,9 @@ export function MasterDefectsPage() {
         accessorKey: "defCode",
         header: "불량코드",
         cell: ({ row }) => {
-          if (row.original.defCode === "__NEW_ROW__") {
-            return (
-              <input
-                className="tableInput"
-                defaultValue={editFormRef.current.defCode ?? ""}
-                onChange={(e) => {
-                  editFormRef.current.defCode = e.target.value;
-                }}
-                placeholder="불량코드 입력"
-                autoFocus
-              />
-            );
+          const isNewRow = row.original.defCode === "__NEW_ROW__";
+          if (isNewRow) {
+            return <span style={{ color: "#999" }}>(자동 채번)</span>;
           }
           return row.original.defCode;
         },

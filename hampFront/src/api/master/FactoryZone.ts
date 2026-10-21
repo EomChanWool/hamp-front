@@ -3,7 +3,6 @@ import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
 /** 공장 등록 요청 */
 export interface FactoryZoneCreateRequest {
-  facCode: string;
   facNm?: string | null;
   location?: string | null;
   note?: string | null;

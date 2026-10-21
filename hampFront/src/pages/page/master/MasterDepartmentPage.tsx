@@ -55,8 +55,7 @@ export function MasterDepartmentPage() {
   const [isCreatingNewRow, setIsCreatingNewRow] = useState(false);
 
   // 타이핑 시 리렌더링 방지 폼 Ref
-  const editFormRef = useRef<DepartmentUpdateRequest & { depCode?: string }>({
-    depCode: "",
+  const editFormRef = useRef<DepartmentUpdateRequest>({
     head: "",
     headPhone: "",
     taskDesc: "",
@@ -178,7 +177,6 @@ export function MasterDepartmentPage() {
     if (isCreatingNewRow) return;
     setEditingDepCode(null);
     editFormRef.current = {
-      depCode: "",
       head: "",
       headPhone: "",
       taskDesc: "",
@@ -194,16 +192,9 @@ export function MasterDepartmentPage() {
   const handleSaveCreate = async () => {
     if (isUpdating) return;
 
-    const newDepCode = editFormRef.current.depCode?.trim();
-    if (!newDepCode) {
-      window.alert("부서코드를 입력해주세요.");
-      return;
-    }
-
     setIsUpdating(true);
     try {
       const payload: DepartmentCreateRequest = {
-        depCode: newDepCode,
         head: editFormRef.current.head?.trim() || null,
         headPhone: editFormRef.current.headPhone?.trim() || null,
         taskDesc: editFormRef.current.taskDesc?.trim() || null,
@@ -308,19 +299,10 @@ export function MasterDepartmentPage() {
       {
         accessorKey: "depCode",
         header: "부서코드",
-        cell: ({ row }) => {
-          if (row.original.depCode === "__NEW_ROW__") {
-            return (
-              <input
-                className="tableInput"
-                defaultValue={editFormRef.current.depCode ?? ""}
-                onChange={(e) => {
-                  editFormRef.current.depCode = e.target.value;
-                }}
-                placeholder="부서코드 입력"
-                autoFocus
-              />
-            );
+         cell: ({ row }) => {
+          const isNewRow = row.original.depCode === "__NEW_ROW__";
+          if (isNewRow) {
+            return <span style={{ color: "#999" }}>(자동 채번)</span>; 
           }
           return row.original.depCode;
         },

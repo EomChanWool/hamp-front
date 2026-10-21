@@ -3,7 +3,6 @@ import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
 /** 부서 등록 요청 */
 export interface DepartmentCreateRequest {
-  depCode: string;
   taskDesc?: string | null;
   head?: string | null;
   headPhone?: string | null;

@@ -3,7 +3,6 @@ import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
 /** 불량 등록 요청 */
 export interface DefectCreateRequest {
-  defCode: string;
   operCode?: string | null;
   defNm?: string | null;
   defType?: string | null;
