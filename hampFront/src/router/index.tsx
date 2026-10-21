@@ -206,7 +206,7 @@ export const menuRoutes: MenuRouteGroup[] = [
         name: '환경 데이터 이력 조회',
         element: <FacilityEnvironmentHistoryPage />,
       },
-      { path: 'cctv', name: 'CCTV 현황', element: <FacilityCctvPage /> },
+      { path: 'cctv', name: 'CCTV 현황', element: <FacilityCctvPage />, hidden: true},
       { path: 'data-manage', name: '데이터 관리', element: <FacilityDataManagePage /> },
     ],
   },

@@ -12,6 +12,8 @@ import {
 import Barcode from "react-barcode";
 import { ShipmentOrderPrintModal } from "@/components/modal/ShipmentOrderPrintModal";
 import "@/pages/page/food/Food.css";
+// 진행상태 배지 / 프로그레스 바 스타일(statusBadge, seedProgressBar 등) 재사용
+import "@/pages/page/ioSeed/ioSeed.css";
 
 /** 상태 코드 → 뱃지 변환 */
 const getStatusBadge = (status?: string) => {
@@ -31,6 +33,53 @@ const getStatusBadge = (status?: string) => {
     default:
       return <Badge tone="muted">{status || "-"}</Badge>;
   }
+};
+
+type LineProgressKey = "wait" | "progress" | "done";
+
+const LINE_PROGRESS_META: Record<LineProgressKey, { label: string; badgeClass: string; barClass: string }> = {
+  wait: {
+    label: "대기",
+    badgeClass: "statusBadge statusBadge--unreported",
+    barClass: "progressFill progressFill--unreported",
+  },
+  progress: {
+    label: "진행중",
+    badgeClass: "statusBadge statusBadge--partial",
+    barClass: "progressFill progressFill--partial",
+  },
+  done: {
+    label: "완료",
+    badgeClass: "statusBadge statusBadge--completed",
+    barClass: "progressFill progressFill--completed",
+  },
+};
+
+const getLineProgress = (line: ShipmentOrderLineResponse) => {
+  const instructQty = line.instructQty ?? 0;
+
+  const rawScanned = line.scannedQty;
+  const rawRemaining = line.remainingQty;
+
+  let scannedQty: number;
+  if (rawScanned != null) {
+    scannedQty = rawScanned;
+  } else if (rawRemaining != null) {
+    scannedQty = instructQty - rawRemaining;
+  } else {
+    scannedQty = 0;
+  }
+  scannedQty = Math.min(Math.max(scannedQty, 0), instructQty > 0 ? instructQty : Math.max(scannedQty, 0));
+
+  const remainingQty = rawRemaining ?? Math.max(instructQty - scannedQty, 0);
+
+  const percent = instructQty > 0 ? Math.min((scannedQty / instructQty) * 100, 100) : 0;
+
+  let key: LineProgressKey = "wait";
+  if (instructQty > 0 && scannedQty >= instructQty) key = "done";
+  else if (scannedQty > 0) key = "progress";
+
+  return { instructQty, scannedQty, remainingQty, percent, meta: LINE_PROGRESS_META[key] };
 };
 
 export function SeedOutboundManageDetailPage() {
@@ -83,16 +132,14 @@ export function SeedOutboundManageDetailPage() {
   const columns = useMemo<ColumnDef<ShipmentOrderLineResponse>[]>(
     () => [
       {
-        accessorKey: "shipOrderLineId",
-        header: "출고라인ID",
-        cell: ({ getValue }) => (
-          <span className="food-table-code-cell">#{getValue<number>()}</span>
-        ),
-      },
-      {
         accessorKey: "salesOrderLineId",
-        header: "수주라인ID",
-        cell: ({ getValue }) => `#${getValue<number>()}`,
+        header: "연결 수주라인",
+        cell: ({ row }) => (
+          <div className="food-cell-flex-wrap">
+            <span className="food-cell-order-code">{shipment?.orderCode ?? "-"}</span>
+            <span className="food-cell-line-badge">{row.original.salesOrderLineId}</span>
+          </div>
+        ),
       },
       {
         accessorKey: "itemNm",
@@ -100,11 +147,7 @@ export function SeedOutboundManageDetailPage() {
         cell: ({ row }) => (
           <span className="food-cell-item-name">
             {row.original.itemNm || "-"}
-            {row.original.itemCode && (
-              <span className="food-cell-item-code">
-                ({row.original.itemCode})
-              </span>
-            )}
+            {row.original.itemCode && <span className="food-cell-item-code">({row.original.itemCode})</span>}
           </span>
         ),
       },
@@ -113,18 +156,51 @@ export function SeedOutboundManageDetailPage() {
         header: "지시수량",
         cell: ({ row }) => (
           <div className="shipment-qty-unit">
-            <span className="shipment-qty-value">
-              {(row.original.instructQty ?? 0).toLocaleString()}
-            </span>
-
-            <span className="shipment-qty-unit-label">
-              {row.original.unit ?? ""}
-            </span>
+            <span className="shipment-qty-value">{(row.original.instructQty ?? 0).toLocaleString()}</span>
+            <span className="shipment-qty-unit-label">{row.original.unit ?? ""}</span>
           </div>
         ),
       },
+      {
+        id: "progress",
+        header: "진행상태",
+        meta: { width: "250px" },
+        enableSorting: false,
+        cell: ({ row }) => {
+          const { instructQty, scannedQty, remainingQty, percent, meta } = getLineProgress(row.original);
+          const unitVal = row.original.unit ? ` ${row.original.unit}` : "";
+
+          return (
+            <div className="reportStatusCell">
+              <div className="reportStatusCell__head">
+                <span className={meta.badgeClass}>
+                  <span className="statusBadge__dot" />
+                  {meta.label}
+                </span>
+                <span
+                  className="reportStatusCell__count"
+                  title={`잔여 ${remainingQty.toLocaleString()}${unitVal}`}
+                >
+                  <strong>{scannedQty.toLocaleString()}</strong> / {instructQty.toLocaleString()}
+                  {unitVal}
+                </span>
+              </div>
+              <div
+                className="seedProgressBar"
+                role="progressbar"
+                aria-label="스캔 진행률"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(percent)}
+              >
+                <div className={`seedProgressFill ${meta.barClass}`} style={{ width: `${percent}%` }} />
+              </div>
+            </div>
+          );
+        },
+      },
     ],
-    []
+    [shipment?.orderCode],
   );
 
   // ------------------------------------------
@@ -182,7 +258,7 @@ export function SeedOutboundManageDetailPage() {
         </div>
 
         {/* 요약 정보 */}
-        <div className="food-summary-grid-box">
+        <div className="seedOut-summary-grid-box">
           <div>
             <div className="food-summary-label">출고일자</div>
             <div className="food-summary-value">{shipment?.shipDate || "-"}</div>
@@ -202,6 +278,14 @@ export function SeedOutboundManageDetailPage() {
           <div>
             <div className="food-summary-label">라인 수</div>
             <div className="food-summary-value">{lines.length}건</div>
+          </div>
+          <div>
+            <div className="food-summary-label">거래처명</div>
+            <div className="food-summary-value">{shipment?.bpNm || "-"}</div>
+          </div>
+          <div>
+            <div className="food-summary-label">납기일자</div>
+            <div className="food-summary-value">{shipment?.dueDate || "-"}</div>
           </div>
         </div>
 

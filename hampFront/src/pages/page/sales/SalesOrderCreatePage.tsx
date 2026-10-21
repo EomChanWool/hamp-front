@@ -33,7 +33,7 @@ export function SalesOrderCreatePage() {
       try {
         const [bpRes, itemRes] = await Promise.all([
           BusinessPartnerApi.getOptions(),
-          ItemApi.getOptions(),
+          ItemApi.getOptions({ category: [2] }),
         ]);
         setBusinessPartnerOptions(bpRes.data ?? []);
         setItemOptions(itemRes.data ?? []);
