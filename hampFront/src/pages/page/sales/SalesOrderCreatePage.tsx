@@ -16,10 +16,8 @@ export function SalesOrderCreatePage() {
 
   // 폼 상태 관리
   const [form, setForm] = useState<SalesOrderCreateRequest>({
-    orderCode: "",
     bpCode: "",
     dueDate: "",
-    status: "OPEN",
     note: "",
     lines: [],
   });
@@ -79,11 +77,6 @@ export function SalesOrderCreatePage() {
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
 
-    if (!form.orderCode.trim()) {
-      alert("수주코드를 입력해주세요.");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       await SalesOrderApi.create(form);
@@ -112,19 +105,7 @@ export function SalesOrderCreatePage() {
             <div className="createSection">
               <h2 className="createSectionTitle">기본정보</h2>
               <div className="createGrid2Cols">
-                <div className="createField">
-                  <label className="requiredLabel">
-                    수주코드 <span className="required">*</span>
-                  </label>
-                  <input
-                    className="tableInput"
-                    value={form.orderCode}
-                    onChange={(e) => handleChange("orderCode", e.target.value)}
-                    disabled={isSubmitting}
-                    placeholder="예: ORD001"
-                  />
-                </div>
-
+                
                 <div className="createField">
                   <label className="requiredLabel">
                     거래처명 <span className="required">*</span>
@@ -151,16 +132,6 @@ export function SalesOrderCreatePage() {
                     className="tableInput"
                     value={form.dueDate ?? ""}
                     onChange={(e) => handleChange("dueDate", e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                </div>
-
-                <div className="createField">
-                  <label>상태</label>
-                  <input
-                    className="tableInput"
-                    value={form.status ?? ""}
-                    onChange={(e) => handleChange("status", e.target.value)}
                     disabled={isSubmitting}
                   />
                 </div>
