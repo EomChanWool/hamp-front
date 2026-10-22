@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
 import Barcode from "react-barcode";
 import { type ColumnDef } from "@tanstack/react-table";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
@@ -280,7 +281,8 @@ export function FoodWorkOrderDetailPage() {
       fetchWorkOrderDetail();
     } catch (error) {
       console.error("작업지시 수정 실패:", error);
-      alert("수정 중 오류가 발생했습니다.");
+      const errorMessage = axios.isAxiosError(error) ? error.response?.data?.message : null;
+      alert(errorMessage || "수정 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
     }
