@@ -580,10 +580,10 @@ export function SeedReportReturnManagePage() {
                 min={1}
                 className="seedPendingInput"
                 defaultValue={
-                  editQuantitiesRef.current[item.returnId] ?? item.hullQty
+                  editHullQuantitiesRef.current[item.returnId] ?? item.hullQty
                 }
                 onChange={(e) => {
-                  editQuantitiesRef.current[item.returnId] =
+                  editHullQuantitiesRef.current[item.returnId] =
                     e.target.value === "" ? "" : Number(e.target.value);
                 }}
               />
