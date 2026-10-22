@@ -314,8 +314,9 @@ export function FoodWorkOrderCreatePage() {
       }
 
       if (currentQty > line.remainingQty) {
+        const unitText = line.unit ? ` ${line.unit}` : "";
         alert(
-          `지시수량은 잔여 수량(${line.remainingQty})을 초과할 수 없습니다.`
+          `${line.orderCode} ${line.itemNm}: 지시수량(${currentQty}${unitText})이 지시 가능 잔여 수량(${line.remainingQty}${unitText})을 초과합니다.`
         );
         return false;
       }
@@ -368,7 +369,8 @@ export function FoodWorkOrderCreatePage() {
           </span>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        {/* 브라우저 기본 검사(max 등)가 먼저 막으면 사유 안내가 안 나와 validateForm으로만 검증 */}
+        <form onSubmit={handleSubmit} noValidate>
           <div className="createBody">
 
             {/* 1. 기본 정보 섹션 */}
