@@ -297,7 +297,8 @@ export function FoodWorkOrderDetailPage() {
       navigate(-1);
     } catch (error) {
       console.error("작업지시 삭제 실패:", error);
-      alert("삭제 중 오류가 발생했습니다.");
+      const errorMessage = axios.isAxiosError(error) ? error.response?.data?.message : null;
+      alert(errorMessage || "삭제 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
     }
