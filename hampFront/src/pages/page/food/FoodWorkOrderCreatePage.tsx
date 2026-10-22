@@ -10,6 +10,13 @@ import { WorkOrderApi } from "@/api/WorkOrder";
 import { UserApi, type UserOptionResponse } from "@/api/User";
 import '@/pages/page/food/Food.css';
 
+// toISOString()은 UTC 기준이라 한국 시간 00:00~09:00 사이에는 전날 날짜가 나와 로컬 기준으로 만든다
+const todayStr = () => {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
 interface WorkOrderLine {
   id: string;
   salesOrderLineId: number;
@@ -32,7 +39,7 @@ export function FoodWorkOrderCreatePage() {
   const [userOptions, setUserOptions] = useState<UserOptionResponse[]>([]);
 
   const [form, setForm] = useState({
-    workDate: new Date().toISOString().split('T')[0],
+    workDate: todayStr(),
     managerId: "",
   });
 
