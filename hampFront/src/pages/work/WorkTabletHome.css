@@ -291,6 +291,13 @@
   width: 100%;
 }
 
+.workTabletButton {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
 /* 대화면 터치 최적화 버튼 스타일 - 아이콘 + 제목 + 설명이 위아래로 쌓인 카드형 */
 .workTabletBtn {
   width: 100%;

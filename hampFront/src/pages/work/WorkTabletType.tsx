@@ -52,7 +52,7 @@ export function WorkTabletType() {
                     <span className="workTabletBtnDesc">
                       식품동 업무 화면으로 넘어가
                       <br />
-                      작업지시/신고처리/출고처리를 진행합니다.
+                      작업지시/신고처리를 진행합니다.
                     </span>
                   </span>
                 </button>
@@ -69,7 +69,7 @@ export function WorkTabletType() {
                     <span className="workTabletBtnDesc">
                       섬유동 업무 화면으로 넘어가
                       <br />
-                      작업지시/출고처리를 진행합니다.
+                      작업지시를 진행합니다.
                     </span>
                   </span>
                 </button>

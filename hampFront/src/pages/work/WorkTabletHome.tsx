@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { ClipboardDocumentListIcon, ArchiveBoxIcon, TruckIcon } from '@heroicons/react/24/outline';
+import { ClipboardDocumentListIcon, ArchiveBoxIcon, /*TruckIcon*/ } from '@heroicons/react/24/outline';
 import { useAuth } from '@/context/AuthContext';
 import { FoodIcon, PlantIcon } from '@/components/icons/CustomIcons';
 import { isValidWorkZone } from '@/utils/common';
@@ -71,8 +71,8 @@ export function WorkTabletHome() {
             <div className="workTabletMenuSection">
               <div className={
                 zone === '1'
-                  ? 'workTabletMenuButtons'
-                  : 'workTabletTypeButtons'
+                  ? 'workTabletTypeButtons'
+                  : 'workTabletButtons'
               }>
                 {/* 작업지시 버튼 -> 태블릿 작업지시 스캔 화면 연결 */}
                 <button
@@ -110,8 +110,9 @@ export function WorkTabletHome() {
                   </button>
                 )}
 
-                {/* 출고처리 버튼 -> 태블릿 출고 스캔 화면 연결 */}
-                <button
+                {/* 출고처리 버튼 -> 태블릿 출고 스캔 화면 연결 
+                    태블릿 1대로 관리하기에는 테스트가 필요해서 히든 처리 진행 */}
+                {/* <button
                   type="button"
                   className={`workTabletBtn workTabletBtn--${zoneVariant}`}
                   onClick={() => navigate(`/work/outbound-scan?zone=${zone}`)}
@@ -125,7 +126,7 @@ export function WorkTabletHome() {
                       출고 처리를 진행합니다
                     </span>
                   </span>
-                </button>
+                </button> */}
               </div>
             </div>
           </div>
