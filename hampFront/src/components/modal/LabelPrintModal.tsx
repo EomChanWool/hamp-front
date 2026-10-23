@@ -7,10 +7,10 @@ import "@/components/modal/LabelPrintModal.css";
  *  ┌────────────────────────┐
  *  │ title                  │  굵은 첫 줄 (필수)
  *  │ name (code)   qty+unit │  이름(좌) + 수량(우) 한 줄로 합침 (선택)
+ *  │  ||||||||||||||||||||  │  바코드
  *  │        ┌──────┐        │
  *  │        │  QR  │        │  QR (가운데)
  *  │        └──────┘        │
- *  │ ||||||||||||||||||||   │  바코드
  *  └────────────────────────┘
  */
 export interface LabelItem {
@@ -168,8 +168,6 @@ export function LabelPrintModal({
                       />
                     </div>
                   )}
-
-
                 </div>
               ))}
             </div>
