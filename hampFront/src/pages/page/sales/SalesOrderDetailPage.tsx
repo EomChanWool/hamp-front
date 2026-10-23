@@ -206,7 +206,8 @@ export function SalesOrderDetailPage() {
       navigate({ pathname: "/sales/sales-order", search: location.search });
     } catch (error) {
       console.error("수주 삭제 실패:", error);
-      alert("삭제에 실패했습니다.");
+      const errorMessage = axios.isAxiosError(error) ? error.response?.data?.message : null;
+      alert(errorMessage || "삭제에 실패했습니다.");
     } finally {
       setIsDeleting(false);
     }

@@ -10,6 +10,13 @@ import { WorkOrderApi } from "@/api/WorkOrder";
 import { UserApi, type UserOptionResponse } from "@/api/User";
 import '@/pages/page/food/Food.css';
 
+// toISOString()은 UTC 기준이라 한국 시간 00:00~09:00 사이에는 전날 날짜가 나와 로컬 기준으로 만든다
+const todayStr = () => {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
 interface WorkOrderLine {
   id: string;
   salesOrderLineId: number;
@@ -32,7 +39,7 @@ export function FoodWorkOrderCreatePage() {
   const [userOptions, setUserOptions] = useState<UserOptionResponse[]>([]);
 
   const [form, setForm] = useState({
-    workDate: new Date().toISOString().split('T')[0],
+    workDate: todayStr(),
     managerId: "",
   });
 
@@ -307,8 +314,9 @@ export function FoodWorkOrderCreatePage() {
       }
 
       if (currentQty > line.remainingQty) {
+        const unitText = line.unit ? ` ${line.unit}` : "";
         alert(
-          `지시수량은 잔여 수량(${line.remainingQty})을 초과할 수 없습니다.`
+          `${line.orderCode} ${line.itemNm}: 지시수량(${currentQty}${unitText})이 지시 가능 잔여 수량(${line.remainingQty}${unitText})을 초과합니다.`
         );
         return false;
       }
@@ -361,7 +369,8 @@ export function FoodWorkOrderCreatePage() {
           </span>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        {/* 브라우저 기본 검사(max 등)가 먼저 막으면 사유 안내가 안 나와 validateForm으로만 검증 */}
+        <form onSubmit={handleSubmit} noValidate>
           <div className="createBody">
 
             {/* 1. 기본 정보 섹션 */}

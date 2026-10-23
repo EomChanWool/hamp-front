@@ -29,6 +29,9 @@ export function SeedInventoryManagePage() {
     const [page, setPage] = useState(0);
 
     const [selectedDirection, setSelectedDirection] = useState<'INCREASE' | 'DECREASE'>('INCREASE');
+    // 등록/수정 행에서 선택한 품목 (수량 입력칸 옆 단위 표시용)
+    const [selectedItemCode, setSelectedItemCode] = useState('');
+    const selectedItemUnit = itemOptions.find((opt) => opt.itemCode === selectedItemCode)?.unit ?? '';
 
     const [searchFilters, setSearchFilters] = useState({
         category: '',
@@ -232,6 +235,7 @@ export function SeedInventoryManagePage() {
             note: '',
         };
         setSelectedDirection('INCREASE');
+        setSelectedItemCode('');
         setIsCreatingNewRow(true);
     };
 
@@ -292,6 +296,7 @@ export function SeedInventoryManagePage() {
             note: row.note ?? '',
         };
         setSelectedDirection(direction);
+        setSelectedItemCode(row.itemCode ?? '');
         setEditingId(row.sthiId);
     };
 
@@ -352,6 +357,7 @@ export function SeedInventoryManagePage() {
                                 defaultValue={editFormRef.current.itemCode}
                                 onChange={(e) => {
                                     editFormRef.current.itemCode = e.target.value;
+                                    setSelectedItemCode(e.target.value);
                                 }}
                             >
                                 <option value="" disabled>품목 선택</option>
@@ -428,7 +434,7 @@ export function SeedInventoryManagePage() {
                     const item = row.original;
                     const isNew = item.sthiId === -999999;
                     const isEditing = item.sthiId === editingId;
-                    const unit = item.unit || '';
+                    const unit = (isNew || isEditing ? selectedItemUnit : '') || item.unit || '';
 
                     if ((isNew || isEditing) && selectedDirection === 'INCREASE') {
                         return (
@@ -468,7 +474,7 @@ export function SeedInventoryManagePage() {
                     const item = row.original;
                     const isNew = item.sthiId === -999999;
                     const isEditing = item.sthiId === editingId;
-                    const unit = item.unit || '';
+                    const unit = (isNew || isEditing ? selectedItemUnit : '') || item.unit || '';
 
                     if ((isNew || isEditing) && selectedDirection === 'DECREASE') {
                         return (
@@ -591,7 +597,7 @@ export function SeedInventoryManagePage() {
                 },
             },
         ],
-        [editingId, isCreatingNewRow, isUpdating, itemOptions, selectedDirection]
+        [editingId, isCreatingNewRow, isUpdating, itemOptions, selectedDirection, selectedItemUnit]
     );
 
     const displayList = useMemo(() => {
@@ -600,9 +606,7 @@ export function SeedInventoryManagePage() {
                 sthiId: -999999,
                 itemCode: '',
                 itemNm: '',
-                unit: itemOptions.find(
-                    (opt) => opt.itemCode === editFormRef.current.itemCode
-                )?.unit ?? '',
+                unit: '',
                 category: 0,
                 ioType: '조정',
                 increaseQty: 0,
