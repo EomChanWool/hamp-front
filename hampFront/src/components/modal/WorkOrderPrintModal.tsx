@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Barcode from "react-barcode";
+import QRCode from "react-qr-code";
 import "@/components/modal/WorkOrderPrintModal.css";
 import type { WorkOrderRoutingStepResponse } from "@/api/WorkOrder";
 
@@ -44,6 +45,16 @@ interface WorkOrderPrintModalProps {
     includeRouting?: boolean;
 }
 
+/* =========================================================
+   인쇄 레이아웃 설정
+   - LINES_PER_PAGE : A4 한 장에 들어갈 품목 수
+   - QR_SIZE        : QR코드 한 변 길이(px) / 60px ≈ 16mm
+   - BARCODE_HEIGHT : 바코드 막대 높이(px)
+========================================================= */
+const LINES_PER_PAGE = 5;
+const QR_SIZE = 60;
+const BARCODE_HEIGHT = 26;
+
 const getStatusText = (status: WorkOrderStatus) => {
     switch (status) {
         case "DONE":
@@ -67,6 +78,19 @@ const formatPrintDateTime = (date: Date) => {
     return `${year}-${month}-${day} ${hours}:${minutes}`;
 };
 
+// 품목을 페이지 단위로 분할 (품목이 0개여도 빈 페이지 1장은 만든다)
+const chunkLines = (lines: WorkOrderLineDetail[]) => {
+    if (lines.length === 0) return [[] as WorkOrderLineDetail[]];
+
+    const pages: WorkOrderLineDetail[][] = [];
+
+    for (let i = 0; i < lines.length; i += LINES_PER_PAGE) {
+        pages.push(lines.slice(i, i + LINES_PER_PAGE));
+    }
+
+    return pages;
+};
+
 export function WorkOrderPrintModal({
     isOpen,
     onClose,
@@ -86,276 +110,284 @@ export function WorkOrderPrintModal({
     if (!isOpen) return null;
 
     /*
-     * 실제 작업지시서 한 장을 만드는 함수
-  
-     * [1장 압축 방향]
-     *  1) 품목마다 "표 + 바코드 블록"을 따로 만들던 구조(품목당 약 110px+)를
-     *     → 하나의 표로 합치고 바코드를 행 안의 셀로 이동 (품목당 약 40px)
-     *  2) 공정순서를 세로 목록 → 가로 칩(줄바꿈) 형태로 변경
-     *  3) 작업지시 정보 표를 4열 2행 → 8열 1행으로 축소
-     *  4) 주의사항/서명/푸터 높이 축소
-     *  5) 라인이 많으면(6개 이상) is-dense 클래스로 한 단계 더 압축
-     *  ※ 그래도 넘치면 thead 반복 + 행 단위 분할로 자연스럽게 2장째로 이어진다.
+     * 작업지시서를 페이지 단위(LINES_PER_PAGE개)로 나누어 렌더링한다.
+     *  - 페이지마다: 헤더 / 작업지시 정보 / 품목 표 / 푸터
+     *  - 마지막 페이지에만: 주의사항 / 서명란
+     *  - 품목 1개 = 정보 + 바코드 + QR 한 줄 (+ 공정순서 한 줄)
      */
-    const renderSheet = (
-        lines: WorkOrderLineDetail[]
-    ) => {
-        const isDense = lines.length >= 6;
-        const barcodeHeight = isDense ? 22 : 28;
+    const renderSheets = (lines: WorkOrderLineDetail[]) => {
+        const pages = chunkLines(lines);
 
-        return (
-            <div
-                className={`work-order-print-sheet${isDense ? " is-dense" : ""}`}
-            >
-                {/* Header */}
-                <div className="work-order-print-header">
-                    <div>
-                        <span className="work-order-print-department">
-                            식품제조 1동
-                        </span>
+        return pages.map((pageLines, pageIdx) => {
+            const isLastPage = pageIdx === pages.length - 1;
+            const startIndex = pageIdx * LINES_PER_PAGE;
 
-                        <h1>작 업 지 시 서</h1>
+            return (
+                <div className="work-order-print-sheet" key={pageIdx}>
+                    {/* Header */}
+                    <div className="work-order-print-header">
+                        <div>
+                            <span className="work-order-print-department">
+                                식품제조 1동
+                            </span>
 
-                        <p>
-                            Work Order Sheet - Food Production Division
-                        </p>
-                    </div>
+                            <h1>작 업 지 시 서</h1>
 
-                    <div className="work-order-print-header-right">
-                        <div className="work-order-print-meta">
-                            <div>
-                                <strong>작업일자:</strong>{" "}
-                                {workOrder.workDate || "-"}
-                            </div>
+                            <p>
+                                Work Order Sheet - Food Production Division
+                            </p>
+                        </div>
 
-                            <div>
-                                <strong>출력일시:</strong>{" "}
-                                {printDateTime || "-"}
+                        <div className="work-order-print-header-right">
+                            <div className="work-order-print-meta">
+                                <div>
+                                    <strong>출력일시:</strong>{" "}
+                                    {printDateTime || "-"}
+                                </div>
+
+                                <div>
+                                    <strong>페이지:</strong>{" "}
+                                    {pageIdx + 1} / {pages.length}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* 작업지시 정보 (8열 1행으로 압축) */}
-                <section className="work-order-print-section">
-                    <h3 className="work-order-print-section-title">
-                        <span />
-                        작업지시 정보
-                    </h3>
+                    {/* 작업지시 정보 (8열 1행) */}
+                    <section className="work-order-print-section">
+                        <h3 className="work-order-print-section-title">
+                            <span />
+                            작업지시 정보
+                        </h3>
 
-                    <table className="work-order-print-table info-table">
-                        <tbody>
-                            <tr>
-                                <th>작업지시번호</th>
-                                <td className="mono">
-                                    {workOrder.workOrderNo || "-"}
-                                </td>
-
-                                <th>작업일자</th>
-                                <td>{workOrder.workDate || "-"}</td>
-
-                                <th>상태</th>
-                                <td>{getStatusText(workOrder.status)}</td>
-
-                                <th>담당자</th>
-                                <td>
-                                    {workOrder.managerNm
-                                        ? `${workOrder.managerNm} (${workOrder.managerId})`
-                                        : workOrder.managerId || "-"}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </section>
-
-                {/* 작업지시 품목: 하나의 표 + 품목별 tbody 그룹 */}
-                <section className="work-order-print-section">
-                    <h3 className="work-order-print-section-title">
-                        <span />
-                        작업지시 품목 및 생산 정보
-                    </h3>
-
-                    <table className="work-order-print-table line-table">
-                        <thead>
-                            <tr>
-                                <th className="col-no">순번</th>
-                                <th className="col-bp">거래처</th>
-                                <th className="col-item">품명</th>
-                                <th className="col-qty">지시수량</th>
-                                <th className="col-due">납기일자</th>
-                                <th className="col-barcode">바코드</th>
-                            </tr>
-                        </thead>
-
-                        {lines.length === 0 && (
+                        <table className="work-order-print-table info-table">
                             <tbody>
                                 <tr>
-                                    <td colSpan={6} className="empty-row">
-                                        선택된 작업지시 품목이 없습니다.
+                                    <th>작업지시번호</th>
+                                    <td className="mono">
+                                        {workOrder.workOrderNo || "-"}
+                                    </td>
+
+                                    <th>작업일자</th>
+                                    <td>{workOrder.workDate || "-"}</td>
+
+                                    <th>상태</th>
+                                    <td>{getStatusText(workOrder.status)}</td>
+
+                                    <th>담당자</th>
+                                    <td>
+                                        {workOrder.managerNm
+                                            ? `${workOrder.managerNm} (${workOrder.managerId})`
+                                            : workOrder.managerId || "-"}
                                     </td>
                                 </tr>
                             </tbody>
-                        )}
+                        </table>
+                    </section>
 
-                        {lines.map((line, index) => {
-                            // 공정순서 정렬 (원본 배열 훼손 방지)
-                            const steps = [...(line.routingSteps ?? [])].sort(
-                                (a, b) => a.operSeq - b.operSeq
-                            );
+                    {/* 작업지시 품목: 정보 + 바코드 + QR */}
+                    <section className="work-order-print-section">
+                        <h3 className="work-order-print-section-title">
+                            <span />
+                            작업지시 품목 및 생산 정보
+                        </h3>
 
-                            return (
-                                /*
-                                 * 품목 1개 = tbody 1개
-                                 * (메인 행 + 공정순서 행)이 페이지 중간에서 잘리지 않도록
-                                 * CSS 에서 .line-group { break-inside: avoid } 적용
-                                 */
-                                <tbody className="line-group" key={line.id}>
+                        <table className="work-order-print-table work-order-line-table">
+                            <thead>
+                                <tr>
+                                    <th className="col-no">순번</th>
+                                    <th className="col-item">품명 / 거래처</th>
+                                    <th className="col-qty">지시수량</th>
+                                    <th className="col-due">납기일자</th>
+                                    <th className="col-barcode">바코드</th>
+                                    <th className="col-qr">QR</th>
+                                </tr>
+                            </thead>
+
+                            {pageLines.length === 0 && (
+                                <tbody>
                                     <tr>
-                                        <td className="text-center">
-                                            {index + 1}
-                                        </td>
-
-                                        <td className="bp-name">
-                                            {line.bpNm || "-"}
-                                            <span className="bp-code">
-                                                ({line.bpCode || "-"})
-                                            </span>
-                                        </td>
-
-                                        <td className="item-name">
-                                            {line.itemNm || "-"}
-                                            <span className="item-code">
-                                                ({line.itemCode || "-"})
-                                            </span>
-                                        </td>
-
-                                        <td className="qty">
-                                            {(line.instructQty ?? 0).toLocaleString()}
-                                            {line.unit ? ` ${line.unit}` : ""}
-                                        </td>
-
-                                        <td className="text-center">
-                                            {line.dueDate || "-"}
-                                        </td>
-
-                                        {/* 품목별 바코드 (표 안으로 이동) */}
-                                        <td className="barcode-cell">
-                                            <Barcode
-                                                value={line.barcode || "NO-BARCODE"}
-                                                width={1.2}
-                                                height={barcodeHeight}
-                                                fontSize={9}
-                                                displayValue={true}
-                                                margin={0}
-                                                background="#ffffff"
-                                                lineColor="#000000"
-                                            />
+                                        <td colSpan={6} className="empty-row">
+                                            선택된 작업지시 품목이 없습니다.
                                         </td>
                                     </tr>
+                                </tbody>
+                            )}
 
-                                    {/* 공정순서: 포함 인쇄일 때만 표시 (가로 칩) */}
-                                    {includeRouting && steps.length > 0 && (
-                                        <tr className="routing-row">
-                                            <td colSpan={6}>
-                                                <div className="work-order-print-routing">
-                                                    <span className="work-order-print-routing-label">
-                                                        공정순서
+                            {pageLines.map((line, index) => {
+                                // 공정순서 정렬 (원본 배열 훼손 방지)
+                                const steps = [...(line.routingSteps ?? [])].sort(
+                                    (a, b) => a.operSeq - b.operSeq
+                                );
+
+                                // 바코드와 QR 에 같은 값을 사용
+                                const codeValue = line.barcode || "NO-BARCODE";
+
+                                return (
+                                    <tbody className="line-group" key={line.id}>
+                                        <tr>
+                                            <td className="text-center">
+                                                {startIndex + index + 1}
+                                            </td>
+
+                                            <td className="item-cell">
+                                                <div className="item-name">
+                                                    {line.itemNm || "-"}
+                                                    <span className="item-code">
+                                                        ({line.itemCode || "-"})
                                                     </span>
+                                                </div>
 
-                                                    {steps.map((step) => (
-                                                        <span
-                                                            key={`${step.operCode}-${step.operSeq}`}
-                                                            className="work-order-print-routing-step"
-                                                        >
-                                                            <strong>
-                                                                {String(step.operSeq).padStart(2, "0")}
-                                                            </strong>
-
-                                                            <span className="work-order-print-routing-step-name">
-                                                                {step.operNm}
-                                                            </span>
-
-                                                            <span className="work-order-print-routing-step-detail">
-                                                                {step.operCode}
-                                                                {step.equipments?.length
-                                                                    ? ` · ${step.equipments
-                                                                        .map((eq) => eq.eqNm)
-                                                                        .join(", ")}`
-                                                                    : ""}
-                                                            </span>
-
-                                                            <span
-                                                                className={`work-order-print-routing-tag ${
-                                                                    step.finalYn === "N"
-                                                                        ? "is-normal"
-                                                                        : "is-final"
-                                                                }`}
-                                                            >
-                                                                {step.finalYn === "N" ? "일반" : "최종"}
-                                                            </span>
-                                                        </span>
-                                                    ))}
+                                                <div className="bp-line">
+                                                    {line.bpNm || "-"}
+                                                    <span className="bp-code">
+                                                        ({line.bpCode || "-"})
+                                                    </span>
                                                 </div>
                                             </td>
+
+                                            <td className="qty">
+                                                {(line.instructQty ?? 0).toLocaleString()}
+                                                {line.unit ? ` ${line.unit}` : ""}
+                                            </td>
+
+                                            <td className="text-center">
+                                                {line.dueDate || "-"}
+                                            </td>
+
+                                            {/* 바코드 */}
+                                            <td className="code-cell barcode-cell">
+                                                <Barcode
+                                                    value={codeValue}
+                                                    width={1.3}
+                                                    height={BARCODE_HEIGHT}
+                                                    fontSize={9}
+                                                    displayValue={true}
+                                                    margin={0}
+                                                    background="#ffffff"
+                                                    lineColor="#000000"
+                                                />
+                                            </td>
+
+                                            {/* QR 코드 */}
+                                            <td className="code-cell qr-cell">
+                                                <QRCode
+                                                    value={codeValue}
+                                                    size={QR_SIZE}
+                                                    level="M"
+                                                    bgColor="#ffffff"
+                                                    fgColor="#000000"
+                                                />
+                                            </td>
                                         </tr>
-                                    )}
-                                </tbody>
-                            );
-                        })}
-                    </table>
-                </section>
 
-                {/* 주의사항 (한 줄 요약형으로 축소) */}
-                <section className="work-order-print-notice">
-                    <strong>⚠ 현장 특이사항 및 주의사항</strong>
+                                        {/* 공정순서: 포함 인쇄일 때만 표시 (가로 칩) */}
+                                        {includeRouting && steps.length > 0 && (
+                                            <tr className="routing-row">
+                                                <td colSpan={6}>
+                                                    <div className="work-order-print-routing">
+                                                        <span className="work-order-print-routing-label">
+                                                            공정순서
+                                                        </span>
 
-                    <div className="work-order-print-notice-body">
-                        품목·수량·바코드 정보에 이상이 있으면 담당자에게 즉시 보고하고,
-                        작업 완료 후 생산수량과 지시수량을 확인하십시오.
+                                                        {steps.map((step) => (
+                                                            <span
+                                                                key={`${step.operCode}-${step.operSeq}`}
+                                                                className="work-order-print-routing-step"
+                                                            >
+                                                                <strong>
+                                                                    {String(step.operSeq).padStart(2, "0")}
+                                                                </strong>
+
+                                                                <span className="work-order-print-routing-step-name">
+                                                                    {step.operNm}
+                                                                </span>
+
+                                                                <span className="work-order-print-routing-step-detail">
+                                                                    {step.operCode}
+                                                                    {step.equipments?.length
+                                                                        ? ` · ${step.equipments
+                                                                            .map((eq) => eq.eqNm)
+                                                                            .join(", ")}`
+                                                                        : ""}
+                                                                </span>
+
+                                                                <span
+                                                                    className={`work-order-print-routing-tag ${
+                                                                        step.finalYn === "N"
+                                                                            ? "is-normal"
+                                                                            : "is-final"
+                                                                    }`}
+                                                                >
+                                                                    {step.finalYn === "N" ? "일반" : "최종"}
+                                                                </span>
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                );
+                            })}
+                        </table>
+                    </section>
+
+                    {/* 주의사항 + 서명: 마지막 페이지에만 표시 */}
+                    {isLastPage && (
+                        <>
+                            <section className="work-order-print-notice">
+                                <strong>⚠ 현장 특이사항 및 주의사항</strong>
+
+                                <div className="work-order-print-notice-body">
+                                    품목·수량·바코드 정보에 이상이 있으면 담당자에게 즉시 보고하고,
+                                    작업 완료 후 생산수량과 지시수량을 확인하십시오.
+                                </div>
+                            </section>
+
+                            <section className="work-order-print-sign-area">
+                                <div className="work-order-sign-box">
+                                    <div className="work-order-sign-title">담 당 자</div>
+
+                                    <div className="work-order-sign-row">
+                                        <span>성명:</span>
+
+                                        <strong>
+                                            {workOrder.managerNm ||
+                                                workOrder.managerId ||
+                                                "-"}
+                                        </strong>
+                                    </div>
+                                </div>
+
+                                <div className="work-order-sign-box">
+                                    <div className="work-order-sign-title">공 정 처 리 자</div>
+
+                                    <div className="work-order-sign-row">
+                                        <span>확인:</span>
+                                        <span className="signature-space" />
+                                    </div>
+                                </div>
+
+                                <div className="work-order-sign-box">
+                                    <div className="work-order-sign-title">품 질 승 인 자</div>
+
+                                    <div className="work-order-sign-row">
+                                        <span>승인:</span>
+                                        <span className="signature-space" />
+                                    </div>
+                                </div>
+                            </section>
+                        </>
+                    )}
+
+                    {/* Footer */}
+                    <div className="work-order-print-footer">
+                        HEMP 식품 MES 시스템 © FOODTECH MANUFACTURING DIVISION
                     </div>
-                </section>
-
-                {/* 서명 */}
-                <section className="work-order-print-sign-area">
-                    <div className="work-order-sign-box">
-                        <div className="work-order-sign-title">담 당 자</div>
-
-                        <div className="work-order-sign-row">
-                            <span>성명:</span>
-
-                            <strong>
-                                {workOrder.managerNm ||
-                                    workOrder.managerId ||
-                                    "-"}
-                            </strong>
-                        </div>
-                    </div>
-
-                    <div className="work-order-sign-box">
-                        <div className="work-order-sign-title">공 정 처 리 자</div>
-
-                        <div className="work-order-sign-row">
-                            <span>확인:</span>
-                            <span className="signature-space" />
-                        </div>
-                    </div>
-
-                    <div className="work-order-sign-box">
-                        <div className="work-order-sign-title">품 질 승 인 자</div>
-
-                        <div className="work-order-sign-row">
-                            <span>승인:</span>
-                            <span className="signature-space" />
-                        </div>
-                    </div>
-                </section>
-
-                {/* Footer */}
-                <div className="work-order-print-footer">
-                    HEMP 식품 MES 시스템 © FOODTECH MANUFACTURING DIVISION
                 </div>
-            </div>
-        );
+            );
+        });
     };
 
     const modal = (
@@ -377,7 +409,7 @@ export function WorkOrderPrintModal({
 
                             <p>
                                 선택한 작업지시 라인을 포함하여
-                                A4 규격으로 출력합니다. (라인이 많으면 자동으로 다음 장에 이어집니다)
+                                A4 규격으로 출력합니다. (한 장에 최대 {LINES_PER_PAGE}개 품목, 초과 시 다음 장에 이어집니다)
                             </p>
                         </div>
 
@@ -419,7 +451,7 @@ export function WorkOrderPrintModal({
                     </div>
 
                     <div className="work-order-print-scroll">
-                        {renderSheet(selectedLines)}
+                        {renderSheets(selectedLines)}
                     </div>
 
                 </div>
@@ -431,7 +463,7 @@ export function WorkOrderPrintModal({
                 fixed / flex / overflow 구조와 완전히 분리된다.
             ===================================================== */}
             <div className="work-order-print-pages">
-                {renderSheet(selectedLines)}
+                {renderSheets(selectedLines)}
             </div>
         </div>
     );
