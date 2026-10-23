@@ -6,6 +6,10 @@
    → print 규칙은 id(#work-order-print-root) 대신
      class(.work-order-print-root) 기준으로 변경했다.
    (나중에 시간 되면 파일명을 print-common.css 로 바꾸는 걸 추천)
+
+   [작업지시서 품목 표]
+   작업지시서는 .work-order-line-table (정보 + 바코드 + QR, 페이지당 5개)
+   출고지시서 등 기존 화면은 .line-table 을 그대로 사용한다.
 ========================================================= */
 
 .work-order-print-root {
@@ -144,13 +148,16 @@
     border-radius: 0 0 10px 10px;
 }
 
+/* 미리보기에서 페이지 사이 간격 (인쇄 시에는 margin 0 !important 로 무시됨) */
+.work-order-print-scroll .work-order-print-sheet + .work-order-print-sheet {
+    margin-top: 24px;
+}
+
 /* =========================================================
    A4
 
-   [변경] padding 16mm → 7mm
-   인쇄 시 @page margin(7mm) 과 동일하게 맞춰서
-   "미리보기 = 실제 인쇄 결과" 가 되도록 함.
-   (미리보기가 더 여유로워서 인쇄하면 장수가 달라지던 문제 방지)
+   padding 7mm = 인쇄 시 @page margin(7mm) 과 동일.
+   "미리보기 = 실제 인쇄 결과" 가 되도록 맞춘 값.
 ========================================================= */
 
 .work-order-print-sheet {
@@ -307,7 +314,7 @@
 }
 
 /* =========================================================
-   Line (품목 표 - 바코드/공정순서 포함)
+   Line (기존 품목 표 - 출고지시서 등 공용)
 ========================================================= */
 
 .line-table {
@@ -395,6 +402,102 @@
 .line-group tr {
     break-inside: avoid;
     page-break-inside: avoid;
+}
+
+/* =========================================================
+   작업지시서 품목 표 (정보 + 바코드 + QR) - 페이지당 5개
+========================================================= */
+
+.work-order-line-table {
+    table-layout: fixed;
+}
+
+.work-order-line-table th {
+    text-align: center;
+}
+
+.work-order-line-table th,
+.work-order-line-table td {
+    padding: 3px 5px;
+}
+
+.work-order-line-table .col-no {
+    width: 40px;
+}
+
+/* 품명/거래처 칸(.col-item)은 남는 폭 전부 사용 */
+
+.work-order-line-table .col-qty {
+    width: 70px;
+}
+
+.work-order-line-table .col-due {
+    width: 85px;
+}
+
+.work-order-line-table .col-barcode {
+    width: 280px;
+}
+
+.work-order-line-table .col-qr {
+    width: 80px;
+}
+
+.work-order-line-table .item-cell {
+    overflow-wrap: anywhere;
+}
+
+.work-order-line-table .item-name {
+    color: #0f172a;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.work-order-line-table .bp-line {
+    margin-top: 2px;
+    color: #475569;
+    font-size: 8.5px;
+    line-height: 1.3;
+}
+
+.work-order-line-table .item-code,
+.work-order-line-table .bp-code {
+    margin-left: 4px;
+    color: #64748b;
+    font-size: 8px;
+    font-weight: 400;
+    font-family: "Courier New", monospace;
+}
+
+.work-order-line-table .qty {
+    color: #166534;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* 바코드 / QR 셀 */
+.work-order-line-table .code-cell {
+    padding: 3px 4px;
+    text-align: center;
+    line-height: 0;
+}
+
+.work-order-line-table .barcode-cell svg {
+    display: inline-block;
+    max-width: 100%;
+    height: auto;
+}
+
+.work-order-line-table .qr-cell svg {
+    display: block;
+    margin: 0 auto;
+}
+
+.work-order-line-table .routing-row td {
+    padding: 3px 5px 4px;
+    background: #fbfdfc;
 }
 
 /* =========================================================
@@ -577,35 +680,6 @@
 }
 
 /* =========================================================
-   Dense (품목 6개 이상일 때 한 단계 더 압축)
-========================================================= */
-
-.work-order-print-sheet.is-dense .work-order-print-header h1 {
-    font-size: 19px;
-}
-
-.work-order-print-sheet.is-dense .work-order-print-section {
-    margin-bottom: 7px;
-}
-
-.work-order-print-sheet.is-dense .line-table th,
-.work-order-print-sheet.is-dense .line-table td {
-    padding: 2px 4px;
-}
-
-.work-order-print-sheet.is-dense .line-table .qty {
-    font-size: 11px;
-}
-
-.work-order-print-sheet.is-dense .work-order-sign-box {
-    min-height: 38px;
-}
-
-.work-order-print-sheet.is-dense .work-order-sign-title {
-    margin-bottom: 8px;
-}
-
-/* =========================================================
    Responsive
 ========================================================= */
 
@@ -669,8 +743,7 @@
 
     /* =====================================================
        기존 화면 UI 전부 숨김
-       [변경] id → class 기준으로 바꿔서
-       작업지시서 / 출고지시서 root 둘 다 예외 처리됨.
+       class 기준이라 작업지시서 / 출고지시서 root 둘 다 예외 처리됨.
        라벨 인쇄 root(#label-print-root)도 기존대로 예외.
     ===================================================== */
 
@@ -706,7 +779,7 @@
         overflow: visible !important;
     }
 
-    /* 인쇄용 SHEET */
+    /* 인쇄용 SHEET (페이지 1장 = sheet 1개) */
     .work-order-print-pages .work-order-print-sheet {
         page: work-order;
         display: block !important;
@@ -778,11 +851,17 @@
         display: table-cell !important;
     }
 
-    /* 바코드 SVG */
-    .work-order-print-pages .line-table .barcode-cell svg {
+    /* 바코드 / QR SVG */
+    .work-order-print-pages .line-table .barcode-cell svg,
+    .work-order-print-pages .work-order-line-table .barcode-cell svg {
         display: inline-block !important;
         max-width: 100% !important;
         height: auto !important;
+    }
+
+    .work-order-print-pages .work-order-line-table .qr-cell svg {
+        display: block !important;
+        margin: 0 auto !important;
     }
 
     /* 페이지 내부 분할 방지 */
