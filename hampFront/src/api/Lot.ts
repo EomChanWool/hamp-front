@@ -35,7 +35,7 @@ export const LotApi = {
     /** LOT 목록 조회 (페이징 및 검색 조건) */
     getList: async (params?: {
         lotCode?: string;
-        shipYn?: string;
+        shipYn?: number;
         productionDateFrom?: string;
         productionDateTo?: string;
         page?: number;

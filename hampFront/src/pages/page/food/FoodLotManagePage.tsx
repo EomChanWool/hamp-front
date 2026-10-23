@@ -23,6 +23,25 @@ const lotFlowPanel = {
   ],
 };
 
+// shipYn: 0 = 미출고, 1 = 출고완료
+const SHIP_YN_LABEL: Record<number, string> = {
+  0: "미출고",
+  1: "출고완료",
+};
+
+/**
+ * 검색 입력값(미출고 / 출고완료) → shipYn 숫자로 변환
+ * - 빈 값이면 null (조건 없음)
+ * - 해석할 수 없는 값이면 undefined (잘못된 입력)
+ */
+function parseShipYn(text: string): number | null | undefined {
+  const v = text.trim();
+  if (!v) return null;
+  if ( v === "미출고") return 0;
+  if ( v === "출고완료") return 1;
+  return undefined;
+}
+
 export function FoodLotManagePage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -77,7 +96,7 @@ export function FoodLotManagePage() {
     }
   }, [searchParams, isReady]);
 
-  // URL에서 현재 검색조건 추출
+  // URL에서 현재 검색조건 추출 (shipYn은 URL에 "0" / "1" 로 저장)
   const currentPage = Number(searchParams.get("page") || "0");
   const queryLotCode = searchParams.get("lotCode") || "";
   const queryShipYn = searchParams.get("shipYn") || "";
@@ -106,18 +125,21 @@ export function FoodLotManagePage() {
     },
     {
       type: "input",
-      label: "출고여부",
+      label: "신고여부",
       ref: shippedRef,
       name: "shipYn",
     },
   ];
 
-  // URL → SearchBand input 동기화
+  // URL → SearchBand input 동기화 (shipYn은 숫자 → 라벨로 표시)
   useEffect(() => {
     if (producedStartRef.current) producedStartRef.current.value = queryDateFrom;
     if (producedEndRef.current) producedEndRef.current.value = queryDateTo;
     if (lotCodeRef.current) lotCodeRef.current.value = queryLotCode;
-    if (shippedRef.current) shippedRef.current.value = queryShipYn;
+    if (shippedRef.current) {
+      shippedRef.current.value =
+        queryShipYn !== "" ? (SHIP_YN_LABEL[Number(queryShipYn)] ?? "") : "";
+    }
   }, [queryDateFrom, queryDateTo, queryLotCode, queryShipYn]);
 
   // LOT 목록 조회
@@ -132,7 +154,7 @@ export function FoodLotManagePage() {
         size: number;
         sort?: string[];
         lotCode?: string;
-        shipYn?: string;
+        shipYn?: number;
         productionDateFrom?: string;
         productionDateTo?: string;
       } = {
@@ -141,7 +163,15 @@ export function FoodLotManagePage() {
       };
 
       if (queryLotCode) params.lotCode = queryLotCode;
-      if (queryShipYn) params.shipYn = queryShipYn;
+
+      // shipYn: 0(미출고) 도 유효한 값이므로 빈 문자열 여부로만 판단
+      if (queryShipYn !== "") {
+        const shipYnNumber = Number(queryShipYn);
+        if (shipYnNumber === 0 || shipYnNumber === 1) {
+          params.shipYn = shipYnNumber;
+        }
+      }
+
       if (queryDateFrom) params.productionDateFrom = queryDateFrom;
       if (queryDateTo) params.productionDateTo = queryDateTo;
 
@@ -177,12 +207,18 @@ export function FoodLotManagePage() {
 
   // 검색
   const handleSearch = () => {
+    const shipYnParsed = parseShipYn(shippedRef.current?.value ?? "");
+    if (shipYnParsed === undefined) {
+      window.alert("출고여부는 '미출고' 또는 '출고완료'로 입력해주세요.");
+      return;
+    }
+
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("page", "0");
 
     const values: Record<string, string> = {
       lotCode: lotCodeRef.current?.value.trim() || "",
-      shipYn: shippedRef.current?.value.trim() || "",
+      shipYn: shipYnParsed === null ? "" : String(shipYnParsed),
       productionDateFrom: producedStartRef.current?.value || "",
       productionDateTo: producedEndRef.current?.value || "",
     };
@@ -324,13 +360,14 @@ export function FoodLotManagePage() {
         header: "현재상태",
       },
       {
+        // shipYn: 0 = 미출고, 1 = 출고완료
         accessorKey: "shipYn",
         header: "출고여부",
         cell: ({ getValue }) => {
           const val = getValue<number>();
           return (
             <Badge tone={val === 1 ? "good" : "muted"}>
-              {val === 1 ? "출고완료" : "미출고"}
+              {SHIP_YN_LABEL[val] ?? SHIP_YN_LABEL[0]}
             </Badge>
           );
         },
