@@ -1,27 +1,32 @@
 import Barcode from "react-barcode";
+import QRCode from "react-qr-code";
 import { createPortal } from "react-dom";
 import "@/components/modal/LabelPrintModal.css";
 
 /**
- *  ┌────────────────────┐
- *  │ title              │  굵은 첫 줄 (필수)
- *  │ name (code)        │  품목명 / 설비명 등 (선택)
- *  │ qtyLabel qty+unit  │  수량 (선택)
- *  │ ||||||||||||||||   │  바코드
- *  └────────────────────┘
+ *  ┌────────────────────────┐
+ *  │ title                  │  굵은 첫 줄 (필수)
+ *  │ name (code)   qty+unit │  이름(좌) + 수량(우) 한 줄로 합침 (선택)
+ *  │        ┌──────┐        │
+ *  │        │  QR  │        │  QR (가운데)
+ *  │        └──────┘        │
+ *  │ ||||||||||||||||||||   │  바코드
+ *  └────────────────────────┘
  */
 export interface LabelItem {
   /** React key 용 고유값 */
   id: string;
   /** 바코드로 찍을 값 (비어 있으면 id 사용) */
   barcode: string;
+  /** QR 코드에 담을 값 (비어 있으면 barcode → id 순으로 사용). 예) URL, JSON 문자열 */
+  qrValue?: string;
   /** 첫 줄(굵게). 예) LOT번호, 설비코드, "씨드 입고" */
   title: string;
-  /** 둘째 줄 이름. 예) 품목명, 설비명 */
+  /** 둘째 줄 왼쪽 이름. 예) 품목명, 설비명 */
   name?: string;
   /** 이름 뒤 괄호 코드. 예) 품목코드 */
   code?: string;
-  /** 수량 (undefined 이면 수량 줄 숨김) */
+  /** 수량 (undefined 이면 수량 숨김) */
   qty?: number;
   /** 수량 앞 문구 (기본 "수량") */
   qtyLabel?: string;
@@ -45,6 +50,8 @@ export interface LabelPrintModalProps {
   onPrinted?: () => void | Promise<void>;
   /** onPrinted 처리 중(API 호출 등)에는 버튼 잠금 */
   isBusy?: boolean;
+  /** QR 코드 표시 여부 (기본 true). false 면 기존처럼 바코드만 출력 */
+  showQr?: boolean;
 }
 
 export function LabelPrintModal({
@@ -55,6 +62,7 @@ export function LabelPrintModal({
   confirmMessage,
   onPrinted,
   isBusy = false,
+  showQr = true,
 }: LabelPrintModalProps) {
   if (!isOpen) return null;
 
@@ -114,25 +122,31 @@ export function LabelPrintModal({
             <div className={`label-modal__grid ${isSingle ? "label-modal__grid--single" : ""}`}>
               {items.map((item) => (
                 <div key={item.id} className="label-card">
+                  {/* 1. 텍스트: 제목 + (이름 · 수량) 한 줄 */}
                   <div className="label-card__title">{item.title}</div>
 
-                  {item.name && (
-                    <div className="label-card__name">
-                      {item.name}
-                      {item.code && <span className="label-card__code"> ({item.code})</span>}
+                  {(item.name || item.qty !== undefined) && (
+                    <div className="label-card__meta">
+                      <div className="label-card__name">
+                        {item.name}
+                        {item.name && item.code && (
+                          <span className="label-card__code"> ({item.code})</span>
+                        )}
+                      </div>
+
+                      {item.qty !== undefined && (
+                        <div className="label-card__qty">
+                          {item.qtyLabel ?? "수량"}{" "}
+                          <strong>
+                            {item.qty.toLocaleString()}
+                            {item.unit ?? ""}
+                          </strong>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {item.qty !== undefined && (
-                    <div className="label-card__qty">
-                      {item.qtyLabel ?? "수량"}{" "}
-                      <strong>
-                        {item.qty.toLocaleString()}
-                        {item.unit ?? ""}
-                      </strong>
-                    </div>
-                  )}
-
+                  {/* 2. 바코드 */}
                   <div className="label-card__barcode">
                     <Barcode
                       value={item.barcode || item.id}
@@ -143,6 +157,19 @@ export function LabelPrintModal({
                       margin={0}
                     />
                   </div>
+
+                  {/* 3. QR */}
+                  {showQr && (
+                    <div className="label-card__qr">
+                      <QRCode
+                        value={item.qrValue || item.barcode || item.id}
+                        size={256}
+                        level="M"
+                      />
+                    </div>
+                  )}
+
+
                 </div>
               ))}
             </div>

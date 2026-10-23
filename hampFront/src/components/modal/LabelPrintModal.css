@@ -3,6 +3,8 @@
 
    [규격] 지브라 라벨 100mm x 100mm  (가로 x 세로)
 
+   [레이아웃]  위 → 아래 :  텍스트(제목 + 이름/수량 한 줄) / QR(가운데) / 바코드
+
    - @page label 에 라벨 크기 + margin 0 → 크롬 머리글/바닥글이 그려질 자리가 없어짐
    - 인쇄 시 그리드를 풀고 "카드 1개 = 페이지 1장"
    - 카드 높이를 라벨보다 0.5mm 작게 잡아 빈 페이지 방지
@@ -16,12 +18,14 @@
    [크롬 인쇄창] 여백 "없음" / 배율 100% / "머리글 및 바닥글" 체크 해제
 
    [증상별 조정표]
-   - 2장으로 나뉨            → 드라이버 용지 100x100 확인 → --label-barcode-h, 글자 크기, --label-pad-y 줄이기
+   - 2장으로 나뉨            → 드라이버 용지 100x100 확인 → --label-barcode-h, --label-qr-size 줄이기 → 글자 크기, --label-pad-y 줄이기
    - 아래쪽이 잘림           → --label-barcode-h 를 가장 먼저 줄임
-   - 내용이 위쪽에 몰림      → --label-pad-y 또는 --label-barcode-h 키움
+   - 내용이 위쪽에 몰림      → --label-pad-y 키움
    - 좌우 잘림/치우침        → --label-pad-x, 드라이버 용지 가로 확인
    - 빈 라벨이 1장 더 나옴   → 카드 높이 보정값(0.5mm)을 1mm 로
-   - 바코드가 안 읽힘        → TSX 의 Barcode width 값을 키움
+   - 바코드가 안 읽힘        → TSX 의 Barcode width 값을 키움 / --label-barcode-h 키움
+   - QR 이 안 읽힘           → --label-qr-size 키움 (최소 25mm 권장), QR 값이 너무 길면 짧게
+   - 이름이 너무 많이 잘림   → .label-card__name 의 line-clamp 를 2 로 (높이 약 5.5mm 추가 필요)
    - 머리글/바닥글이 나옴    → 크롬 인쇄창에서 체크 해제 (CSS 로 완전 차단 불가)
    ========================================================================== */
 
@@ -35,17 +39,20 @@
 
   /* 라벨 안쪽 여백 */
   --label-pad-x: 5mm;
-  --label-pad-y: 5mm;
+  --label-pad-y: 4mm;
 
   /* 글자 크기 */
   --label-font-title: 14pt;
-  --label-font-body: 12pt;
-  --label-font-qty: 12pt;
+  --label-font-body: 11pt;
+  --label-font-qty: 11pt;
 
-  /* 바코드 영역 높이 (가장 많이 조정하게 되는 값) */
-  --label-barcode-h: 35mm;
+  /* QR 한 변 길이 (정사각형, 흰 여백 1mm 는 별도) */
+  --label-qr-size: 30mm;
 
-  /* 각 줄 사이 간격 */
+  /* 바코드 영역 높이 */
+  --label-barcode-h: 26mm;
+
+  /* 각 블록 사이 간격 */
   --label-gap: 2mm;
 }
 
@@ -147,14 +154,28 @@
   font-size: 14px;
   font-weight: 700;
   color: #0f172a;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+/* 이름(좌) + 수량(우) 한 줄 */
+.label-card__meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .label-card__name {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 13px;
   font-weight: 500;
   color: #334155;
-  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .label-card__code {
@@ -163,14 +184,33 @@
 }
 
 .label-card__qty {
+  flex: 0 0 auto;
   font-size: 13px;
   font-weight: 600;
   color: #0f172a;
-  margin-bottom: 12px;
+  white-space: nowrap;
 }
 
 .label-card__qty strong {
   font-weight: 700;
+}
+
+/* QR: 가운데 정렬, 다크모드에서도 인식되도록 항상 흰 배경 + 여백(quiet zone) */
+.label-card__qr {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 10px;
+  padding: 6px;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+
+.label-card__qr svg {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .label-card__barcode {
@@ -388,21 +428,38 @@
   /* 라벨 내부 글자 (크기는 :root 변수로 조정) */
   .label-card .label-card__title {
     font-size: var(--label-font-title) !important;
-    margin-bottom: var(--label-gap) !important;
+    line-height: 1.2 !important;
+    margin-bottom: 1mm !important;
     color: #000000 !important;
+    /* 제목은 1줄 고정 (넘치면 …) */
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    word-break: normal !important;
+  }
+
+  /* 이름(좌) + 수량(우) 한 줄 */
+  .label-card .label-card__meta {
+    display: flex !important;
+    align-items: baseline !important;
+    justify-content: space-between !important;
+    gap: 3mm !important;
+    margin-bottom: var(--label-gap) !important;
   }
 
   .label-card .label-card__name {
     font-size: var(--label-font-body) !important;
-    margin-bottom: var(--label-gap) !important;
+    line-height: 1.2 !important;
     color: #000000 !important;
 
-    /* 최대 2줄. 1줄로 줄이려면 line-clamp 를 1 로 */
-    display: -webkit-box;
+    /* 최대 1줄. 2줄로 늘리려면 line-clamp 를 2 로 (높이 여유 확인) */
+    display: -webkit-box !important;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    overflow: hidden;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    overflow: hidden !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
   }
 
   .label-card .label-card__code {
@@ -411,12 +468,33 @@
 
   .label-card .label-card__qty {
     font-size: var(--label-font-qty) !important;
-    margin-bottom: var(--label-gap) !important;
+    line-height: 1.2 !important;
     color: #000000 !important;
+  }
+
+  /* QR: 가운데 + 크기 고정 (흰 여백 1mm 가 quiet zone 역할) */
+  .label-card .label-card__qr {
+    flex: 0 0 auto !important;
+    box-sizing: border-box !important;
+    width: calc(var(--label-qr-size) + 2mm) !important;
+    height: calc(var(--label-qr-size) + 2mm) !important;
+    margin: 0 auto var(--label-gap) !important;
+    padding: 1mm !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background-color: #ffffff !important;
+  }
+
+  .label-card .label-card__qr svg {
+    display: block !important;
+    visibility: visible !important;
+    width: var(--label-qr-size) !important;
+    height: var(--label-qr-size) !important;
   }
 
   /* 바코드: 화면용 height:auto 는 라벨 높이를 넘기기 쉬워 인쇄 시 높이 고정 */
   .label-card .label-card__barcode {
+    flex: 0 0 auto !important;
     border-top: none !important;
     padding-top: 0 !important;
   }
