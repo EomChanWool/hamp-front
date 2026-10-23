@@ -520,7 +520,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                             <div className="remainingQtyCardHeader">
                                 <span className="remainingQtyLabel">신고 가능 잔여수량</span>
                                 <span className={`remainingQtyPercent ${isFullyReported ? 'complete' : ''}`}>
-                                    {isFullyReported ? '완료 100%' : `${percentage}% 남음`}
+                                    {isFullyReported ? '완료 100%' : `${percentage}% 완료`}
                                 </span>
                             </div>
                             <div className="remainingQtyValueArea">
