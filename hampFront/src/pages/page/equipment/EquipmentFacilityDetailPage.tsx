@@ -366,7 +366,8 @@ export function EquipmentFacilityDetailPage() {
       setIsEditing(false);
     } catch (err) {
       console.error("설비 수정 실패:", err);
-      alert("수정에 실패했습니다.");
+      const message = axios.isAxiosError(err) ? err.response?.data?.message : null;
+      alert(message || "수정에 실패했습니다.");
     } finally {
       setIsUpdating(false);
     }
@@ -562,6 +563,7 @@ export function EquipmentFacilityDetailPage() {
                 disabled={isBusy}
                 placeholder="설비명"
                 onChange={(e) => setFormField("fcltNm", e.target.value)}
+                maxLength={100}
               />
             ) : (
               <div>
