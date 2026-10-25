@@ -80,7 +80,10 @@ export function EquipmentFacilityDetailPage() {
               className="tableInput"
               value={value}
               disabled={disabled}
-              onChange={(e) => onChange(e.target.value)}
+              onChange={(e) => {
+                onChange(e.target.value);
+                fillEquipmentInfo(e.target.value);
+              }}
             >
               <option value="" disabled>장비를 선택해주세요</option>
               {equipmentOptions.map((opt) => (
@@ -107,7 +110,10 @@ export function EquipmentFacilityDetailPage() {
               className="tableInput"
               value={value}
               disabled={disabled}
-              onChange={(e) => onChange(e.target.value)}
+              onChange={(e) => {
+                onChange(e.target.value);
+                fillFactoryZoneInfo(e.target.value);
+              }}
             >
               <option value="" disabled>공장을 선택해주세요</option>
               {factoryZoneOptions.map((opt) => (
@@ -390,6 +396,38 @@ export function EquipmentFacilityDetailPage() {
 
   const setFormField = (key: string, value: any) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const fillEquipmentInfo = async (eqCode: string) => {
+    const option = equipmentOptions.find((opt) => opt.eqCode === eqCode);
+    setForm((prev) => ({ ...prev, eqNm: option?.eqNm ?? "", eqType: "" }));
+    try {
+      const res = await EquipmentApi.getDetail(eqCode);
+      setForm((prev) =>
+        prev.eqCode === eqCode
+          ? { ...prev, eqNm: res.data?.eqNm ?? prev.eqNm, eqType: res.data?.eqType ?? "" }
+          : prev
+      );
+    } catch (error) {
+      console.error("장비 정보 조회 실패:", error);
+      alert("장비 정보를 불러오지 못했습니다.");
+    }
+  };
+
+  const fillFactoryZoneInfo = async (facCode: string) => {
+    const option = factoryZoneOptions.find((opt) => opt.facCode === facCode);
+    setForm((prev) => ({ ...prev, facNm: option?.facNm ?? "", location: "" }));
+    try {
+      const res = await FactoryZoneApi.getDetail(facCode);
+      setForm((prev) =>
+        prev.facCode === facCode
+          ? { ...prev, facNm: res.data?.facNm ?? prev.facNm, location: res.data?.location ?? "" }
+          : prev
+      );
+    } catch (error) {
+      console.error("공장 정보 조회 실패:", error);
+      alert("공장 정보를 불러오지 못했습니다.");
+    }
   };
 
   const renderStatusBadge = (statusStr: string) => {
