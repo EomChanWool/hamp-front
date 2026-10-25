@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 import { Badge } from "@components/common/Badge";
 import { formatDateTime } from "@/utils/common";
 import { apiClient } from "@/api/apiClient";
@@ -125,7 +126,8 @@ export function SystemUsersInfoPage() {
       setIsEditing(false);
     } catch (e) {
       console.error(e);
-      alert("저장에 실패했습니다.");
+      const message = axios.isAxiosError(e) ? e.response?.data?.message : null;
+      alert(message || "저장에 실패했습니다.");
     } finally {
       setIsUpdating(false);
     }
