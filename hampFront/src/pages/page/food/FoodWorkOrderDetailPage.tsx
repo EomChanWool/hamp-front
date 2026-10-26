@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import Barcode from "react-barcode";
+import QRCode from "react-qr-code";
 import { type ColumnDef } from "@tanstack/react-table";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import { CusTable } from "@/components/table/CusTable";
@@ -491,7 +492,7 @@ export function FoodWorkOrderDetailPage() {
       },
       {
         accessorKey: "barcode",
-        header: isEditing ? "관리" : "바코드",
+        header: isEditing ? "관리" : "바코드 / QR",
         cell: ({ row }) => {
           if (isEditing) {
             return (
@@ -507,21 +508,34 @@ export function FoodWorkOrderDetailPage() {
             );
           }
 
+          const codeValue = row.original.barcode || "NO-BARCODE";
+
           return (
-            <div className="food-cell-center">
+            <div className="food-cell-center food-code-cell">
               <Barcode
-                value={row.original.barcode || "NO-BARCODE"}
+                value={codeValue}
                 width={1.2}
                 height={38}
                 fontSize={11}
                 displayValue={true}
                 margin={0}
               />
+
+              {/* 바코드와 동일한 값을 QR 로도 제공 (스캐너/모바일 카메라 겸용) */}
+              <div className="food-qr-wrap">
+                <QRCode
+                  value={codeValue}
+                  size={48}
+                  level="M"
+                  bgColor="#ffffff"
+                  fgColor="#000000"
+                />
+              </div>
             </div>
           );
         },
         meta: {
-          width: isEditing ? "250px" : "450px",
+          width: isEditing ? "200px" : "400px",
         },
       },
     ],

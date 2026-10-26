@@ -52,7 +52,6 @@ export function SeedOutboundManagePage() {
 
   // ------------------------------------------
   // 브라우저 새로고침 감지 → 검색조건 초기화
-  // (FoodWorkOrdersPage 와 동일한 동작)
   // ------------------------------------------
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -327,9 +326,6 @@ export function SeedOutboundManagePage() {
     []
   );
 
-  // ------------------------------------------
-  // 렌더링
-  // ------------------------------------------
   return (
     <section className="screenStack">
       <SearchBand
