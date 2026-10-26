@@ -497,7 +497,7 @@ button {
   container-name: content;
 }
 
-.workspace>*:last-child {
+.workspace > *:last-child {
   margin-bottom: 40px;
 }
 
@@ -510,7 +510,7 @@ button {
   gap: 18px;
 }
 
-.screenStack>* {
+.screenStack > * {
   min-width: 0;
 }
 
@@ -584,7 +584,7 @@ button {
   color: var(--text-heading);
   letter-spacing: -0.5px;
   line-height: 1;
-  font-family: 'montserrat', sans-serif;
+  font-family: "montserrat", sans-serif;
 }
 
 /* Light */
@@ -659,7 +659,7 @@ button {
   gap: 18px;
 }
 
-.panel>* {
+.panel > * {
   min-width: 0;
 }
 
@@ -1038,52 +1038,82 @@ textarea.tableInput {
   background: var(--dot, var(--text-muted));
 }
 
+/* 불량 유형 */
+.defect-foreign {
+  --dot: #e02a55;
+}
+.defect-weight {
+  --dot: #f28a12;
+}
+.defect-damage {
+  --dot: #8338dc;
+}
+.defect-color {
+  --dot: #25b084;
+}
+.defect-package {
+  --dot: #3b52c8;
+}
+.defect-etc {
+  --dot: #727c94;
+}
+
+/* 용도 */
 .purpose-blue {
-  --dot: #3b82a6;
+  --dot: #3b52c8;
 }
-
 .purpose-green {
-  --dot: #3f9c7a;
+  --dot: #25b084;
 }
-
 .purpose-purple {
-  --dot: #8a6bbf;
+  --dot: #8338dc;
 }
-
 .purpose-orange {
-  --dot: #c98a2b;
+  --dot: #f28a12;
 }
-
 .purpose-red {
-  --dot: #b85a52;
+  --dot: #e02a55;
+}
+.purpose-gray {
+  --dot: #727c94;
 }
 
-.purpose-gray {
-  --dot: #68737d;
+[data-theme="dark"] .defect-foreign {
+  --dot: #f73463;
+}
+[data-theme="dark"] .defect-weight {
+  --dot: #ff9b2e;
+}
+[data-theme="dark"] .defect-damage {
+  --dot: #9845ef;
+}
+[data-theme="dark"] .defect-color {
+  --dot: #43d1a7;
+}
+[data-theme="dark"] .defect-package {
+  --dot: #4560dc;
+}
+[data-theme="dark"] .defect-etc {
+  --dot: #727c94;
 }
 
 [data-theme="dark"] .purpose-blue {
-  --dot: #7fb8dc;
+  --dot: #4560dc;
 }
-
 [data-theme="dark"] .purpose-green {
-  --dot: #74c4a4;
+  --dot: #43d1a7;
 }
-
 [data-theme="dark"] .purpose-purple {
-  --dot: #b6a0e0;
+  --dot: #9845ef;
 }
-
 [data-theme="dark"] .purpose-orange {
-  --dot: #e3a074;
+  --dot: #ff9b2e;
 }
-
 [data-theme="dark"] .purpose-red {
-  --dot: #ef8a8a;
+  --dot: #f73463;
 }
-
 [data-theme="dark"] .purpose-gray {
-  --dot: #9aa7b8;
+  --dot: #a8b0c3;
 }
 
 .limitsTxt {
@@ -1235,7 +1265,7 @@ textarea.tableInput {
   height: 17px;
 }
 
-.searchTitle>div:last-child {
+.searchTitle > div:last-child {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1249,7 +1279,7 @@ textarea.tableInput {
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.2px;
-  font-family: 'montserrat', sans-serif;
+  font-family: "montserrat", sans-serif;
 }
 
 .searchTitle span {
@@ -1350,7 +1380,7 @@ textarea.tableInput {
   gap: 14px;
 }
 
-.searchKeywordRow>.searchSelectField {
+.searchKeywordRow > .searchSelectField {
   flex: 0 0 160px;
 }
 
@@ -1414,7 +1444,7 @@ textarea.tableInput {
   margin-left: auto;
 }
 
-.searchFilterPanel>.searchDateGroup:first-child {
+.searchFilterPanel > .searchDateGroup:first-child {
   margin-left: 0;
 }
 
@@ -1431,7 +1461,7 @@ textarea.tableInput {
 }
 
 .searchField p,
-.searchSelectField>p {
+.searchSelectField > p {
   margin: 0;
   color: var(--text-muted);
   font-size: 12px;
@@ -1511,7 +1541,7 @@ textarea.tableInput {
 }
 
 .dateQuickRange button {
-  height: 32px;
+  height: 40px;
   padding: 0 12px;
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -1786,7 +1816,7 @@ textarea.tableInput {
     width: 100%;
   }
 
-  .searchKeywordRow>.searchSelectField,
+  .searchKeywordRow > .searchSelectField,
   .searchKeywordRow .searchField.keywordField {
     flex: 1 1 100%;
   }
@@ -1804,7 +1834,6 @@ textarea.tableInput {
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   .searchBand *,
   .searchBand *::before,
   .searchBand *::after {
@@ -2284,7 +2313,7 @@ textarea.tableInput {
 }
 
 .lotFlow__step:not(:last-child) .lotFlow__rail::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 50%;
@@ -2370,7 +2399,7 @@ textarea.tableInput {
     grid-area: label;
   }
 
-  .lotFlow__step> :last-child {
+  .lotFlow__step > :last-child {
     grid-area: badge;
   }
 
@@ -2467,7 +2496,6 @@ textarea.tableInput {
 /* ---- ~1024px ---- */
 
 @container content (max-width: 1024px) {
-
   .contentGrid.two,
   .fieldBoard {
     grid-template-columns: 1fr;
@@ -2506,7 +2534,6 @@ textarea.tableInput {
 /* ---- ~860px ---- */
 
 @container content (max-width: 860px) {
-
   .equipmentGrid,
   .formGrid {
     grid-template-columns: 1fr;

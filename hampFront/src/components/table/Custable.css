@@ -48,16 +48,16 @@ td {
 th,
 td {
   border-bottom: 1px solid var(--border);
-  padding: 14px 12px; 
+  padding: 14px 12px;
   text-align: center;
-  font-size: 14px; 
+  font-size: 14px;
 }
 
 th {
-  height: 46px; 
+  height: 46px;
   background: #eceff4;
-  color: #475569; 
-  font-weight: 600; 
+  color: #475569;
+  font-weight: 600;
   border-bottom: 0;
   text-align: center;
   user-select: none;
@@ -72,7 +72,7 @@ td {
 }
 
 th svg {
-  width: 16px; 
+  width: 16px;
   height: 16px;
 }
 
@@ -80,8 +80,8 @@ th svg {
 .th-content {
   display: flex;
   align-items: center;
-  justify-content: center; 
-  gap: 6px; 
+  justify-content: center;
+  gap: 6px;
   overflow: hidden;
 }
 
