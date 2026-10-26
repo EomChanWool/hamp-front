@@ -14,6 +14,7 @@ import { ShipmentOrderPrintModal } from "@/components/modal/ShipmentOrderPrintMo
 import "@/pages/page/food/Food.css";
 // 진행상태 배지 / 프로그레스 바 스타일(statusBadge, seedProgressBar 등) 재사용
 import "@/pages/page/ioSeed/ioSeed.css";
+import QRCode from "react-qr-code";
 
 /** 상태 코드 → 뱃지 변환 */
 const getStatusBadge = (status?: string) => {
@@ -203,9 +204,6 @@ export function SeedOutboundManageDetailPage() {
     [shipment?.orderCode],
   );
 
-  // ------------------------------------------
-  // 렌더링
-  // ------------------------------------------
   return (
     <section className="screenStack relative min-h-[400px] shipment-detail-page">
       {/* 로딩 오버레이 */}
@@ -221,7 +219,15 @@ export function SeedOutboundManageDetailPage() {
           <div>
             <div className="shipment-title-row">
               <h1 className="food-detail-title">{shipment?.shipId ?? shipId}</h1>
+            </div>
 
+            <span className="food-detail-subtitle">
+              {shipment?.orderCode ? `수주번호 ${shipment.orderCode}` : ""}
+            </span>
+          </div>
+
+          <div className="shipment-label-print-area">
+            <div className="shipment-label">
               <button
                 type="button"
                 className="shipment-print-btn"
@@ -230,29 +236,6 @@ export function SeedOutboundManageDetailPage() {
               >
                 출고지시서 인쇄
               </button>
-            </div>
-
-            <span className="food-detail-subtitle">
-              {shipment?.orderCode ? `수주번호 ${shipment.orderCode}` : ""}
-            </span>
-          </div>
-
-          {/* 화면 확인/스캔용 바코드 (유지)
-              ※ 인쇄는 이제 출고지시서 양식(헤더 바코드 포함)으로 하므로
-                이 영역은 "화면에서 바로 스캔/확인" 용도로만 사용된다. */}
-          <div className="shipment-label-print-area">
-            <div className="shipment-label">
-              <div className="shipment-label-title">출고지시 라벨</div>
-
-              <Barcode
-                value={shipment?.shipId ?? ""}
-                format="CODE128"
-                width={1.2}
-                height={38}
-                fontSize={11}
-                displayValue={true}
-                margin={0}
-              />
             </div>
           </div>
         </div>
@@ -286,6 +269,29 @@ export function SeedOutboundManageDetailPage() {
           <div>
             <div className="food-summary-label">납기일자</div>
             <div className="food-summary-value">{shipment?.dueDate || "-"}</div>
+          </div>
+          <div>
+            <div className="food-summary-label">출고지시 라벨</div>
+            <div className="food-summary-value"><Barcode
+              value={shipment?.shipId ?? ""}
+              format="CODE128"
+              width={1.2}
+              height={38}
+              fontSize={11}
+              displayValue={true}
+              margin={0}
+            />
+            </div>
+          </div>
+          <div>
+            <div className="food-summary-label">QR코드</div>
+            <div className="food-summary-value"><QRCode
+              value={shipment?.shipId ?? ""}
+              size={60}
+              level="M"
+              bgColor="#ffffff"
+              fgColor="#000000"
+            /></div>
           </div>
         </div>
 

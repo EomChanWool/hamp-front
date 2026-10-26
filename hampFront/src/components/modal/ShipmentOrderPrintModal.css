@@ -7,7 +7,6 @@
 
 /* ---------------------------------------------------------
    [상세 페이지] 제목 옆 "출고지시서 인쇄" 버튼
-   (설비 상세의 barcodeActionBtn 위치/느낌과 동일)
    → 원하면 Food.css 로 옮겨도 됨
 --------------------------------------------------------- */
 
@@ -19,13 +18,14 @@
 }
 
 .shipment-print-btn {
+    height: 36px;
     appearance: none;
-    padding: 6px 12px;
+    padding: 0px 16px;
     border: 1px solid #166534;
-    border-radius: 6px;
+    border-radius: 8px;
     background: #ffffff;
     color: #166534;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: background-color 0.12s ease, color 0.12s ease;
@@ -46,9 +46,16 @@
    [출고지시서 양식]
 --------------------------------------------------------- */
 
-/* 헤더 우측 바코드 */
-.ship-header-barcode {
+/* 헤더 우측: 바코드 + QR 가로 배치 */
+.ship-header-codes {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: 8px;
     margin-top: 4px;
+}
+
+.ship-header-barcode {
     line-height: 0;
 }
 
@@ -56,6 +63,21 @@
     display: block;
     max-width: 100%;
     height: auto;
+}
+
+/* QR: 스캐너 인식을 위해 흰 여백(quiet zone) 확보 */
+.ship-header-qr {
+    flex: 0 0 auto;
+    line-height: 0;
+    padding: 3px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+}
+
+.ship-header-qr svg {
+    display: block;
+    width: 52px;
+    height: 52px;
 }
 
 /* 출고 정보 표: th/td 폭 고정 (4열) */
@@ -89,16 +111,28 @@
     width: 34px;
 }
 
-.ship-line-table .col-id {
-    width: 80px;
+.ship-line-table .col-order {
+    width: 96px;
 }
 
 .ship-line-table .col-qty {
-    width: 80px;
+    width: 70px;
+}
+
+.ship-line-table .col-progress {
+    width: 100px;
 }
 
 .ship-line-table .col-check {
-    width: 60px;
+    width: 56px;
+}
+
+/* 연결 수주라인: 수주번호 + 라인번호 */
+.ship-line-table .line-no {
+    display: inline-block;
+    margin-left: 4px;
+    color: #64748b;
+    font-size: 8px;
 }
 
 .ship-line-table .item-name {
@@ -120,6 +154,32 @@
     font-size: 11px;
     font-weight: 700;
     text-align: center;
+}
+
+.ship-line-table .qty-unit {
+    margin-left: 2px;
+    color: #64748b;
+    font-size: 8px;
+    font-weight: 400;
+}
+
+/* 진행상태: 상태 라벨 + 스캔수량/지시수량 */
+.ship-line-table .progress-cell {
+    text-align: center;
+    line-height: 1.25;
+}
+
+.ship-line-table .progress-label {
+    display: block;
+    color: #0f172a;
+    font-size: 9px;
+    font-weight: 700;
+}
+
+.ship-line-table .progress-count {
+    display: block;
+    color: #475569;
+    font-size: 8px;
 }
 
 .ship-line-table .print-checkbox {
@@ -161,5 +221,12 @@
         display: block !important;
         max-width: 100% !important;
         height: auto !important;
+    }
+
+    /* QR 은 배경/테두리 그대로 출력 */
+    .work-order-print-pages .ship-header-qr svg {
+        display: block !important;
+        width: 52px !important;
+        height: 52px !important;
     }
 }
