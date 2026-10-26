@@ -10,7 +10,7 @@ import { Badge } from "@/components/common/Badge";
 import Spinner from "@/components/common/Spinner";
 import { WorkOrderApi, type WorkOrderRoutingStepResponse } from "@/api/WorkOrder";
 import { UserApi, type UserOptionResponse } from "@/api/User";
-import { type SalesOrderStatusLineResponse } from "@/api/sales/SalesOrder";
+import { SalesOrderApi, type SalesOrderStatusLineResponse } from "@/api/sales/SalesOrder";
 import { SalesOrderModal } from "@/components/modal/SalesOrderModal";
 import '@/pages/page/food/Food.css';
 import { WorkOrderPrintModal, type WorkOrderLineDetail, type WorkOrderMaster } from "@/components/modal/WorkOrderPrintModal";
@@ -338,6 +338,25 @@ export function FoodWorkOrderDetailPage() {
       ...prev,
       lines: [...prev.lines, newLine]
     }));
+
+    // 수주라인 목록 응답에는 거래처·납기일자가 없어 수주 상세로 채운다.
+    SalesOrderApi.getDetail(selectedLine.orderCode)
+      .then((res) => {
+        const order = res.data;
+        if (!order) return;
+        setEditForm(prev => ({
+          ...prev,
+          lines: prev.lines.map(l =>
+            l.id === newId
+              ? { ...l, bpCode: order.bpCode ?? "", bpNm: order.bpNm ?? "", dueDate: order.dueDate ?? "" }
+              : l
+          )
+        }));
+      })
+      .catch((error) => {
+        console.error("수주 정보 조회 실패:", error);
+        alert("수주 정보를 불러오지 못했습니다.");
+      });
   };
 
   // 행 클릭 시 라우팅(공정순서도) 아코디언 토글

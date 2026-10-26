@@ -146,6 +146,10 @@ export function PermissionBoard() {
         const fetchGroupDetail = async () => {
             setIsLoading(true);
             setIsEditing(false);
+            // 조회가 끝나거나 실패하기 전에 이전 그룹 정보로 수정·저장·삭제되지 않도록 비운다
+            setGroupDetail(null);
+            setEditedDesc("");
+            initializePerms();
             try {
                 const response = await AuthGroupApi.getDetail(activeAuthId);
                 if (!isMounted) return;
@@ -202,8 +206,10 @@ export function PermissionBoard() {
     // 설명이 수정 모드에서 실제로 바뀌었는지 여부
     const isDescDirty = editedDesc !== (groupDetail?.authDesc ?? "");
     const hasAnyChange = isDirty || isDescDirty;
+    const isGroupReady = !isLoading && !!groupDetail && groupDetail.authId === activeAuthId;
 
     const handleStartEdit = () => {
+        if (!isGroupReady) return;
         setEditedDesc(groupDetail?.authDesc ?? "");
         setIsEditing(true);
     };
@@ -217,7 +223,7 @@ export function PermissionBoard() {
 
     // 권한 그룹 삭제 핸들러
     const handleDelete = async () => {
-        if (!activeAuthId || !groupDetail || isDeleting) return;
+        if (!activeAuthId || !groupDetail || !isGroupReady || isDeleting) return;
 
         const confirmMsg = `"${groupDetail.authNm}" 권한 그룹을 삭제하시겠습니까?\n(이 권한 그룹을 사용 중인 회원이 없을 때만 삭제 가능합니다.)`;
         if (!window.confirm(confirmMsg)) return;
@@ -260,7 +266,7 @@ export function PermissionBoard() {
 
     // 권한 설정 저장 핸들러
     const handleSave = async () => {
-        if (!groupDetail || isSaving || !hasAnyChange) return;
+        if (!groupDetail || !isGroupReady || isSaving || !hasAnyChange) return;
 
         const flattenMenus = (menuList: MenuResponse[]): MenuResponse[] =>
             menuList.reduce<MenuResponse[]>((acc, menu) => {
@@ -582,20 +588,20 @@ export function PermissionBoard() {
                                                 <button type="button" className="ghostButton" onClick={handleCancelEdit} disabled={isSaving}>
                                                     취소
                                                 </button>
-                                                <button type="button" className="primaryButton" onClick={handleSave} disabled={isSaving || !hasAnyChange}>
+                                                <button type="button" className="primaryButton" onClick={handleSave} disabled={!isGroupReady || isSaving || !hasAnyChange}>
                                                     {isSaving ? "저장 중..." : "저장"}
                                                 </button>
                                             </>
                                         ) : (
                                             <>
-                                                <button type="button" className="primaryButton" onClick={handleStartEdit} disabled={!groupDetail}>
+                                                <button type="button" className="primaryButton" onClick={handleStartEdit} disabled={!isGroupReady}>
                                                     수정
                                                 </button>
                                                 <button
                                                     type="button"
                                                     className="dangerButton"
                                                     onClick={handleDelete}
-                                                    disabled={!groupDetail || isDeleting}
+                                                    disabled={!isGroupReady || isDeleting}
                                                 >
                                                     {isDeleting ? "삭제 중..." : "삭제"}
                                                 </button>

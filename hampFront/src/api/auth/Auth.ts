@@ -128,7 +128,7 @@ export const AuthGroupApi = {
 
   /** 권한 그룹 단건 상세 조회 */
   getDetail: async (authId: string): Promise<ApiResponseAuthGroupDetailResponse> => {
-    const res = await apiClient.get(`/auth-groups/${authId}`);
+    const res = await apiClient.get(`/auth-groups/${encodeURIComponent(authId)}`);
     return res.data;
   },
 
@@ -140,13 +140,13 @@ export const AuthGroupApi = {
 
   /** 권한 그룹 수정 */
   update: async (authId: string, data: AuthGroupUpdateRequest): Promise<ApiResponseAuthGroupResponse> => {
-    const res = await apiClient.put(`/auth-groups/${authId}`, data);
+    const res = await apiClient.put(`/auth-groups/${encodeURIComponent(authId)}`, data);
     return res.data;
   },
 
   /** 권한 그룹 삭제 */
   delete: async (authId: string): Promise<ApiResponse<string>> => {
-    const res = await apiClient.delete(`/auth-groups/${authId}`);
+    const res = await apiClient.delete(`/auth-groups/${encodeURIComponent(authId)}`);
     return res.data;
   },
 
