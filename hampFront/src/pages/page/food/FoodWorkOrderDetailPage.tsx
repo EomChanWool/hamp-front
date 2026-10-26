@@ -518,7 +518,7 @@ export function FoodWorkOrderDetailPage() {
                 height={38}
                 fontSize={11}
                 displayValue={true}
-                margin={5}
+                margin={0}
               />
 
               {/* 바코드와 동일한 값을 QR 로도 제공 (스캐너/모바일 카메라 겸용) */}
