@@ -1,7 +1,6 @@
 /* ─── DefectRadarChart.module.css ─────────────────────────────────────────── */
 
 .card {
-  /* background: var(--rc-surface); */
   background: var(--bg-card);
   border: 1px solid var(--rc-border);
   border-radius: 10px;
@@ -22,158 +21,334 @@
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: var(--rc-text-faint);
   margin-bottom: 3px;
 }
 
 .headerTitle {
+  margin: 0;
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--rc-text);
 }
 
-.select {
+/* ── 날짜 셀렉트 (div 기반 커스텀 드롭다운) ── */
+.dateSelect {
+  position: relative;
+}
+
+.selectTrigger {
+  width: 140px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   background: var(--rc-select-bg);
   border: 1px solid var(--rc-border);
   border-radius: 6px;
   color: var(--rc-text);
-  font-size: 12px;
-  padding: 5px 10px;
-  cursor: pointer;
-  outline: none;
+  font-size: 13px;
   font-family: inherit;
+  padding: 5px 8px 5px 10px;
+  cursor: pointer;
   transition: border-color 0.15s;
+
+  &:hover {
+    border-color: var(--rc-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--rc-primary);
+    outline-offset: 2px;
+  }
 }
 
-.select:hover {
-  border-color: var(--rc-poly-stroke);
+.selectChevron {
+  width: 14px;
+  height: 14px;
+  color: var(--rc-text-muted);
+  transition: transform 0.15s;
+}
+
+.selectChevronOpen {
+  transform: rotate(180deg);
+}
+
+.selectMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 100%;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px;
+  background: var(--rc-select-option-bg);
+  border: 1px solid var(--rc-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
 }
 
 .selectOption {
-  background: var(--rc-select-option-bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  font-size: 13px;
+  white-space: nowrap;
+  color: var(--rc-text);
+  cursor: pointer;
+}
+
+.selectOptionActive {
+  background: color-mix(in srgb, var(--rc-primary) 14%, transparent);
+}
+
+.selectOptionSelected {
+  font-weight: 600;
+  color: var(--rc-primary);
+}
+
+.selectCheck {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ── 콘텐츠 ── */
+.radarContent {
+  display: flex;
+  align-items: center;
+  gap: 56px;
+  max-width: 1040px;
+  margin: 0 auto;
 }
 
 /* ── 배지 3개 ── */
 .badges {
+  flex: 0 0 260px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 16px;
+  grid-template-columns: 1fr;
+  gap: 12px;
 }
 
+/* 배지 색상 톤 (--tone: 아이콘 + 배경 틴트에 사용) */
+.toneTotal {
+  --tone: var(--rc-total);
+}
+
+.tonePrimary {
+  --tone: var(--rc-primary);
+}
+
+.toneHighlight {
+  --tone: var(--rc-highlight);
+}
+
+/* 보더 없이 tone 틴트 배경 + 좌측 아이콘 타일 (톤온톤) */
 .badge {
-  background: var(--rc-badge-bg);
-  border-width: 1px;
-  border-style: solid;
-  border-radius: 8px;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.badgeHeader {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--tone) 9%, transparent);
+}
+
+.badgeIconWrap {
+  display: grid;
+  place-items: center;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--tone) 20%, transparent);
 }
 
 .badgeIcon {
-  width: 17px;
-  height: 17px;
-  flex-shrink: 0;
-  opacity: 0.85;
+  width: 20px;
+  height: 20px;
+  color: var(--tone);
+}
+
+.badgeBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 .badgeLabel {
-  font-size: 13px;
-  line-height: 1;
+  font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.04em;
-  color: var(--rc-text-faint);
-}
-
-.badgeValue {
-  font-size: 18px;
-  font-weight: 700;
   line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--rc-text-muted);
 }
 
-/* ── 차트 + 범례 래퍼 ── */
+/* 값은 본문색 유지 (틴트 배경 위 대비 확보), 긴 유형명은 말줄임 */
+.badgeValue {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--rc-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badgeUnit {
+  margin-left: 2px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--rc-text-muted);
+}
+
+/* ── 도넛 + 범례 래퍼 ── */
 .chartBox {
+  flex: 1 1 0;
   display: flex;
-  gap: 16px;
   align-items: center;
   justify-content: center;
+  gap: 40px;
 }
 
-/* ── 차트 영역 ── */
-.chartWrap {
-  width: 500px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 320px;
-  overflow: visible;
+/* ── 도넛 ── */
+.donutWrap {
+  position: relative;
+  flex: 0 0 240px;
+  width: 240px;
+  height: 240px;
 }
 
-/* ── 범례 ── */
-.legend {
-  flex: 0 0 300px;
+.donutCenter {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px;
-  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.donutTotal {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--rc-text);
+}
+
+.donutLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--rc-text-muted);
+}
+
+/* ── 툴팁 ── */
+.tooltip {
+  background: var(--rc-tooltip-bg);
+  border: 1px solid var(--rc-tooltip-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--rc-text);
+}
+
+.tooltipTitle {
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+.tooltipRow {
+  color: var(--rc-text-muted);
+}
+
+/* ── 범례 (건수 순) ── */
+.legend {
+  flex: 0 1 260px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .legendItem {
-  display: flex;
+  display: grid;
+  grid-template-columns: 10px 1fr auto 44px;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  font-size: 13px;
 }
 
 .legendDot {
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  margin-top: 2px;
 }
 
 .legendName {
-  flex-shrink: 0;
-  font-size: 11.5px;
   font-weight: 500;
-  color: var(--rc-text-muted);
-  min-width: 44px;
-}
-
-/* mini bar track */
-.legendBar {
-  flex: 1 1 0;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--rc-bar-track);
-  overflow: hidden;
-  position: relative;
-}
-
-.legendBarFill {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  border-radius: 2px;
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--rc-text);
 }
 
 .legendCount {
-  flex-shrink: 0;
-  font-size: 11px;
   font-weight: 600;
-  min-width: 20px;
+  color: var(--rc-text);
+}
+
+.legendCountTop {
+  font-weight: 700;
+  color: var(--rc-highlight);
+}
+
+.legendShare {
   text-align: right;
+  font-size: 12px;
+  color: var(--rc-text-muted);
+}
+
+/* ── 반응형 ── */
+@media (max-width: 1024px) {
+  .radarContent {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 24px;
+  }
+
+  .badges {
+    flex: none;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 16px;
+  }
+
+  .badges {
+    grid-template-columns: 1fr;
+  }
+
+  .chartBox {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .legend {
+    flex: none;
+    width: 100%;
+  }
 }
