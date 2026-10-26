@@ -342,22 +342,46 @@ export function EquipmentFacilityDetailPage() {
 
       await FacilityApi.update(facility.fcltCode, updatePayload);
 
+      let failedDeleteNames: string[] = [];
       if (deletedAttachmentIds.length > 0) {
         const uniqueIdsToDel = Array.from(new Set(deletedAttachmentIds));
-        await Promise.allSettled(
+        const results = await Promise.allSettled(
           uniqueIdsToDel.map((id) => AttachmentApi.delete(id, facility.fcltCode))
         );
+        failedDeleteNames = results
+          .map((result, index) => {
+            if (result.status !== "rejected") return null;
+            const id = uniqueIdsToDel[index];
+            const file = (facility.attachments ?? []).find((a) => a.attachmentId === id);
+            return file?.originalName ?? `첨부 ${id}`;
+          })
+          .filter((name): name is string => name !== null);
       }
 
+      let failedUploadNames: string[] = [];
       if (gallery.newFiles.length > 0) {
         const uploadPromises = gallery.newFiles.map(async (file) => {
           const res = await AttachmentApi.upload(file, facility.fcltCode, "IMAGE");
           return res.data;
         });
-        await Promise.allSettled(uploadPromises);
+        const results = await Promise.allSettled(uploadPromises);
+        failedUploadNames = results
+          .map((result, index) => (result.status === "rejected" ? gallery.newFiles[index].name : null))
+          .filter((name): name is string => name !== null);
       }
 
-      alert("수정되었습니다.");
+      if (failedUploadNames.length > 0 || failedDeleteNames.length > 0) {
+        console.error("이미지 처리 실패:", { failedUploadNames, failedDeleteNames });
+        alert(
+          `설비 정보는 저장되었습니다.\n` +
+          `다만 일부 이미지 처리에 실패했습니다:\n` +
+          failedUploadNames.map((name) => `- 업로드 실패: ${name}\n`).join("") +
+          failedDeleteNames.map((name) => `- 삭제 실패: ${name}\n`).join("") +
+          `다시 시도해주세요.`
+        );
+      } else {
+        alert("수정되었습니다.");
+      }
       gallery.resetNew();
       setDeletedAttachmentIds([]);
 
