@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Barcode from "react-barcode";
-import type { ShipmentOrderResponse } from "@/api/ShipmentOrder";
+import QRCode from "react-qr-code";
+import type {
+    ShipmentOrderResponse,
+    ShipmentOrderLineResponse,
+} from "@/api/ShipmentOrder";
 
 // 모달 공통 껍데기(툴바/미리보기/A4/print 규칙)는 작업지시서 CSS 를 그대로 재사용
 import "@/components/modal/WorkOrderPrintModal.css";
-// 출고지시서 전용 스타일(제목 옆 버튼, 헤더 바코드, 합계행 등)
+// 출고지시서 전용 스타일(제목 옆 버튼, 헤더 바코드/QR, 합계행 등)
 import "@/components/modal/ShipmentOrderPrintModal.css";
 
 interface ShipmentOrderPrintModalProps {
@@ -24,6 +28,7 @@ const getStatusText = (status?: string) => {
         case "진행중":
             return "진행중";
         case "DELAY":
+            return "지연";
         case "지연":
             return "지연";
         case "WAIT":
@@ -32,6 +37,35 @@ const getStatusText = (status?: string) => {
         default:
             return status || "-";
     }
+};
+
+/**
+ * 라인별 스캔 진행 계산 (상세 페이지의 getLineProgress 와 동일한 규칙)
+ * → 나중에 공통 util 로 빼서 두 곳에서 같이 쓰는 걸 추천
+ */
+const getLineProgress = (line: ShipmentOrderLineResponse) => {
+    const instructQty = line.instructQty ?? 0;
+    const rawScanned = line.scannedQty;
+    const rawRemaining = line.remainingQty;
+
+    let scannedQty: number;
+    if (rawScanned != null) {
+        scannedQty = rawScanned;
+    } else if (rawRemaining != null) {
+        scannedQty = instructQty - rawRemaining;
+    } else {
+        scannedQty = 0;
+    }
+    scannedQty = Math.min(
+        Math.max(scannedQty, 0),
+        instructQty > 0 ? instructQty : Math.max(scannedQty, 0),
+    );
+
+    let label = "대기";
+    if (instructQty > 0 && scannedQty >= instructQty) label = "완료";
+    else if (scannedQty > 0) label = "진행중";
+
+    return { instructQty, scannedQty, label };
 };
 
 const formatPrintDateTime = (date: Date) => {
@@ -63,21 +97,27 @@ export function ShipmentOrderPrintModal({
 
     const lines = shipment.lines ?? [];
     const totalQty = lines.reduce((sum, line) => sum + (line.instructQty ?? 0), 0);
+    const totalScanned = lines.reduce(
+        (sum, line) => sum + getLineProgress(line).scannedQty,
+        0,
+    );
+
+    const managerText = shipment.managerNm
+        ? `${shipment.managerNm} (${shipment.managerId})`
+        : shipment.managerId || "-";
 
     /*
      * 출고지시서 한 장.
      * 화면 미리보기와 실제 인쇄 영역에서 동일하게 재사용한다. (작업지시서와 동일 패턴)
      *
-     * [1장 구성] 헤더(+바코드) / 출고 정보 3행 / 라인 표(합계 포함) / 주의사항 / 서명
-     *  → 라인 표는 행 높이 약 20px 이라 한 장에 대략 30라인 정도까지 들어간다.
-     *    넘치면 thead 반복 + 행 단위 분할로 다음 장에 이어서 출력된다.
+     * [1장 구성] 헤더(+바코드/QR) / 출고 정보 4행 / 라인 표(진행현황·합계 포함) / 주의사항 / 서명
+     *  → 넘치면 thead 반복 + 행 단위 분할로 다음 장에 이어서 출력된다.
      */
     const renderSheet = () => (
         <div className={`work-order-print-sheet${lines.length >= 20 ? " is-dense" : ""}`}>
-            {/* Header: 좌측 제목 / 우측 출력정보 + 출고지시ID 바코드 */}
+            {/* Header: 좌측 제목 / 우측 출력정보 + 바코드 + QR */}
             <div className="work-order-print-header">
                 <div>
-                    {/* 부서 문구는 필요에 맞게 수정 */}
                     <span className="work-order-print-department">출고관리</span>
 
                     <h1>출 고 지 시 서</h1>
@@ -96,24 +136,36 @@ export function ShipmentOrderPrintModal({
                         </div>
                     </div>
 
-                    {/* 출고처리 스캔용 바코드 (출고지시ID) */}
-                    <div className="ship-header-barcode">
-                        <Barcode
-                            value={shipment.shipId || "NO-BARCODE"}
-                            format="CODE128"
-                            width={1.2}
-                            height={30}
-                            fontSize={9}
-                            displayValue={true}
-                            margin={0}
-                            background="#ffffff"
-                            lineColor="#000000"
-                        />
+                    {/* 출고처리 스캔용 코드 (출고지시ID): 바코드 + QR */}
+                    <div className="ship-header-codes">
+                        <div className="ship-header-barcode">
+                            <Barcode
+                                value={shipment.shipId || "NO-BARCODE"}
+                                format="CODE128"
+                                width={1.2}
+                                height={30}
+                                fontSize={9}
+                                displayValue={true}
+                                margin={0}
+                                background="#ffffff"
+                                lineColor="#000000"
+                            />
+                        </div>
+
+                        <div className="ship-header-qr">
+                            <QRCode
+                                value={shipment.shipId || "NO-QR"}
+                                size={52}
+                                level="M"
+                                bgColor="#ffffff"
+                                fgColor="#000000"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* 출고지시 정보 */}
+            {/* 출고지시 정보 (상세 페이지 요약 정보와 동일 항목) */}
             <section className="work-order-print-section">
                 <h3 className="work-order-print-section-title">
                     <span />
@@ -131,6 +183,14 @@ export function ShipmentOrderPrintModal({
                         </tr>
 
                         <tr>
+                            <th>거래처명</th>
+                            <td>{shipment.bpNm || "-"}</td>
+
+                            <th>납기일자</th>
+                            <td>{shipment.dueDate || "-"}</td>
+                        </tr>
+
+                        <tr>
                             <th>출고일자</th>
                             <td>{shipment.shipDate || "-"}</td>
 
@@ -140,11 +200,7 @@ export function ShipmentOrderPrintModal({
 
                         <tr>
                             <th>담당자</th>
-                            <td>
-                                {shipment.managerNm
-                                    ? `${shipment.managerNm} (${shipment.managerId})`
-                                    : shipment.managerId || "-"}
-                            </td>
+                            <td>{managerText}</td>
 
                             <th>라인 수 / 총 지시수량</th>
                             <td>
@@ -155,7 +211,7 @@ export function ShipmentOrderPrintModal({
                 </table>
             </section>
 
-            {/* 출고지시 라인 */}
+            {/* 출고지시 라인 (상세 페이지 라인 테이블과 동일 항목 + 출고확인) */}
             <section className="work-order-print-section">
                 <h3 className="work-order-print-section-title">
                     <span />
@@ -166,10 +222,10 @@ export function ShipmentOrderPrintModal({
                     <thead>
                         <tr>
                             <th className="col-no">순번</th>
-                            <th className="col-id">출고라인ID</th>
-                            <th className="col-id">수주라인ID</th>
-                            <th>품명</th>
+                            <th className="col-order">연결 수주라인</th>
+                            <th>품목</th>
                             <th className="col-qty">지시수량</th>
+                            <th className="col-progress">진행상태</th>
                             <th className="col-check">출고확인</th>
                         </tr>
                     </thead>
@@ -182,35 +238,49 @@ export function ShipmentOrderPrintModal({
                                 </td>
                             </tr>
                         ) : (
-                            lines.map((line, index) => (
-                                <tr key={line.shipOrderLineId}>
-                                    <td className="text-center">{index + 1}</td>
+                            lines.map((line, index) => {
+                                const { instructQty, scannedQty, label } = getLineProgress(line);
+                                const unit = line.unit ? ` ${line.unit}` : "";
 
-                                    <td className="text-center mono">
-                                        #{line.shipOrderLineId}
-                                    </td>
+                                return (
+                                    <tr key={line.shipOrderLineId}>
+                                        <td className="text-center">{index + 1}</td>
 
-                                    <td className="text-center mono">
-                                        #{line.salesOrderLineId}
-                                    </td>
+                                        <td className="text-center mono">
+                                            {shipment.orderCode || "-"}
+                                            <span className="line-no">
+                                                #{line.salesOrderLineId}
+                                            </span>
+                                        </td>
 
-                                    <td className="item-name">
-                                        {line.itemNm || "-"}
-                                        <span className="item-code">
-                                            ({line.itemCode || "-"})
-                                        </span>
-                                    </td>
+                                        <td className="item-name">
+                                            {line.itemNm || "-"}
+                                            <span className="item-code">
+                                                ({line.itemCode || "-"})
+                                            </span>
+                                        </td>
 
-                                    <td className="qty">
-                                        {(line.instructQty ?? 0).toLocaleString()}
-                                    </td>
+                                        <td className="qty">
+                                            {instructQty.toLocaleString()}
+                                            <span className="qty-unit">{line.unit ?? ""}</span>
+                                        </td>
 
-                                    {/* 현장에서 펜으로 체크하는 칸 */}
-                                    <td className="checkbox-cell">
-                                        <span className="print-checkbox" />
-                                    </td>
-                                </tr>
-                            ))
+                                        <td className="progress-cell">
+                                            <span className="progress-label">{label}</span>
+                                            <span className="progress-count">
+                                                {scannedQty.toLocaleString()} /{" "}
+                                                {instructQty.toLocaleString()}
+                                                {unit}
+                                            </span>
+                                        </td>
+
+                                        {/* 현장에서 펜으로 체크하는 칸 */}
+                                        <td className="checkbox-cell">
+                                            <span className="print-checkbox" />
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         )}
                     </tbody>
 
@@ -218,10 +288,16 @@ export function ShipmentOrderPrintModal({
                     {lines.length > 0 && (
                         <tfoot>
                             <tr className="ship-total-row">
-                                <td colSpan={4} className="text-center">
+                                <td colSpan={3} className="text-center">
                                     합 계
                                 </td>
                                 <td className="qty">{totalQty.toLocaleString()}</td>
+                                <td className="progress-cell">
+                                    <span className="progress-count">
+                                        {totalScanned.toLocaleString()} /{" "}
+                                        {totalQty.toLocaleString()}
+                                    </span>
+                                </td>
                                 <td />
                             </tr>
                         </tfoot>

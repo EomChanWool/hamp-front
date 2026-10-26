@@ -320,6 +320,24 @@
   flex-wrap: wrap;
 }
 
+/* 바코드 + QR 나란히 배치 */
+.food-code-cell {
+  gap: 12px;
+}
+
+.food-qr-wrap {
+  flex-shrink: 0;
+  line-height: 0;
+  padding: 3px;
+  background: #ffffff; /* 다크모드에서도 QR 인식을 위해 흰 배경 유지 */
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+
+.food-qr-wrap svg {
+  display: block;
+}
+
 /* ==========================================
    라벨 인쇄 미리보기 모달 CSS
    ========================================== */
