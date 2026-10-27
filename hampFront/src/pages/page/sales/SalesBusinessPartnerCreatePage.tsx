@@ -2,6 +2,7 @@ import { useState, type SyntheticEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AddressSearchInput } from "@/components/common/AddressSearchInput";
 import axios from "axios";
+import { isValidPhone } from "@/utils/common";
 
 import {
   BusinessPartnerApi,
@@ -37,6 +38,7 @@ export function SalesBusinessPartnerCreatePage() {
 
   // 유효성 검사
   const validateForm = (): boolean => {
+    // 거래처 코드: 필수 + 최대 30자 (VARCHAR(30) 기준)
     const trimmedCode = form.bpCode.trim();
     if (!trimmedCode) {
       alert("거래처 코드를 입력해주세요.");
@@ -46,6 +48,19 @@ export function SalesBusinessPartnerCreatePage() {
       alert("거래처 코드는 최대 30자까지 입력 가능합니다.");
       return false;
     }
+
+    // 전화번호: 선택 입력, 값이 있으면 형식 검사
+    if (!isValidPhone(form.phone)) {
+      alert("전화번호 형식이 올바르지 않습니다.\n예: 02-1234-5678, 010-1234-5678");
+      return false;
+    }
+
+    // 담당자 연락처: 선택 입력, 값이 있으면 형식 검사
+    if (!isValidPhone(form.managerPhone)) {
+      alert("담당자 연락처 형식이 올바르지 않습니다.\n예: 010-1234-5678");
+      return false;
+    }
+
     return true;
   };
 
@@ -55,6 +70,7 @@ export function SalesBusinessPartnerCreatePage() {
 
     if (!validateForm()) return;
 
+    // 빈 문자열은 null로 변환하여 전송
     const payload: BusinessPartnerCreateRequest = {
       bpCode: form.bpCode.trim(),
       bpNm: form.bpNm?.trim() || null,
@@ -138,6 +154,7 @@ export function SalesBusinessPartnerCreatePage() {
                   <label>전화번호</label>
                   <input
                     className="tableInput"
+                    type="tel"
                     value={form.phone ?? ""}
                     disabled={isSubmitting}
                     onChange={(e) => handleChange("phone", e.target.value)}
@@ -158,6 +175,7 @@ export function SalesBusinessPartnerCreatePage() {
               </div>
             </div>
 
+            {/* 담당자 정보 섹션 */}
             <div className="createSection">
               <h2 className="createSectionTitle">담당자 정보</h2>
               <div className="createGrid2Cols">
@@ -177,6 +195,7 @@ export function SalesBusinessPartnerCreatePage() {
                   <label>담당자 연락처</label>
                   <input
                     className="tableInput"
+                    type="tel"
                     value={form.managerPhone ?? ""}
                     disabled={isSubmitting}
                     onChange={(e) => handleChange("managerPhone", e.target.value)}
@@ -184,20 +203,22 @@ export function SalesBusinessPartnerCreatePage() {
                     maxLength={30}
                   />
                 </div>
+              </div>
             </div>
           </div>
-      </div>
 
-      <div className="createFooter">
-        <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
-          취소
-        </button>
-        <button type="submit" className="primaryButton" disabled={isSubmitting}>
-          {isSubmitting ? "등록 중..." : "등록"}
-        </button>
+          {/* 하단 버튼 */}
+          <div className="createFooter">
+            <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
+              취소
+            </button>
+            <button type="submit" className="primaryButton" disabled={isSubmitting}>
+              {isSubmitting ? "등록 중..." : "등록"}
+            </button>
+          </div>
+        </form>
       </div>
-    </form>
-      </div >
-    </section >
+    </section>
   );
 }
+
