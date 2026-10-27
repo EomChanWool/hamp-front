@@ -29,18 +29,12 @@ const SHIP_YN_LABEL: Record<number, string> = {
   1: "출고완료",
 };
 
-/**
- * 검색 입력값(미출고 / 출고완료) → shipYn 숫자로 변환
- * - 빈 값이면 null (조건 없음)
- * - 해석할 수 없는 값이면 undefined (잘못된 입력)
- */
-function parseShipYn(text: string): number | null | undefined {
-  const v = text.trim();
-  if (!v) return null;
-  if ( v === "미출고") return 0;
-  if ( v === "출고완료") return 1;
-  return undefined;
-}
+// 출고여부 셀렉트 옵션
+const SHIP_YN_OPTIONS = [
+  { label: "전체", value: "" },
+  { label: "미출고", value: "0" },
+  { label: "출고완료", value: "1" },
+];
 
 export function FoodLotManagePage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -103,11 +97,11 @@ export function FoodLotManagePage() {
   const queryDateFrom = searchParams.get("productionDateFrom") || "";
   const queryDateTo = searchParams.get("productionDateTo") || "";
 
-  // 검색 input refs
+  // 검색 input / select refs
   const producedStartRef = useRef<HTMLInputElement>(null);
   const producedEndRef = useRef<HTMLInputElement>(null);
   const lotCodeRef = useRef<HTMLInputElement>(null);
-  const shippedRef = useRef<HTMLInputElement>(null);
+  const shippedRef = useRef<HTMLSelectElement>(null);
 
   // 검색 필드
   const searchFields: SearchField[] = [
@@ -124,22 +118,20 @@ export function FoodLotManagePage() {
       name: "lotCode",
     },
     {
-      type: "input",
-      label: "신고여부",
+      type: "select",
+      label: "출고여부",
       ref: shippedRef,
       name: "shipYn",
+      options: SHIP_YN_OPTIONS,
     },
   ];
 
-  // URL → SearchBand input 동기화 (shipYn은 숫자 → 라벨로 표시)
+  // URL → SearchBand input / select 동기화
   useEffect(() => {
     if (producedStartRef.current) producedStartRef.current.value = queryDateFrom;
     if (producedEndRef.current) producedEndRef.current.value = queryDateTo;
     if (lotCodeRef.current) lotCodeRef.current.value = queryLotCode;
-    if (shippedRef.current) {
-      shippedRef.current.value =
-        queryShipYn !== "" ? (SHIP_YN_LABEL[Number(queryShipYn)] ?? "") : "";
-    }
+    if (shippedRef.current) shippedRef.current.value = queryShipYn;
   }, [queryDateFrom, queryDateTo, queryLotCode, queryShipYn]);
 
   // LOT 목록 조회
@@ -207,18 +199,13 @@ export function FoodLotManagePage() {
 
   // 검색
   const handleSearch = () => {
-    const shipYnParsed = parseShipYn(shippedRef.current?.value ?? "");
-    if (shipYnParsed === undefined) {
-      window.alert("출고여부는 '미출고' 또는 '출고완료'로 입력해주세요.");
-      return;
-    }
-
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("page", "0");
 
     const values: Record<string, string> = {
       lotCode: lotCodeRef.current?.value.trim() || "",
-      shipYn: shipYnParsed === null ? "" : String(shipYnParsed),
+      // 셀렉트 값: "" = 전체, "0" = 미출고, "1" = 출고완료
+      shipYn: shippedRef.current?.value ?? "",
       productionDateFrom: producedStartRef.current?.value || "",
       productionDateTo: producedEndRef.current?.value || "",
     };
