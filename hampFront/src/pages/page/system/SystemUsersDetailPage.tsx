@@ -61,7 +61,7 @@ export function SystemUserDetailPage() {
       fields: [
         { label: "이름", key: "userNm", editable: true, required: true },
         { label: "전화번호", key: "phone", editable: true },
-        { label: "부서", key: "position", editable: true, fullWidth: true },
+        { label: "직책", key: "position", editable: true, fullWidth: true },
       ],
     },
   ];

@@ -5,6 +5,7 @@ import type { UserCreateRequest } from "@/api/User";
 import type { AuthGroupResponse } from "@/api/auth/Auth";
 import { AuthGroupApi } from "@/api/auth/Auth";
 import { UserApi } from "@/api/User";
+import { isValidPhone } from "@/utils/common";
 import './SystemUser.css';
 
 export function SystemUsersCreatePage() {
@@ -85,6 +86,11 @@ export function SystemUsersCreatePage() {
     }
     if (!form.authIds || form.authIds.length === 0) {
       alert("최소 하나 이상의 권한 그룹을 선택해주세요.");
+      return false;
+    }
+    // 전화번호: 선택 입력, 값이 있으면 형식 검사
+    if (!isValidPhone(form.phone)) {
+      alert("전화번호 형식이 올바르지 않습니다.\n예: 02-1234-5678, 010-1234-5678");
       return false;
     }
     return true;
@@ -177,13 +183,13 @@ export function SystemUsersCreatePage() {
                 </div>
 
                 <div className="createField">
-                  <label>부서</label>
+                  <label>직책</label>
                   <input
                     className="tableInput"
                     value={form.position ?? ""}
                     disabled={isSubmitting}
                     onChange={(e) => handleChange("position", e.target.value)}
-                    placeholder="부서 입력"
+                    placeholder="직책 입력"
                   />
                 </div>
               </div>
