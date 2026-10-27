@@ -35,3 +35,21 @@ export const paginate = <T,>(data: T[], page: number, pageSize = 10) => ({
 export function isValidWorkZone(zone: string | null): zone is '1' | '2' {
   return zone === '1' || zone === '2';
 }
+
+// 허용 형식
+// - 휴대폰/지역번호: 010-1234-5678, 02-123-4567, 031-1234-5678 (하이픈 포함)
+// - 하이픈 없는 숫자: 01012345678, 0212345678
+// - 대표번호: 1588-1234, 15881234
+const PHONE_REGEX =
+  /^(0\d{1,2}-\d{3,4}-\d{4}|0\d{9,10}|1[5-9]\d{2}-\d{4}|1[5-9]\d{6})$/;
+
+/**
+ * 전화번호 유효성 검사
+ * - 선택 입력 항목이므로 빈 값은 통과
+ * - 값이 있으면 형식 검사
+ */
+export const isValidPhone = (value?: string | null): boolean => {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) return true;
+  return PHONE_REGEX.test(trimmed);
+};
