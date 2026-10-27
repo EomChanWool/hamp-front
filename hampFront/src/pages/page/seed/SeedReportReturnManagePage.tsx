@@ -137,7 +137,7 @@ export function SeedReportReturnManagePage() {
     setIsLoading(true);
 
     try {
-      if (searchFilters.processStatusKeyword === "__INVALID__") {
+      if (searchFilters.processStatusKeyword === "__INVALID__" || searchFilters.processStatus === "0") {
         setDataList([]);
         setTotalElements(0);
         setTotalPages(0);
@@ -170,14 +170,14 @@ export function SeedReportReturnManagePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, searchFilters.itemCode, searchFilters.processStatusKeyword, sortParams]);
+  }, [page, searchFilters.itemCode, searchFilters.processStatus, searchFilters.processStatusKeyword, sortParams]);
 
   //  신고대기 조회
   //  - 접힘: 앞 3건만 조회
   //  - 펼침: 전체 건수만큼 한 번에 조회 (page 는 항상 0)
   const loadPendingList = useCallback(async () => {
     try {
-      if (searchFilters.processStatusKeyword === "__INVALID__") {
+      if (searchFilters.processStatusKeyword === "__INVALID__" || searchFilters.processStatus === "1") {
         setPendingList([]);
         setPendingTotalElements(0);
         pendingTotalRef.current = 0;
@@ -209,7 +209,7 @@ export function SeedReportReturnManagePage() {
       console.error("씨드 신고대기 목록 조회 실패:", error);
       window.alert("데이터를 불러오는 중 오류가 발생했습니다.");
     }
-  }, [pendingExpanded, searchFilters.itemCode, searchFilters.processStatusKeyword, sortParams]);
+  }, [pendingExpanded, searchFilters.itemCode, searchFilters.processStatus, searchFilters.processStatusKeyword, sortParams]);
 
   const visiblePendingList = useMemo(
     () => (pendingExpanded ? pendingList : pendingList.slice(0, PENDING_PREVIEW_COUNT)),
