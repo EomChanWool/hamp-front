@@ -11,6 +11,7 @@ import { UserApi } from "@/api/User";
 import { AuthGroupApi } from "@/api/auth/Auth";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
 import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { isValidPhone } from "@/utils/common";
 import "./SystemUser.css";
 
 // 소메뉴 옆에 표시할 CRUD 권한 필드 정의
@@ -155,6 +156,11 @@ export function SystemUserDetailPage() {
     if (!authIds || authIds.length === 0) {
       alert("최소 하나 이상의 권한 그룹을 선택해주세요.");
       return;
+    }
+    // 전화번호: 선택 입력, 값이 있으면 형식 검사
+    if (!isValidPhone(form.phone)) {
+      alert("전화번호 형식이 올바르지 않습니다.\n예: 02-1234-5678, 010-1234-5678");
+      return false;
     }
 
     setIsUpdating(true);
