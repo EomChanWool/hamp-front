@@ -1259,3 +1259,167 @@
 [data-theme="dark"] .food-routing-stat-value {
   color: rgba(255, 255, 255, 0.94);
 }
+
+/* ==========================================
+   공정순서도 - 투입/산출 자재 표출
+   ========================================== */
+
+.food-routing-materials {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 12px;
+}
+
+.food-routing-material-col {
+  min-width: 0;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.food-routing-material-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.food-routing-material-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.food-routing-material-col.is-in .food-routing-material-dot {
+  background: #3b82f6;
+}
+
+.food-routing-material-col.is-out .food-routing-material-dot {
+  background: #10b981;
+}
+
+.food-routing-material-count {
+  margin-left: auto;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.14);
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.food-routing-material-empty {
+  margin: 0;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.food-routing-material-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.food-routing-material-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 6px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.food-routing-material-item:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.food-routing-material-name {
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  word-break: keep-all;
+}
+
+.food-routing-material-code {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+.food-routing-material-qty {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  white-space: nowrap;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.food-routing-material-qty strong {
+  font-weight: 700;
+}
+
+.food-routing-material-unit {
+  min-width: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* 좁은 화면: 투입/산출을 위아래로 */
+@container content (max-width: 640px) {
+  .food-routing-materials {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* DARK MODE */
+[data-theme="dark"] .food-routing-material-col {
+  background: rgba(0, 0, 0, 0.18);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .food-routing-material-title {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .food-routing-material-col.is-in .food-routing-material-dot {
+  background: #60a5fa;
+}
+
+[data-theme="dark"] .food-routing-material-col.is-out .food-routing-material-dot {
+  background: #34d399;
+}
+
+[data-theme="dark"] .food-routing-material-count {
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .food-routing-material-item {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .food-routing-material-name,
+[data-theme="dark"] .food-routing-material-qty {
+  color: rgba(255, 255, 255, 0.94);
+}
+
+[data-theme="dark"] .food-routing-material-code,
+[data-theme="dark"] .food-routing-material-unit {
+  color: #94a3b8;
+}
