@@ -6,7 +6,7 @@ import {
   ChevronDownIcon,
   CheckIcon,
 } from "@heroicons/react/24/outline";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Sector } from "recharts";
 import styles from "./Defectradarchart.module.css";
 
 // ─── 타입 ────────────────────────────────────────────────────────────────────
@@ -311,6 +311,12 @@ export function DefectRadarChart({ colorMode = "dark" }: DefectRadarChartProps) 
   const chartData = rows.map((row) => ({ ...row, color: typeColors[row.type] })).filter((row) => row.count > 0);
   const chartLabel = `총 불량 ${totalDefects}건. ${rows.map((r) => `${r.type} ${r.count}건`).join(", ")}`;
 
+  const HOVER_EXPAND = 8;
+
+  const renderActiveShape = (props: React.ComponentProps<typeof Sector>) => (
+    <Sector {...props} outerRadius={Number(props.outerRadius ?? 0) + HOVER_EXPAND} />
+  );
+
   return (
     <div className={styles.card} style={cssVars as React.CSSProperties}>
       {/* 헤더 */}
@@ -354,18 +360,19 @@ export function DefectRadarChart({ colorMode = "dark" }: DefectRadarChartProps) 
                   data={chartData}
                   dataKey="count"
                   nameKey="type"
-                  innerRadius="68%"
+                  innerRadius="74%"
                   outerRadius="100%"
                   startAngle={90}
                   endAngle={-270}
-                  paddingAngle={2}
+                  paddingAngle={3}  
+                  cornerRadius={8} 
                   stroke="none"
                 >
                   {chartData.map((row) => (
                     <Cell key={row.type} fill={row.color} />
                   ))}
                 </Pie>
-                <Tooltip content={<DonutTooltip />} />
+                <Tooltip content={<DonutTooltip />} wrapperStyle={{ zIndex: 10 }} />
               </PieChart>
             </ResponsiveContainer>
             <div className={styles.donutCenter}>
