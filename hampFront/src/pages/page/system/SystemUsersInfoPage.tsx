@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { AuthApi } from "@/api/auth/Auth";
 import type { UserDetailResponse, ApiResponseUserDetailResponse, UserUpdateRequest } from "@/api/User";
 import Spinner from "@/components/common/Spinner";
+import { isValidPhone } from "@/utils/common";
 import "./SystemUser.css";
 import { useNavigate } from "react-router-dom";
 
@@ -93,6 +94,11 @@ export function SystemUsersInfoPage() {
         alert("새 비밀번호가 일치하지 않습니다.");
         return;
       }
+    }
+    // 전화번호: 선택 입력, 값이 있으면 형식 검사
+    if (!isValidPhone(form.phone)) {
+      alert("전화번호 형식이 올바르지 않습니다.\n예: 02-1234-5678, 010-1234-5678");
+      return false;
     }
 
     setIsUpdating(true);
@@ -245,7 +251,7 @@ export function SystemUsersInfoPage() {
               )}
             </Row>
 
-            <Row label="부서">
+            <Row label="직책">
               {isEditing ? (
                 <input
                   className="profileInput"
