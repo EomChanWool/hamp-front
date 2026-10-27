@@ -8,12 +8,72 @@ import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import { CusTable } from "@/components/table/CusTable";
 import { Badge } from "@/components/common/Badge";
 import Spinner from "@/components/common/Spinner";
-import { WorkOrderApi, type WorkOrderRoutingStepResponse } from "@/api/WorkOrder";
+import { WorkOrderApi, type WorkOrderRoutingStepResponse, type WorkOrderRoutingStepMaterialResponse } from "@/api/WorkOrder";
 import { UserApi, type UserOptionResponse } from "@/api/User";
 import { SalesOrderApi, type SalesOrderStatusLineResponse } from "@/api/sales/SalesOrder";
 import { SalesOrderModal } from "@/components/modal/SalesOrderModal";
 import '@/pages/page/food/Food.css';
 import { WorkOrderPrintModal, type WorkOrderLineDetail, type WorkOrderMaster } from "@/components/modal/WorkOrderPrintModal";
+
+// 수량 표시 포맷 (1,000 / 12.5 등, 소수점 최대 2자리)
+const formatQty = (v: number | string | null | undefined) => {
+  if (v == null || v === "") return "-";
+  const n = Number(v);
+  if (Number.isNaN(n)) return String(v);
+  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+};
+
+// 자재들의 단위가 전부 같을 때만 그 단위를 반환 (섞여 있으면 빈 문자열)
+const getCommonUnit = (items: WorkOrderRoutingStepMaterialResponse[]) => {
+  const units = Array.from(new Set(items.map((m) => m.unit).filter(Boolean)));
+  return units.length === 1 ? units[0] : "";
+};
+
+// 수량 + 단위 문자열
+const withUnit = (value: number | null | undefined, unit: string) =>
+  value == null ? "-" : `${formatQty(value)}${unit ? ` ${unit}` : ""}`;
+
+// ==========================================
+// 투입/산출 자재 리스트 컴포넌트
+// ==========================================
+function MaterialList({
+  title,
+  tone,
+  items,
+}: {
+  title: string;
+  tone: "in" | "out";
+  items: WorkOrderRoutingStepMaterialResponse[];
+}) {
+  return (
+    <div className={`food-routing-material-col is-${tone}`}>
+      <div className="food-routing-material-title">
+        <span className="food-routing-material-dot" />
+        {title}
+        <span className="food-routing-material-count">{items.length}</span>
+      </div>
+
+      {items.length === 0 ? (
+        <p className="food-routing-material-empty">-</p>
+      ) : (
+        <ul className="food-routing-material-list">
+          {items.map((m, idx) => (
+            <li key={`${m.ioType}-${m.itemCode}-${idx}`} className="food-routing-material-item">
+              <div className="food-routing-material-name">
+                <span>{m.itemNm}</span>
+                <span className="food-routing-material-code">({m.itemCode})</span>
+              </div>
+              <div className="food-routing-material-qty">
+                <strong>{formatQty(m.qty)}</strong>
+                {m.unit && <span className="food-routing-material-unit">{m.unit}</span>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 // ==========================================
 // 공정순서도 (세로 타임라인) 컴포넌트
@@ -54,6 +114,16 @@ function RoutingTimeline({ steps }: { steps: WorkOrderRoutingStepResponse[] }) {
             step.inputQty != null ||
             step.outputQty != null ||
             step.defectQty != null;
+
+          // 투입/산출 자재 분리
+          const materials = step.materials ?? [];
+          const inMaterials = materials.filter((m) => m.ioType === "IN");
+          const outMaterials = materials.filter((m) => m.ioType === "OUT");
+          const hasMaterials = inMaterials.length > 0 || outMaterials.length > 0;
+
+          // 투입/산출/불량 수량 옆에 붙일 단위 (자재 단위가 하나로 통일될 때만)
+          const inUnit = getCommonUnit(inMaterials);
+          const outUnit = getCommonUnit(outMaterials);
 
           const stateClass = isDone
             ? "is-done"
@@ -102,15 +172,21 @@ function RoutingTimeline({ steps }: { steps: WorkOrderRoutingStepResponse[] }) {
                   <div className="food-routing-stats">
                     <div className="food-routing-stat">
                       <span className="food-routing-stat-label">투입</span>
-                      <span className="food-routing-stat-value">{step.inputQty ?? "-"}</span>
+                      <span className="food-routing-stat-value">
+                        {withUnit(step.inputQty, inUnit)}
+                      </span>
                     </div>
                     <div className="food-routing-stat">
                       <span className="food-routing-stat-label">산출</span>
-                      <span className="food-routing-stat-value">{step.outputQty ?? "-"}</span>
+                      <span className="food-routing-stat-value">
+                        {withUnit(step.outputQty, outUnit)}
+                      </span>
                     </div>
                     <div className="food-routing-stat">
                       <span className="food-routing-stat-label">불량</span>
-                      <span className="food-routing-stat-value">{step.defectQty ?? "-"}</span>
+                      <span className="food-routing-stat-value">
+                        {withUnit(step.defectQty, outUnit)}
+                      </span>
                     </div>
                     <div className="food-routing-stat">
                       <span className="food-routing-stat-label">수율</span>
@@ -118,6 +194,14 @@ function RoutingTimeline({ steps }: { steps: WorkOrderRoutingStepResponse[] }) {
                         {step.yieldRate == null ? "-" : `${step.yieldRate}%`}
                       </span>
                     </div>
+                  </div>
+                )}
+
+                {/* 투입자재 / 산출자재 (자재 정보가 있는 공정만 표시) */}
+                {hasMaterials && (
+                  <div className="food-routing-materials">
+                    <MaterialList title="투입 자재" tone="in" items={inMaterials} />
+                    <MaterialList title="산출 자재" tone="out" items={outMaterials} />
                   </div>
                 )}
               </div>
@@ -191,9 +275,11 @@ export function FoodWorkOrderDetailPage() {
 
       (data.lines ?? []).forEach((line: any) => {
         routingMap[String(line.workOrderLineId)] = [...(line.routingSteps ?? [])]
-          .sort((a: WorkOrderRoutingStepResponse, b: WorkOrderRoutingStepResponse) =>
-            a.operSeq - b.operSeq
-          );
+          .map((s: any): WorkOrderRoutingStepResponse => ({
+            ...s,
+            materials: Array.isArray(s.materials) ? s.materials : [],
+          }))
+          .sort((a: WorkOrderRoutingStepResponse, b: WorkOrderRoutingStepResponse) => a.operSeq - b.operSeq);
       });
 
       setRoutingStepsByLineId(routingMap);
