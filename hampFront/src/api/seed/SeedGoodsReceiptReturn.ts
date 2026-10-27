@@ -61,7 +61,6 @@ export type ApiResponsePageSeedGoodsReceiptReturnResponse = ApiResponsePage<Seed
 export const SeedGoodsReceiptReturnApi = {
     /** 씨드 신고처리 전체 목록 조회 (페이징 및 검색) */
     getList: async (params?: {
-        itemCode?: string;
         processStatus?: number;
         [key: string]: any;
     }): Promise<ApiResponsePageSeedGoodsReceiptReturnResponse> => {
