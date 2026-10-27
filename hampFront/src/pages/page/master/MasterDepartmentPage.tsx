@@ -4,7 +4,7 @@ import { Panel } from "@components/card/Panel";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { CusTable } from "@components/table/CusTable";
 import { CusPagination } from "@components/table/CusPagination";
-import { formatDateTime } from "@/utils/common";
+import { formatDateTime, isValidPhone } from "@/utils/common";
 import axios from "axios";
 import type {
   DepartmentResponse,
@@ -14,6 +14,9 @@ import type {
 } from "@/api/master/Department";
 import { DepartmentApi } from "@/api/master/Department";
 import Spinner from "@/components/common/Spinner";
+
+const PHONE_INVALID_MESSAGE =
+  "대표 연락처 형식이 올바르지 않습니다.\n예) 010-1234-5678, 02-123-4567, 01012345678, 1588-1234";
 
 export function MasterDepartmentPage() {
   const [departments, setDepartments] = useState<DepartmentResponse[]>([]);
@@ -188,9 +191,19 @@ export function MasterDepartmentPage() {
     setIsCreatingNewRow(false);
   };
 
+  // 대표 연락처 유효성 검사 (등록/수정 공통, 빈 값은 통과)
+  const validateHeadPhone = (): boolean => {
+    if (!isValidPhone(editFormRef.current.headPhone)) {
+      window.alert(PHONE_INVALID_MESSAGE);
+      return false;
+    }
+    return true;
+  };
+
   // 인라인 신규 등록 API 저장
   const handleSaveCreate = async () => {
     if (isUpdating) return;
+    if (!validateHeadPhone()) return;
 
     setIsUpdating(true);
     try {
@@ -247,6 +260,7 @@ export function MasterDepartmentPage() {
   // 인라인 수정 저장
   const handleSaveEdit = async (depCode: string) => {
     if (isUpdating) return;
+    if (!validateHeadPhone()) return;
 
     setIsUpdating(true);
     try {
@@ -299,10 +313,10 @@ export function MasterDepartmentPage() {
       {
         accessorKey: "depCode",
         header: "부서코드",
-         cell: ({ row }) => {
+        cell: ({ row }) => {
           const isNewRow = row.original.depCode === "__NEW_ROW__";
           if (isNewRow) {
-            return <span style={{ color: "#999" }}>(자동 채번)</span>; 
+            return <span style={{ color: "#999" }}>(자동 채번)</span>;
           }
           return row.original.depCode;
         },
@@ -344,7 +358,7 @@ export function MasterDepartmentPage() {
                 onChange={(e) => {
                   editFormRef.current.headPhone = e.target.value;
                 }}
-                placeholder="연락처 입력"
+                placeholder="예) 02-1234-5678"
               />
             );
           }
