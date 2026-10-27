@@ -74,12 +74,10 @@ export function SystemUsersPage() {
   const currentPage = Number(searchParams.get("page") || "0");
   const queryUserId = searchParams.get("userId") || "";
   const queryUserNm = searchParams.get("userNm") || "";
-  const queryUserDep = searchParams.get("position") || "";
 
   // 검색 input refs
   const userIdRef = useRef<HTMLInputElement>(null);
   const userNmRef = useRef<HTMLInputElement>(null);
-  const userDepRef = useRef<HTMLInputElement>(null);
 
   // 검색 필드
   const searchFields: SearchField[] = [
@@ -95,12 +93,6 @@ export function SystemUsersPage() {
       ref: userNmRef,
       name: "userNm",
     },
-    {
-      type: "input",
-      label: "부서",
-      ref: userDepRef,
-      name: "position",
-    },
   ];
 
   // URL → SearchBand input 동기화
@@ -112,14 +104,10 @@ export function SystemUsersPage() {
     if (userNmRef.current) {
       userNmRef.current.value = queryUserNm;
     }
-
-    if (userDepRef.current) {
-      userDepRef.current.value = queryUserDep;
-    }
   }, [
     queryUserId,
     queryUserNm,
-    queryUserDep,
+
   ]);
 
   // 회원 목록 조회
@@ -142,10 +130,6 @@ export function SystemUsersPage() {
 
       if (queryUserNm) {
         params.userNm = queryUserNm;
-      }
-
-      if (queryUserDep) {
-        params.position = queryUserDep;
       }
 
       if (sortParams.length > 0) {
@@ -179,7 +163,6 @@ export function SystemUsersPage() {
     currentPage,
     queryUserId,
     queryUserNm,
-    queryUserDep,
     sortParams,
   ]);
 
@@ -200,9 +183,6 @@ export function SystemUsersPage() {
     const userNm =
       userNmRef.current?.value.trim() || "";
 
-    const userDep =
-      userDepRef.current?.value.trim() || "";
-
     if (userId) {
       nextParams.set("userId", userId);
     } else {
@@ -213,12 +193,6 @@ export function SystemUsersPage() {
       nextParams.set("userNm", userNm);
     } else {
       nextParams.delete("userNm");
-    }
-
-    if (userDep) {
-      nextParams.set("position", userDep);
-    } else {
-      nextParams.delete("position");
     }
 
     setSearchParams(nextParams);
@@ -232,10 +206,6 @@ export function SystemUsersPage() {
 
     if (userNmRef.current) {
       userNmRef.current.value = "";
-    }
-
-    if (userDepRef.current) {
-      userDepRef.current.value = "";
     }
 
     setSearchParams(
@@ -299,7 +269,7 @@ export function SystemUsersPage() {
         },
         {
           accessorKey: "position",
-          header: "부서",
+          header: "직책",
           cell: ({ getValue }) => {
             const val =
               getValue<string>();

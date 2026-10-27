@@ -634,8 +634,6 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                         {/* 안내 문구 */}
                         <div className="historyTipBox">
                             신고 내역 수정 및 삭제 시 <strong>신고가능 잔여수량</strong>이 즉시 재계산되어 업데이트됩니다.
-                            <br />
-                            <strong>신고완료</strong>된 이력은 읽기전용이며 수정/삭제할 수 없습니다.
                         </div>
                     </div>
                 </div>

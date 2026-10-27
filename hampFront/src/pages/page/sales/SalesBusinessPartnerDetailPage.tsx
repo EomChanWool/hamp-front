@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { AddressSearchInput } from "@/components/common/AddressSearchInput"; // 주소 컴포넌트 임포트
 import { formatDateTime } from "@/utils/common";
+import { isValidPhone } from "@/utils/common";
 import axios from "axios";
 import { BusinessPartnerApi } from "@/api/sales/BusinessPartner";
 import type {
@@ -108,12 +109,33 @@ export function SalesBusinessPartnerDetailPage() {
     }
   }, [isEditing, partner]);
 
+  // 수정 폼 유효성 검사
+  const validateForm = (): boolean => {
+    // 전화번호: 선택 입력, 값이 있으면 형식 검사
+    if (!isValidPhone(form.phone)) {
+      alert("전화번호 형식이 올바르지 않습니다.\n예: 02-1234-5678, 010-1234-5678");
+      return false;
+    }
+
+    // 담당자 연락처: 선택 입력, 값이 있으면 형식 검사
+    if (!isValidPhone(form.managerPhone)) {
+      alert("담당자 연락처 형식이 올바르지 않습니다.\n예: 010-1234-5678");
+      return false;
+    }
+
+    return true;
+  };
+
   // 저장 처리
   const handleSave = async () => {
     if (!partner || isUpdating) return;
 
+    // 저장 전 유효성 검사 (실패 시 API 호출하지 않음)
+    if (!validateForm()) return;
+
     setIsUpdating(true);
     try {
+      // 빈 문자열은 null로 변환하여 전송
       const updatePayload: BusinessPartnerUpdateRequest = {
         bpNm: form.bpNm?.trim() || null,
         ceoNm: form.ceoNm?.trim() || null,
