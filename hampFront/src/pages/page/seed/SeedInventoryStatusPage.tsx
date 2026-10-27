@@ -51,6 +51,47 @@ const TAB_TO_CATEGORY: Record<'전체' | SeedCategory, number | undefined> = {
   '완제품': 2,
 }
 
+// 목표 눈금 개수 (데이터에 따라 실제 개수는 ±1~2 정도 달라질 수 있음)
+const Y_AXIS_TARGET_TICKS = 5
+// 최댓값 위로 남기는 여백 비율 (막대가 차트 상단에 딱 붙지 않게)
+const Y_AXIS_PADDING_RATIO = 1.1
+
+interface YAxisScale {
+  max: number       // Y축 최댓값
+  step: number      // 눈금 간격
+  tickCount: number // 0 이후의 눈금 개수 (max = step * tickCount)
+}
+
+// 부동소수점 오차 제거 (예: 0.1 * 3 = 0.30000000000000004)
+const cleanFloat = (n: number) => Number(n.toPrecision(12))
+
+function calcYAxisScale(rawMax: number): YAxisScale {
+  // 데이터가 없거나 전부 0 이하인 경우: 고정 큰 값(9000) 대신 작은 기본 스케일 사용
+  if (!Number.isFinite(rawMax) || rawMax <= 0) {
+    return { max: Y_AXIS_TARGET_TICKS, step: 1, tickCount: Y_AXIS_TARGET_TICKS }
+  }
+
+  const padded = rawMax * Y_AXIS_PADDING_RATIO
+  const roughStep = padded / Y_AXIS_TARGET_TICKS
+
+  // roughStep 을 1, 2, 5, 10 × 10^n 중 가장 가까운 "깔끔한" 값으로 올림
+  const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)))
+  const residual = roughStep / magnitude
+  const niceResidual = residual <= 1 ? 1 : residual <= 2 ? 2 : residual <= 5 ? 5 : 10
+  const step = cleanFloat(niceResidual * magnitude)
+
+  // padded 값을 덮을 수 있는 최소 눈금 개수 (1e-9 는 부동소수점 오차 보정)
+  const tickCount = Math.max(Math.ceil(padded / step - 1e-9), 1)
+
+  return { max: cleanFloat(step * tickCount), step, tickCount }
+}
+
+// Y축 라벨 포맷: 눈금 간격이 1 미만(소수 단위)이면 필요한 만큼 소수점 표시
+function formatYAxisLabel(value: number, step: number) {
+  const decimals = step >= 1 ? 0 : Math.min(Math.ceil(-Math.log10(step)), 4)
+  return value.toLocaleString(undefined, { maximumFractionDigits: decimals })
+}
+
 /* =========================================================================
    품목 선택 드롭다운 (div 기반 커스텀 select)
    - 트리거 버튼 + role="listbox" 패널
@@ -410,24 +451,31 @@ export function SeedInventoryStatusPage() {
     return []
   }, [apiTrendData, trendTab])
 
-  const trendMax = useMemo(() => {
-    if (currentTrendData.length === 0) return 9000
-    const rawMax = Math.max(...currentTrendData.map((d) => d.value))
-    if (rawMax <= 0) return 9000
-    const padded = rawMax * 1.1
-    const step = padded > 10000 ? 2000 : 1000
-    return Math.ceil(padded / step) * step
+  //  Y축 스케일: 백엔드에서 내려온 추이 데이터의 최댓값 기준으로 동적 계산
+  const yAxisScale = useMemo(() => {
+    const rawMax =
+      currentTrendData.length > 0
+        ? currentTrendData.reduce((max, d) => Math.max(max, d.value), 0)
+        : 0
+    return calcYAxisScale(rawMax)
   }, [currentTrendData])
 
-  const yAxisLabels = useMemo(() => {
-    const step = trendMax / 9
-    return Array.from({ length: 10 }, (_, i) => Math.round(trendMax - step * i).toLocaleString())
-  }, [trendMax])
+  // 막대 높이(%) 계산에 쓰는 Y축 최댓값
+  const trendMax = yAxisScale.max
 
+  // Y축 라벨: 위(최댓값) → 아래(0) 순서, 눈금 개수는 데이터에 따라 가변
+  const yAxisLabels = useMemo(() => {
+    const { max, step, tickCount } = yAxisScale
+    return Array.from({ length: tickCount + 1 }, (_, i) =>
+      formatYAxisLabel(cleanFloat(max - step * i), step),
+    )
+  }, [yAxisScale])
+
+  // 가로 눈금선 위치값: step × 1 ~ tickCount (맨 위 선 포함, 0 라인 제외)
   const gridlineValues = useMemo(() => {
-    const step = trendMax / 9
-    return Array.from({ length: 9 }, (_, i) => Math.round(step * (i + 1)))
-  }, [trendMax])
+    const { step, tickCount } = yAxisScale
+    return Array.from({ length: tickCount }, (_, i) => cleanFloat(step * (i + 1)))
+  }, [yAxisScale])
 
   const getCategorySummaryValues = (catCode: number) => {
     if (summaryData && summaryData.categories) {
@@ -643,15 +691,17 @@ export function SeedInventoryStatusPage() {
 
           <div className="seedChartWrapper">
             <div className="seedChartYAxis">
-              {yAxisLabels.map((lbl) => (
-                <span key={lbl}>{lbl}</span>
+              {/* 라벨 값이 중복될 가능성(소수 반올림 등)을 고려해 index 를 key 에 포함 */}
+              {yAxisLabels.map((lbl, i) => (
+                <span key={`${lbl}-${i}`}>{lbl}</span>
               ))}
             </div>
 
             <div className="seedChartArea">
-              {gridlineValues.map((val) => (
+              {/* 눈금선 개수/위치도 yAxisScale 에 맞춰 동적으로 렌더 */}
+              {gridlineValues.map((val, i) => (
                 <div
-                  key={val}
+                  key={`${val}-${i}`}
                   className="seedChartGridline"
                   style={{ bottom: `${(val / trendMax) * 100}%` }}
                 />

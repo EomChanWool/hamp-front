@@ -10,7 +10,6 @@ import {
   type SeedGoodsReceiptReturnItemResponse,
   type SeedGoodsReceiptReturnUpdateRequest,
 } from "@/api/seed/SeedGoodsReceiptReturn";
-import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
 import "@pages/page/seed/Seed.css";
 import { Badge } from "@/components/common/Badge";
 import { formatDateTime } from "@/utils/common";
@@ -22,7 +21,6 @@ const DOWNLOAD_FILE_EXT = "docx";
 
 export function SeedReportReturnManagePage() {
   const [dataList, setDataList] = useState<SeedGoodsReceiptReturnItemResponse[]>([]);
-  const [itemOptions, setItemOptions] = useState<ItemOptionResponse[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
@@ -56,56 +54,20 @@ export function SeedReportReturnManagePage() {
   const [isDownloading, setIsDownloading] = useState(false);
 
   const [searchFilters, setSearchFilters] = useState({
-    itemCode: "",
     processStatus: "",
     processStatusKeyword: "",
   });
 
-  const itemCodeRef = useRef<HTMLSelectElement>(null);
-  const itemCodeInputRef = useRef<HTMLInputElement>(null);
   const processStatusRef = useRef<HTMLSelectElement>(null);
   const processStatusInputRef = useRef<HTMLInputElement>(null);
-
-  // 품목 옵션 조회
-  const fetchItemOptions = useCallback(async () => {
-    try {
-      const res = await ItemApi.getOptions({ productType: 0 });
-      setItemOptions(res.data ?? []);
-    } catch (error) {
-      console.error("품목 옵션 조회 실패:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchItemOptions();
-  }, [fetchItemOptions]);
 
   const searchFields: SearchField[] = useMemo(
     () => [
       {
         type: "input",
-        label: "품목코드",
-        ref: itemCodeInputRef,
-        name: "itemCode",
-      },
-      {
-        type: "input",
         label: "처리상태",
         ref: processStatusInputRef,
         name: "processStatus",
-      },
-      {
-        type: "select",
-        label: "품목",
-        ref: itemCodeRef,
-        name: "itemCode",
-        options: [
-          { label: "전체", value: "" },
-          ...itemOptions.map((opt) => ({
-            label: `${opt.itemNm} (${opt.itemCode ?? "-"})`,
-            value: opt.itemCode,
-          })),
-        ],
       },
       {
         type: "select",
@@ -119,15 +81,8 @@ export function SeedReportReturnManagePage() {
         ],
       },
     ],
-    [itemOptions],
+    [],
   );
-
-  const itemChipLabel = useMemo(() => {
-    if (!searchFilters.itemCode) return "전체";
-
-    const found = itemOptions.find((opt) => opt.itemCode === searchFilters.itemCode);
-    return found ? `${found.itemNm} (${found.itemCode})` : searchFilters.itemCode;
-  }, [searchFilters.itemCode, itemOptions]);
 
   const sortParams = useMemo(() => {
     return sorting.map((sort) => `${sort.id},${sort.desc ? "desc" : "asc"}`);
@@ -150,10 +105,6 @@ export function SeedReportReturnManagePage() {
         processStatus: 1,
       };
 
-      if (searchFilters.itemCode) {
-        params.itemCode = searchFilters.itemCode;
-      }
-
       if (sortParams.length > 0) {
         params.sort = sortParams;
       }
@@ -170,7 +121,7 @@ export function SeedReportReturnManagePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, searchFilters.itemCode, searchFilters.processStatus, searchFilters.processStatusKeyword, sortParams]);
+  }, [page, searchFilters.processStatus, searchFilters.processStatusKeyword, sortParams]);
 
   //  신고대기 조회
   //  - 접힘: 앞 3건만 조회
@@ -189,10 +140,6 @@ export function SeedReportReturnManagePage() {
         processStatus: 0,
       };
 
-      if (searchFilters.itemCode) {
-        params.itemCode = searchFilters.itemCode;
-      }
-
       if (sortParams.length > 0) {
         params.sort = sortParams;
       }
@@ -209,7 +156,8 @@ export function SeedReportReturnManagePage() {
       console.error("씨드 신고대기 목록 조회 실패:", error);
       window.alert("데이터를 불러오는 중 오류가 발생했습니다.");
     }
-  }, [pendingExpanded, searchFilters.itemCode, searchFilters.processStatus, searchFilters.processStatusKeyword, sortParams]);
+ 
+  }, [pendingExpanded, searchFilters.processStatus, searchFilters.processStatusKeyword, sortParams]);
 
   const visiblePendingList = useMemo(
     () => (pendingExpanded ? pendingList : pendingList.slice(0, PENDING_PREVIEW_COUNT)),
@@ -302,8 +250,6 @@ export function SeedReportReturnManagePage() {
     setPendingExpanded(false);
     setSelectedReturnIds([]); // 검색 조건이 바뀌면 선택 초기화
 
-    const itemCode = itemCodeInputRef.current?.value.trim() || itemCodeRef.current?.value.trim() || "";
-
     const processStatusInput = processStatusInputRef.current?.value.trim() || "";
 
     const normalizedStatus = processStatusInput.replace(/\s/g, "");
@@ -327,17 +273,13 @@ export function SeedReportReturnManagePage() {
     }
 
     setSearchFilters({
-      itemCode,
       processStatus,
       processStatusKeyword,
     });
   };
 
   const handleReset = () => {
-    if (itemCodeInputRef.current) itemCodeInputRef.current.value = "";
     if (processStatusInputRef.current) processStatusInputRef.current.value = "";
-
-    if (itemCodeRef.current) itemCodeRef.current.value = "";
     if (processStatusRef.current) processStatusRef.current.value = "";
 
     setPage(0);
@@ -345,7 +287,6 @@ export function SeedReportReturnManagePage() {
     setSelectedReturnIds([]); // 초기화 시 선택도 초기화
 
     setSearchFilters({
-      itemCode: "",
       processStatus: "",
       processStatusKeyword: "",
     });
@@ -694,11 +635,6 @@ export function SeedReportReturnManagePage() {
             </div>
           ) : (
             <>
-              <div className="seedScope">
-                <span className="seedScope__label">조회 품목</span>
-                <span className="seedScope__value">{itemChipLabel}</span>
-              </div>
-
               <div className="seedReportSections">
                 {/* 신고대기 */}
                 <section className="seedReportSection">
