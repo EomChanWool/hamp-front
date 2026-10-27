@@ -414,6 +414,12 @@ export function SeedInventoryManagePage() {
                     } else if (ioType === '신고입고취소') {
                         badgeClass = 'badge muted';
                         iconNode = <RotateIcon />;
+
+                    } else if (ioType === '생산투입') {
+                        badgeClass = 'badge info';
+                        iconNode = (<span style={{ display: 'inline-flex', transform: 'rotate(180deg)' }}>
+                            <TriangleIcon />
+                        </span>);
                     } else {
                         badgeClass = 'badge danger';
                         iconNode = <TriangleIcon />;

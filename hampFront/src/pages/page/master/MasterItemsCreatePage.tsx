@@ -54,7 +54,6 @@ export function MasterItemsCreatePage() {
     routings,
     syncRoutings,
     removeRouting: handleRemoveRouting,
-    updateRouting: handleRoutingChange,
     moveRouting,
   } = useItemRoutings();
 
@@ -127,6 +126,60 @@ export function MasterItemsCreatePage() {
     }
   };
 
+  const resetMaterialsOnFinalChange = (nextCodes: string[]): boolean => {
+    const prevCodes = routings.map((r) => r.operCode ?? "");
+    const prevFinal = prevCodes[prevCodes.length - 1];
+    const nextFinal = nextCodes[nextCodes.length - 1];
+    if (prevFinal === nextFinal) return true;
+
+    const affected = [prevFinal, nextFinal].filter(
+      (code): code is string =>
+        !!code &&
+        nextCodes.includes(code) &&
+        (routingMaterials[code] ?? []).length > 0
+    );
+
+    if (affected.length > 0) {
+      const ok = window.confirm(
+        "최종공정이 변경되어 해당 공정의 투입/산출 자재가 모두 삭제됩니다.\n계속하시겠습니까?"
+      );
+      if (!ok) return false;
+
+      setRoutingMaterials((prev) => {
+        const next = { ...prev };
+        affected.forEach((code) => delete next[code]);
+        return next;
+      });
+    }
+    return true;
+  };
+
+  /** 공정 순서 이동 (드래그 / 화살표 / 앞으로·뒤로 버튼 공통). 실제로 이동했으면 true */
+  const handleMoveRouting = (from: number, to: number): boolean => {
+    if (from === to || from < 0 || to < 0 || from >= routings.length || to >= routings.length) {
+      return false;
+    }
+    const nextCodes = routings.map((r) => r.operCode ?? "");
+    const [moved] = nextCodes.splice(from, 1);
+    nextCodes.splice(to, 0, moved);
+
+    if (!resetMaterialsOnFinalChange(nextCodes)) return false;
+    moveRouting(from, to);
+    return true;
+  };
+
+  /** "이 공정 제외" : 제외하는 공정의 자재 삭제 + 최종공정이 바뀌면 해당 공정 자재도 삭제 */
+  const handleRemoveSelectedRouting = (index: number) => {
+    const target = routings[index];
+    if (!target) return;
+    const nextCodes = routings.filter((_, i) => i !== index).map((r) => r.operCode ?? "");
+
+    if (!resetMaterialsOnFinalChange(nextCodes)) return;
+    removeMaterialsOf(target.operCode ?? "");
+    handleRemoveRouting(index);
+    setSelectedIndex(null);
+  };
+
   const handleOpenModal = () => {
     setModalSearchKeyword("");
     const currentCodes = routings.map((r) => r.operCode).filter(Boolean) as string[];
@@ -135,7 +188,17 @@ export function MasterItemsCreatePage() {
   };
 
   const handleConfirmModal = () => {
-    syncRoutings(tempSelectedCodes);
+    const nextCodes = tempSelectedCodes;
+
+    // 최종공정(마지막 공정)이 바뀌면 해당 공정 자재 삭제 (취소하면 모달 유지)
+    if (!resetMaterialsOnFinalChange(nextCodes)) return;
+
+    // 목록에서 빠진 공정의 자재도 함께 정리
+    setRoutingMaterials((prev) =>
+      Object.fromEntries(Object.entries(prev).filter(([code]) => nextCodes.includes(code)))
+    );
+
+    syncRoutings(nextCodes);
     setIsModalOpen(false);
   };
 
@@ -150,7 +213,7 @@ export function MasterItemsCreatePage() {
       alert("완제품 등록 시 공정 라우팅을 최소 1개 이상 추가해야 합니다.");
       return false;
     }
-
+    
     return true;
   };
 
@@ -348,6 +411,7 @@ export function MasterItemsCreatePage() {
 
                 <div className="routing-guide-text">
                   ⠿ 드래그로 순서 변경, 항목 선택 시 우측에서 상세 편집
+                  (마지막 공정이 최종공정이며, 최종공정이 바뀌면 해당 공정의 투입/산출 자재는 초기화됩니다)
                 </div>
 
                 {routings.length === 0 ? (
@@ -383,8 +447,8 @@ export function MasterItemsCreatePage() {
                               setDragOverIndex(null);
                             }}
                             onDrop={() => {
-                              if (draggedIndex !== null) {
-                                moveRouting(draggedIndex, index);
+                              // 확인창에서 취소하면 이동/선택 변경 없음
+                              if (draggedIndex !== null && handleMoveRouting(draggedIndex, index)) {
                                 setSelectedIndex(index);
                               }
                               setDraggedIndex(null);
@@ -421,8 +485,9 @@ export function MasterItemsCreatePage() {
                                   disabled={index === 0 || isSubmitting}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    moveRouting(index, index - 1);
-                                    setSelectedIndex(index - 1);
+                                    if (handleMoveRouting(index, index - 1)) {
+                                      setSelectedIndex(index - 1);
+                                    }
                                   }}
                                   title="위로 이동"
                                 >
@@ -434,8 +499,9 @@ export function MasterItemsCreatePage() {
                                   disabled={index === routings.length - 1 || isSubmitting}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    moveRouting(index, index + 1);
-                                    setSelectedIndex(index + 1);
+                                    if (handleMoveRouting(index, index + 1)) {
+                                      setSelectedIndex(index + 1);
+                                    }
                                   }}
                                   title="아래로 이동"
                                 >
@@ -473,8 +539,9 @@ export function MasterItemsCreatePage() {
                               className="routing-move-btn"
                               disabled={selectedIndex === 0 || isSubmitting}
                               onClick={() => {
-                                moveRouting(selectedIndex, selectedIndex - 1);
-                                setSelectedIndex(selectedIndex - 1);
+                                if (handleMoveRouting(selectedIndex, selectedIndex - 1)) {
+                                  setSelectedIndex(selectedIndex - 1);
+                                }
                               }}
                             >
                               <ChevronUpIcon className="routing-arrow-icon" aria-hidden="true" />
@@ -485,8 +552,9 @@ export function MasterItemsCreatePage() {
                               className="routing-move-btn"
                               disabled={selectedIndex === routings.length - 1 || isSubmitting}
                               onClick={() => {
-                                moveRouting(selectedIndex, selectedIndex + 1);
-                                setSelectedIndex(selectedIndex + 1);
+                                if (handleMoveRouting(selectedIndex, selectedIndex + 1)) {
+                                  setSelectedIndex(selectedIndex + 1);
+                                }
                               }}
                             >
                               <ChevronDownIcon className="routing-arrow-icon" aria-hidden="true" />
@@ -507,42 +575,17 @@ export function MasterItemsCreatePage() {
 
                             <div className="routing-form-group">
                               <label className="routing-label">공정구분</label>
+                              {/* 최종공정은 훅에서 "마지막 공정"으로 자동 지정되므로 직접 변경 불가(읽기 전용) */}
                               <select
                                 className="tableInput routing-select"
                                 value={selectedRouting.finalYn ?? "N"}
-                                disabled={isSubmitting}
-                                onChange={(e) => {
-                                  const nextFinalYn = e.target.value;
-                                  const operCode = selectedOperCode;
-
-                                  if (
-                                    selectedRouting.finalYn === "Y" &&
-                                    nextFinalYn === "N"
-                                  ) {
-                                    setRoutingMaterials((prev) => {
-                                      const currentMaterials = prev[operCode] ?? [];
-
-                                      // 최종공정에서 일반공정으로 변경 시
-                                      // 해당 공정의 산출 자재(OUT) 제거
-                                      return {
-                                        ...prev,
-                                        [operCode]: currentMaterials.filter(
-                                          (m) => m.ioType !== "OUT"
-                                        ),
-                                      };
-                                    });
-                                  }
-
-                                  handleRoutingChange(
-                                    selectedIndex,
-                                    "finalYn",
-                                    nextFinalYn
-                                  );
-                                }}
+                                disabled
+                                title="마지막 공정이 자동으로 최종공정이 됩니다"
                               >
                                 <option value="N">일반공정</option>
                                 <option value="Y">최종공정</option>
                               </select>
+                              <div className="routing-guide-text">마지막 공정이 자동으로 최종공정입니다</div>
                             </div>
                           </div>
 
@@ -570,11 +613,7 @@ export function MasterItemsCreatePage() {
                             type="button"
                             className="routing-delete-btn"
                             disabled={isSubmitting}
-                            onClick={() => {
-                              removeMaterialsOf(selectedOperCode); // 자재도 함께 제거
-                              handleRemoveRouting(selectedIndex);
-                              setSelectedIndex(null);
-                            }}
+                            onClick={() => handleRemoveSelectedRouting(selectedIndex)}
                           >
                             이 공정 제외
                           </button>

@@ -88,6 +88,18 @@ export interface WorkOrderStatusSummaryResponse {
     byStatus: WorkOrderStatusCount[];
 }
 
+/** 공정 자재 입출 구분 (IN: 투입자재, OUT: 산출자재) */
+export type MaterialIoType = 'IN' | 'OUT';
+
+/** 공정 실적에 기록된 자재 한 건 (자재마다 단위가 달라서 공정 합계 대신 이걸로 표시한다) */
+export interface WorkOrderRoutingStepMaterialResponse {
+    itemCode: string;
+    itemNm: string;
+    unit: string; // 자재 자체 단위 (예: G, KG, L) - 작업지시 품목 단위와 다를 수 있음
+    ioType: MaterialIoType;
+    qty: number;
+}
+
 /** 작업지시 라인 바코드 스캔 조회 응답의 공정순서도 단계 */
 export interface WorkOrderRoutingStepResponse {
     operCode: string;
@@ -101,6 +113,8 @@ export interface WorkOrderRoutingStepResponse {
     defectQty: number | null;   // 이 공정을 끝낼 때 기록한 불량수량 (종료 전이면 null)
     yieldRate: number | null;   // 이 공정의 양품률
     equipments: EquipmentOptionResponse[]; // 이 공정용으로 등록된 설비 목록 (실제 사용 설비가 아니라 매칭된 설비)
+    /** 이 공정에 기록된 투입(IN)/산출(OUT) 자재 내역 - 구버전 응답 대비 optional 로 둔다 */
+    materials?: WorkOrderRoutingStepMaterialResponse[];
 }
 
 /** 작업지시 라인 바코드 스캔 조회 응답 타입 */

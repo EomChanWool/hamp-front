@@ -15,6 +15,7 @@ import type {
   WorkOrderPerformanceDefectRequest,
   WorkOrderPerformanceMaterialQtyRequest,
   WorkOrderPerformanceScanResponse,
+  WorkOrderRoutingStepResponse, // 공정 단계별 자재(materials) 분리 헬퍼에서 사용
   ZoneType,
 } from '@/api/WorkOrder';
 import type { ItemOptionResponse } from '@/api/master/Item';
@@ -62,6 +63,22 @@ const getStartMaterials = (scan: WorkOrderPerformanceScanResponse): ItemOptionRe
 
 const getFinishMaterials = (scan: WorkOrderPerformanceScanResponse): ItemOptionResponse[] =>
   scan.requiredMaterials ?? [];
+
+/**
+ * 서버가 내려주는 공정별 materials 를 투입(IN) / 산출(OUT) 로 나눠 화면 표시용으로 변환한다.
+ * - 자재마다 단위(G, KG, L ...)가 달라서 공정 합계(inputQty/outputQty)에 작업지시 품목 단위를
+ *   붙이면 단위가 틀어지므로, 자재별 이름·수량·단위 그대로 보여주기 위한 용도.
+ */
+const splitStepMaterials = (
+  step: WorkOrderRoutingStepResponse,
+): { ins: MaterialSummary[]; outs: MaterialSummary[] } => {
+  const toSummary = (ioType: 'IN' | 'OUT'): MaterialSummary[] =>
+    (step.materials ?? [])
+      .filter((m) => m.ioType === ioType)
+      .map(({ itemCode, itemNm, unit, qty }) => ({ itemCode, itemNm, unit, qty }));
+
+  return { ins: toSummary('IN'), outs: toSummary('OUT') };
+};
 
 /** 키패드 입력을 문자열에 반영 (소수점 1개, 최대 10자리) */
 const applyKeypad = (prev: string, key: string) => {
@@ -626,11 +643,17 @@ export function WorkOrderScanPage() {
 
   /** 자재 내역을 셀 안에 줄바꿈으로 나열 (투입량/양품량 칸 공용) */
   const renderMaterialLines = (list: MaterialSummary[]) =>
-    list.map((m) => (
-      <span key={m.itemCode} className="workOrderRoutingPerformanceLine">
+    list.map((m, idx) => (
+      <span key={`${m.itemCode}-${idx}`} className="workOrderRoutingPerformanceLine">
         {m.itemNm} {m.qty.toLocaleString()} {m.unit}
       </span>
     ));
+
+  const renderStepQtyCell = (list: MaterialSummary[], fallbackQty: number | null) => {
+    if (list.length > 0) return renderMaterialLines(list);
+    if (fallbackQty !== null) return fallbackQty.toLocaleString();
+    return '-';
+  };
 
   return (
     <div className="workTabletPage">
@@ -791,13 +814,24 @@ export function WorkOrderScanPage() {
                         const localOutputs = local?.outputs ?? [];
                         const displayDefectQty = step.defectQty ?? local?.defectQty ?? null;
 
+                        // 서버 materials 를 투입(IN)/산출(OUT)로 분리.
+                        // 서버 값이 있으면 그걸 우선 쓰고, 없으면(방금 이 화면에서 처리해 아직 재스캔 전)
+                        // 로컬 입력값으로 대체한다.
+                        const { ins: serverInputs, outs: serverOutputs } = splitStepMaterials(step);
+                        const displayInputs = serverInputs.length > 0 ? serverInputs : localInputs;
+                        const displayOutputs = serverOutputs.length > 0 ? serverOutputs : localOutputs;
+
+                        // 불량량 단위 - 완제품 단위(scanResult.unit)가 아니라 이 공정 산출자재의 단위를 따른다.
+                        // (예: 압출공정 산출이 G 이면 불량도 G). 산출자재 정보가 없을 때만 완제품 단위로 대체
+                        const stepDefectUnit = displayOutputs[0]?.unit ?? scanResult.unit;
+
                         const hasPerformance =
+                          displayInputs.length > 0 ||
+                          displayOutputs.length > 0 ||
                           step.inputQty !== null ||
                           step.outputQty !== null ||
                           displayDefectQty !== null ||
-                          step.yieldRate !== null ||
-                          localInputs.length > 0 ||
-                          localOutputs.length > 0;
+                          step.yieldRate !== null;
 
                         const isExpanded = expandedOperCodes.has(step.operCode);
                         const isNext = !isPending && nextStep?.operCode === step.operCode;
@@ -829,33 +863,28 @@ export function WorkOrderScanPage() {
                                   </div>
                                   {hasPerformance && isExpanded && (
                                     <div className="workOrderRoutingPerformance">
+                                      {/* 투입량: IN 자재별 "자재명 수량 단위" 로 표시 */}
                                       <div className="workOrderRoutingPerformanceCell">
                                         <span className="workOrderRoutingPerformanceLabel">투입량</span>
                                         <strong className="workOrderRoutingPerformanceValue">
-                                          {step.inputQty !== null
-                                            ? `${step.inputQty.toLocaleString()} ${scanResult.unit}`
-                                            : localInputs.length > 0
-                                              ? renderMaterialLines(localInputs)
-                                              : '-'}
+                                          {renderStepQtyCell(displayInputs, step.inputQty)}
                                         </strong>
                                       </div>
 
+                                      {/* 양품량: OUT 자재별 "자재명 수량 단위" 로 표시 */}
                                       <div className="workOrderRoutingPerformanceCell">
                                         <span className="workOrderRoutingPerformanceLabel">양품량</span>
                                         <strong className="workOrderRoutingPerformanceValue">
-                                          {step.outputQty !== null
-                                            ? `${step.outputQty.toLocaleString()} ${scanResult.unit}`
-                                            : localOutputs.length > 0
-                                              ? renderMaterialLines(localOutputs)
-                                              : '-'}
+                                          {renderStepQtyCell(displayOutputs, step.outputQty)}
                                         </strong>
                                       </div>
 
+                                      {/* 불량량: 산출자재 단위 사용 (단위를 모르면 숫자만) */}
                                       <div className="workOrderRoutingPerformanceCell">
                                         <span className="workOrderRoutingPerformanceLabel">불량량</span>
                                         <strong className="workOrderRoutingPerformanceValue">
                                           {displayDefectQty !== null
-                                            ? `${displayDefectQty.toLocaleString()} ${scanResult.unit}`
+                                            ? `${displayDefectQty.toLocaleString()} ${stepDefectUnit}`.trim()
                                             : '-'}
                                         </strong>
                                       </div>

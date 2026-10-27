@@ -89,7 +89,7 @@ export function MasterEquipmentDetailPage() {
       title: "부서 정보",
       fields: [
         { label: "부서코드", key: "depCode", editable: false },
-        { label: "작업설명", key: "taskDesc", editable: false },
+        { label: "담당업무", key: "taskDesc", editable: false },
       ],
     },
   ];
