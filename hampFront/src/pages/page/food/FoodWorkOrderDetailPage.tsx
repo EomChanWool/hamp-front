@@ -775,7 +775,7 @@ export function FoodWorkOrderDetailPage() {
                     className="ghostButton food-label-print-btn"
                     onClick={() => handleOpenLabelModal(false)}
                   >
-                    선택 라벨 인쇄
+                    작업지시서 인쇄
                   </button>
 
                   <button
