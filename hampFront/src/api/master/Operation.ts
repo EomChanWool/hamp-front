@@ -26,6 +26,12 @@ export interface OperationResponse {
   updatedAt: string;
 }
 
+/** 공정 상세 조회 응답 (목록 항목 + 부서 정보) */
+export interface OperationDetailResponse extends OperationResponse {
+  taskDesc: string;
+  head: string;
+}
+
 /** 공정 옵션 조회 응답 */
 export interface OperationOptionResponse {
   operCode: string;
@@ -36,6 +42,9 @@ export interface OperationOptionResponse {
 
 /** 공정 단건 조회/등록/수정 API 최종 응답 타입 */
 export type ApiResponseOperationResponse = ApiResponse<OperationResponse>;
+
+/** 공정 상세 조회 API 최종 응답 타입 */
+export type ApiResponseOperationDetailResponse = ApiResponse<OperationDetailResponse>;
 
 /** 공정 목록 페이징 데이터 타입 */
 export type PageOperationResponse = PageResponse<OperationResponse>;
@@ -63,8 +72,8 @@ export const OperationApi = {
   },
 
   /** 공정 단건 상세 조회 */
-  getDetail: async (operCode: string): Promise<ApiResponseOperationResponse> => {
-    const res = await apiClient.get<ApiResponseOperationResponse>(`/operations/${operCode}`);
+  getDetail: async (operCode: string): Promise<ApiResponseOperationDetailResponse> => {
+    const res = await apiClient.get<ApiResponseOperationDetailResponse>(`/operations/${operCode}`);
     return res.data;
   },
 
