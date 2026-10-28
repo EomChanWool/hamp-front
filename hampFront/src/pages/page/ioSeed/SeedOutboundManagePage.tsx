@@ -115,17 +115,21 @@ export function SeedOutboundManagePage() {
       label: "출고일자",
       startRef: shipDateFromRef,
       endRef: shipDateToRef,
+      startValue: queryShipDateFrom,
+      endValue: queryShipDateTo,
     },
     {
       type: "input",
       label: "수주번호",
       ref: orderCodeRef,
       name: "orderCode",
+      value: queryOrderCode,
     },
     {
       type: "select",
       label: "상태",
       ref: statusRef,
+      value: queryStatus,
       options: [
         { label: "전체", value: "" },
         ...STATUS_OPTIONS.map((o) => ({ label: o.label, value: o.value })),
@@ -136,23 +140,9 @@ export function SeedOutboundManagePage() {
       label: "담당자",
       ref: managerIdRef,
       name: "managerId",
+      value: queryManagerId,
     },
   ];
-
-  // URL → SearchBand input / select 값 동기화 (뒤로가기 / 새로고침 후에도 검색값 유지)
-  useEffect(() => {
-    if (orderCodeRef.current) orderCodeRef.current.value = queryOrderCode;
-    if (statusRef.current) statusRef.current.value = queryStatus;
-    if (managerIdRef.current) managerIdRef.current.value = queryManagerId;
-    if (shipDateFromRef.current) shipDateFromRef.current.value = queryShipDateFrom;
-    if (shipDateToRef.current) shipDateToRef.current.value = queryShipDateTo;
-  }, [
-    queryOrderCode,
-    queryStatus,
-    queryManagerId,
-    queryShipDateFrom,
-    queryShipDateTo,
-  ]);
 
   // ------------------------------------------
   // 출고지시서 목록 조회

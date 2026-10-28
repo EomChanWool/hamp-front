@@ -24,6 +24,8 @@ type SearchInputField = BaseField & {
   ref: RefObject<HTMLInputElement | null>;
   placeholder?: string;
   name: string;
+  // URL 쿼리 등 외부 값을 SearchBand에 전달하기 위한 값.
+  value?: string;
 };
 
 type SearchSingleDateField = BaseField & {
@@ -31,6 +33,7 @@ type SearchSingleDateField = BaseField & {
   label: string;
   ref: RefObject<HTMLInputElement | null>;
   name?: string;
+  value?: string;
 };
 
 type SearchDateField = BaseField & {
@@ -39,6 +42,8 @@ type SearchDateField = BaseField & {
   startRef: RefObject<HTMLInputElement | null>;
   endRef: RefObject<HTMLInputElement | null>;
   name?: string;
+  startValue?: string;
+  endValue?: string;
 };
 
 type SearchSelectField = BaseField & {
@@ -47,6 +52,7 @@ type SearchSelectField = BaseField & {
   ref: RefObject<HTMLSelectElement | null>;
   options: { value: string; label: string }[];
   name?: string;
+  value?: string;
 };
 
 export type SearchField =
@@ -69,6 +75,10 @@ type SearchSelectProps = {
   resetKey: number;
 };
 
+// select의 기본(초기) 값: 빈 값("") 옵션이 있으면 그것, 없으면 첫 번째 옵션
+const getSelectDefault = (options: { value: string; label: string }[]) =>
+  options.some((option) => option.value === "") ? "" : (options[0]?.value ?? "");
+
 function SearchSelect({
   label,
   selectRef,
@@ -79,9 +89,7 @@ function SearchSelect({
   const labelId = `${uid}-label`;
   const listId = `${uid}-list`;
 
-  const initialValue = options.some((option) => option.value === "")
-    ? ""
-    : (options[0]?.value ?? "");
+  const initialValue = getSelectDefault(options);
 
   const [value, setValue] = useState(initialValue);
   const [open, setOpen] = useState(false);
@@ -94,6 +102,8 @@ function SearchSelect({
   );
   const selectedLabel = options[selectedIndex]?.label ?? "";
 
+  // resetKey가 바뀔 때마다 native select의 값을 읽어 화면 상태에 반영
+  // (초기화 / URL 값 복원 시 사용)
   useEffect(() => {
     if (resetKey === 0) return;
     setValue(selectRef.current?.value ?? initialValue);
@@ -300,6 +310,23 @@ const getQuickRangeStart = (key: QuickRangeKey, today: Date) => {
   return new Date(today);
 };
 
+// 통합 검색(검색조건 select + 검색어)에 사용되는 input 필드 (최대 SCOPE_LIMIT개)
+const getScopeFields = (fields: SearchField[]) =>
+  fields
+    .filter((field): field is SearchInputField => field.type === "input")
+    .slice(0, SCOPE_LIMIT);
+
+// 필드 종류와 상관없이 "외부에서 내려준 값"을 배열로 꺼내는 헬퍼
+// (date 필드는 시작/종료 2개, 나머지는 1개)
+const getFieldValues = (field: SearchField): (string | undefined)[] => {
+  switch (field.type) {
+    case "date":
+      return [field.startValue, field.endValue];
+    default:
+      return [field.value];
+  }
+};
+
 export function SearchBand({
   fields,
   onSearch,
@@ -308,14 +335,14 @@ export function SearchBand({
 }: Props) {
   const panelId = useId();
   const [resetKey, setResetKey] = useState(0);
-  const [expanded, setExpanded] = useState(initialExpanded);
   const keywordRef = useRef<HTMLInputElement>(null);
   const scopeRef = useRef<HTMLSelectElement>(null);
 
-  const textFields = fields.filter(
-    (field): field is SearchInputField => field.type === "input",
-  );
-  const scopeFields = textFields.slice(0, SCOPE_LIMIT);
+  // effect 안에서 항상 최신 fields를 참조하기 위한 ref (stale closure 방지)
+  const fieldsRef = useRef(fields);
+  fieldsRef.current = fields;
+
+  const scopeFields = getScopeFields(fields);
   const unified = scopeFields.length > 1;
   const single = scopeFields.length === 1 ? scopeFields[0] : null;
   const hasKeywordRow = scopeFields.length > 0;
@@ -329,10 +356,99 @@ export function SearchBand({
   );
   const hasFilters = panelFields.length + dateFields.length > 0;
 
+  // 상세검색 패널 안(select / 보조 input / 날짜)에 값이 채워져 있는지 여부
+  // → 목록으로 돌아왔을 때 접힌 패널 속에 조건이 숨지 않도록 자동으로 펼친다.
+  const hasActiveDetailFilter = [...panelFields, ...dateFields].some((field) =>
+    getFieldValues(field).some((v) => !!v),
+  );
+
+  const [expanded, setExpanded] = useState(
+    initialExpanded || hasActiveDetailFilter,
+  );
+
   const scopeOptions = scopeFields.map((field, index) => ({
     value: String(index),
     label: field.label,
   }));
+
+  // 외부(URL 쿼리 등)에서 내려준 값이 하나라도 있는지
+  const hasControlledValue = fields.some((field) =>
+    getFieldValues(field).some((v) => v !== undefined),
+  );
+  // 외부 값 또는 select 옵션이 바뀌었는지 감지하기 위한 직렬화 키
+  // (옵션이 비동기로 늦게 로드돼도 값을 다시 복원하기 위함)
+  const controlledKey = JSON.stringify(
+    fields.map((field) => [
+      getFieldValues(field),
+      field.type === "select" ? field.options.map((o) => o.value).join(",") : "",
+    ]),
+  );
+
+  // 외부 값(URL 쿼리 등)이 바뀔 때마다 모든 입력 UI를 복원한다.
+  // - 최초 진입(상세 → 목록 복귀 포함) 시에도 한 번 실행된다.
+  // - page 처럼 검색조건이 아닌 값이 바뀌어도 controlledKey는 그대로라 입력 중인 값이 지워지지 않는다.
+  useEffect(() => {
+    if (!hasControlledValue) return;
+
+    const currentFields = fieldsRef.current;
+    const currentScopeFields = getScopeFields(currentFields);
+    const isUnified = currentScopeFields.length > 1;
+
+    // 1) 필드 종류별로 native 요소(ref)에 값 반영
+    currentFields.forEach((field) => {
+      switch (field.type) {
+        case "input":
+        case "single-date":
+          // 통합 모드의 scope input은 hidden input에 값이 들어간다.
+          if (field.value !== undefined && field.ref.current) {
+            field.ref.current.value = field.value;
+          }
+          break;
+
+        case "select":
+          if (field.value !== undefined && field.ref.current) {
+            // 빈 값이면 해당 select의 기본 옵션으로 되돌림
+            field.ref.current.value =
+              field.value === "" ? getSelectDefault(field.options) : field.value;
+          }
+          break;
+
+        case "date":
+          if (field.startValue !== undefined && field.startRef.current) {
+            field.startRef.current.value = field.startValue;
+          }
+          if (field.endValue !== undefined && field.endRef.current) {
+            field.endRef.current.value = field.endValue;
+          }
+          break;
+      }
+    });
+
+    // 2) 통합 모드일 때만 보이는 검색어 + 검색조건(scope) 복원
+    if (isUnified) {
+      const filledIndex = currentScopeFields.findIndex(
+        (field) => (field.value ?? "") !== "",
+      );
+      // 값이 있는 필드가 없으면(초기화 상태) 첫 번째 조건으로 되돌림
+      const scopeIndex = filledIndex >= 0 ? filledIndex : 0;
+
+      if (scopeRef.current) scopeRef.current.value = String(scopeIndex);
+      if (keywordRef.current) {
+        keywordRef.current.value = currentScopeFields[scopeIndex]?.value ?? "";
+      }
+    }
+
+    // 3) SearchSelect(커스텀 select)가 native select 값을 다시 읽어 표시 라벨을 갱신하도록 신호
+    setResetKey((prev) => prev + 1);
+
+    // 4) 상세검색 패널 안에 값이 있으면 펼친다. (접는 동작은 사용자가 직접)
+    const hasDetailValue = currentFields.some(
+      (field) =>
+        !currentScopeFields.includes(field as SearchInputField) &&
+        getFieldValues(field).some((v) => !!v),
+    );
+    if (hasDetailValue) setExpanded(true);
+  }, [controlledKey, hasControlledValue]);
 
   const handleSearch = () => {
     if (unified) {
@@ -349,9 +465,30 @@ export function SearchBand({
   };
 
   const handleReset = () => {
+    // 모든 종류의 입력 UI를 직접 비운다. (페이지에서는 URL 쿼리만 초기화하면 됨)
+    fields.forEach((field) => {
+      switch (field.type) {
+        case "input":
+        case "single-date":
+          if (field.ref.current) field.ref.current.value = "";
+          break;
+        case "select":
+          if (field.ref.current) {
+            field.ref.current.value = getSelectDefault(field.options);
+          }
+          break;
+        case "date":
+          if (field.startRef.current) field.startRef.current.value = "";
+          if (field.endRef.current) field.endRef.current.value = "";
+          break;
+      }
+    });
+
     if (keywordRef.current) keywordRef.current.value = "";
     if (scopeRef.current) scopeRef.current.value = "0";
+
     onReset?.();
+    // SearchSelect 표시 라벨 갱신
     setResetKey((prev) => prev + 1);
   };
 
