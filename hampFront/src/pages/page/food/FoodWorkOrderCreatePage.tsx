@@ -69,9 +69,6 @@ export function FoodWorkOrderCreatePage() {
         const res = await UserApi.getOptions();
         if (res && res.data) {
           setUserOptions(res.data);
-          if (res.data.length > 0) {
-            setForm((prev) => ({ ...prev, managerId: prev.managerId || res.data[0].userId }));
-          }
         }
       } catch (error) {
         console.error("회원 옵션 조회 실패:", error);
