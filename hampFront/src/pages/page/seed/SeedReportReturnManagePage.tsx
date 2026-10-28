@@ -55,20 +55,12 @@ export function SeedReportReturnManagePage() {
 
   const [searchFilters, setSearchFilters] = useState({
     processStatus: "",
-    processStatusKeyword: "",
   });
 
   const processStatusRef = useRef<HTMLSelectElement>(null);
-  const processStatusInputRef = useRef<HTMLInputElement>(null);
 
   const searchFields: SearchField[] = useMemo(
     () => [
-      {
-        type: "input",
-        label: "처리상태",
-        ref: processStatusInputRef,
-        name: "processStatus",
-      },
       {
         type: "select",
         label: "처리상태",
@@ -92,7 +84,7 @@ export function SeedReportReturnManagePage() {
     setIsLoading(true);
 
     try {
-      if (searchFilters.processStatusKeyword === "__INVALID__" || searchFilters.processStatus === "0") {
+      if (searchFilters.processStatus === "0") {
         setDataList([]);
         setTotalElements(0);
         setTotalPages(0);
@@ -121,19 +113,20 @@ export function SeedReportReturnManagePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, searchFilters.processStatus, searchFilters.processStatusKeyword, sortParams]);
+  }, [page, searchFilters.processStatus, sortParams]);
 
   //  신고대기 조회
   //  - 접힘: 앞 3건만 조회
   //  - 펼침: 전체 건수만큼 한 번에 조회 (page 는 항상 0)
   const loadPendingList = useCallback(async () => {
     try {
-      if (searchFilters.processStatusKeyword === "__INVALID__" || searchFilters.processStatus === "1") {
+      if (searchFilters.processStatus === "1") {
         setPendingList([]);
         setPendingTotalElements(0);
         pendingTotalRef.current = 0;
         return;
       }
+
       const params: Record<string, any> = {
         page: 0,
         size: pendingExpanded ? Math.max(pendingTotalRef.current, PENDING_PREVIEW_COUNT) : PENDING_PREVIEW_COUNT,
@@ -156,8 +149,8 @@ export function SeedReportReturnManagePage() {
       console.error("씨드 신고대기 목록 조회 실패:", error);
       window.alert("데이터를 불러오는 중 오류가 발생했습니다.");
     }
- 
-  }, [pendingExpanded, searchFilters.processStatus, searchFilters.processStatusKeyword, sortParams]);
+
+  }, [pendingExpanded, searchFilters.processStatus, sortParams]);
 
   const visiblePendingList = useMemo(
     () => (pendingExpanded ? pendingList : pendingList.slice(0, PENDING_PREVIEW_COUNT)),
@@ -250,36 +243,12 @@ export function SeedReportReturnManagePage() {
     setPendingExpanded(false);
     setSelectedReturnIds([]); // 검색 조건이 바뀌면 선택 초기화
 
-    const processStatusInput = processStatusInputRef.current?.value.trim() || "";
-
-    const normalizedStatus = processStatusInput.replace(/\s/g, "");
-
-    let processStatus = "";
-    let processStatusKeyword = "";
-
-    if (!normalizedStatus) {
-      // 상단 input이 비어 있으면 기존 상세 select 사용
-      processStatus = processStatusRef.current?.value.trim() || "";
-    } else if (normalizedStatus === "신고") {
-      // 신고 = 신고대기 + 신고완료
-      processStatusKeyword = "신고";
-    } else if (normalizedStatus === "대기" || normalizedStatus === "신고대기" || normalizedStatus === "0") {
-      processStatus = "0";
-    } else if (normalizedStatus === "완료" || normalizedStatus === "신고완료" || normalizedStatus === "1") {
-      processStatus = "1";
-    } else {
-      // 알 수 없는 검색어
-      processStatusKeyword = "__INVALID__";
-    }
-
     setSearchFilters({
-      processStatus,
-      processStatusKeyword,
+      processStatus: processStatusRef.current?.value.trim() || "",
     });
   };
 
   const handleReset = () => {
-    if (processStatusInputRef.current) processStatusInputRef.current.value = "";
     if (processStatusRef.current) processStatusRef.current.value = "";
 
     setPage(0);
@@ -288,7 +257,6 @@ export function SeedReportReturnManagePage() {
 
     setSearchFilters({
       processStatus: "",
-      processStatusKeyword: "",
     });
 
     setSorting([]);
@@ -490,12 +458,9 @@ export function SeedReportReturnManagePage() {
                 type="number"
                 min={1}
                 className="seedPendingInput"
-                defaultValue={
-                  editQuantitiesRef.current[item.returnId] ?? item.returnQty
-                }
+                defaultValue={editQuantitiesRef.current[item.returnId] ?? item.returnQty}
                 onChange={(e) => {
-                  editQuantitiesRef.current[item.returnId] =
-                    e.target.value === "" ? "" : Number(e.target.value);
+                  editQuantitiesRef.current[item.returnId] = e.target.value === "" ? "" : Number(e.target.value);
                 }}
               />
               <span>KG</span>
@@ -520,12 +485,9 @@ export function SeedReportReturnManagePage() {
                 type="number"
                 min={1}
                 className="seedPendingInput"
-                defaultValue={
-                  editHullQuantitiesRef.current[item.returnId] ?? item.hullQty
-                }
+                defaultValue={editHullQuantitiesRef.current[item.returnId] ?? item.hullQty}
                 onChange={(e) => {
-                  editHullQuantitiesRef.current[item.returnId] =
-                    e.target.value === "" ? "" : Number(e.target.value);
+                  editHullQuantitiesRef.current[item.returnId] = e.target.value === "" ? "" : Number(e.target.value);
                 }}
               />
               <span>KG</span>
@@ -682,9 +644,7 @@ export function SeedReportReturnManagePage() {
                                             type="number"
                                             min={1}
                                             className="seedPendingInput"
-                                            defaultValue={
-                                              editQuantitiesRef.current[item.returnId] ?? item.returnQty
-                                            }
+                                            defaultValue={editQuantitiesRef.current[item.returnId] ?? item.returnQty}
                                             onChange={(e) => {
                                               editQuantitiesRef.current[item.returnId] =
                                                 e.target.value === "" ? "" : Number(e.target.value);
@@ -703,9 +663,7 @@ export function SeedReportReturnManagePage() {
                                             min={0}
                                             max={editQuantitiesRef.current[item.returnId] ?? item.returnQty}
                                             className="seedPendingInput"
-                                            defaultValue={
-                                              editHullQuantitiesRef.current[item.returnId] ?? item.hullQty
-                                            }
+                                            defaultValue={editHullQuantitiesRef.current[item.returnId] ?? item.hullQty}
                                             onChange={(e) => {
                                               editHullQuantitiesRef.current[item.returnId] =
                                                 e.target.value === "" ? "" : Number(e.target.value);

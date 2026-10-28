@@ -136,11 +136,9 @@ export function SeedInboundManagePage() {
   };
 
   const itemCodeRef = useRef<HTMLSelectElement>(null);
-  const itemCodeInputRef = useRef<HTMLInputElement>(null);
   const receivedAtStartRef = useRef<HTMLInputElement>(null);
   const receivedAtEndRef = useRef<HTMLInputElement>(null);
   const reportProgressRef = useRef<HTMLSelectElement>(null);
-  const reportProgressInputRef = useRef<HTMLInputElement>(null);
 
   const fetchItemOptions = useCallback(async () => {
     try {
@@ -157,18 +155,6 @@ export function SeedInboundManagePage() {
 
   const searchFields: SearchField[] = useMemo(
     () => [
-      {
-        type: "input",
-        label: "품목코드",
-        ref: itemCodeInputRef,
-        name: "itemCode",
-      },
-      {
-        type: "input",
-        label: "진행상태",
-        ref: reportProgressInputRef,
-        name: "reportProgress",
-      },
       {
         type: "select",
         label: "품목명",
@@ -252,31 +238,9 @@ export function SeedInboundManagePage() {
   const handleSearch = () => {
     setPage(0);
 
-    const itemCode = itemCodeInputRef.current?.value.trim() || itemCodeRef.current?.value.trim() || "";
+    const itemCode = itemCodeRef.current?.value.trim() || "";
 
-    const reportProgressInput = reportProgressInputRef.current?.value.trim() || "";
-
-    const normalizedProgress = reportProgressInput.replace(/\s/g, "");
-
-    let reportProgress = "";
-
-    if (!normalizedProgress) {
-      // 상단 입력이 비어 있으면 상세 select 사용
-      reportProgress = reportProgressRef.current?.value || "";
-    } else if (normalizedProgress === "미신고" || normalizedProgress === "0") {
-      reportProgress = "0";
-    } else if (
-      normalizedProgress === "부분신고" ||
-      normalizedProgress === "부분신고진행중" ||
-      normalizedProgress === "1"
-    ) {
-      reportProgress = "1";
-    } else if (normalizedProgress === "신고완료" || normalizedProgress === "2") {
-      reportProgress = "2";
-    } else {
-      // 잘못된 진행상태 입력
-      reportProgress = "__INVALID__";
-    }
+    const reportProgress = reportProgressRef.current?.value.trim() || "";
 
     setSearchFilters({
       itemCode,
@@ -292,15 +256,9 @@ export function SeedInboundManagePage() {
 
   const handleReset = () => {
     if (itemCodeRef.current) itemCodeRef.current.value = "";
-    if (itemCodeInputRef.current) {
-      itemCodeInputRef.current.value = "";
-    }
     if (receivedAtStartRef.current) receivedAtStartRef.current.value = "";
     if (receivedAtEndRef.current) receivedAtEndRef.current.value = "";
     if (reportProgressRef.current) reportProgressRef.current.value = "";
-    if (reportProgressInputRef.current) {
-      reportProgressInputRef.current.value = "";
-    }
 
     setPage(0);
     setSearchFilters({
