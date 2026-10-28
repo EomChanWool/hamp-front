@@ -343,9 +343,11 @@ export function SearchBand({
   fieldsRef.current = fields;
 
   const scopeFields = getScopeFields(fields);
-  const unified = scopeFields.length > 1;
-  const single = scopeFields.length === 1 ? scopeFields[0] : null;
-  const hasKeywordRow = scopeFields.length > 0;
+  const unified = scopeFields.length > 1; // input 2개 이상 → 통합 검색
+  const single = scopeFields.length === 1 ? scopeFields[0] : null; // input 1개 → 단일 검색어
+  const hasKeywordRow = scopeFields.length > 0; // 상단 키워드 행 표시 여부 (input 유무)
+
+  // 상세검색 패널에 들어가는 필드: select + (통합검색에 쓰이지 않은) 보조 input
   const panelFields = fields.filter(
     (field) =>
       field.type === "select" ||
@@ -355,6 +357,8 @@ export function SearchBand({
     (field) => field.type === "date" || field.type === "single-date",
   );
   const hasFilters = panelFields.length + dateFields.length > 0;
+
+  const filterOnly = !hasKeywordRow && hasFilters;
 
   // 상세검색 패널 안(select / 보조 input / 날짜)에 값이 채워져 있는지 여부
   // → 목록으로 돌아왔을 때 접힌 패널 속에 조건이 숨지 않도록 자동으로 펼친다.
@@ -366,10 +370,16 @@ export function SearchBand({
     initialExpanded || hasActiveDetailFilter,
   );
 
+  // 실제 패널 노출 여부: filterOnly면 항상 true, 아니면 사용자가 토글한 상태
+  const isExpanded = filterOnly || expanded;
+
+  // 통합 검색의 "검색 조건" select 옵션
   const scopeOptions = scopeFields.map((field, index) => ({
     value: String(index),
     label: field.label,
   }));
+
+  /* ---------- 외부 값(URL 쿼리 등) 복원 ---------- */
 
   // 외부(URL 쿼리 등)에서 내려준 값이 하나라도 있는지
   const hasControlledValue = fields.some((field) =>
@@ -442,6 +452,7 @@ export function SearchBand({
     setResetKey((prev) => prev + 1);
 
     // 4) 상세검색 패널 안에 값이 있으면 펼친다. (접는 동작은 사용자가 직접)
+    //    filterOnly 모드에서는 isExpanded가 항상 true라 영향 없음
     const hasDetailValue = currentFields.some(
       (field) =>
         !currentScopeFields.includes(field as SearchInputField) &&
@@ -464,6 +475,7 @@ export function SearchBand({
     onSearch();
   };
 
+  // 초기화: 모든 입력 UI를 비우고 부모(onReset)에 알린다.
   const handleReset = () => {
     // 모든 종류의 입력 UI를 직접 비운다. (페이지에서는 URL 쿼리만 초기화하면 됨)
     fields.forEach((field) => {
@@ -492,6 +504,7 @@ export function SearchBand({
     setResetKey((prev) => prev + 1);
   };
 
+  // 텍스트/단일날짜 input에서 Enter → 조회
   const handleInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -499,6 +512,7 @@ export function SearchBand({
     }
   };
 
+  // 날짜 빠른 선택 (오늘 / 1주 / 1개월 ...)
   const applyQuickRange = (field: SearchDateField, key: QuickRangeKey) => {
     const today = new Date();
     if (field.startRef.current) {
@@ -509,7 +523,10 @@ export function SearchBand({
     }
   };
 
+  /* ---------- 필드 렌더링 ---------- */
+
   const renderField = (field: SearchField, index: number) => {
+    // select는 커스텀 SearchSelect로 렌더링
     if (field.type === "select") {
       return (
         <SearchSelect
@@ -522,6 +539,7 @@ export function SearchBand({
       );
     }
 
+    // input / single-date / date 공통 라벨 래퍼
     const fieldLabel = (
       <label
         key={`${field.label}-${index}`}
@@ -577,6 +595,7 @@ export function SearchBand({
 
     if (field.type !== "date") return fieldLabel;
 
+    // 기간 필드는 라벨 옆에 빠른 선택 버튼 그룹을 함께 렌더링
     return (
       <Fragment key={`${field.label}-${index}`}>
         {fieldLabel}
@@ -599,9 +618,14 @@ export function SearchBand({
     );
   };
 
+  /* ---------- 액션 버튼 (상세검색 / 초기화 / 조회) ---------- */
+
+  // 일반 모드: 키워드 행 오른쪽에 배치
+  // filterOnly 모드: 필터 패널 맨 끝에 배치
   const actions = (
     <div className="searchHeaderActions">
-      {hasFilters && (
+      {/* filterOnly에서는 항상 펼쳐져 있으므로 상세검색 토글을 숨긴다 */}
+      {hasFilters && !filterOnly && (
         <button
           type="button"
           className="resetButton detailToggle"
@@ -625,8 +649,11 @@ export function SearchBand({
     </div>
   );
 
+  /* ---------- 최종 렌더링 ---------- */
+
   return (
     <section className="searchBand">
+      {/* 타이틀 */}
       <div className="searchBandTop">
         <div className="searchTitle">
           <div className="searchTitleIcon">
@@ -638,17 +665,20 @@ export function SearchBand({
         </div>
       </div>
 
-      <div className="searchKeywordRow">
-        {unified && (
-          <SearchSelect
-            label="검색 조건"
-            selectRef={scopeRef}
-            options={scopeOptions}
-            resetKey={resetKey}
-          />
-        )}
+      {/* 키워드 행: input이 있을 때만 렌더링 (없으면 actions만 덩그러니 남는 문제 방지) */}
+      {hasKeywordRow && (
+        <div className="searchKeywordRow">
+          {/* 통합 모드: 검색 조건 select */}
+          {unified && (
+            <SearchSelect
+              label="검색 조건"
+              selectRef={scopeRef}
+              options={scopeOptions}
+              resetKey={resetKey}
+            />
+          )}
 
-        {hasKeywordRow && (
+          {/* 검색어 input (단일 모드면 해당 필드의 ref를 그대로 사용) */}
           <label className="searchField keywordField">
             <p>{single ? single.label : "검색어"}</p>
             <input
@@ -664,32 +694,41 @@ export function SearchBand({
               onKeyDown={handleInputKeyDown}
             />
           </label>
-        )}
 
-        {unified &&
-          scopeFields.map((field, index) => (
-            <input
-              key={`${field.name}-${index}`}
-              ref={field.ref}
-              type="text"
-              name={field.name}
-              defaultValue=""
-              hidden
-            />
-          ))}
+          {/* 통합 모드: 실제 값을 담는 hidden input (조회 시 선택된 조건에만 값이 들어감) */}
+          {unified &&
+            scopeFields.map((field, index) => (
+              <input
+                key={`${field.name}-${index}`}
+                ref={field.ref}
+                type="text"
+                name={field.name}
+                defaultValue=""
+                hidden
+              />
+            ))}
 
-        {actions}
-      </div>
+          {actions}
+        </div>
+      )}
 
+      {/* 필터 패널 (select / 보조 input / 날짜) */}
       {hasFilters && (
-        <div id={panelId} className="searchFilterPanel" hidden={!expanded}>
+        <div
+          id={panelId}
+          className={["searchFilterPanel", filterOnly ? "filterOnly" : ""]
+            .filter(Boolean)
+            .join(" ")}
+          hidden={!isExpanded}
+        >
           {panelFields.map(renderField)}
 
           {dateFields.length > 0 && (
-            <div className="searchDateGroup">
-              {dateFields.map(renderField)}
-            </div>
+            <div className="searchDateGroup">{dateFields.map(renderField)}</div>
           )}
+
+          {/* filterOnly: 키워드 행이 없으므로 버튼을 패널 끝에 배치 */}
+          {filterOnly && actions}
         </div>
       )}
     </section>

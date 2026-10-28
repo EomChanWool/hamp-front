@@ -1448,6 +1448,26 @@ textarea.tableInput {
   margin-left: 0;
 }
 
+/* 키워드 행이 없으므로 구분선/상단 여백 제거 */
+.searchFilterPanel.filterOnly {
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* 날짜 그룹을 오른쪽으로 밀지 않고 왼쪽부터 채움 */
+.searchFilterPanel.filterOnly .searchDateGroup {
+  margin-left: 0;
+}
+
+/* 조회/초기화 버튼은 필터 행 오른쪽 끝에 배치 */
+.searchFilterPanel.filterOnly .searchHeaderActions {
+  margin-left: auto;
+}
+
+.searchFilterPanel.filterOnly .searchHeaderActions button {
+  height: 40px;
+}
+
 @keyframes searchPanelIn {
   from {
     opacity: 0;
