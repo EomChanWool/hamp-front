@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { formatDateTime } from "@/utils/common";
 import axios from "axios";
@@ -247,8 +247,14 @@ export function EquipmentFacilityDetailPage() {
     };
   }, []);
 
+  // 마지막 장비·공장 조회 요청 번호. 코드를 다시 바꾸거나 수정을 마치면 이전 요청의 응답·실패는 무시한다.
+  const equipmentRequestRef = useRef(0);
+  const factoryZoneRequestRef = useRef(0);
+
   useEffect(() => {
     if (facility && !isEditing) {
+      equipmentRequestRef.current += 1;
+      factoryZoneRequestRef.current += 1;
       const managerUserIds = facility.managers && facility.managers.length > 0
         ? facility.managers.map((m: any) => m.userId)
         : [];
@@ -424,32 +430,30 @@ export function EquipmentFacilityDetailPage() {
   };
 
   const fillEquipmentInfo = async (eqCode: string) => {
+    const requestId = ++equipmentRequestRef.current;
     const option = equipmentOptions.find((opt) => opt.eqCode === eqCode);
     setForm((prev) => ({ ...prev, eqNm: option?.eqNm ?? "", eqType: "" }));
     try {
       const res = await EquipmentApi.getDetail(eqCode);
-      setForm((prev) =>
-        prev.eqCode === eqCode
-          ? { ...prev, eqNm: res.data?.eqNm ?? prev.eqNm, eqType: res.data?.eqType ?? "" }
-          : prev
-      );
+      if (requestId !== equipmentRequestRef.current) return;
+      setForm((prev) => ({ ...prev, eqNm: res.data?.eqNm ?? prev.eqNm, eqType: res.data?.eqType ?? "" }));
     } catch (error) {
+      if (requestId !== equipmentRequestRef.current) return;
       console.error("장비 정보 조회 실패:", error);
       alert("장비 정보를 불러오지 못했습니다.");
     }
   };
 
   const fillFactoryZoneInfo = async (facCode: string) => {
+    const requestId = ++factoryZoneRequestRef.current;
     const option = factoryZoneOptions.find((opt) => opt.facCode === facCode);
     setForm((prev) => ({ ...prev, facNm: option?.facNm ?? "", location: "" }));
     try {
       const res = await FactoryZoneApi.getDetail(facCode);
-      setForm((prev) =>
-        prev.facCode === facCode
-          ? { ...prev, facNm: res.data?.facNm ?? prev.facNm, location: res.data?.location ?? "" }
-          : prev
-      );
+      if (requestId !== factoryZoneRequestRef.current) return;
+      setForm((prev) => ({ ...prev, facNm: res.data?.facNm ?? prev.facNm, location: res.data?.location ?? "" }));
     } catch (error) {
+      if (requestId !== factoryZoneRequestRef.current) return;
       console.error("공장 정보 조회 실패:", error);
       alert("공장 정보를 불러오지 못했습니다.");
     }
