@@ -14,7 +14,7 @@ import { Badge } from "@components/common/Badge";
 
 import { KpiGrid, type KpiItem } from "@/components/kpi/KpiGrid";
 import type { StatusTone } from "@/types";
-import { WorkOrderApi, type WorkOrderResponse } from "@/api/WorkOrder"; 
+import { WorkOrderApi, type WorkOrderResponse } from "@/api/WorkOrder";
 import '@/pages/page/food/Food.css';
 
 export function FoodWorkOrdersPage() {
@@ -45,6 +45,7 @@ export function FoodWorkOrdersPage() {
   } = useTableSorting();
 
   // [정확한 새로고침 감지]
+  // 브라우저가 닫히거나 새로고침(F5)될 때만 플래그 설정
   useEffect(() => {
     const handleBeforeUnload = () => {
       sessionStorage.setItem("is_browser_reload", "true");
@@ -70,6 +71,7 @@ export function FoodWorkOrdersPage() {
     setIsReady(true);
   }, []);
 
+  // 새로고침 때문에 setSearchParams가 실행된 경우 조회 가능 상태로 변경
   useEffect(() => {
     const isReload = sessionStorage.getItem("is_browser_reload") === "true";
     if (!isReload && !isReady) {
@@ -99,17 +101,21 @@ export function FoodWorkOrdersPage() {
       label: "작업일자",
       startRef: workDateFromRef,
       endRef: workDateToRef,
+      startValue: queryWorkDateFrom,
+      endValue: queryWorkDateTo,
     },
     {
       type: "input",
       label: "작업지시ID",
       ref: workIdRef,
       name: "workId",
+      value: queryWorkId,
     },
     {
       type: "select",
       label: "상태",
       ref: statusRef,
+      value: queryStatus,
       options: [
         { label: "전체", value: "" },
         { label: "대기", value: "WAIT" },
@@ -123,23 +129,9 @@ export function FoodWorkOrdersPage() {
       label: "담당자",
       ref: managerIdRef,
       name: "managerId",
+      value: queryManagerId,
     },
   ];
-
-  // URL → SearchBand input / select 동기화
-  useEffect(() => {
-    if (workIdRef.current) workIdRef.current.value = queryWorkId;
-    if (statusRef.current) statusRef.current.value = queryStatus;
-    if (managerIdRef.current) managerIdRef.current.value = queryManagerId;
-    if (workDateFromRef.current) workDateFromRef.current.value = queryWorkDateFrom;
-    if (workDateToRef.current) workDateToRef.current.value = queryWorkDateTo;
-  }, [
-    queryWorkId,
-    queryStatus,
-    queryManagerId,
-    queryWorkDateFrom,
-    queryWorkDateTo,
-  ]);
 
   // 작업지시 목록 및 KPI Summary 조회
   const loadWorkOrders = useCallback(async () => {
@@ -181,7 +173,7 @@ export function FoodWorkOrdersPage() {
       // Summary 데이터 반영
       if (summaryResponse && summaryResponse.data) {
         const { total, byStatus } = summaryResponse.data;
-        
+
         let wait = 0;
         let progress = 0;
         let done = 0;
@@ -227,7 +219,7 @@ export function FoodWorkOrdersPage() {
     loadWorkOrders();
   }, [loadWorkOrders]);
 
-  // 검색 실행
+  // 검색 실행: 현재 입력값을 URL 쿼리에 반영 → URL이 바뀌면 목록 재조회
   const handleSearch = () => {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("page", "0");
@@ -258,12 +250,6 @@ export function FoodWorkOrdersPage() {
 
   // 검색 초기화
   const handleReset = () => {
-    if (workIdRef.current) workIdRef.current.value = "";
-    if (statusRef.current) statusRef.current.value = "";
-    if (managerIdRef.current) managerIdRef.current.value = "";
-    if (workDateFromRef.current) workDateFromRef.current.value = "";
-    if (workDateToRef.current) workDateToRef.current.value = "";
-
     setSearchParams({ page: "0" }, { replace: true });
   };
 
@@ -370,11 +356,11 @@ export function FoodWorkOrdersPage() {
         header: "상태",
         cell: ({ getValue }) => {
           const value = getValue<string>();
-          const tone = 
-            value === 'DONE' || value === '완료' ? 'good' : 
-            value === 'PROGRESS' || value === '진행중' ? 'info' : 
+          const tone =
+            value === 'DONE' || value === '완료' ? 'good' :
+            value === 'PROGRESS' || value === '진행중' ? 'info' :
             value === 'DELAY' || value === '지연' ? 'danger' : 'muted';
-          
+
           return <Badge tone={tone}>{getStatusLabel(value)}</Badge>;
         },
       },

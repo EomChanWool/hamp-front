@@ -107,11 +107,13 @@ export function MasterEquipmentPage() {
       label: "장비코드",
       ref: eqCodeRef,
       name: "eqCode",
+      value: queryEqCode,
     },
     {
       type: "select",
       label: "공정코드",
       ref: operCodeRef,
+      value: queryOperCode,
       options: [
         { label: "전체", value: "" },
         ...operationOptions.map((opt) => ({
@@ -125,47 +127,23 @@ export function MasterEquipmentPage() {
       label: "장비명",
       ref: eqNmRef,
       name: "eqNm",
+      value: queryEqNm,
     },
     {
       type: "input",
       label: "장비유형",
       ref: eqTypeRef,
       name: "eqType",
+      value: queryEqType,
     },
     {
       type: "input",
       label: "제조사",
       ref: manufacturerRef,
       name: "manufacturer",
+      value: queryManufacturer,
     },
   ];
-
-  // URL → SearchBand input / select 동기화
-  // (operationOptions를 추가하여, 비동기 옵션이 로드 완료된 순간에도 선택값이 풀리지 않고 정확히 반영되도록 보장)
-  useEffect(() => {
-    if (eqCodeRef.current) {
-      eqCodeRef.current.value = queryEqCode;
-    }
-    if (operCodeRef.current) {
-      operCodeRef.current.value = queryOperCode;
-    }
-    if (eqNmRef.current) {
-      eqNmRef.current.value = queryEqNm;
-    }
-    if (eqTypeRef.current) {
-      eqTypeRef.current.value = queryEqType;
-    }
-    if (manufacturerRef.current) {
-      manufacturerRef.current.value = queryManufacturer;
-    }
-  }, [
-    queryEqCode,
-    queryOperCode,
-    queryEqNm,
-    queryEqType,
-    queryManufacturer,
-    operationOptions,
-  ]);
 
   // 장비 목록 조회
   const loadEquipments = useCallback(async () => {

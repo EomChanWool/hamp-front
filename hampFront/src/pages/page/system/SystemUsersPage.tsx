@@ -86,29 +86,16 @@ export function SystemUsersPage() {
       label: "사용자ID",
       ref: userIdRef,
       name: "userId",
+      value: queryUserId,
     },
     {
       type: "input",
       label: "이름",
       ref: userNmRef,
       name: "userNm",
+      value: queryUserNm,
     },
   ];
-
-  // URL → SearchBand input 동기화
-  useEffect(() => {
-    if (userIdRef.current) {
-      userIdRef.current.value = queryUserId;
-    }
-
-    if (userNmRef.current) {
-      userNmRef.current.value = queryUserNm;
-    }
-  }, [
-    queryUserId,
-    queryUserNm,
-
-  ]);
 
   // 회원 목록 조회
   const loadUsers = useCallback(async () => {

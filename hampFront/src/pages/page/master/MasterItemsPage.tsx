@@ -86,11 +86,12 @@ export function MasterItemsPage() {
   const useYnRef = useRef<HTMLSelectElement>(null);
 
   const searchFields: SearchField[] = [
-    { type: "input", label: "품목코드", ref: itemCodeRef, name: "itemCode" },
+    { type: "input", label: "품목코드", ref: itemCodeRef, name: "itemCode", value: queryItemCode },
     {
       type: "select",
       label: "종류",
       ref: productTypeRef,
+      value: queryProductType,
       options: [
         { label: "전체", value: "" },
         { label: PRODUCT_TYPE_LABEL[0], value: "0" },
@@ -101,6 +102,7 @@ export function MasterItemsPage() {
       type: "select",
       label: "품목구분",
       ref: categoryRef,
+      value: queryCategory,
       options: [
         { label: "전체", value: "" },
         { label: CATEGORY_LABEL[0], value: "0" },
@@ -108,13 +110,14 @@ export function MasterItemsPage() {
         { label: CATEGORY_LABEL[2], value: "2" },
       ],
     },
-    { type: "input", label: "품목명", ref: itemNmRef, name: "itemNm" },
-    { type: "input", label: "단위", ref: unitRef, name: "unit" },
-    { type: "input", label: "규격", ref: standardRef, name: "standard" },
+    { type: "input", label: "품목명", ref: itemNmRef, name: "itemNm", value: queryItemNm },
+    { type: "input", label: "단위", ref: unitRef, name: "unit", value: queryUnit },
+    { type: "input", label: "규격", ref: standardRef, name: "standard", value: queryStandard },
     {
       type: "select",
       label: "사용여부",
       ref: useYnRef,
+      value: queryUseYn,
       options: [
         { label: "전체", value: "" },
         { label: "사용", value: "Y" },
@@ -122,24 +125,6 @@ export function MasterItemsPage() {
       ],
     },
   ];
-
-  useEffect(() => {
-    if (itemCodeRef.current) itemCodeRef.current.value = queryItemCode;
-    if (productTypeRef.current) productTypeRef.current.value = queryProductType;
-    if (categoryRef.current) categoryRef.current.value = queryCategory;
-    if (itemNmRef.current) itemNmRef.current.value = queryItemNm;
-    if (unitRef.current) unitRef.current.value = queryUnit;
-    if (standardRef.current) standardRef.current.value = queryStandard;
-    if (useYnRef.current) useYnRef.current.value = queryUseYn;
-  }, [
-    queryItemCode,
-    queryProductType,
-    queryCategory,
-    queryItemNm,
-    queryUnit,
-    queryStandard,
-    queryUseYn,
-  ]);
 
   const loadItems = useCallback(async () => {
     if (!isReady) {

@@ -107,12 +107,13 @@ export function EquipmentFacilityPage() {
   }, [fetchOptions]);
 
   const searchFields: SearchField[] = [
-    { type: "input", label: "설비명", ref: fcltNmRef, name: "fcltNm" },
-    { type: "input", label: "설비코드", ref: fcltCodeRef, name: "fcltCode" },
+    { type: "input", label: "설비명", ref: fcltNmRef, name: "fcltNm", value: queryFcltNm },
+    { type: "input", label: "설비코드", ref: fcltCodeRef, name: "fcltCode", value: queryFcltCode },
     {
       type: "select",
       label: "설비종류",
       ref: eqCodeRef,
+      value: queryEqCode,
       options: [
         { label: "전체", value: "" },
         ...equipmentOptions.map((opt) => ({
@@ -125,6 +126,7 @@ export function EquipmentFacilityPage() {
       type: "select",
       label: "설비위치",
       ref: facCodeRef,
+      value: queryFacCode,
       options: [
         { label: "전체", value: "" },
         ...factoryZoneOptions.map((opt) => ({
@@ -137,6 +139,7 @@ export function EquipmentFacilityPage() {
       type: "select",
       label: "현재상태",
       ref: currentStatusRef,
+      value: queryCurrentStatus,
       options: [
         { label: "전체", value: "" },
         { label: "정지", value: "0" },
@@ -145,22 +148,6 @@ export function EquipmentFacilityPage() {
       ],
     },
   ];
-
-  useEffect(() => {
-    if (fcltNmRef.current) fcltNmRef.current.value = queryFcltNm;
-    if (fcltCodeRef.current) fcltCodeRef.current.value = queryFcltCode;
-    if (eqCodeRef.current) eqCodeRef.current.value = queryEqCode;
-    if (facCodeRef.current) facCodeRef.current.value = queryFacCode;
-    if (currentStatusRef.current) currentStatusRef.current.value = queryCurrentStatus;
-  }, [
-    queryFcltNm,
-    queryFcltCode,
-    queryEqCode,
-    queryFacCode,
-    queryCurrentStatus,
-    equipmentOptions,
-    factoryZoneOptions,
-  ]);
 
   const loadFacilities = useCallback(async () => {
     if (!isReady) {

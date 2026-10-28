@@ -89,11 +89,13 @@ export function SalesOrderPage() {
             label: "수주코드",
             ref: orderCodeRef,
             name: "orderCode",
+            value: queryOrderCode,
         },
         {
             type: "select",
             label: "거래처명",
             ref: bpCodeRef as any,
+            value: queryBpCode,
             options: [
                 { label: "전체", value: "" },
                 ...businessPartnerOptions.map((opt) => ({
@@ -107,22 +109,16 @@ export function SalesOrderPage() {
             label: "상태",
             ref: statusRef,
             name: "status",
+            value: queryStatus
         },
         {
             type: "single-date",
             label: "납기일자",
             ref: dueDateRef,
             name: "dueDate",
+            value: queryDueDate,
         },
     ], [businessPartnerOptions]);
-
-    // URL → SearchBand 값 동기화
-    useEffect(() => {
-        if (orderCodeRef.current) orderCodeRef.current.value = queryOrderCode;
-        if (bpCodeRef.current) bpCodeRef.current.value = queryBpCode;
-        if (statusRef.current) statusRef.current.value = queryStatus;
-        if (dueDateRef.current) dueDateRef.current.value = queryDueDate;
-    }, [queryOrderCode, queryBpCode, queryStatus, queryDueDate, businessPartnerOptions]);
 
     // 수주 목록 조회
     const loadSalesOrders = useCallback(async () => {

@@ -71,17 +71,10 @@ export function SalesBusinessPartnerPage() {
     const ceoNmRef = useRef<HTMLInputElement>(null);
 
     const searchFields: SearchField[] = [
-        { type: "input", label: "거래처코드", ref: bpCodeRef, name: "bpCode" },
-        { type: "input", label: "거래처명", ref: bpNmRef, name: "bpNm" },
-        { type: "input", label: "대표자명", ref: ceoNmRef, name: "ceoNm" },
+        { type: "input", label: "거래처코드", ref: bpCodeRef, name: "bpCode", value: queryBpCode },
+        { type: "input", label: "거래처명", ref: bpNmRef, name: "bpNm", value: queryBpNm },
+        { type: "input", label: "대표자명", ref: ceoNmRef, name: "ceoNm", value: queryCeoNm },
     ];
-
-    // URL 동기화
-    useEffect(() => {
-        if (bpCodeRef.current) bpCodeRef.current.value = queryBpCode;
-        if (bpNmRef.current) bpNmRef.current.value = queryBpNm;
-        if (ceoNmRef.current) ceoNmRef.current.value = queryCeoNm;
-    }, [queryBpCode, queryBpNm, queryCeoNm]);
 
     // 목록 조회
     const loadPartners = useCallback(async () => {
