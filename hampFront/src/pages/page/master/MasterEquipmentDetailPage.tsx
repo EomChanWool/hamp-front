@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { formatDateTime } from "@/utils/common";
 import axios from "axios";
@@ -43,6 +43,30 @@ export function MasterEquipmentDetailPage() {
     fetchOperationOptions();
   }, [fetchOperationOptions]);
 
+  // 마지막 공정 조회 요청 번호. 공정을 다시 바꾸거나 수정을 마치면 이전 요청의 응답·실패는 무시한다.
+  const operationRequestRef = useRef(0);
+
+  const fillOperationInfo = async (operCode: string) => {
+    const requestId = ++operationRequestRef.current;
+    const option = operationOptions.find((opt) => opt.operCode === operCode);
+    setForm((prev) => ({ ...prev, operNm: option?.operNm ?? "", operUseYn: "", depCode: "", taskDesc: "" }));
+    try {
+      const res = await OperationApi.getDetail(operCode);
+      if (requestId !== operationRequestRef.current) return;
+      setForm((prev) => ({
+        ...prev,
+        operNm: res.data?.operNm ?? prev.operNm,
+        operUseYn: res.data?.useYn ?? "",
+        depCode: res.data?.depCode ?? "",
+        taskDesc: res.data?.taskDesc ?? "",
+      }));
+    } catch (error) {
+      if (requestId !== operationRequestRef.current) return;
+      console.error("공정 정보 조회 실패:", error);
+      alert("공정 정보를 불러오지 못했습니다.");
+    }
+  };
+
   // 섹션 정의: 공정 정보 / 장비 정보로 그룹핑
   const sections: DetailSection<EquipmentDetailResponse>[] = [
     {
@@ -65,7 +89,10 @@ export function MasterEquipmentDetailPage() {
               className="tableInput"
               value={value}
               disabled={disabled}
-              onChange={(e) => onChange(e.target.value)}
+              onChange={(e) => {
+                onChange(e.target.value);
+                fillOperationInfo(e.target.value);
+              }}
             >
               <option value="" disabled>공정을 선택해주세요</option>
               {operationOptions.map((opt) => (
@@ -136,6 +163,7 @@ export function MasterEquipmentDetailPage() {
   // 수정 모드 취소 시 롤백
   useEffect(() => {
     if (equipment && !isEditing) {
+      operationRequestRef.current += 1;
       setForm({
         eqCode: equipment.eqCode,
         operCode: equipment.operCode || "",
