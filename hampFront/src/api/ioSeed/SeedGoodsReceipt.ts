@@ -106,9 +106,9 @@ export const SeedGoodsReceiptApi = {
   },
 
   /** 씨드 입고 라벨 바코드 스캔 조회 */
-  scan: async (code: string): Promise<ApiResponseSeedGoodsReceiptResponse> => {
+  scan: async (code: string, zone: number): Promise<ApiResponseSeedGoodsReceiptResponse> => {
     const res = await apiClient.get<ApiResponseSeedGoodsReceiptResponse>('/seed-goods-receipts/scan', {
-      params: { code },
+      params: { code, zone },
     });
     return res.data;
   },
