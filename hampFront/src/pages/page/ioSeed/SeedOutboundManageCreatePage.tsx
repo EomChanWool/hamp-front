@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef, type SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { type ColumnDef } from "@tanstack/react-table";
 import { CusTable } from "@/components/table/CusTable";
 import { SalesOrderApi, type SalesOrderOptionResponse } from "@/api/sales/SalesOrder";
@@ -444,7 +445,8 @@ export function SeedOutboundManageCreatePage() {
             navigate("/io/seed-outbound-manage");
         } catch (error) {
             console.error("출고지시서 등록 실패:", error);
-            alert("출고지시서 등록 중 오류가 발생했습니다.");
+            const errorMessage = axios.isAxiosError(error) ? error.response?.data?.message : null;
+            alert(errorMessage || "출고지시서 등록 중 오류가 발생했습니다.");
         } finally {
             setIsSubmitting(false);
         }
