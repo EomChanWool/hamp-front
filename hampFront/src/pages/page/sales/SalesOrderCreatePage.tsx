@@ -8,6 +8,7 @@ import {
 } from "@/api/sales/SalesOrder";
 import { BusinessPartnerApi } from "@/api/sales/BusinessPartner";
 import { ItemApi } from "@/api/master/Item";
+import { AmountInput } from "@/components/common/AmountInput";
 
 export function SalesOrderCreatePage() {
   const navigate = useNavigate();
@@ -239,9 +240,7 @@ export function SalesOrderCreatePage() {
                               width: "100%",
                             }}
                           >
-                            <input
-                              type="text"
-                              inputMode="numeric"
+                            <AmountInput
                               className="tableInput"
                               style={{
                                 textAlign: "right",
@@ -250,14 +249,7 @@ export function SalesOrderCreatePage() {
                               }}
                               value={line.orderAmount}
                               disabled={isSubmitting}
-                              onChange={(e) => {
-                                const val = e.target.value.replace(/[^0-9]/g, "");
-                                handleLineChange(
-                                  idx,
-                                  "orderAmount",
-                                  val === "" ? 0 : Number(val)
-                                );
-                              }}
+                              onValueChange={(amount) => handleLineChange(idx, "orderAmount", amount)}
                             />
 
                             <span style={{ whiteSpace: "nowrap", minWidth: "24px" }}>

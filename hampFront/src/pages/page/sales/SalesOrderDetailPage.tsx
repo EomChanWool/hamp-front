@@ -9,6 +9,7 @@ import type {
 import { BusinessPartnerApi } from "@/api/sales/BusinessPartner";
 import { ItemApi } from "@/api/master/Item";
 import Spinner from "@/components/common/Spinner";
+import { AmountInput } from "@/components/common/AmountInput";
 import { formatDateTime } from "@/utils/common";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
 
@@ -409,21 +410,12 @@ export function SalesOrderDetailPage() {
                     <td>
                       {isEditing ? (
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <input
-                            type="text"
-                            inputMode="numeric"
+                          <AmountInput
                             className="tableInput"
                             style={{ textAlign: "right" }}
                             value={line.orderAmount ?? 0}
                             disabled={isBusy}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/[^0-9]/g, "");
-                              handleLineChange(
-                                idx,
-                                "orderAmount",
-                                val === "" ? 0 : Number(val)
-                              );
-                            }}
+                            onValueChange={(amount) => handleLineChange(idx, "orderAmount", amount)}
                           />
                           <span style={{ whiteSpace: "nowrap" }}>원</span>
                         </div>
