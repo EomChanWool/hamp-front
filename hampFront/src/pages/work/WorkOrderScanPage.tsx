@@ -24,6 +24,9 @@ import { isValidWorkZone } from '@/utils/common';
 import '@/pages/work/WorkTabletHome.css';
 import '@/pages/work/WorkSeedReportScanPage.css';
 import '@/pages/work/WorkOrderScanPage.css';
+import { useNativeQrScan } from '@/hooks/useNativeQrScan';
+import { NativeScanButton } from '@/components/button/NativeScanButton';
+import { submitScannedBarcode } from '@/api/ScanSubmit';
 
 type ConnectionStatus = 'connecting' | 'open' | 'closed';
 
@@ -156,6 +159,19 @@ export function WorkOrderScanPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const zone = searchParams.get('zone') ?? '';
+
+  // 네이티브 QR 스캔 → 서버 전송 → 기존 SSE 리스너에서 결과 처리
+  const { isNative, startScan } = useNativeQrScan(async (barcode) => {
+    try {
+      await submitScannedBarcode('work-order', zone, barcode);
+    } catch (err) {
+      console.error('스캔 값 전송 실패', err);
+      setScanFailure({
+        code: 'SUBMIT_FAILED',
+        message: '스캔 값을 서버로 전송하지 못했습니다.',
+      });
+    }
+  });
 
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const [scanResult, setScanResult] = useState<WorkOrderLineScanResponse | null>(null);
@@ -667,17 +683,20 @@ export function WorkOrderScanPage() {
             >
               ← 돌아가기
             </button>
-            <span className={`workScanStatus workScanStatus--${connectionStatus}`}>
-              <span className="workScanStatusDot" />
-              {statusLabel}
-              {connectionStatus === 'connecting' && (
-                <span className="workScanConnectingDots" aria-hidden="true">
-                  <span>.</span>
-                  <span>.</span>
-                  <span>.</span>
-                </span>
-              )}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <NativeScanButton isNative={isNative} onClick={startScan} disabled={isSubmitting} />
+              <span className={`workScanStatus workScanStatus--${connectionStatus}`}>
+                <span className="workScanStatusDot" />
+                {statusLabel}
+                {connectionStatus === 'connecting' && (
+                  <span className="workScanConnectingDots" aria-hidden="true">
+                    <span>.</span>
+                    <span>.</span>
+                    <span>.</span>
+                  </span>
+                )}
+              </span>
+            </div>
           </div>
 
           <div className="workScanMain">
