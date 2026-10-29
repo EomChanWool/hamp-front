@@ -10,6 +10,9 @@ import {
 import { isValidWorkZone } from '@/utils/common';
 import '@/pages/work/WorkTabletHome.css';
 import '@/pages/work/WorkSeedReportScanPage.css';
+import { useNativeQrScan } from '@/hooks/useNativeQrScan';
+import { NativeScanButton } from '@/components/button/NativeScanButton';
+import { submitScannedBarcode } from '@/api/ScanSubmit';
 
 type ConnectionStatus = 'connecting' | 'open' | 'closed';
 
@@ -202,6 +205,16 @@ export function WorkSeedReportScanPage() {
         ? '연결 중'
         : '연결 끊김 · 재연결 시도 중';
 
+  const { isNative, startScan } = useNativeQrScan(async (barcode) => {
+    try {
+      // 서버로 보내면 SSE 'scan' 이벤트로 결과가 돌아와 기존 로직이 화면을 갱신함
+      await submitScannedBarcode('seed-report', zone, barcode);
+    } catch (err) {
+      console.error('스캔 값 전송 실패', err);
+      setScanFailure({ code: 'SUBMIT_FAILED', message: '스캔 값을 서버로 전송하지 못했습니다.' });
+    }
+  });
+
   if (!isValidWorkZone(zone)) {
     return <Navigate to="/work" replace />;
   }
@@ -222,17 +235,20 @@ export function WorkSeedReportScanPage() {
             >
               ← 돌아가기
             </button>
-            <span className={`workScanStatus workScanStatus--${connectionStatus}`}>
-              <span className="workScanStatusDot" />
-              {statusLabel}
-              {connectionStatus === 'connecting' && (
-                <span className="workScanConnectingDots" aria-hidden="true">
-                  <span>.</span>
-                  <span>.</span>
-                  <span>.</span>
-                </span>
-              )}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <NativeScanButton isNative={isNative} onClick={startScan} disabled={isSubmitting} />
+              <span className={`workScanStatus workScanStatus--${connectionStatus}`}>
+                <span className="workScanStatusDot" />
+                {statusLabel}
+                {connectionStatus === 'connecting' && (
+                  <span className="workScanConnectingDots" aria-hidden="true">
+                    <span>.</span>
+                    <span>.</span>
+                    <span>.</span>
+                  </span>
+                )}
+              </span>
+            </div>
           </div>
 
           <div className="workScanMain">
