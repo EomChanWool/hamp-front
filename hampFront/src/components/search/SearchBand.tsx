@@ -271,6 +271,7 @@ function SearchSelect({
   );
 }
 
+// 통합 검색(검색조건 select + 검색어)에 쓰이는 input 필드의 최대 개수
 const SCOPE_LIMIT = 2;
 
 const QUICK_RANGES = [
@@ -316,6 +317,16 @@ const getScopeFields = (fields: SearchField[]) =>
     .filter((field): field is SearchInputField => field.type === "input")
     .slice(0, SCOPE_LIMIT);
 
+// input이 하나도 없을 때, 상단 행의 빈 자리를 채울 select (개수 제한 없음)
+// → 이 select들은 상세검색 패널이 아니라 상단 행에 노출된다.
+const getTopSelects = (fields: SearchField[]) => {
+  const hasInput = fields.some((field) => field.type === "input");
+  if (hasInput) return [];
+  return fields.filter(
+    (field): field is SearchSelectField => field.type === "select",
+  );
+};
+
 // 필드 종류와 상관없이 "외부에서 내려준 값"을 배열로 꺼내는 헬퍼
 // (date 필드는 시작/종료 2개, 나머지는 1개)
 const getFieldValues = (field: SearchField): (string | undefined)[] => {
@@ -343,21 +354,26 @@ export function SearchBand({
   fieldsRef.current = fields;
 
   const scopeFields = getScopeFields(fields);
+  const topSelects = getTopSelects(fields); // input이 없을 때 상단 행에 올라가는 select
   const unified = scopeFields.length > 1; // input 2개 이상 → 통합 검색
   const single = scopeFields.length === 1 ? scopeFields[0] : null; // input 1개 → 단일 검색어
-  const hasKeywordRow = scopeFields.length > 0; // 상단 키워드 행 표시 여부 (input 유무)
+  // 상단 키워드 행 표시 여부 (input 또는 상단 select가 있을 때)
+  const hasKeywordRow = scopeFields.length > 0 || topSelects.length > 0;
 
-  // 상세검색 패널에 들어가는 필드: select + (통합검색에 쓰이지 않은) 보조 input
+  // 상세검색 패널에 들어가는 필드:
+  // 상단으로 올라가지 않은 select + (통합검색에 쓰이지 않은) 보조 input
   const panelFields = fields.filter(
     (field) =>
-      field.type === "select" ||
+      (field.type === "select" && !topSelects.includes(field)) ||
       (field.type === "input" && !scopeFields.includes(field)),
   );
+  // 날짜(기간 / 단일 날짜)는 퀵 버튼이 많아 항상 상세검색 패널에 둔다.
   const dateFields = fields.filter(
     (field) => field.type === "date" || field.type === "single-date",
   );
   const hasFilters = panelFields.length + dateFields.length > 0;
 
+  // 상단 행에 올릴 게 전혀 없고 패널 필드만 있는 경우 → 패널을 항상 펼침
   const filterOnly = !hasKeywordRow && hasFilters;
 
   // 상세검색 패널 안(select / 보조 input / 날짜)에 값이 채워져 있는지 여부
@@ -402,6 +418,7 @@ export function SearchBand({
 
     const currentFields = fieldsRef.current;
     const currentScopeFields = getScopeFields(currentFields);
+    const currentTopSelects = getTopSelects(currentFields);
     const isUnified = currentScopeFields.length > 1;
 
     // 1) 필드 종류별로 native 요소(ref)에 값 반영
@@ -452,10 +469,12 @@ export function SearchBand({
     setResetKey((prev) => prev + 1);
 
     // 4) 상세검색 패널 안에 값이 있으면 펼친다. (접는 동작은 사용자가 직접)
+    //    상단 행에 노출된 필드(검색어 / 상단 select)는 패널과 무관하므로 제외
     //    filterOnly 모드에서는 isExpanded가 항상 true라 영향 없음
     const hasDetailValue = currentFields.some(
       (field) =>
         !currentScopeFields.includes(field as SearchInputField) &&
+        !currentTopSelects.includes(field as SearchSelectField) &&
         getFieldValues(field).some((v) => !!v),
     );
     if (hasDetailValue) setExpanded(true);
@@ -665,9 +684,12 @@ export function SearchBand({
         </div>
       </div>
 
-      {/* 키워드 행: input이 있을 때만 렌더링 (없으면 actions만 덩그러니 남는 문제 방지) */}
+      {/* 키워드 행: input 또는 상단 select가 있을 때만 렌더링 (없으면 actions만 덩그러니 남는 문제 방지) */}
       {hasKeywordRow && (
         <div className="searchKeywordRow">
+          {/* input이 없을 때: select로 상단 행의 빈 자리를 채움 */}
+          {topSelects.map(renderField)}
+
           {/* 통합 모드: 검색 조건 select */}
           {unified && (
             <SearchSelect
@@ -678,22 +700,24 @@ export function SearchBand({
             />
           )}
 
-          {/* 검색어 input (단일 모드면 해당 필드의 ref를 그대로 사용) */}
-          <label className="searchField keywordField">
-            <p>{single ? single.label : "검색어"}</p>
-            <input
-              ref={single ? single.ref : keywordRef}
-              type="text"
-              defaultValue=""
-              name={single?.name}
-              placeholder={
-                single
-                  ? (single.placeholder ?? `${single.label} 입력`)
-                  : "검색어 입력"
-              }
-              onKeyDown={handleInputKeyDown}
-            />
-          </label>
+          {/* 검색어 input: input 필드가 있을 때만 (단일 모드면 해당 필드의 ref를 그대로 사용) */}
+          {scopeFields.length > 0 && (
+            <label className="searchField keywordField">
+              <p>{single ? single.label : "검색어"}</p>
+              <input
+                ref={single ? single.ref : keywordRef}
+                type="text"
+                defaultValue=""
+                name={single?.name}
+                placeholder={
+                  single
+                    ? (single.placeholder ?? `${single.label} 입력`)
+                    : "검색어 입력"
+                }
+                onKeyDown={handleInputKeyDown}
+              />
+            </label>
+          )}
 
           {/* 통합 모드: 실제 값을 담는 hidden input (조회 시 선택된 조건에만 값이 들어감) */}
           {unified &&
