@@ -1,0 +1,24 @@
+.nativeScanBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px; /* 태블릿 터치 영역 */
+  padding: 0 16px;
+  border: none;
+  border-radius: 10px;
+  background: #57d3a1;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nativeScanBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nativeScanBtnIcon {
+  width: 22px;
+  height: 22px;
+}
