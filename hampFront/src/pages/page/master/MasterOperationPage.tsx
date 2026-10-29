@@ -75,7 +75,6 @@ export function MasterOperationPage() {
 
     // 검색 필드 Refs
     const operCodeRef = useRef<HTMLSelectElement>(null);
-    const operCodeInputRef = useRef<HTMLInputElement>(null);
     const depCodeRef = useRef<HTMLSelectElement>(null);
     const operNmRef = useRef<HTMLInputElement>(null);
     const useYnRef = useRef<HTMLSelectElement>(null);
@@ -102,7 +101,6 @@ export function MasterOperationPage() {
     // 검색 밴드 구성
     const searchFields: SearchField[] = [
         { type: "input", label: "공정명", ref: operNmRef, name: "operNm" },
-        { type: "input", label: "공정코드", ref: operCodeInputRef, name: "operCode" },
         {
             type: "select",
             label: "공정코드",
@@ -180,7 +178,6 @@ export function MasterOperationPage() {
         setPage(0);
         setSearchFilters({
             operCode:
-                operCodeInputRef.current?.value.trim() ||
                 operCodeRef.current?.value.trim() ||
                 "",
             depCode: depCodeRef.current?.value.trim() || "",
@@ -193,8 +190,6 @@ export function MasterOperationPage() {
     };
 
     const handleReset = () => {
-        if (operCodeInputRef.current) operCodeInputRef.current.value = "";
-
         if (operCodeRef.current) operCodeRef.current.value = "";
         if (depCodeRef.current) depCodeRef.current.value = "";
         if (operNmRef.current) operNmRef.current.value = "";
@@ -252,7 +247,6 @@ export function MasterOperationPage() {
             window.alert(response.message || "등록되었습니다.");
             setIsCreatingNewRow(false);
 
-            if (operCodeInputRef.current) operCodeInputRef.current.value = "";
             if (operCodeRef.current) operCodeRef.current.value = "";
             if (depCodeRef.current) depCodeRef.current.value = "";
             if (operNmRef.current) operNmRef.current.value = "";
