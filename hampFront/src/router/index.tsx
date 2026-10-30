@@ -121,8 +121,11 @@ import { WorkTabletLoginPage } from '@/pages/work/WorkTabletLoginPage'
 import { WorkTabletHome } from '@/pages/work/WorkTabletHome'
 import { WorkSeedReportScanPage } from '@/pages/work/WorkSeedReportScanPage'
 import { WorkOrderScanPage } from '@/pages/work/WorkOrderScanPage'
-import { WorkOutboundScanPage } from '@/pages/work/WorkOutboundScanPage'
 import { WorkTabletType } from '@/pages/work/WorkTabletType'
+
+// 출고처리 PC 전용 페이지 (태블릿 라우팅과 분리)
+import { WorkPcHome } from '@/pages/work/WorkPcHome'
+import { WorkOutboundScanPage } from '@/pages/work/WorkOutboundScanPage'
 
 const RootRouter = () => <RouterProvider router={router} />
 export default RootRouter
@@ -362,7 +365,8 @@ export const routeObj: RouteObject[] = [
           { path: '/work/home', element: <WorkTabletHome /> },
           { path: '/work/seed-report-scan', element: <WorkSeedReportScanPage /> },
           { path: '/work/work-order-scan', element: <WorkOrderScanPage /> },
-          { path: '/work/outbound-scan', element: <WorkOutboundScanPage /> },
+          { path: '/work-pc', element: <WorkPcHome /> },
+          { path: '/work-pc/outbound-scan', element: <WorkOutboundScanPage /> },
         ],
       },
       { path: '/login', element: <LoginPage /> },
