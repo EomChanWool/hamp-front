@@ -81,6 +81,7 @@
 }
 
 /* "연결 중" 옆에 점이 1개→2개→3개로 쌓였다가 한번에 리셋되는 걸 반복하는 로딩 표시.
+   (SSE 연결 상태 표시는 제거됐지만 다른 화면에서 재사용할 수 있어 남겨둠)
    steps(1)로 중간값 없이 뚝뚝 끊어서 바뀌게 하고, 각 점마다 등장 타이밍만 다르게 준다 */
 .workScanConnectingDots span {
   opacity: 0;
@@ -722,4 +723,535 @@
 .workScanContainer--crop {
   border-color: rgba(34, 197, 94, 0.55);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 24px rgba(34, 197, 94, 0.12);
+}
+
+/* ================================
+   WORK PRETREATMENT (전처리 신고 화면)
+================================ */
+
+.workPtTitle {
+  margin: 14px 0 0;
+  color: #f0f0f0;
+  font-size: 26px;
+  font-weight: 700;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.workPtBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.workPtLabel {
+  margin: 10px 0 -2px;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.workPtHint {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.workPtEmpty {
+  padding: 18px 0;
+  color: #94a3b8;
+  font-size: 14px;
+  text-align: center;
+}
+
+.workPtLoadError {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ── 재고 패널 (홈 상단) ─────────────────────────── */
+.workPtStock {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.workPtStockCell {
+  padding: 12px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+.workPtStockCell span {
+  display: block;
+  margin-bottom: 4px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.workPtStockCell strong {
+  display: block;
+  color: #f8fafc;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* 재고가 반영된 직후 한 번 반짝 (목업의 flash 효과) */
+.workPtStockCell.is-flash {
+  animation: workPtFlash 1.2s ease;
+}
+
+@keyframes workPtFlash {
+  0% {
+    background: rgba(34, 197, 94, 0.35);
+    border-color: rgba(34, 197, 94, 0.8);
+  }
+
+  100% {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workPtStockCell.is-flash {
+    animation: none;
+  }
+}
+
+/* ── 큰 버튼 (새 배치 시작 / 처리 / 취소 / 병합 ...) ───────── */
+.workPtBtn {
+  width: 100%;
+  min-height: 60px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f0f0f0;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease;
+}
+
+.workPtBtn:active {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.workPtBtn--primary {
+  background: var(--primary);
+  border-color: var(--primary-light);
+  color: #fff;
+}
+
+.workPtBtn--danger {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.55);
+  color: #f87171;
+}
+
+.workPtBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* 목업(개발) 전용 가상 스캔 버튼 — PRETREATMENT_USE_MOCK = false 면 렌더되지 않음 */
+.workPtDevBtn {
+  align-self: center;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+  background: transparent;
+  color: #94a3b8;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* ── 상태 칩 (진행중 / 탈피완료 / 완료) ─────────────── */
+.workPtChip {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.workPtChip--progress {
+  background: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+}
+
+.workPtChip--dehulled {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+}
+
+.workPtChip--done {
+  background: rgba(34, 197, 94, 0.18);
+  color: #4ade80;
+}
+
+/* ── 배치 카드 (홈 목록) ─────────────────────────── */
+.workPtCard {
+  width: 100%;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: #f0f0f0;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workPtCard:active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.workPtCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.workPtCardTitle {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.workPtCardSub {
+  color: #94a3b8;
+  font-size: 13px;
+  word-break: keep-all;
+}
+
+/* ── 상세 / 계량 결과 행 ─────────────────────────── */
+.workPtDetailHead {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.workPtDetailHead strong {
+  color: #f0f0f0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.workPtKv {
+  padding: 4px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.workPtKvRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 15px;
+}
+
+.workPtKvRow:last-child {
+  border-bottom: none;
+}
+
+.workPtKvRow .k {
+  color: #94a3b8;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.workPtKvRow .v {
+  flex-shrink: 0;
+  color: #f0f0f0;
+  font-weight: 700;
+}
+
+.workPtKvRow--total .k {
+  font-family: inherit;
+}
+
+.workPtKvRow--total .v {
+  color: #fbbf24;
+}
+
+/* ── 새 배치: 라벨 번호 직접 입력 / 키보드형 스캐너 입력창 ─────────
+   스캔 API 가 GET 조회(code)로 바뀌면서 추가. Enter 또는 [조회] 로 전송 */
+.workPtScanInput {
+  display: flex;
+  gap: 10px;
+}
+
+.workPtScanInput input {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.workPtScanInput input::placeholder {
+  color: #64748b;
+  font-family: inherit;
+}
+
+.workPtScanInput input:focus {
+  outline: none;
+  border-color: rgba(147, 197, 253, 0.8);
+}
+
+.workPtScanInput button {
+  flex-shrink: 0;
+  min-width: 88px;
+  height: 52px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid var(--primary-light);
+  background: var(--primary);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workPtScanInput button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── 새 배치: 스캔된 입고건 라인 ───────────────────── */
+.workPtLineCard {
+  display: flex;
+  align-items: stretch;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.workPtLineCard.is-active {
+  border-color: rgba(147, 197, 253, 0.8);
+  background: rgba(71, 85, 105, 0.55);
+}
+
+.workPtLineCard.is-over {
+  border-color: rgba(239, 68, 68, 0.7);
+}
+
+.workPtLineMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.workPtLineInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.workPtLineInfo b {
+  color: var(--primary-light, #93c5fd);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 15px;
+  word-break: break-all;
+}
+
+.workPtLineInfo span {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.workPtLineInfo .is-error {
+  color: #f87171;
+}
+
+.workPtLineQty {
+  flex-shrink: 0;
+  min-width: 80px;
+  color: #f0f0f0;
+  font-size: 18px;
+  font-weight: 800;
+  text-align: right;
+}
+
+.workPtLineQty.is-empty {
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.workPtLineRemove {
+  flex-shrink: 0;
+  width: 52px;
+  background: rgba(255, 255, 255, 0.04);
+  border: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  font-size: 18px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 스캔 실패 배너 (새 배치 화면 안에서만. 기존 전체화면 실패 카드 대신 목록을 유지하려고 인라인으로 처리) */
+.workPtScanFail {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  font-size: 14px;
+  word-break: keep-all;
+}
+
+.workPtScanFail button {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #fca5a5;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* ── 가드(검증 결과) 박스 ─────────────────────────── */
+.workPtGuard {
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.workPtGuard--ok {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #4ade80;
+}
+
+.workPtGuard--warn {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
+}
+
+.workPtGuard--bad {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+/* ── 취소 사유 입력 ─────────────────────────────── */
+.workPtTextarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  box-sizing: border-box;
+  resize: none;
+}
+
+/* ── 병합 대상 선택 ─────────────────────────────── */
+.workPtMergePick {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.workPtMergePick b {
+  display: block;
+  color: #f0f0f0;
+  font-size: 16px;
+}
+
+.workPtMergePick span {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.workPtMergePick button {
+  flex-shrink: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--primary-light);
+  background: var(--primary);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.workPtMergePick button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── 모바일/저해상도 ─────────────────────────────── */
+@media (max-width: 480px) {
+  .workPtTitle {
+    font-size: 22px;
+  }
+
+  .workPtStockCell strong {
+    font-size: 17px;
+  }
+
+  .workPtLineQty {
+    min-width: 64px;
+    font-size: 16px;
+  }
+
+  .workPtScanInput input,
+  .workPtScanInput button {
+    height: 48px;
+  }
 }

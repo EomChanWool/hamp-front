@@ -5,10 +5,18 @@
 //   1) React 화면의 "카메라 스캔" 버튼 클릭
 //        -> window.NativeBridge.postMessage('scan')      (JavaScriptChannel)
 //   2) Flutter가 메시지를 받아 카메라 스캔 화면(QrScanScreen)을 띄움
-//   3) 스캔 성공 -> Flutter가 웹에 CustomEvent('native-qr') 를 dispatch
-//        -> React 훅(useNativeQrScan)이 값을 받아 서버로 전송
+//   3) 스캔 화면에서 코드를 "여러 개" 모은 뒤 [완료]를 누르면
+//        -> Flutter가 웹에 CustomEvent('native-qr') 를 "값마다 한 번씩" 순차 dispatch
+//        -> React 훅(useNativeQrScan)이 값을 받아 서버로 전송 (기존 로직 그대로)
 //   4) 서버가 기존 하드웨어 스캐너 때와 똑같이 SSE 'scan' 이벤트를 흘려줌
-//        -> 기존 화면 로직이 그대로 동작 (React 화면 수정 최소화)
+//        -> 기존 화면 로직이 그대로 동작 (React 화면 수정 없음)
+//
+// [변경 사항 요약 - "[변경]" 표시 참고]
+//   - QrScanScreen: 첫 인식에서 바로 닫지 않고, 인식된 값을 Set 에 모음
+//   - 한 프레임에 여러 코드가 잡히면 전부 수집 (capture.barcodes 순회)
+//   - 하단 패널: 인식 개수 / 목록(개별 삭제) / 모두 지우기 / 완료 버튼
+//   - 완료 시 List<String> 을 pop -> _openScanner 가 값마다 _sendToWeb 호출
+//   - React / 서버 코드는 수정 불필요 (이벤트 규약 native-qr {value} 동일)
 //
 // [필요 설정]
 //   - Android: INTERNET/CAMERA 권한 + usesCleartextTraffic="true" (http 주소 사용 시)
@@ -41,6 +49,10 @@ const String kChannelName = 'NativeBridge'; // window.NativeBridge
 const String kScanRequestMessage = 'scan'; // postMessage('scan')
 const String kScanEventName = 'native-qr'; // window 'native-qr' 이벤트
 
+/// 여러 값을 웹으로 순차 전송할 때 값 사이의 간격(ms).
+/// 웹/서버에서 연속 입력 시 유실·덮어쓰기가 생기면 이 값을 늘려 보세요.
+const int kSendIntervalMs = 150;
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const TabletApp());
@@ -71,7 +83,7 @@ class _WebPageScreenState extends State<WebPageScreen> {
   bool _pageLoaded = false;
   String? _pageError;
 
-  /// 스캔 화면이 이미 열려 있을 때 중복으로 열리는 것을 막음
+  /// 스캔 화면이 이미 열려 있을 때(또는 전송 중일 때) 중복으로 열리는 것을 막음
   bool _scanning = false;
 
   @override
@@ -112,20 +124,28 @@ class _WebPageScreenState extends State<WebPageScreen> {
       ..loadRequest(Uri.parse(kWebUrl));
   }
 
-  /// 카메라 스캔 화면을 열고, 결과를 웹으로 전달
+  /// 카메라 스캔 화면을 열고, 결과(여러 개)를 웹으로 전달
   Future<void> _openScanner() async {
     if (_scanning || !mounted) return;
     _scanning = true;
 
     try {
-      final String? value = await Navigator.of(context).push<String>(
+      // 스캔 화면이 String 하나가 아니라 List<String> 을 돌려줌
+      final List<String>? values = await Navigator.of(context).push<List<String>>(
         MaterialPageRoute(builder: (_) => const QrScanScreen()),
       );
 
-      // 사용자가 뒤로가기로 취소한 경우
-      if (!mounted || value == null) return;
+      // 사용자가 뒤로가기로 취소했거나, 아무것도 인식하지 않은 경우
+      if (!mounted || values == null || values.isEmpty) return;
 
-      await _sendToWeb(value);
+      // 값마다 native-qr 이벤트를 한 번씩 순차 발생.
+      // React 훅은 기존처럼 "값 하나씩" 받아 서버로 보내므로 수정할 필요 없음.
+      for (final String v in values) {
+        if (!mounted) return;
+        await _sendToWeb(v);
+        // 연속 처리 시 웹 상태 덮어쓰기/서버 요청 유실 방지용 간격
+        await Future.delayed(const Duration(milliseconds: kSendIntervalMs));
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -217,7 +237,7 @@ class _WebPageScreenState extends State<WebPageScreen> {
 }
 
 // ============================================================================
-// 카메라 스캔 화면: 한 번 인식하면 값을 들고 pop
+// 카메라 스캔 화면
 // ============================================================================
 class QrScanScreen extends StatefulWidget {
   const QrScanScreen({super.key});
@@ -233,7 +253,9 @@ class _QrScanScreenState extends State<QrScanScreen> {
     facing: CameraFacing.back, // 태블릿 후면 카메라. 전면이면 front 로 변경
   );
 
-  /// 같은 프레임에서 여러 번 감지돼도 pop 이 두 번 호출되지 않도록 막음
+  final Set<String> _values = <String>{};
+
+  /// [완료]를 여러 번 눌러 pop 이 두 번 호출되지 않도록 막음
   bool _done = false;
 
   @override
@@ -242,26 +264,50 @@ class _QrScanScreenState extends State<QrScanScreen> {
     super.dispose();
   }
 
+  /// 한 프레임에 여러 코드가 보이면 capture.barcodes 에 전부 들어옴.
   void _onDetect(BarcodeCapture capture) {
     if (_done) return;
 
+    bool changed = false;
     for (final barcode in capture.barcodes) {
       final String? value = barcode.rawValue;
       if (value == null || value.isEmpty) continue;
 
-      _done = true;
-      HapticFeedback.mediumImpact();
-      Navigator.of(context).pop(value);
-      return;
+      if (_values.add(value)) changed = true; // 새 값일 때만 true
     }
+
+    if (changed) {
+      HapticFeedback.lightImpact();
+      setState(() {}); // 개수/목록 갱신
+    }
+  }
+
+  /// 완료: 모은 값을 List 로 돌려주고 화면 닫기
+  void _finish() {
+    if (_done || _values.isEmpty) return;
+    _done = true;
+    Navigator.of(context).pop(_values.toList());
+  }
+
+  /// 목록에서 개별 삭제 (잘못 인식된 값 제거용)
+  void _remove(String value) {
+    setState(() => _values.remove(value));
+  }
+
+  /// 전체 초기화
+  void _clear() {
+    setState(() => _values.clear());
   }
 
   @override
   Widget build(BuildContext context) {
+    // 목록 표시용 복사본 (순서 유지)
+    final List<String> items = _values.toList();
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('QR 코드 스캔'),
+        title: Text('QR 코드 스캔 (${_values.length}개)'),
         actions: [
           // 어두운 현장용 손전등
           IconButton(
@@ -298,8 +344,8 @@ class _QrScanScreenState extends State<QrScanScreen> {
           IgnorePointer(
             child: Center(
               child: Container(
-                width: 260,
-                height: 260,
+                width: 320,
+                height: 320,
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.white, width: 3),
                   borderRadius: BorderRadius.circular(16),
@@ -307,7 +353,89 @@ class _QrScanScreenState extends State<QrScanScreen> {
               ),
             ),
           ),
+          // 하단 패널: 인식 개수 / 목록 / 모두 지우기 / 완료 버튼
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _buildBottomPanel(items),
+          ),
         ],
+      ),
+    );
+  }
+
+  /// 인식 결과 요약 + 완료 버튼 패널
+  Widget _buildBottomPanel(List<String> items) {
+    return Container(
+      color: Colors.black87,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Text(
+                  '${items.length}개 인식됨',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: items.isEmpty ? null : _clear,
+                  child: const Text('모두 지우기'),
+                ),
+              ],
+            ),
+            if (items.isNotEmpty)
+              ConstrainedBox(
+                // 목록이 길어져도 카메라 화면을 과하게 가리지 않도록 높이 제한
+                constraints: const BoxConstraints(maxHeight: 140),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final String v = items[index];
+                    return ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: Text(
+                        '${index + 1}',
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                      title: Text(
+                        v,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white70),
+                        onPressed: () => _remove(v),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: items.isEmpty ? null : _finish,
+                child: Text(
+                  items.isEmpty ? '코드를 비춰 주세요' : '완료 (${items.length}개 전송)',
+                  style: const TextStyle(fontSize: 18),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
