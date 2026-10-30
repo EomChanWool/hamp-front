@@ -114,6 +114,16 @@ export interface ShipmentOrderScanResponse {
     data: ShipmentOrderResponse | string;
 }
 
+/** 출고 LOT 스캔 응답 - 서버가 현재 출고지시서의 라인과 매칭해서 내려줌 */
+export interface ShipmentLotScanResponse {
+    lotCode: string;
+    shipOrderLineId: number;
+    itemCode: string;
+    itemNm: string;
+    unit: string;
+    qty: number;
+}
+
 /** 태블릿 SSE 스캔 실패 이벤트 - 성공 응답과 같은 "scan" 이벤트로 { status: "NG", code, message }가 내려옴 */
 export interface ShipmentScanFailure {
     status: 'NG';
