@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import axios from "axios";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { Panel } from "@components/card/Panel";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
@@ -344,7 +345,8 @@ export function SeedReportReturnManagePage() {
       await loadPendingList();
     } catch (error) {
       console.error("씨드 신고반납 수정 실패:", error);
-      window.alert("수정에 실패했습니다.");
+      const errorMessage = axios.isAxiosError(error) ? error.response?.data?.message : null;
+      window.alert(errorMessage || "수정에 실패했습니다.");
     }
   };
 
@@ -365,7 +367,8 @@ export function SeedReportReturnManagePage() {
       await loadPendingList();
     } catch (error) {
       console.error("씨드 신고반납 승인 실패:", error);
-      window.alert("승인 처리에 실패했습니다.");
+      const errorMessage = axios.isAxiosError(error) ? error.response?.data?.message : null;
+      window.alert(errorMessage || "승인 처리에 실패했습니다.");
     }
   };
 
@@ -388,7 +391,8 @@ export function SeedReportReturnManagePage() {
       await loadPendingList();
     } catch (error) {
       console.error("씨드 신고반납 삭제 실패:", error);
-      window.alert("삭제에 실패했습니다.");
+      const errorMessage = axios.isAxiosError(error) ? error.response?.data?.message : null;
+      window.alert(errorMessage || "삭제에 실패했습니다.");
     }
   };
 

@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef, type SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { type ColumnDef } from '@tanstack/react-table';
 import { TrashIcon } from "@heroicons/react/24/outline";
 import { Badge } from "@/components/common/Badge";
@@ -348,7 +349,8 @@ export function FoodWorkOrderCreatePage() {
       navigate("/food/work-orders");
     } catch (error) {
       console.error("작업지시 등록 실패:", error);
-      alert("작업지시 등록 중 오류가 발생했습니다.");
+      const errorMessage = axios.isAxiosError(error) ? error.response?.data?.message : null;
+      alert(errorMessage || "작업지시 등록 중 오류가 발생했습니다.");
     } finally {
       setIsSubmitting(false);
     }
