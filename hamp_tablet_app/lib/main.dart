@@ -10,14 +10,6 @@
 //        -> React 훅(useNativeQrScan)이 값을 받아 서버로 전송 (기존 로직 그대로)
 //   4) 서버가 기존 하드웨어 스캐너 때와 똑같이 SSE 'scan' 이벤트를 흘려줌
 //        -> 기존 화면 로직이 그대로 동작 (React 화면 수정 없음)
-//
-// [변경 사항 요약 - "[변경]" 표시 참고]
-//   - QrScanScreen: 첫 인식에서 바로 닫지 않고, 인식된 값을 Set 에 모음
-//   - 한 프레임에 여러 코드가 잡히면 전부 수집 (capture.barcodes 순회)
-//   - 하단 패널: 인식 개수 / 목록(개별 삭제) / 모두 지우기 / 완료 버튼
-//   - 완료 시 List<String> 을 pop -> _openScanner 가 값마다 _sendToWeb 호출
-//   - React / 서버 코드는 수정 불필요 (이벤트 규약 native-qr {value} 동일)
-//
 // [필요 설정]
 //   - Android: INTERNET/CAMERA 권한 + usesCleartextTraffic="true" (http 주소 사용 시)
 //   - iOS: NSCameraUsageDescription + NSAppTransportSecurity 예외 (http 주소 사용 시)
@@ -85,6 +77,9 @@ class _WebPageScreenState extends State<WebPageScreen> {
 
   /// 스캔 화면이 이미 열려 있을 때(또는 전송 중일 때) 중복으로 열리는 것을 막음
   bool _scanning = false;
+
+  /// [변경] 종료 확인 다이얼로그가 이미 떠 있을 때 중복으로 열리는 것을 막음
+  bool _exitDialogOpen = false;
 
   @override
   void initState() {
@@ -168,19 +163,60 @@ class _WebPageScreenState extends State<WebPageScreen> {
     ''');
   }
 
+  // ── [변경] 뒤로가기 / 종료 처리 ─────────────────────────────────────────
+
+  /// 하드웨어 뒤로가기와 화면 버튼이 함께 쓰는 공통 로직:
+  /// 웹 히스토리가 있으면 한 단계 뒤로, 없으면 종료 확인 다이얼로그
+  Future<void> _handleBack() async {
+    if (await _web.canGoBack()) {
+      await _web.goBack();
+      return;
+    }
+    await _confirmExit();
+  }
+
+  /// 앱 종료 확인 다이얼로그
+  Future<void> _confirmExit() async {
+    if (_exitDialogOpen || !mounted) return;
+    _exitDialogOpen = true;
+
+    try {
+      final bool? exit = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('앱 종료'),
+          content: const Text('앱을 종료하시겠습니까?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('종료'),
+            ),
+          ],
+        ),
+      );
+
+      if (exit == true) {
+        await SystemNavigator.pop(); // Android 에서 앱 종료
+      }
+    } finally {
+      _exitDialogOpen = false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // 웹 안에서 페이지 이동 후 Android 뒤로가기를 누르면
-    // 앱이 바로 종료되지 않고 웹 히스토리를 먼저 되돌림
+    // 앱이 바로 종료되지 않고 웹 히스토리를 먼저 되돌림.
+    // 더 돌아갈 곳이 없으면 종료 확인 다이얼로그를 띄움.
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
-        if (await _web.canGoBack()) {
-          await _web.goBack();
-        }
-        // 더 돌아갈 곳이 없을 때 앱을 종료하려면 아래 주석 해제
-        // else { SystemNavigator.pop(); }
+        await _handleBack();
       },
       child: Scaffold(
         body: SafeArea(
@@ -193,15 +229,24 @@ class _WebPageScreenState extends State<WebPageScreen> {
                   child: LinearProgressIndicator(),
                 ),
               if (_pageError != null) _buildErrorView(),
+              // [변경] 화면 내 뒤로가기/종료 버튼 (반투명, 웹 UI를 최소한만 가림)
+              // 위치를 바꾸려면 left/bottom 값을 조정하세요.
+              Positioned(
+                left: 8,
+                bottom: 8,
+                child: Opacity(
+                  opacity: 0.6,
+                  child: FloatingActionButton.small(
+                    heroTag: 'back_or_exit',
+                    tooltip: '뒤로가기 / 종료',
+                    onPressed: _handleBack,
+                    child: const Icon(Icons.arrow_back),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
-        // 스캔 버튼은 React 화면 안에 있으므로 Flutter 쪽 FAB는 두지 않음
-        // (웹 UI를 가리지 않음). 테스트용으로 필요하면 아래 주석 해제
-        // floatingActionButton: FloatingActionButton(
-        //   onPressed: _openScanner,
-        //   child: const Icon(Icons.qr_code_scanner),
-        // ),
       ),
     );
   }
