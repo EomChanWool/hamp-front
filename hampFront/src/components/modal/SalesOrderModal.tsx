@@ -92,7 +92,7 @@ export function SalesOrderModal({ isOpen, onClose, onSelect }: SalesOrderModalPr
         header: '생산완료수량',
         cell: ({ row }) => (
           <div className="sales-order-qty-cell bold">
-            <span>{row.original.producedQty?.toLocaleString()}</span>
+            <span>{(row.original.producedQty ?? 0).toLocaleString()}</span>
             <span className="sales-order-qty-unit">
               {row.original.unit || ''}
             </span>
