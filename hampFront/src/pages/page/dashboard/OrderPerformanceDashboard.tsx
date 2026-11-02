@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   ResponsiveContainer,
   // LineChart,
@@ -18,11 +18,16 @@ const TREND_COLORS = ["#6366f1", "#a855f7", "#06b6d4", "#ec4899", "#f59e0b", "#1
 
 type GroupByType = 'item' | 'bp' | 'order';
 
+// 상단 집계 기간 타입 (OrderPerformancePage 의 PeriodUnit 과 동일한 값)
+type PeriodUnit = 'month' | 'quarter' | 'year';
+
 interface OrderPerformanceDashboardProps {
   data: any;
   barData?: any;
   groupBy: GroupByType;
   setGroupBy: (val: GroupByType) => void;
+  // 상단 월간/분기/연간 선택값. 값이 바뀌면 펼쳐둔 상세 정보를 닫는다.
+  period?: PeriodUnit;
 }
 
 // /** 1. 기존 기간별 추이 (선 형태) 차트 카드 */
@@ -179,10 +184,12 @@ function PerformanceBarCard({
   barData,
   groupBy,
   setGroupBy,
+  period, // 상단 기간 선택값을 받는다
 }: {
   barData: any;
   groupBy: GroupByType;
   setGroupBy: (val: GroupByType) => void;
+  period?: PeriodUnit;
 }) {
   const rawGroupList = Array.isArray(barData)
     ? barData
@@ -195,7 +202,7 @@ function PerformanceBarCard({
 
   const [visibleGroupKeys, setVisibleGroupKeys] = useState<Set<string> | null>(null);
 
-  // 💡 특정 차트 클릭 시 하단 표출을 위한 상태 관리
+  // 특정 차트 클릭 시 하단 표출을 위한 상태 관리
   const [selectedItemInfo, setSelectedItemInfo] = useState<{
     periodLabel: string;
     groupLabel: string;
@@ -205,6 +212,12 @@ function PerformanceBarCard({
     periodStart?: string;
     periodEnd?: string;
   } | null>(null);
+
+  // 상단 월간/분기/연간이 바뀌면 이전 기간 기준으로 펼쳐둔 상세 정보와 범례 필터를 초기화
+  useEffect(() => {
+    setSelectedItemInfo(null);
+    setVisibleGroupKeys(null);
+  }, [period]);
 
   const handleBarLegendClick = (e: any) => {
     const dataKey = String(e.dataKey || "");
@@ -502,11 +515,12 @@ export function OrderPerformanceDashboard({
   barData,
   groupBy,
   setGroupBy,
+  period, // 상단 기간 선택값
 }: OrderPerformanceDashboardProps) {
   return (
     <div className="orderPerfDashboard">
       {/* <TrendCard data={data} groupBy={groupBy} setGroupBy={setGroupBy} /> */}
-      <PerformanceBarCard barData={barData} groupBy={groupBy} setGroupBy={setGroupBy} />
+      <PerformanceBarCard barData={barData} groupBy={groupBy} setGroupBy={setGroupBy} period={period} />
     </div>
   );
 }
