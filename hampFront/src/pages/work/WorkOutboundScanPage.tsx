@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
 import {
   ChevronRightIcon,
   ExclamationTriangleIcon,
@@ -11,7 +10,6 @@ import {
 import { apiClient } from '@/api/apiClient';
 import {
   SHIPMENT_STATUS_LABEL,
-  ShipmentOrderApi,
   type ShipmentLotScanResponse,
   type ShipmentOrderLineResponse,
   type ShipmentOrderResponse,
@@ -67,7 +65,7 @@ const getPendingQtyByLine = (lots: ShipmentLotScanResponse[]) => {
   return totals;
 };
 
-// 서버 기준 잔여수량에 맞춰 등록 대기 LOT를 다시 거른다 (넘치거나 없는 라인의 LOT는 dropped)
+// 서버 기준 잔여수량에 맞춰 스캔한 LOT를 다시 거른다 (넘치거나 없는 라인의 LOT는 dropped)
 const fitPendingToOrder = (order: ShipmentOrderResponse, pending: ShipmentLotScanResponse[]) => {
   const registered = new Set(order.lines.flatMap((line) => line.lots.map((lot) => lot.lotCode)));
   const remainingByLine = new Map(order.lines.map((line) => [line.shipOrderLineId, getRemainingQty(line)]));
@@ -89,7 +87,7 @@ const fitPendingToOrder = (order: ShipmentOrderResponse, pending: ShipmentLotSca
 };
 
 const getDroppedMessage = (dropped: ShipmentLotScanResponse[]) =>
-  `잔여 지시수량이 바뀌어 LOT ${dropped.length}건을 등록 대기에서 뺐습니다: ${dropped.map((lot) => lot.lotCode).join(', ')}`;
+  `잔여 지시수량이 바뀌어 LOT ${dropped.length}건을 스캔 목록에서 뺐습니다: ${dropped.map((lot) => lot.lotCode).join(', ')}`;
 
 // 상태별 "다음 행동" 안내 문구 - 작업지시 화면의 안내 배너와 같은 역할
 const getBannerInfo = (status: string): { variant: string; text: string } => {
@@ -113,16 +111,13 @@ export function WorkOutboundScanPage() {
 
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const [shipmentOrder, setShipmentOrder] = useState<ShipmentOrderResponse | null>(null);
-  // 스캔만으로는 서버에 저장되지 않으므로, 등록 전까지 스캔한 LOT는 화면에서 누적 관리한다
+  // 스캔만으로는 서버에 저장되지 않으므로, 스캔한 LOT는 화면에서 누적 관리한다
   const [pendingLots, setPendingLots] = useState<ShipmentLotScanResponse[]>([]);
   const [scanFailure, setScanFailure] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 연속 스캔 시 화면 갱신 전 상태로 검증하지 않도록 최신 값을 ref로 유지
   const latestRef = useRef({ order: shipmentOrder, pending: pendingLots });
-  const submittingLotCodesRef = useRef<string[]>([]);
 
   const applyOrder = (order: ShipmentOrderResponse) => {
     latestRef.current = { ...latestRef.current, order };
@@ -147,13 +142,9 @@ export function WorkOutboundScanPage() {
 
     const order = parseShipmentOrder(payload);
     if (order) {
-      // 서버는 마지막으로 스캔한 출고지시서 기준으로 LOT를 검증하므로, 다른 지시서로 바뀌면 이전 스캔분은 등록할 수 없다
+      // 서버는 마지막으로 스캔한 출고지시서 기준으로 LOT를 검증하므로, 다른 지시서로 바뀌면 이전 스캔분은 비운다
       if (currentOrder && order.shipId !== currentOrder.shipId && pending.length > 0) {
-        // 등록 요청 중인 LOT는 취소 안내에서 제외
-        const cancelledCount = pending.filter((lot) => !submittingLotCodesRef.current.includes(lot.lotCode)).length;
-        if (cancelledCount > 0) {
-          setNotice(`${currentOrder.shipId}에서 등록하지 않은 LOT ${cancelledCount}건은 취소되었습니다.`);
-        }
+        setNotice(`${currentOrder.shipId}에서 스캔한 LOT ${pending.length}건은 목록에서 비웠습니다.`);
         applyPending([]);
       } else if (currentOrder?.shipId === order.shipId) {
         // 같은 지시서 재스캔 시 바뀐 잔여수량으로 대기 LOT 재검증
@@ -165,7 +156,6 @@ export function WorkOutboundScanPage() {
       // WAIT도 정상적인 출고 업무 상태이므로 실패로 처리하지 않는다
       applyOrder(order);
       setScanFailure(null);
-      setSubmitError(null);
       return;
     }
 
@@ -193,7 +183,7 @@ export function WorkOutboundScanPage() {
       return;
     }
 
-    // 등록은 LOT 단위로만 되므로(부분 출고 불가) LOT 수량이 남은 지시수량을 넘으면 담지 않는다
+    // 출고는 LOT 단위로만 되므로(부분 출고 불가) LOT 수량이 남은 지시수량을 넘으면 담지 않는다
     const remainingQty = roundQty(getRemainingQty(line) - (getPendingQtyByLine(pending).get(line.shipOrderLineId) ?? 0));
     if (toQty(lot.qty) > remainingQty) {
       setScanFailure(
@@ -205,7 +195,6 @@ export function WorkOutboundScanPage() {
 
     applyPending([...pending, lot]);
     setScanFailure(null);
-    setSubmitError(null);
   };
 
   // SSE 구독은 한 번만 열고 이벤트는 최신 핸들러로 넘긴다
@@ -279,7 +268,7 @@ export function WorkOutboundScanPage() {
   const handleBack = () => {
     if (
       pendingLots.length > 0 &&
-      !window.confirm(`등록하지 않은 LOT ${pendingLots.length}건이 있습니다.\n화면을 나가면 스캔 내역이 사라집니다. 나가시겠습니까?`)
+      !window.confirm(`스캔한 LOT ${pendingLots.length}건이 있습니다.\n화면을 나가면 스캔 내역이 사라집니다. 나가시겠습니까?`)
     ) {
       return;
     }
@@ -288,62 +277,6 @@ export function WorkOutboundScanPage() {
 
   const handleRemoveLot = (lotCode: string) => {
     applyPending(latestRef.current.pending.filter((lot) => lot.lotCode !== lotCode));
-    setSubmitError(null);
-  };
-
-  const handleConfirm = async () => {
-    if (!shipmentOrder || pendingLots.length === 0 || isSubmitting) return;
-
-    // 등록 직전 잔여수량 재확인
-    const checked = fitPendingToOrder(shipmentOrder, pendingLots);
-    if (checked.kept.length !== pendingLots.length) {
-      applyPending(checked.kept);
-      if (checked.dropped.length > 0) {
-        setSubmitError(`${getDroppedMessage(checked.dropped)}. 목록을 확인한 뒤 다시 등록해 주세요.`);
-      }
-      return;
-    }
-
-    const lotSummary = pendingLots
-      .map((lot) => `${lot.lotCode} (${lot.itemNm} ${toQty(lot.qty).toLocaleString()}${lot.unit})`)
-      .join('\n');
-    if (!window.confirm(`LOT ${pendingLots.length}건을 출고 등록하시겠습니까?\n\n${lotSummary}`)) {
-      return;
-    }
-
-    const { shipId } = shipmentOrder;
-    const lotCodes = pendingLots.map((lot) => lot.lotCode);
-    // 요청 중에 다른 출고지시서를 스캔했으면 늦게 온 응답으로 현재 화면을 덮어쓰지 않는다
-    const isStillCurrent = () => latestRef.current.order?.shipId === shipId;
-
-    submittingLotCodesRef.current = lotCodes;
-    setIsSubmitting(true);
-    setSubmitError(null);
-    try {
-      const res = await ShipmentOrderApi.confirmScan({ shipId, lotCodes });
-      const successMessage = `${shipId}: LOT ${lotCodes.length}건의 출고가 등록되었습니다.`;
-
-      if (!isStillCurrent()) {
-        setNotice(successMessage);
-        return;
-      }
-
-      applyOrder(res.data);
-      // 요청 중 새로 스캔된 LOT는 남기고 갱신된 잔여수량으로 재검증
-      const { kept, dropped } = fitPendingToOrder(
-        res.data,
-        latestRef.current.pending.filter((lot) => !lotCodes.includes(lot.lotCode)),
-      );
-      applyPending(kept);
-      setNotice(dropped.length > 0 ? `${successMessage} ${getDroppedMessage(dropped)}` : successMessage);
-    } catch (err) {
-      const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
-      const reason = message || '출고 등록에 실패했습니다.';
-      setSubmitError(isStillCurrent() ? reason : `${shipId}: ${reason}`);
-    } finally {
-      submittingLotCodesRef.current = [];
-      setIsSubmitting(false);
-    }
   };
 
   const statusLabel =
@@ -546,11 +479,11 @@ export function WorkOutboundScanPage() {
                             <div className="workOutboundItemMessage">
                               {pendingQty > 0 && (
                                 <span className="workOutboundItemPending">
-                                  스캔 {pendingQty.toLocaleString()}{line.unit} 등록 대기 ·{' '}
+                                  스캔 {pendingQty.toLocaleString()}{line.unit} ·{' '}
                                 </span>
                               )}
                               {isDone
-                                ? (pendingQty > 0 ? '등록하면 출고 완료' : '출고 완료')
+                                ? (pendingQty > 0 ? '스캔 완료' : '출고 완료')
                                 : `잔여 ${remainingQty.toLocaleString()}${line.unit} 더 스캔 필요`}
                             </div>
                           </div>
@@ -565,7 +498,7 @@ export function WorkOutboundScanPage() {
                   <div className="workOutboundLinesLabel">
                     스캔한 LOT
                     <span className="workOutboundLotCount">
-                      등록 대기 {pendingLots.length.toLocaleString()}건 · 등록됨 {registeredLots.length.toLocaleString()}건
+                      스캔 {pendingLots.length.toLocaleString()}건 · 등록됨 {registeredLots.length.toLocaleString()}건
                     </span>
                   </div>
 
@@ -577,7 +510,7 @@ export function WorkOutboundScanPage() {
                     <ul className="workOutboundLotList">
                       {pendingLots.map((lot) => (
                         <li className="workOutboundLotRow" key={lot.lotCode}>
-                          <span className="workOutboundLotBadge workOutboundLotBadge--pending">등록 대기</span>
+                          <span className="workOutboundLotBadge workOutboundLotBadge--pending">스캔</span>
                           <span className="workOutboundLotCode">{lot.lotCode}</span>
                           <span className="workOutboundLotItem">{lot.itemNm}</span>
                           <span className="workOutboundLotQty">
@@ -588,7 +521,6 @@ export function WorkOutboundScanPage() {
                             className="workOutboundLotRemoveBtn"
                             aria-label={`${lot.lotCode} 스캔 취소`}
                             onClick={() => handleRemoveLot(lot.lotCode)}
-                            disabled={isSubmitting}
                           >
                             <XMarkIcon aria-hidden="true" />
                           </button>
@@ -609,24 +541,6 @@ export function WorkOutboundScanPage() {
                   )}
                 </div>
 
-                {/* ③ 출고 등록 */}
-                {submitError && (
-                  <div className="workOutboundBanner workOutboundBanner--error" role="alert">
-                    출고 등록 실패 — {submitError}
-                  </div>
-                )}
-                <button
-                  type="button"
-                  className="workOutboundConfirmBtn"
-                  onClick={handleConfirm}
-                  disabled={pendingLots.length === 0 || isSubmitting}
-                >
-                  {isSubmitting
-                    ? '등록 중...'
-                    : pendingLots.length > 0
-                      ? `LOT ${pendingLots.length.toLocaleString()}건 출고 등록`
-                      : '출고 등록'}
-                </button>
               </div>
             )}
           </div>

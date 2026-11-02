@@ -470,38 +470,14 @@
   height: 16px;
 }
 
-.workOutboundLotRemoveBtn:hover:not(:disabled) {
+.workOutboundLotRemoveBtn:hover {
   border-color: rgba(239, 68, 68, 0.6);
   color: #f87171;
-}
-
-.workOutboundLotRemoveBtn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 
 /* 열 맞춤용 빈 자리 */
 .workOutboundLotRemoveBtn--placeholder {
   visibility: hidden;
-}
-
-/* ── 출고 등록 버튼 ───────────────────────────── */
-.workOutboundConfirmBtn {
-  width: 100%;
-  height: 56px;
-  border: none;
-  border-radius: 12px;
-  background: var(--primary);
-  color: #fff;
-  font-size: 17px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.workOutboundConfirmBtn:disabled {
-  background: rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
-  cursor: not-allowed;
 }
 
 .workOutboundItemCard--done .workOutboundItemMessage {
