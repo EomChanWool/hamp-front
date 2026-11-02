@@ -646,7 +646,7 @@ export function SeedInboundManagePage() {
       },
       {
         accessorKey: "receivedAt",
-        header: "입고시간",
+        header: "입고일자",
         meta: { width: "195px" },
         cell: ({ row }) => {
           const isNewRow = row.original.receiptId === -999999;
