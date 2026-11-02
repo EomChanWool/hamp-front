@@ -16,7 +16,7 @@ import type { ApiResponse } from '@/api/Common';
 import type { SeedGoodsReceiptResponse } from '@/api/ioSeed/SeedGoodsReceipt';
 
 /** 백엔드 연결 전까지 true. 연결 후 false 로 바꾸면 realApi 를 탄다. */
-export const PRETREATMENT_USE_MOCK = true;
+export const PRETREATMENT_USE_MOCK = false;
 
 /** 기존 스캔 응답의 receiptId 타입을 그대로 따라간다 (number/string 어느 쪽이든 맞춰짐) */
 export type ReceiptId = SeedGoodsReceiptResponse['receiptId'];

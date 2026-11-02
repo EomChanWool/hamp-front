@@ -2,22 +2,21 @@
  *  배치(헤더+라인) 기반 3단계 흐름
  *      새 배치 시작(여러 입고건 스캔 + 투입량 N) → 탈피 완료 처리(H, D) → 최종 완료 처리(M)
  *      + 배치 병합(같은 상태끼리) / 배치 취소(진행중만)
- *
+ * 
  * ■ 확인필요 번호 목록
  *  #1 탈피 가드: 설계안 "H + D ≈ ΣN" vs 목업 "H + D ≤ ΣN" → 초과는 차단, 부족은 5% 넘으면 경고만 (허용오차 확정 필요)
  *  #2 계량: 목업은 가상(랜덤) 계량. 저울 연동 방식 미정 → 지금은 기존 키패드 수동 입력
  *  #3 반납예정일 / 신고수량 개념이 새 화면에서 사라짐 (의도인지 확인)
  *  #4 스캔 응답(remainingQty 등) 계산식이 새 공식(goodQty − Σ예약 N)으로 내려와야 함
- *  #5 (해소) SSE 가 생산동(zone) 단위라 태블릿 간 스캔이 섞이던 문제 → GET 조회로 바뀌며 사라짐
  *  #6 병합 세부 규칙 / #7 취소=삭제 vs 상태값 / #8 단위·소수점 / #10 배치 목록 범위
- *  #11 [신규] 스캔 응답에 barcode 가 없어서 라벨 번호는 "스캔한 code"를 화면이 따로 보관한다.
+ *  #11 스캔 응답에 barcode 가 없어서 라벨 번호는 "스캔한 code"를 화면이 따로 보관한다.
  *      → 새로고침/다른 태블릿에서 연 배치 상세에는 라벨 번호 대신 "입고건 #ID" 로 표시됨.
  *        라인 응답에 barcode(또는 입고번호)를 내려주면 해결.
- *  #12 [신규] 스캔 실패 시 서버가 내려주는 message 를 그대로 노출한다 (err.response.data.message). 에러 응답 규격 확인 필요
+ *  #12 스캔 실패 시 서버가 내려주는 message 를 그대로 노출한다 (err.response.data.message). 에러 응답 규격 확인 필요
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArchiveBoxIcon, MapPinIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { ArchiveBoxIcon, QrCodeIcon, MapPinIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import {
   PRETREATMENT_USE_MOCK,
@@ -34,7 +33,6 @@ import { isValidWorkZone } from '@/utils/common';
 import '@/pages/work/WorkTabletHome.css';
 import '@/pages/work/WorkSeedReportScanPage.css';
 import { useNativeQrScan } from '@/hooks/useNativeQrScan';
-import { NativeScanButton } from '@/components/button/NativeScanButton';
 
 /* ============================================================================
  * 상수 / 타입
@@ -80,7 +78,7 @@ const STATUS_VARIANT: Record<PretreatmentStatus, string> = {
 const KEYPAD_KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', 'back'];
 const MAX_INPUT_LENGTH = 10;
 
-/** [확인필요 #8] 저울/현장이 소수점 몇 자리까지 쓰는지 모름. 목업이 소수 1자리라 1로 맞춤 */
+/** 저울/현장이 소수점 몇 자리까지 쓰는지 모름. 목업이 소수 1자리라 1로 맞춤 */
 const MAX_DECIMALS = 1;
 /** 부동소수점 오차 흡수용 (목업과 동일한 0.001) */
 const EPS = 0.001;
@@ -215,6 +213,38 @@ function GuardBox({ guard }: { guard: GuardResult }) {
   return <div className={`workPtGuard workPtGuard--${guard.level}`}>{guard.message}</div>;
 }
 
+/**  QR 카메라 스캔 버튼
+ *     'hero'    : 스캔 대기 화면(입고건 0건)에서 타겟 프레임 아래 큰 버튼
+ *     'compact' : 입고건이 쌓인 뒤 목록 위에 쓰는 "추가 스캔" 한 줄 버튼 */
+function ScanCameraButton({
+  isNative,
+  onClick,
+  disabled,
+  zoneVariant,
+  variant,
+}: {
+  isNative: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+  zoneVariant: string;
+  variant: 'hero' | 'compact';
+}) {
+  if (!isNative) return null;
+  const label = variant === 'hero' ? 'QR 카메라로 스캔' : '입고건 추가 스캔';
+  return (
+    <button
+      type="button"
+      className={`workPtCamBtn workPtCamBtn--${zoneVariant} ${variant === 'compact' ? 'workPtCamBtn--compact' : ''}`}
+      onClick={onClick}
+      disabled={disabled}
+      aria-label="QR 카메라로 스캔"
+    >
+      <QrCodeIcon aria-hidden="true" />
+      {label}
+    </button>
+  );
+}
+
 /* ============================================================================
  * 페이지
  * ========================================================================== */
@@ -237,7 +267,6 @@ export function WorkSeedReportScanPage() {
   const [activeIdx, setActiveIdx] = useState(0);
   /** 라벨 번호 직접 입력창 값 (키보드형 스캐너도 여기로 들어온다) */
   const [codeInput, setCodeInput] = useState('');
-  /** 스캔 조회(GET) 진행 중 */
   const [isScanning, setIsScanning] = useState(false);
 
   // 탈피 / 최종 / 취소 입력
@@ -719,9 +748,27 @@ export function WorkSeedReportScanPage() {
             </div>
             <h1>스캔 대기 중</h1>
             <p>입고 라벨을 스캔하면 이 화면에 쌓입니다. 여러 건을 스캔할 수 있습니다.</p>
+
+            {/* 카메라 스캔 버튼: 상단바 → 스캔 타겟/안내 문구 바로 아래(화면 중앙)로 이동 */}
+            <ScanCameraButton
+              isNative={isNative}
+              onClick={startScan}
+              disabled={isSubmitting || isScanning}
+              zoneVariant={zoneVariant}
+              variant="hero"
+            />
           </div>
         ) : (
           <>
+            {/* 이미 입고건이 쌓인 상태에서도 추가 스캔을 할 수 있도록 목록 위에 컴팩트 버튼 */}
+            <ScanCameraButton
+              isNative={isNative}
+              onClick={startScan}
+              disabled={isSubmitting || isScanning}
+              zoneVariant={zoneVariant}
+              variant="compact"
+            />
+
             <div className="workPtLabel">스캔된 입고건 {draftLines.length}건 · 투입량(N)을 입력할 건을 선택하세요</div>
             {draftLines.map((l, i) => {
               const q = draftQtys[i];
@@ -747,7 +794,7 @@ export function WorkSeedReportScanPage() {
                       </span>
                     )}
                   </button>
-                  {/* [목업추가] 잘못 스캔한 입고건을 뺄 수 있는 버튼 (목업엔 없음) */}
+                  {/* 잘못 스캔한 입고건을 뺄 수 있는 버튼 (목업엔 없음) */}
                   <button
                     type="button"
                     className="workPtLineRemove"
@@ -782,14 +829,18 @@ export function WorkSeedReportScanPage() {
 
         {errorMsg && <div className="workScanErrorMsg">{errorMsg}</div>}
 
-        <button
-          type="button"
-          className="workPtBtn workPtBtn--primary"
-          disabled={!canStart || isSubmitting}
-          onClick={handleStart}
-        >
-          {isSubmitting ? '시작 중...' : '전처리 시작'}
-        </button>
+        {/* 스캔 전(입고건 0건)에는 "전처리 시작" 버튼을 숨기고,
+            1건 이상 쌓였을 때만 보여준다. (활성/비활성 조건은 기존 canStart 그대로) */}
+        {draftLines.length > 0 && (
+          <button
+            type="button"
+            className="workPtBtn workPtBtn--primary"
+            disabled={!canStart || isSubmitting}
+            onClick={handleStart}
+          >
+            {isSubmitting ? '시작 중...' : '전처리 시작'}
+          </button>
+        )}
       </div>
     );
   };
@@ -1092,15 +1143,13 @@ export function WorkSeedReportScanPage() {
             <button type="button" className="workScanHomeBtn" onClick={handleBack}>
               {view === 'home' ? '← 돌아가기' : '← 이전'}
             </button>
-            {/* 스캔이 의미 있는 "새 배치 시작" 화면에서만 스캔 버튼/상태 표시 */}
+            {/* 상단바에는 이제 상태 표시만 남긴다. (카메라 스캔 버튼은 renderNew 의 스캔 타겟 아래로 이동)
+                스캔이 의미 있는 "새 배치 시작" 화면에서만 상태 표시 */}
             {view === 'new' ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <NativeScanButton isNative={isNative} onClick={startScan} disabled={isSubmitting || isScanning} />
-                <span className={`workScanStatus workScanStatus--${statusVariant}`}>
-                  <span className="workScanStatusDot" />
-                  {statusLabel}
-                </span>
-              </div>
+              <span className={`workScanStatus workScanStatus--${statusVariant}`}>
+                <span className="workScanStatusDot" />
+                {statusLabel}
+              </span>
             ) : (
               <span />
             )}
