@@ -828,56 +828,64 @@
    LOT 흐름 (STEP 스테퍼)
    ========================================== */
 .lotFlow {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  --lot-dot: 28px;
+
+  display: flex;
   margin: 0;
-  padding: 4px 0;
+  padding: 18px 20px;
   list-style: none;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 12px;
 }
 
 .lotFlow__step {
+  flex: 1 1 0;                    /* 모든 단계 균등 폭 */
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  align-items: center;            /* 가운데 정렬 */
+  gap: 2px;
   min-width: 0;
   text-align: center;
 }
 
+/* STEP 01 : 점 아래, 라벨 위 */
 .lotFlow__no {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--text-muted, #94a3b8);
+  order: 2;
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.4;
+  color: var(--text-muted);
+  font-family: 'montserrat', 'Noto Sans KR', sans-serif;
 }
 
-.lotFlow__step.is-done .lotFlow__no,
 .lotFlow__step.is-current .lotFlow__no {
-  color: var(--primary, #3b82f6);
+  color: var(--primary);
 }
 
-/* 트랙: 각 단계 중심에서 다음 단계 중심까지 */
 .lotFlow__rail {
+  order: 1;
   position: relative;
   display: flex;
   justify-content: center;
   width: 100%;
-  margin: 4px 0 6px;
+  margin: 0 0 10px;
 }
 
+/* 점선: 내 점 중심 → 다음 점 중심 */
 .lotFlow__step:not(:last-child) .lotFlow__rail::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
-  left: 50%;
-  width: 100%;
+  left: calc(50% + var(--lot-dot) / 2 + 12px);
+  right: calc(-50% + var(--lot-dot) / 2 + 12px);
   height: 4px;
   transform: translateY(-50%);
-  background: color-mix(in srgb, var(--primary, #3b82f6) 12%, var(--bg-card, #fff));
-}
-
-.lotFlow__step.is-done:not(:last-child) .lotFlow__rail::after {
-  background: var(--primary, #3b82f6);
+  background-image: radial-gradient(circle, var(--text-heading) 1px, transparent 1.3px);
+  background-size: 5px 4px;
+  background-repeat: repeat-x;
 }
 
 .lotFlow__dot {
@@ -885,80 +893,85 @@
   z-index: 1;
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  flex-shrink: 0;
+  width: var(--lot-dot);
+  height: var(--lot-dot);
   box-sizing: border-box;
   border-radius: 50%;
-  border: 2px solid color-mix(in srgb, var(--primary, #3b82f6) 18%, var(--bg-card, #fff));
-  background: var(--bg-card, #fff);
-  color: var(--text-muted, #94a3b8);
+  border: 1px solid color-mix(in srgb, var(--text-muted) 40%, transparent);
+  background: var(--bg-card);
+  color: var(--text-muted);
 }
 
-/* 완료: 채운 원 + 체크 */
+.lotFlow__dot svg {
+  width: 14px;
+  height: 14px;
+}
+
 .lotFlow__step.is-done .lotFlow__dot {
-  border-color: var(--primary, #3b82f6);
-  background: var(--primary, #3b82f6);
+  border-color: transparent;
+  background: var(--text-heading);
+  color: var(--bg-card);
+}
+
+.lotFlow__step.is-current .lotFlow__dot {
+  border-color: transparent;
+  background: var(--primary);
   color: #fff;
 }
 
-/* 현재: 파란 링 + 시계 */
-.lotFlow__step.is-current .lotFlow__dot {
-  border-width: 3px;
-  border-color: var(--primary, #3b82f6);
-  color: var(--primary, #3b82f6);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary, #3b82f6) 15%, transparent);
+.lotFlow__label {
+  order: 3;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-heading);
 }
 
-.lotFlow__label {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-heading, #0f172a);
+.lotFlow__step.is-current .lotFlow__label {
+  font-weight: 600;
 }
 
 .lotFlow__step.is-pending .lotFlow__label {
-  color: var(--text-muted, #94a3b8);
+  color: var(--text-muted);
 }
 
-[data-theme="dark"] .lotFlow__step.is-done .lotFlow__dot {
-  border-color: #60a5fa;
-  background: #60a5fa;
-  color: #0f172a;
+.lotFlow__step > :last-child {
+  order: 4;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-muted);
 }
 
-[data-theme="dark"] .lotFlow__step.is-current .lotFlow__dot {
-  border-color: #60a5fa;
-  color: #60a5fa;
-  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.2);
+.lotFlow__step.is-current > :last-child {
+  color: var(--primary);
 }
 
-[data-theme="dark"] .lotFlow__step.is-done:not(:last-child) .lotFlow__rail::after {
-  background: #60a5fa;
-}
-
-[data-theme="dark"] .lotFlow__step.is-done .lotFlow__no,
-[data-theme="dark"] .lotFlow__step.is-current .lotFlow__no {
-  color: #60a5fa;
-}
-
-/* 폰: 세로 스테퍼 */
+/* 폰: 세로 스테퍼 (왼쪽 정렬 유지) */
 @container content (max-width: 640px) {
   .lotFlow {
+    display: grid;
     grid-template-columns: 1fr;
+    padding: 16px;
   }
 
   .lotFlow__step {
     display: grid;
-    grid-template-columns: 36px 1fr;
+    grid-template-columns: var(--lot-dot) 1fr;
     grid-template-areas:
       "rail no"
       "rail label"
       "rail badge";
     column-gap: 14px;
-    row-gap: 4px;
+    row-gap: 2px;
     align-items: center;
     justify-items: start;
-    padding-bottom: 20px;
     text-align: left;
+    padding-bottom: 20px;
+  }
+
+  .lotFlow__step:last-child {
+    padding-bottom: 0;
   }
 
   .lotFlow__no {
@@ -969,26 +982,27 @@
     grid-area: label;
   }
 
-  .lotFlow__step> :last-child {
+  .lotFlow__step > :last-child {
     grid-area: badge;
   }
 
   .lotFlow__rail {
     grid-area: rail;
     align-self: stretch;
-    width: 36px;
+    width: var(--lot-dot);
     margin: 0;
-    justify-content: flex-start;
-    align-items: flex-start;
   }
 
   .lotFlow__step:not(:last-child) .lotFlow__rail::after {
-    top: 36px;
-    bottom: -20px;
-    left: 14px;
+    top: calc(var(--lot-dot) + 6px);
+    bottom: -14px;
+    left: calc(var(--lot-dot) / 2 - 2px);
+    right: auto;
     width: 4px;
     height: auto;
     transform: none;
+    background-size: 4px 5px;
+    background-repeat: repeat-y;
   }
 }
 

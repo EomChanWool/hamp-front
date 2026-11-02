@@ -7,7 +7,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 16px 24px;
+  padding: 12px 24px 16px 18px;
   background: transparent;
   flex-shrink: 0;
   z-index: 10;
@@ -19,31 +19,35 @@
   justify-content: space-between;
   gap: 8px;
   flex-shrink: 0;
-  position: relative;
-  padding: 4px 4px 16px;
+  padding: 4px 4px 8px 6px;
 }
 
 .brandInfo {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   overflow: hidden;
   min-width: 0;
   cursor: pointer;
   border-radius: 10px;
 }
 
+.brandInfo:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .brandMark {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
   background: var(--primary);
   color: #fff;
   border-radius: 10px;
   font-weight: 800;
-  font-size: 18px;
+  font-size: 16px;
   font-family: "Montserrat", sans-serif;
 }
 
@@ -55,15 +59,17 @@
 
 .brandText strong {
   display: block;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  color: var(--text-main);
+  line-height: 1.2;
+  color: var(--text-heading);
 }
 
 .brandText small {
   display: block;
   font-size: 11px;
-  color: var(--text-sub);
+  line-height: 1.3;
+  color: var(--text-muted);
 }
 
 .topbar h1 {
@@ -149,23 +155,20 @@
   min-height: 0;
 }
 
-.sidebarWrap>.sidebar {
+.sidebarWrap > .sidebar {
   flex: 1;
 }
 
 .sidebarToggle {
-  position: absolute;
-  top: 29px;
-  right: 0;
-  transform: translateX(50%);
-  width: 24px;
-  height: 24px;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
   display: grid;
   place-items: center;
   padding: 0;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
+  border: none;
+  border-radius: 8px;
+  background: transparent;
   color: var(--text-muted);
   cursor: pointer;
   transition:
@@ -174,12 +177,12 @@
 }
 
 .sidebarToggle svg {
-  width: 14px;
-  height: 14px;
+  width: 20px;
+  height: 20px;
 }
 
 .sidebarToggle:hover {
-  background: var(--bg-subtle);
+  background: var(--nav-hover);
   color: var(--text-heading);
 }
 
@@ -284,8 +287,7 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   position: relative;
-  transition:
-    background 0.15s ease;
+  transition: background 0.15s ease;
 }
 
 .headerPopupContent:hover {
@@ -396,7 +398,7 @@
 
 .mainContent {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: 264px minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   transition: grid-template-columns 0.3s ease;
   flex: 1;
@@ -405,7 +407,7 @@
 }
 
 .mainContent.collapsed {
-  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-columns: 80px minmax(0, 1fr);
 }
 
 .contentArea {
@@ -414,20 +416,21 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+  margin-top: 16px;
+  background: var(--bg-card);
+  border-radius: 12px 0 0;
 }
 
 /* ================================
     SIDEBAR
 ================================ */
 .sidebar {
-  --nav-hover: rgba(15, 23, 42, 0.04);
-  --nav-active: rgba(15, 23, 42, 0.07);
+  --nav-hover: rgba(15, 23, 42, 0.05);
+  --nav-active: rgba(15, 23, 42, 0.06);
 
   color: var(--text-main);
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  /* border-radius: 16px; */
-  /* margin: 12px 0 12px 12px; */
+  background: var(--bg-app, var(--bg-subtle));
+  border: none;
   padding: 16px 12px;
   display: flex;
   flex-direction: column;
@@ -442,7 +445,8 @@
 
 [data-theme="dark"] .sidebar {
   --nav-hover: rgba(255, 255, 255, 0.06);
-  --nav-active: rgba(255, 255, 255, 0.1);
+  --nav-active: rgba(255, 255, 255, 0.08);
+  scrollbar-color: #334155 transparent;
 }
 
 .sidebarMenuWrapper {
@@ -468,8 +472,8 @@
 
 .navGroupHeader {
   width: 100%;
-  min-height: 42px;
-  padding: 10px 12px;
+  min-height: 40px;
+  padding: 0 10px;
   border-radius: 10px;
   background: transparent;
   color: var(--text-main);
@@ -479,6 +483,7 @@
   justify-content: space-between;
   gap: 12px;
   text-align: left;
+  cursor: pointer;
   transition:
     background 0.15s ease,
     border-color 0.15s ease,
@@ -495,8 +500,8 @@
 
 .navGroupHeader .groupLabel svg {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   color: var(--text-sub);
   transition: color 0.15s ease;
 }
@@ -507,27 +512,40 @@
   white-space: nowrap;
   overflow: hidden;
   line-height: 1;
+  color: var(--text-sub);
+  transition: color 0.15s ease;
 }
 
-.navGroupHeader .chevron {
+.navGroupHeader > svg {
   flex-shrink: 0;
   width: 16px;
   height: 16px;
-  color: inherit;
-  opacity: 0.5;
+  color: var(--text-muted);
 }
 
-.navGroupHeader svg {
-  width: 16px;
+.navGroupHeader:hover .groupLabel span,
+.navGroupHeader:hover .groupLabel svg {
+  color: var(--text-main);
 }
 
 .navGroupHeader:hover {
   background: var(--nav-hover);
 }
 
+.navGroupHeader:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .navGroup.current .navGroupHeader {
-  background: var(--nav-active);
+  background: var(--bg-card);
+  border-color: var(--border);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
   color: var(--text-heading);
+}
+
+[data-theme="dark"] .navGroup.current .navGroupHeader {
+  box-shadow: none;
 }
 
 .navGroup.current .navGroupHeader .groupLabel svg {
@@ -536,22 +554,20 @@
 
 .navGroup.current .navGroupHeader .groupLabel span {
   font-weight: 600;
+  color: var(--text-heading);
 }
 
 /* collapsed */
 .mainContent.collapsed .navGroupHeader {
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
   padding: 0;
 }
 
 .mainContent.collapsed .navGroupHeader .groupLabel {
   justify-content: center;
-}
-
-.mainContent.collapsed .navGroupHeader .chevron {
-  display: none;
 }
 
 /* ================================
@@ -561,34 +577,42 @@
 .navItems {
   display: grid;
   gap: 2px;
-  padding-left: 16px;
-  margin-top: 4px;
+  margin: 0 0 0 20px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border);
   max-height: 0;
   overflow: hidden;
   opacity: 0;
   transform: translateY(-4px);
   transition:
     max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    margin 0.25s ease,
     opacity 0.25s ease,
     transform 0.25s ease;
 }
 
 .navItems.open {
   max-height: 600px;
+  margin-top: 4px;
+  margin-bottom: 6px;
   opacity: 1;
   transform: translateY(0);
 }
 
 .navItems button {
+  position: relative;
   width: 100%;
+  min-height: 34px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 9px 12px;
+  gap: 10px;
+  padding: 0 12px;
+  border: none;
   border-radius: 8px;
   background: transparent;
   color: var(--text-sub);
   text-align: left;
+  cursor: pointer;
   transition:
     background 0.15s ease,
     color 0.15s ease;
@@ -599,9 +623,29 @@
   color: var(--text-main);
 }
 
+.navItems button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
 .navItems button.active {
-  background: transparent;
   color: var(--text-heading);
+}
+
+.navItems button.active::before {
+  content: "";
+  position: absolute;
+  left: -11px;
+  top: 7px;
+  bottom: 7px;
+  width: 4px;
+  background: var(--primary);
+}
+
+.navItems button span {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
 }
 
 .navItems button.active span {
@@ -609,10 +653,7 @@
 }
 
 .navItems button svg {
-  flex-shrink: 0;
-  width: 17px;
-  height: 17px;
-  color: var(--text-muted);
+  display: none;
 }
 
 .navItems button.active svg {
@@ -622,6 +663,7 @@
 .navItems button span {
   font-size: 14px;
   font-weight: 500;
+  line-height: 1.3;
 }
 
 /* Collapsed flyout */
@@ -643,9 +685,10 @@
   position: fixed;
   left: 70px;
   width: 215px;
-  padding: 8px;
+  margin: 0;
+  padding: 6px;
   background: var(--bg-card);
-  border: 1px solid var(--sidebar-border);
+  border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   z-index: 9999;
@@ -666,12 +709,9 @@
 }
 
 .mainContent.collapsed .navItems button {
-  padding: 10px 12px;
+  min-height: 38px;
+  padding: 0 12px;
   border-radius: 8px;
-}
-
-.mainContent.collapsed .navItems button.active {
-  background: var(--nav-active);
 }
 
 .mainContent.collapsed .navMenu {
@@ -679,12 +719,63 @@
 }
 
 .mainContent.collapsed .brand {
+  position: relative;
   justify-content: center;
-  padding-bottom: 16px;
+  padding: 4px 0 8px;
 }
 
-.mainContent.collapsed .brandInfo {
+.mainContent.collapsed .brand {
+  position: relative;
   justify-content: center;
+  padding: 4px 0 8px;
+}
+
+.mainContent.collapsed .sidebarToggle {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 36px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.mainContent.collapsed .brandMark {
+  transition: opacity 0.15s ease;
+}
+
+.mainContent.collapsed .brand:hover .sidebarToggle,
+.mainContent.collapsed .brand:has(.sidebarToggle:focus-visible) .sidebarToggle {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mainContent.collapsed .brand:hover .brandMark,
+.mainContent.collapsed .brand:has(.sidebarToggle:focus-visible) .brandMark {
+  opacity: 0;
+}
+
+@media (hover: none) {
+  .mainContent.collapsed .brand {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mainContent.collapsed .sidebarToggle {
+    position: static;
+    transform: none;
+    width: 30px;
+    height: 30px;
+    background: transparent;
+    border: none;
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 /* ================================
@@ -966,7 +1057,10 @@
   border: 1px solid var(--dl-line-strong);
   border-radius: 8px;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
 }
 
 .detailCard .tableInput::placeholder {
@@ -1037,7 +1131,11 @@
   background: var(--dl-panel);
   color: var(--dl-ink-soft);
   cursor: pointer;
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, transform 0.05s ease;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease,
+    transform 0.05s ease;
 }
 
 .detailCard .detailFooter button:hover {
@@ -1270,7 +1368,10 @@
   background: var(--bg-card, #ffffff);
   color: var(--text-body, #5b6472);
   cursor: pointer;
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
 }
 
 .facilityEmptyImageBtn:hover:not(:disabled) {
@@ -1383,7 +1484,10 @@
   white-space: nowrap;
   flex-shrink: 0;
   margin-left: auto;
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
 }
 
 .barcodeActionBtn:hover:not(:disabled) {
@@ -1456,7 +1560,10 @@
   border: 1px solid var(--border-strong, #c7cdd5);
   border-radius: 8px;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
 }
 
 .facilityHeaderCard textarea.tableInput {
@@ -1547,7 +1654,10 @@
   background: var(--bg-card, #fff);
   color: var(--text-body, #5b6472);
   cursor: pointer;
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
 }
 
 .facilityActionBtn:hover:not(:disabled) {
@@ -1689,7 +1799,10 @@
   border: 1px solid var(--ums-line-strong);
   border-radius: 8px;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
 }
 
 .userMultiSelect .userMultiSelectSearchInput::placeholder {
@@ -1805,7 +1918,7 @@
   }
 
   .mainContent {
-    grid-template-columns: 256px minmax(0, 1fr);
+    grid-template-columns: 232px minmax(0, 1fr);
   }
 
   .mainContent.collapsed {
@@ -1975,7 +2088,6 @@
 }
 
 @container content (max-width: 600px) {
-
   .detailCard .detailTitle,
   .createTitle {
     font-size: 22px;
