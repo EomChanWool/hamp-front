@@ -1,6 +1,5 @@
 import { useRef, useState, type DragEvent } from 'react';
 import Remix from '@components/common/Remix';
-import CustomButton from '@/components/button/CustomButton';
 import '@components/common/FileDropZone.css';
 
 export interface AttachedFile {
@@ -12,7 +11,9 @@ interface FileDropZoneProps {
     label?: string;
     isRequired?: boolean;
     accept?: string;
+    /** 카드 제목 (상세보기의 "등록된 설비 이미지가 없습니다" 자리) */
     mainText?: string;
+    /** 카드 설명 (상세보기의 "설비 사진을 등록하면 이곳에 표시됩니다." 자리) */
     subText?: string;
     buttonText?: string;
     iconName?: string;
@@ -64,7 +65,7 @@ const FileDropZone = ({
     accept = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.jpg,.jpeg,.png,.gif,.zip,.txt',
     mainText = '파일을 마우스로 끌어다 놓으세요.',
     subText = '지원 형식: PDF, Word, Excel, PPT, HWP, 이미지, ZIP, TXT (최대 20MB)',
-    buttonText = '파일 선택',
+    buttonText = '+ 파일 선택',
     iconName = 'upload-2-line',
     onFilesChange,
     showFileList = true,
@@ -156,20 +157,23 @@ const FileDropZone = ({
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
             >
-                <div className="file-drop-zone__icon">
-                    <Remix iconName={iconName} iconSize={2.3} />
+                <div className="file-drop-zone__icon" aria-hidden="true">
+                    <Remix iconName={iconName} iconSize={1.6} />
                 </div>
-                <span className="file-drop-zone__main-text">{mainText}</span>
-                <span className="file-drop-zone__sub-text">{subText}</span>
-                <CustomButton
-                    prefixType="ghost"
-                    iconPosition="text"
-                    onClick={() => {
+
+                <div className="file-drop-zone__main-text">{mainText}</div>
+                <p className="file-drop-zone__sub-text">{subText}</p>
+
+                <button
+                    type="button"
+                    className="file-drop-zone__btn"
+                    onClick={(e) => {
+                        e.stopPropagation();
                         fileInputRef.current?.click();
                     }}
                 >
                     {buttonText}
-                </CustomButton>
+                </button>
                 <input
                     ref={fileInputRef}
                     type="file"
