@@ -1,13 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  FolderIcon,
-  FolderOpenIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from "@heroicons/react/24/outline";
+import { FolderIcon, FolderOpenIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { menuRoutes } from "@/router";
 import { MenuApi } from "@/api/Menu";
 import type { MenuResponse } from "@/api/Menu";
@@ -19,6 +12,23 @@ type SideMenuProps = {
   onToggleCollapsed: () => void;
   onLogoClick: () => void;
 };
+
+function SidebarToggleIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3.5" y="4.5" width="17" height="15" rx="3" />
+      <path d="M9.5 4.5v15" />
+    </svg>
+  );
+}
 
 export function SideMenu({ collapsed, onToggleCollapsed, onLogoClick }: SideMenuProps) {
   const location = useLocation();
@@ -145,6 +155,19 @@ export function SideMenu({ collapsed, onToggleCollapsed, onLogoClick }: SideMenu
     setOpenGroup((current) => (current === title ? null : title));
   };
 
+  // 브랜드 행 오른쪽에 들어가는 접기/펼치기 버튼
+  const toggleButton = (
+    <button
+      type="button"
+      className="sidebarToggle"
+      onClick={onToggleCollapsed}
+      aria-label={collapsed ? "사이드바 펼치기" : "사이드바 접기"}
+      aria-expanded={!collapsed}
+    >
+      <SidebarToggleIcon />
+    </button>
+  );
+
   // 헤더에서 이동해 온 브랜드 영역
   const brandArea = (
     <div className="brand">
@@ -169,20 +192,8 @@ export function SideMenu({ collapsed, onToggleCollapsed, onLogoClick }: SideMenu
           </div>
         )}
       </div>
+      {toggleButton}
     </div>
-  );
-
-  // 사이드바 오른쪽 경계선에 걸쳐 있는 접기/펼치기 버튼
-  const toggleButton = (
-    <button
-      type="button"
-      className={`sidebarToggle ${collapsed ? "collapsedToggle" : ""}`}
-      onClick={onToggleCollapsed}
-      aria-label={collapsed ? "사이드바 펼치기" : "사이드바 접기"}
-      aria-expanded={!collapsed}
-    >
-      {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-    </button>
   );
 
   if (isLoading) {
@@ -195,7 +206,6 @@ export function SideMenu({ collapsed, onToggleCollapsed, onLogoClick }: SideMenu
             <Spinner />{" "}
           </div>
         </aside>
-        {toggleButton}
       </div>
     );
   }
@@ -281,6 +291,7 @@ export function SideMenu({ collapsed, onToggleCollapsed, onLogoClick }: SideMenu
                           key={item.path}
                           type="button"
                           className={isItemActive ? "active" : ""}
+                          aria-current={isItemActive ? "page" : undefined}
                           onClick={() => {
                             navigate(fullPath);
                             if (collapsed) setHoveredGroup(null);
@@ -298,8 +309,6 @@ export function SideMenu({ collapsed, onToggleCollapsed, onLogoClick }: SideMenu
           </nav>
         </div>
       </aside>
-
-      {toggleButton}
     </div>
   );
 }
