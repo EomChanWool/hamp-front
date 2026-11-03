@@ -31,9 +31,9 @@ export function SalesBusinessPartnerDetailPage() {
     {
       title: "기본 정보",
       fields: [
-        { label: "거래처명", key: "bpNm", editable: true },
-        { label: "대표자명", key: "ceoNm", editable: true },
-        { label: "전화번호", key: "phone", editable: true },
+        { label: "거래처명", key: "bpNm", editable: true, maxLength: 100 },
+        { label: "대표자명", key: "ceoNm", editable: true, maxLength: 50 },
+        { label: "전화번호", key: "phone", editable: true, maxLength: 30 },
       ],
     },
     {
@@ -52,8 +52,8 @@ export function SalesBusinessPartnerDetailPage() {
     {
       title: "담당자 정보",
       fields: [
-        { label: "담당자명", key: "managerNm", editable: true },
-        { label: "담당자 연락처", key: "managerPhone", editable: true },
+        { label: "담당자명", key: "managerNm", editable: true, maxLength: 50 },
+        { label: "담당자 연락처", key: "managerPhone", editable: true, maxLength: 30 },
       ],
     },
   ];

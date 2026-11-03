@@ -8,6 +8,8 @@ export type DetailField<T extends Record<string, any> = Record<string, any>> = {
   fullWidth?: boolean;
   /** 필수 입력 필드일 때 라벨 옆에 * 표시 */
   required?: boolean;
+  /** 기본 입력칸의 최대 글자 수 */
+  maxLength?: number;
   // 주소 검색 등 커스텀 입력 컴포넌트가 필요한 필드에만 넘기면 됨
   renderEditor?: (
     value: string,
@@ -107,6 +109,7 @@ export function DetailLayout<T extends Record<string, any> = Record<string, any>
                           value={value}
                           disabled={isBusy}
                           onChange={(e) => onChangeField(key, e.target.value)}
+                          maxLength={field.maxLength}
                         />
                       )
                     ) : (

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import axios from "axios";
 import { useTableSorting } from "@/hooks/useTableSorting";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@components/common/Badge";
@@ -288,8 +289,9 @@ export function FoodLotManagePage() {
       await loadLots();
     } catch (error) {
       console.error("라벨 출력 상태 변경 실패:", error);
+      const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
       window.alert(
-        "출력 상태 변경에 실패했습니다.\n라벨 인쇄는 진행되었을 수 있으니 확인 후 다시 시도해주세요.",
+        `${message || "출력 상태 변경에 실패했습니다."}\n라벨 인쇄는 진행되었을 수 있으니 확인 후 다시 시도해주세요.`,
       );
     } finally {
       setIsPrintSubmitting(false);

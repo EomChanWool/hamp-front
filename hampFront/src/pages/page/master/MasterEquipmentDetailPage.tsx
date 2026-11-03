@@ -72,9 +72,9 @@ export function MasterEquipmentDetailPage() {
     {
       title: "장비 정보",
       fields: [
-        { label: "장비명", key: "eqNm", editable: true },
-        { label: "장비유형", key: "eqType", editable: true },
-        { label: "제조사", key: "manufacturer", editable: true },
+        { label: "장비명", key: "eqNm", editable: true, maxLength: 100 },
+        { label: "장비유형", key: "eqType", editable: true, maxLength: 30 },
+        { label: "제조사", key: "manufacturer", editable: true, maxLength: 50 },
       ],
     },
     {

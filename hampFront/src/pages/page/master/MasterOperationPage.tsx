@@ -234,6 +234,11 @@ export function MasterOperationPage() {
     const handleSaveCreate = async () => {
         if (isUpdating) return;
 
+        if (!editFormRef.current.depCode?.trim()) {
+            window.alert("부서를 선택해주세요.");
+            return;
+        }
+
         setIsUpdating(true);
         try {
             const payload: OperationCreateRequest = {
