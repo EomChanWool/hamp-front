@@ -307,6 +307,10 @@ export function SeedInboundManagePage() {
       window.alert("입고수량은 0보다 커야 합니다.");
       return false;
     }
+    if (defectQty < 0) {
+      window.alert("불량수량은 0 이상이어야 합니다.");
+      return false;
+    }
     if (defectQty > receiptQty) {
       window.alert("불량수량은 입고수량을 초과할 수 없습니다.");
       return false;
@@ -393,6 +397,11 @@ export function SeedInboundManagePage() {
     const itemCode = editFormRef.current.itemCode?.trim();
     if (!itemCode) {
       window.alert("품목을 선택해주세요.");
+      return;
+    }
+
+    if (!editFormRef.current.receivedAt) {
+      window.alert("입고일자를 입력해주세요.");
       return;
     }
 
