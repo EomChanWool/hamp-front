@@ -142,7 +142,7 @@ export function SeedInboundManagePage() {
 
   const fetchItemOptions = useCallback(async () => {
     try {
-      const res = await ItemApi.getOptions({ productType: 0 });
+      const res = await ItemApi.getOptions({ productType: 0, category: [0] });
       setItemOptions(res.data ?? []);
     } catch (error) {
       console.error("씨드 품목 옵션 조회 실패:", error);
@@ -646,7 +646,7 @@ export function SeedInboundManagePage() {
       },
       {
         accessorKey: "receivedAt",
-        header: "입고시간",
+        header: "입고일자",
         meta: { width: "195px" },
         cell: ({ row }) => {
           const isNewRow = row.original.receiptId === -999999;

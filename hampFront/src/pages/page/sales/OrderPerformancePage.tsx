@@ -311,6 +311,9 @@ export function OrderPerformancePage() {
         barData={trendData}
         groupBy={groupBy}
         setGroupBy={setGroupBy}
+        // 상단 월간/분기/연간 값을 하단 대시보드로 전달
+        // → 기간이 바뀌면 하단에서 펼쳐둔 상세 정보를 닫을 수 있도록 하기 위함
+        period={period}
       />
     </section>
   );
