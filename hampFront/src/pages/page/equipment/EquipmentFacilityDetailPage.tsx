@@ -768,7 +768,7 @@ export function EquipmentFacilityDetailPage() {
               barcode: form.barcode || form.fcltCode,
               title: form.fcltCode,
               name: form.fcltNm || "",
-              code: form.eqCode || "",
+              code: form.eqNm || "",
             },
           ]}
         />
