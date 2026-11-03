@@ -1,0 +1,466 @@
+/* ==========================================================================
+   QrLabelPrintModal.css  (QR 전용 라벨 인쇄 미리보기 모달 + 지브라 인쇄용)
+
+   [규격] 지브라 라벨 100mm x 100mm  (가로 x 세로)
+
+   [레이아웃]  위 → 아래 :  텍스트(제목 + 이름/수량 한 줄) / QR(가운데, 크게)
+
+   [크롬 인쇄창] 여백 "없음" / 배율 100% / "머리글 및 바닥글" 체크 해제
+
+   [증상별 조정표]
+   - 2장으로 나뉨            → 드라이버 용지 100x100 확인 → --qr-label-qr-size 줄이기 → 글자 크기, --qr-label-pad-y 줄이기
+   - 아래쪽이 잘림           → --qr-label-qr-size 를 먼저 줄임
+   - 내용이 위쪽에 몰림      → --qr-label-pad-y 키움
+   - 좌우 잘림/치우침        → --qr-label-pad-x, 드라이버 용지 가로 확인
+   - 빈 라벨이 1장 더 나옴   → 카드 높이 보정값(0.5mm)을 1mm 로
+   - QR 이 안 읽힘           → --qr-label-qr-size 키움(최소 25mm 권장), QR 값이 너무 길면 짧게
+   - 이름이 너무 많이 잘림   → .qr-label-card__name 의 line-clamp 를 2 로 (높이 약 5.5mm 추가 필요)
+   - 머리글/바닥글이 나옴    → 크롬 인쇄창에서 체크 해제 (CSS 로 완전 차단 불가)
+   ========================================================================== */
+
+
+/* ==========================================
+   [인쇄 크기 설정값]  ★ 여기만 바꾸면 대부분 해결 ★
+   ========================================== */
+:root {
+  --qr-label-w: 100mm;
+  --qr-label-h: 100mm;
+
+  /* 라벨 안쪽 여백 */
+  --qr-label-pad-x: 5mm;
+  --qr-label-pad-y: 5mm;
+
+  /* 글자 크기 */
+  --qr-label-font-title: 15pt;
+  --qr-label-font-body: 11pt;
+  --qr-label-font-qty: 11pt;
+
+  /* QR 한 변 길이 (정사각형, 흰 여백 1mm 는 별도)
+     바코드가 없어서 공간이 넉넉하므로 크게 → 인식률 향상 */
+  --qr-label-qr-size: 60mm;
+
+  /* 텍스트와 QR 사이 간격 */
+  --qr-label-gap: 4mm;
+}
+
+
+/* ==========================================
+   모달 (화면용)
+   ========================================== */
+
+.qr-label-modal__overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.qr-label-modal {
+  background-color: #f8fafc;
+  width: 850px;
+  max-width: 95vw;
+  max-height: 85vh;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.2s ease;
+}
+
+/* 라벨이 1개일 때 컴팩트하게 */
+.qr-label-modal--single {
+  width: 480px;
+}
+
+.qr-label-modal__header {
+  padding: 20px 24px;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.qr-label-modal__title {
+  margin: 0 0 4px 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.qr-label-modal__subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.qr-label-modal__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.qr-label-modal__btn {
+  font-size: 13px;
+  padding: 6px 14px;
+}
+
+.qr-label-modal__body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.qr-label-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  justify-content: center;
+}
+
+.qr-label-modal__grid--single {
+  grid-template-columns: 1fr;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* ---- 라벨 카드 (화면 미리보기) ---- */
+
+.qr-label-card {
+  background-color: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.qr-label-card__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+/* 이름(좌) + 수량(우) 한 줄 */
+.qr-label-card__meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.qr-label-card__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qr-label-card__code {
+  font-weight: 400;
+  color: #64748b;
+}
+
+.qr-label-card__qty {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.qr-label-card__qty strong {
+  font-weight: 700;
+}
+
+/* QR: 가운데 정렬, 다크모드에서도 인식되도록 항상 흰 배경 + 여백(quiet zone) */
+.qr-label-card__qr {
+  width: 180px;
+  height: 180px;
+  margin: 0 auto;
+  padding: 8px;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+
+.qr-label-card__qr svg {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+
+/* ==========================================
+   반응형
+   ========================================== */
+
+@media (max-width: 1024px) {
+  .qr-label-modal__body {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .qr-label-modal__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .qr-label-modal__header {
+    padding: 16px 18px;
+  }
+
+  .qr-label-modal__title {
+    font-size: 17px;
+  }
+
+  .qr-label-modal__body {
+    padding: 16px;
+  }
+
+  .qr-label-card {
+    padding: 16px;
+  }
+}
+
+
+/* ==========================================
+   다크모드
+   ========================================== */
+
+[data-theme="dark"] .qr-label-modal {
+  background-color: var(--bg-app);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+[data-theme="dark"] .qr-label-modal__header {
+  background-color: var(--bg-card);
+  border-bottom-color: var(--border);
+}
+
+[data-theme="dark"] .qr-label-modal__title {
+  color: var(--text-heading);
+}
+
+[data-theme="dark"] .qr-label-modal__subtitle {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .qr-label-card {
+  background-color: var(--bg-card);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .qr-label-card__title {
+  color: var(--text-heading);
+}
+
+[data-theme="dark"] .qr-label-card__name {
+  color: var(--text-body);
+}
+
+[data-theme="dark"] .qr-label-card__code {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .qr-label-card__qty {
+  color: var(--text-main);
+}
+
+
+/* ==========================================
+   인쇄 전용 스타일
+
+   [다른 인쇄 CSS와 공존하는 규칙]
+   1) 전역 "body * { visibility: hidden }" 금지
+   2) 전역 @page 대신 이름 있는 @page(label) 사용
+      (기존 LabelPrintModal.css 와 값이 동일하므로 둘 다 로드되어도 충돌 없음)
+   3) 모달은 body 직계 #label-print-root 로 렌더링 (id 변경 금지)
+   ========================================== */
+
+/* ★ :root 의 --qr-label-w / --qr-label-h 와 반드시 같은 값, margin 은 반드시 0 */
+@page label {
+  size: 100mm 100mm;
+  margin: 0;
+}
+
+@media print {
+
+  /* 1. 라벨/작업지시서 root 를 제외한 body 직계 요소 숨김 */
+  body>*:not(#label-print-root):not(#work-order-print-root) {
+    display: none !important;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    background: #ffffff !important;
+  }
+
+  /* 2. 화면용 fixed/flex 구조 해제 → 일반 문서 흐름 */
+  #label-print-root.qr-label-root {
+    page: label;
+    display: block !important;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  .qr-label-modal__overlay {
+    position: static !important;
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  .qr-label-modal,
+  .qr-label-modal--single {
+    page: label;
+    position: static !important;
+    display: block !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background-color: #ffffff !important;
+    overflow: visible !important;
+  }
+
+  /* 3. 모달 헤더(제목/버튼) 인쇄 제외 */
+  .qr-label-modal__header {
+    display: none !important;
+  }
+
+  /* 4. 스크롤/여백 제거 + 그리드 해제 (카드 1개 = 라벨 1장) */
+  .qr-label-modal__body {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .qr-label-modal__grid,
+  .qr-label-modal__grid--single {
+    display: block !important;
+    max-width: none !important;
+    margin: 0 !important;
+    gap: 0 !important;
+  }
+
+  /* 5. 라벨 카드: 크기 고정 + 넘치면 잘림 + 카드마다 새 페이지 */
+  .qr-label-card {
+    page: label;
+    box-sizing: border-box !important;
+    width: var(--qr-label-w) !important;
+    /* 용지 높이와 같으면 프린터 오차로 빈 라벨이 나올 수 있어 0.5mm 작게 */
+    height: calc(var(--qr-label-h) - 0.5mm) !important;
+    padding: var(--qr-label-pad-y) var(--qr-label-pad-x) !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+
+    break-after: page;
+    page-break-after: always;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* 마지막 라벨 뒤 빈 페이지 방지 */
+  .qr-label-card:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  /* 라벨 내부 글자 (크기는 :root 변수로 조정) */
+  .qr-label-card .qr-label-card__title {
+    font-size: var(--qr-label-font-title) !important;
+    line-height: 1.2 !important;
+    margin-bottom: 1mm !important;
+    color: #000000 !important;
+    /* 제목은 1줄 고정 (넘치면 …) */
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    word-break: normal !important;
+  }
+
+  /* 이름(좌) + 수량(우) 한 줄 */
+  .qr-label-card .qr-label-card__meta {
+    display: flex !important;
+    align-items: baseline !important;
+    justify-content: space-between !important;
+    gap: 3mm !important;
+    margin-bottom: var(--qr-label-gap) !important;
+  }
+
+  .qr-label-card .qr-label-card__name {
+    font-size: var(--qr-label-font-body) !important;
+    line-height: 1.2 !important;
+    color: #000000 !important;
+
+    /* 최대 1줄. 2줄로 늘리려면 line-clamp 를 2 로 (높이 여유 확인) */
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    overflow: hidden !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+  }
+
+  .qr-label-card .qr-label-card__code {
+    color: #000000 !important;
+  }
+
+  .qr-label-card .qr-label-card__qty {
+    font-size: var(--qr-label-font-qty) !important;
+    line-height: 1.2 !important;
+    color: #000000 !important;
+  }
+
+  /* QR: 가운데 + 크기 고정 (흰 여백 1mm 가 quiet zone 역할) */
+  .qr-label-card .qr-label-card__qr {
+    flex: 0 0 auto !important;
+    box-sizing: border-box !important;
+    width: calc(var(--qr-label-qr-size) + 2mm) !important;
+    height: calc(var(--qr-label-qr-size) + 2mm) !important;
+    margin: 0 auto !important;
+    padding: 1mm !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background-color: #ffffff !important;
+  }
+
+  .qr-label-card .qr-label-card__qr svg {
+    display: block !important;
+    visibility: visible !important;
+    width: var(--qr-label-qr-size) !important;
+    height: var(--qr-label-qr-size) !important;
+  }
+}
