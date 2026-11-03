@@ -34,6 +34,28 @@ const withUnit = (value: number | null | undefined, unit: string) =>
   value == null ? "-" : `${formatQty(value)}${unit ? ` ${unit}` : ""}`;
 
 // ==========================================
+// 조회 오류 처리용 유틸
+// ==========================================
+
+// URL 파라미터 정규화
+//  - 인코딩된 값(%2D 등)이 그대로 서버로 가거나, 앞뒤 공백이 섞이는 경우를 방지
+//  - decodeURIComponent 는 잘못된 값이면 예외를 던지므로 try/catch 처리
+const normalizeWorkId = (raw?: string) => {
+  if (!raw) return "";
+  try {
+    return decodeURIComponent(raw).trim();
+  } catch {
+    return raw.trim();
+  }
+};
+
+// "존재하지 않는 작업지시" 오류인지 판별 (HTTP 404 이거나 서버 code 가 RESOURCE_NOT_FOUND)
+const isNotFoundError = (error: unknown) =>
+  axios.isAxiosError(error) &&
+  (error.response?.status === 404 ||
+    error.response?.data?.code === "RESOURCE_NOT_FOUND");
+
+// ==========================================
 // 투입/산출 자재 리스트 컴포넌트
 // ==========================================
 function MaterialList({
@@ -218,10 +240,17 @@ function RoutingTimeline({ steps }: { steps: WorkOrderRoutingStepResponse[] }) {
 // ==========================================
 export function FoodWorkOrderDetailPage() {
   const navigate = useNavigate();
-  const { workId } = useParams<{ workId: string }>();
+  const { workId: rawWorkId } = useParams<{ workId: string }>();
 
-  const [isLoading, setIsLoading] = useState(false);
+  // URL 파라미터를 정규화한 값을 사용 (인코딩/공백 문제 방지)
+  const workId = useMemo(() => normalizeWorkId(rawWorkId), [rawWorkId]);
+
+  // 초기값 true: 조회 전/실패 시 "빈 상세 화면"이 먼저 그려지는 것을 방지
+  const [isLoading, setIsLoading] = useState(true);
   const [userOptions, setUserOptions] = useState<UserOptionResponse[]>([]);
+
+  // 조회 실패 메시지 상태 (alert 대신 화면에 안내 + 중복 alert 방지)
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [workOrder, setWorkOrder] = useState<WorkOrderMaster>({
     workOrderNo: workId || "",
@@ -243,6 +272,10 @@ export function FoodWorkOrderDetailPage() {
 
   // --- useRef 기반 지시수량 임시 저장소 (lineId를 키로 관리) ---
   const editQuantitiesRef = useRef<Record<string, number | ''>>({});
+
+  // 조회 요청 순번 (StrictMode 의 effect 이중 실행 / 빠른 화면 전환 시
+  //   "이전 요청의 응답·에러"가 최신 상태를 덮어쓰거나 alert 를 띄우는 문제 방지)
+  const fetchSeqRef = useRef(0);
 
   // 라우팅 아코디언 상태 (펼쳐진 라인 id)
   const [expandedRoutingLineId, setExpandedRoutingLineId] = useState<string | null>(null);
@@ -267,10 +300,27 @@ export function FoodWorkOrderDetailPage() {
 
   const fetchWorkOrderDetail = useCallback(async () => {
     if (!workId) return;
+
+    // 이번 요청의 순번 발급 (이후 더 새로운 요청이 생기면 이 요청의 결과는 버림)
+    const seq = ++fetchSeqRef.current;
+    const isStale = () => seq !== fetchSeqRef.current;
+
     setIsLoading(true);
+    setLoadError(null);
+
     try {
       const response = await WorkOrderApi.getDetail(workId);
+
+      // 오래된 요청의 응답이면 무시
+      if (isStale()) return;
+
       const data = response.data as any;
+
+      // HTTP 200 이지만 본문이 {status:"NG"} 형태로 오는 경우 방어
+      if (data?.status === "NG") {
+        throw Object.assign(new Error(data.message || "조회 실패"), { serverBody: data });
+      }
+
       const routingMap: Record<string, WorkOrderRoutingStepResponse[]> = {};
 
       (data.lines ?? []).forEach((line: any) => {
@@ -311,15 +361,35 @@ export function FoodWorkOrderDetailPage() {
       setWorkOrder(mappedData);
       setEditForm(mappedData);
     } catch (error) {
+      // 오래된 요청의 에러는 화면/alert 에 반영하지 않음
+      if (isStale()) return;
+
       console.error("작업지시 상세 조회 실패:", error);
-      alert("작업지시 상세 정보를 불러오는 중 오류가 발생했습니다.");
+
+      // 서버가 내려준 message 를 그대로 보여주고, 화면에도 안내 문구를 남김
+      const serverMessage = axios.isAxiosError(error)
+        ? error.response?.data?.message
+        : (error as any)?.serverBody?.message;
+
+      setLoadError(
+        serverMessage ||
+        (isNotFoundError(error)
+          ? `존재하지 않는 작업지시입니다: ${workId}`
+          : "작업지시 상세 정보를 불러오는 중 오류가 발생했습니다.")
+      );
     } finally {
-      setIsLoading(false);
+      // 최신 요청일 때만 로딩 해제 (이전 요청이 로딩 스피너를 먼저 꺼버리는 것 방지)
+      if (!isStale()) setIsLoading(false);
     }
   }, [workId]);
 
   useEffect(() => {
     fetchWorkOrderDetail();
+
+    // 화면을 떠나거나 workId 가 바뀌면 진행 중이던 요청 결과를 무효화
+    return () => {
+      fetchSeqRef.current++;
+    };
   }, [fetchWorkOrderDetail]);
 
   const handleStartEdit = () => {
@@ -673,6 +743,27 @@ export function FoodWorkOrderDetailPage() {
       default: return <Badge tone="muted">대기</Badge>;
     }
   };
+
+  // 없는 작업지시ID(URL 직접 입력 등)로 접근하면 빈 상세 화면 대신
+  //   서버 메시지(존재하지 않는 작업지시입니다: ...)와 목록/재시도 버튼만 보여준다.
+  if (loadError && !isLoading) {
+    return (
+      <section className="screenStack relative min-h-[400px]">
+        <div className="createCard food-detail-card">
+          <h1 className="food-detail-title">{workId}</h1>
+          <p style={{ margin: "16px 0" }}>{loadError}</p>
+          <div className="food-footer-btn-group">
+            <button type="button" className="ghostButton" onClick={() => navigate(-1)}>
+              돌아가기
+            </button>
+            <button type="button" className="primaryButton" onClick={fetchWorkOrderDetail}>
+              다시 시도
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="screenStack relative min-h-[400px]">
