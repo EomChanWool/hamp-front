@@ -78,6 +78,11 @@ export function SalesOrderCreatePage() {
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
 
+    if (!form.bpCode) {
+      alert("거래처를 선택해주세요.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await SalesOrderApi.create(form);
