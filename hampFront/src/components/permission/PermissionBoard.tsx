@@ -28,11 +28,13 @@ function PermToggle({
     disabled,
     onToggle,
     label,
+    className = "",
 }: {
     state: CheckState;
     disabled?: boolean;
     onToggle: () => void;
     label: string;
+    className?: string;
 }) {
     return (
         <button
@@ -41,7 +43,7 @@ function PermToggle({
             aria-checked={state === "checked"}
             aria-label={label}
             disabled={disabled}
-            className={`permToggle ${state}`}
+            className={`permToggle ${state} ${className}`.trim()}
             onClick={(e) => {
                 e.stopPropagation();
                 onToggle();
@@ -51,6 +53,59 @@ function PermToggle({
         </button>
     );
 }
+
+/* ================================
+    [일괄 선택 버튼]
+    토글 대신 "dot + 글자" 형태의 가벼운 버튼으로 행/열 전체 선택을 처리함
+    - 행: 메뉴명 앞 dot 자체가 버튼 (children 없음)
+    - 열: 헤더의 "● 조회" 같은 글자 버튼 (children = 라벨)
+================================ */
+function PermBulkButton({
+    state,
+    disabled,
+    onClick,
+    label,
+    className = "",
+    children,
+}: {
+    state: CheckState;
+    disabled?: boolean;
+    onClick: () => void;
+    label: string;
+    className?: string;
+    children?: React.ReactNode;
+}) {
+    return (
+        <button
+            type="button"
+            aria-pressed={state === "checked" ? true : state === "mixed" ? "mixed" : false}
+            aria-label={label}
+            title={label}
+            disabled={disabled}
+            className={`permBulkBtn ${className} ${state}`.trim()}
+            onClick={(e) => {
+                e.stopPropagation(); // 행 라벨의 펼침/접힘 클릭과 분리
+                onClick();
+            }}
+        >
+            <span className="permBulkMark" />
+            {children}
+        </button>
+    );
+}
+
+/* ================================
+    [일괄 선택용 유틸]
+    - PermKey : 조회/등록/수정/삭제/승인 중 하나의 키
+    - collectLeaves : 트리에서 "최하위(자식 없는) 메뉴"만 평탄화해서 모음
+      (권한 값은 최하위 메뉴가 실제로 가지고 있으므로 일괄 처리는 이 단위로 함)
+================================ */
+type PermKey = (typeof PERMISSIONS)[number]["key"];
+
+const collectLeaves = (list: MenuResponse[]): MenuResponse[] =>
+    list.flatMap((menu) =>
+        menu.children && menu.children.length > 0 ? collectLeaves(menu.children) : [menu]
+    );
 
 export function PermissionBoard() {
     const [authGroups, setAuthGroups] = useState<AuthGroupResponse[]>([]);
@@ -407,12 +462,67 @@ export function PermissionBoard() {
             ? `권한 ${activeMenuSelectionSummary.selected}/${activeMenuSelectionSummary.total}개 부여됨`
             : "하위 메뉴 없음";
 
+    /* ================================
+        [일괄 선택 로직]
+        - 행(row) 전체 선택 : 해당 행(하위 메뉴 포함)의 5개 권한을 모두 켜기/끄기
+        - 열(column) 전체 선택 : 현재 대메뉴 아래 모든 최하위 메뉴의 해당 권한을 모두 켜기/끄기
+        둘 다 "대상 최하위 메뉴 목록(leaves) × 대상 권한 키(keys)" 조합으로 처리하는
+        같은 로직을 공유함
+    ================================ */
+
+    // leaves × keys 중 켜진 개수를 세어 checked / mixed / unchecked 판정
+    const getBulkState = useCallback(
+        (leaves: MenuResponse[], keys: readonly PermKey[]): CheckState => {
+            const total = leaves.length * keys.length;
+            if (total === 0) return "unchecked";
+
+            let on = 0;
+            leaves.forEach((leaf) => {
+                keys.forEach((key) => {
+                    if (permState[leaf.menuId]?.[key]) on += 1;
+                });
+            });
+
+            if (on === 0) return "unchecked";
+            return on === total ? "checked" : "mixed";
+        },
+        [permState]
+    );
+
+    // 현재 상태와 목표값이 다른 칸만 handleToggle로 뒤집어서 목표값으로 맞춤
+    // (이미 목표값인 칸은 건드리지 않으므로 dirty 계산이 어긋나지 않음)
+    const applyBulk = useCallback(
+        (leaves: MenuResponse[], keys: readonly PermKey[], target: boolean) => {
+            leaves.forEach((leaf) => {
+                keys.forEach((key) => {
+                    const current = !!permState[leaf.menuId]?.[key];
+                    if (current !== target) handleToggle(leaf.menuId, key);
+                });
+            });
+        },
+        [permState, handleToggle]
+    );
+
+    // 모든 권한 키 목록 (행 전체 선택용)
+    const allPermKeys = useMemo(() => PERMISSIONS.map((p) => p.key as PermKey), []);
+
+    // 현재 화면에 보이는 대메뉴 아래 최하위 메뉴들 (열 전체 선택 대상)
+    const activeLeaves = useMemo(
+        () => (activeTopMenu?.children ? collectLeaves(activeTopMenu.children) : []),
+        [activeTopMenu]
+    );
+
     /* ── 하위 트리 렌더링 ── */
     const renderSubTree = (menuList: MenuResponse[], depth = 1) => (
         <div className="permSubChildren" style={{ ["--depth" as string]: depth }}>
             {menuList.map((menu) => {
                 const hasChildren = menu.children && menu.children.length > 0;
                 const isCollapsed = isSearching ? false : collapsedSub[menu.menuId] ?? true;
+
+                // 이 행이 담당하는 최하위 메뉴들 (자식이 없으면 자기 자신)
+                const rowLeaves = hasChildren ? collectLeaves(menu.children!) : [menu];
+                // 행 전체 토글 상태 (5개 권한 전부 기준)
+                const rowState = getBulkState(rowLeaves, allPermKeys);
 
                 return (
                     <div key={menu.menuId} className="permSubNode">
@@ -422,10 +532,17 @@ export function PermissionBoard() {
                                 onClick={() => hasChildren && toggleSubCollapse(menu.menuId)}
                                 style={{ cursor: hasChildren ? "pointer" : "default" }}
                             >
-                                {hasChildren ? (
+                                {/* [행 전체 선택] 메뉴명 앞 dot을 누르면 이 행의 조회~승인을 한 번에 켜기/끄기 */}
+                                <PermBulkButton
+                                    className="permRowDot"
+                                    state={rowState}
+                                    disabled={!isEditing}
+                                    onClick={() => applyBulk(rowLeaves, allPermKeys, rowState !== "checked")}
+                                    label={`${menu.menuNm} 전체 권한`}
+                                />
+                                {/* 하위 메뉴가 있는 행만 펼침 화살표 표시 */}
+                                {hasChildren && (
                                     <ChevronRightIcon className={`permSubToggleIcon ${!isCollapsed ? "open" : ""}`} />
-                                ) : (
-                                    <span className="permSubDot" />
                                 )}
                                 {menu.menuNm}
                             </span>
@@ -612,20 +729,31 @@ export function PermissionBoard() {
 
                                 {/*
                                     2단(컬럼 라벨) + 하위 메뉴 목록을 하나의 스크롤 컨테이너(permMatrixScroll)로
-                                    묶음. 예전엔 이 둘이 서로 다른 스크롤 컨테이너에 있어서 좁은 화면에서
-                                    가로 스크롤 시 헤더와 목록이 따로 움직였는데, 지금은 항상 같이 움직임.
-                                    헤더는 CSS에서 position:sticky로 위쪽에 붙어 있어 세로 스크롤 시에도
-                                    계속 보임
+                                    묶음. 헤더는 CSS에서 position:sticky로 위쪽에 붙어 있어 세로 스크롤 시에도
+                                    계속 보이고, 가로 스크롤은 헤더와 목록이 항상 같이 움직임
                                 */}
                                 <div className="permMatrixScroll">
                                     <div className="permMatrixHeader">
                                         <span className="permMatrixHeaderLabel">메뉴명</span>
                                         <div className="permCheckGroup">
-                                            {PERMISSIONS.map((p) => (
-                                                <div key={p.key} className="permCheckCell permCheckCellHeader">
-                                                    <span>{p.label}</span>
-                                                </div>
-                                            ))}
+                                            {PERMISSIONS.map((p) => {
+                                                // [열 전체 선택] 현재 대메뉴 아래 모든 최하위 메뉴의 해당 권한 상태
+                                                const colState = getBulkState(activeLeaves, [p.key as PermKey]);
+                                                return (
+                                                    <div key={p.key} className="permCheckCell permCheckCellHeader">
+                                                        {/* [열 전체 선택] 글자를 누르면 현재 대메뉴 전체의 해당 권한을 한 번에 켜기/끄기 */}
+                                                        <PermBulkButton
+                                                            className="permColHead"
+                                                            state={colState}
+                                                            disabled={!isEditing || activeLeaves.length === 0}
+                                                            onClick={() => applyBulk(activeLeaves, [p.key as PermKey], colState !== "checked")}
+                                                            label={`${activeTopMenu.menuNm} 전체 ${p.label} 권한`}
+                                                        >
+                                                            {p.label}
+                                                        </PermBulkButton>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
 

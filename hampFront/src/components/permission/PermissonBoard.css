@@ -719,6 +719,77 @@
   opacity: 0.5;
 }
 
+/* 공통: dot + (글자) 버튼 */
+.permBulkBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  margin: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+
+.permBulkBtn:hover:not(:disabled) {
+  background: rgba(23, 135, 95, 0.1);
+}
+
+.permBulkBtn:focus-visible {
+  outline: 2px solid #17875f;
+  outline-offset: 1px;
+}
+
+.permBulkBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* dot 본체: 꺼짐=회색 / 켜짐=초록 / 일부=반반 */
+.permBulkMark {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+
+.permBulkBtn.checked .permBulkMark {
+  background: #17875f;
+  border-color: #17875f;
+}
+
+.permBulkBtn.mixed .permBulkMark {
+  border-color: #17875f;
+  background: linear-gradient(90deg, #17875f 50%, transparent 50%);
+}
+
+/* 열 헤더 글자 버튼 */
+.permColHead {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.permColHead.checked,
+.permColHead.mixed {
+  color: #17875f;
+}
+
+/* 행 앞 dot 버튼: 글자 없이 dot만, 클릭 영역은 패딩으로 확보 */
+.permRowDot {
+  padding: 6px;
+  margin-right: 2px;
+}
+
 /* ── 반응형 ──
    1024 : 태블릿 — nav/check 컬럼 폭 1차 축소
    860  : 작은 태블릿 — nav/check 컬럼 폭 2차 축소
@@ -904,6 +975,21 @@
 [data-theme="dark"] .permNavSkeletonRow {
   background: linear-gradient(90deg, var(--bg-card) 25%, #1e2130 37%, var(--bg-card) 63%);
   background-size: 400% 100%;
+}
+
+[data-theme="dark"] .permBulkBtn.checked .permBulkMark {
+  background: #57d3a1;
+  border-color: #57d3a1;
+}
+
+[data-theme="dark"] .permBulkBtn.mixed .permBulkMark {
+  border-color: #57d3a1;
+  background: linear-gradient(90deg, #57d3a1 50%, transparent 50%);
+}
+
+[data-theme="dark"] .permColHead.checked,
+[data-theme="dark"] .permColHead.mixed {
+  color: #57d3a1;
 }
 
 /* ── 모션 최소화 환경 ── */
