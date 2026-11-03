@@ -14,10 +14,16 @@ import {
   ChevronDownIcon,
 } from "@heroicons/react/16/solid";
 
+/* =========================================================
+   타입 정의
+   ========================================================= */
+
+// 모든 필드 공통 속성
 type BaseField = {
   isPrimary?: boolean;
 };
 
+// 텍스트 입력 필드
 type SearchInputField = BaseField & {
   type: "input";
   label: string;
@@ -28,6 +34,7 @@ type SearchInputField = BaseField & {
   value?: string;
 };
 
+// 단일 날짜 필드
 type SearchSingleDateField = BaseField & {
   type: "single-date";
   label: string;
@@ -36,6 +43,7 @@ type SearchSingleDateField = BaseField & {
   value?: string;
 };
 
+// 기간(시작 ~ 종료) 필드 — 빠른 선택 버튼(오늘/1주/...)이 함께 렌더링된다.
 type SearchDateField = BaseField & {
   type: "date";
   label: string;
@@ -46,6 +54,7 @@ type SearchDateField = BaseField & {
   endValue?: string;
 };
 
+// 셀렉트 필드 (커스텀 SearchSelect로 렌더링)
 type SearchSelectField = BaseField & {
   type: "select";
   label: string;
@@ -73,6 +82,8 @@ type SearchSelectProps = {
   selectRef: RefObject<HTMLSelectElement | null>;
   options: { value: string; label: string }[];
   resetKey: number;
+  // 위치별로 폭 등을 다르게 줄 때 쓰는 추가 클래스 (예: "topSelectField")
+  className?: string;
 };
 
 // select의 기본(초기) 값: 빈 값("") 옵션이 있으면 그것, 없으면 첫 번째 옵션
@@ -84,6 +95,7 @@ function SearchSelect({
   selectRef,
   options,
   resetKey,
+  className,
 }: SearchSelectProps) {
   const uid = useId();
   const labelId = `${uid}-label`;
@@ -91,9 +103,9 @@ function SearchSelect({
 
   const initialValue = getSelectDefault(options);
 
-  const [value, setValue] = useState(initialValue);
-  const [open, setOpen] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [value, setValue] = useState(initialValue); // 화면에 표시되는 선택 값
+  const [open, setOpen] = useState(false); // 드롭다운 열림 여부
+  const [activeIndex, setActiveIndex] = useState(0); // 키보드로 하이라이트된 항목
   const wrapRef = useRef<HTMLDivElement>(null);
 
   const selectedIndex = Math.max(
@@ -109,6 +121,7 @@ function SearchSelect({
     setValue(selectRef.current?.value ?? initialValue);
   }, [resetKey, selectRef, initialValue]);
 
+  // 드롭다운 바깥을 클릭하면 닫기
   useEffect(() => {
     if (!open) return;
 
@@ -122,6 +135,7 @@ function SearchSelect({
     return () => document.removeEventListener("mousedown", handleOutside);
   }, [open]);
 
+  // 키보드로 이동한 항목이 목록 스크롤 영역 밖이면 보이도록 스크롤
   useEffect(() => {
     if (!open) return;
     document
@@ -129,11 +143,13 @@ function SearchSelect({
       ?.scrollIntoView({ block: "nearest" });
   }, [open, activeIndex, listId]);
 
+  // 목록 열기 (현재 선택된 항목을 하이라이트)
   const openList = () => {
     setActiveIndex(selectedIndex);
     setOpen(true);
   };
 
+  // 항목 선택: 화면 상태 + native select 값 동시 갱신
   const choose = (index: number) => {
     const option = options[index];
     if (!option) return;
@@ -145,6 +161,7 @@ function SearchSelect({
     setOpen(false);
   };
 
+  // 키보드 조작 (↑ ↓ Home End Enter Space Esc Tab)
   const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
     switch (e.key) {
       case "ArrowDown":
@@ -197,9 +214,13 @@ function SearchSelect({
   };
 
   return (
-    <div className="searchSelectField" ref={wrapRef}>
+    <div
+      className={["searchSelectField", className].filter(Boolean).join(" ")}
+      ref={wrapRef}
+    >
       <p id={labelId}>{label}</p>
 
+      {/* 실제 값을 가지는 숨겨진 native select (ref로 부모가 값을 읽는다) */}
       <select
         ref={selectRef}
         className="selectNative"
@@ -214,6 +235,7 @@ function SearchSelect({
         ))}
       </select>
 
+      {/* 화면에 보이는 트리거 버튼 */}
       <button
         type="button"
         role="combobox"
@@ -226,6 +248,7 @@ function SearchSelect({
         onClick={() => (open ? setOpen(false) : openList())}
         onKeyDown={handleKeyDown}
         onKeyUp={(e) => {
+          // Space 키 up 시 버튼 클릭이 다시 발생하는 것을 방지
           if (e.key === " ") e.preventDefault();
         }}
       >
@@ -233,6 +256,7 @@ function SearchSelect({
         <ChevronDownIcon />
       </button>
 
+      {/* 드롭다운 목록 */}
       {open && (
         <div
           id={listId}
@@ -256,6 +280,7 @@ function SearchSelect({
                 ]
                   .filter(Boolean)
                   .join(" ")}
+                // mousedown 시 트리거 버튼의 포커스가 빠지지 않도록 방지
                 onMouseDown={(e) => e.preventDefault()}
                 onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => choose(index)}
@@ -271,9 +296,14 @@ function SearchSelect({
   );
 }
 
+/* =========================================================
+   상수 / 유틸
+   ========================================================= */
+
 // 통합 검색(검색조건 select + 검색어)에 쓰이는 input 필드의 최대 개수
 const SCOPE_LIMIT = 2;
 
+// 날짜 빠른 선택 버튼 목록
 const QUICK_RANGES = [
   { key: "today", label: "오늘" },
   { key: "1w", label: "1주" },
@@ -284,6 +314,7 @@ const QUICK_RANGES = [
 
 type QuickRangeKey = (typeof QUICK_RANGES)[number]["key"];
 
+// Date → "YYYY-MM-DD" (input[type=date] 값 형식)
 const formatDate = (date: Date) => {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
@@ -299,6 +330,7 @@ const subtractMonths = (date: Date, months: number) => {
   return new Date(year, month, Math.min(date.getDate(), lastDay));
 };
 
+// 빠른 선택 키에 해당하는 시작일 계산 (종료일은 항상 오늘)
 const getQuickRangeStart = (key: QuickRangeKey, today: Date) => {
   if (key === "1w") {
     const start = new Date(today);
@@ -338,6 +370,10 @@ const getFieldValues = (field: SearchField): (string | undefined)[] => {
   }
 };
 
+/* =========================================================
+   SearchBand 본체
+   ========================================================= */
+
 export function SearchBand({
   fields,
   onSearch,
@@ -346,12 +382,14 @@ export function SearchBand({
 }: Props) {
   const panelId = useId();
   const [resetKey, setResetKey] = useState(0);
-  const keywordRef = useRef<HTMLInputElement>(null);
-  const scopeRef = useRef<HTMLSelectElement>(null);
+  const keywordRef = useRef<HTMLInputElement>(null); // 통합 모드의 검색어 input
+  const scopeRef = useRef<HTMLSelectElement>(null); // 통합 모드의 검색 조건 select
 
   // effect 안에서 항상 최신 fields를 참조하기 위한 ref (stale closure 방지)
   const fieldsRef = useRef(fields);
   fieldsRef.current = fields;
+
+  /* ---------- 레이아웃 분류 ---------- */
 
   const scopeFields = getScopeFields(fields);
   const topSelects = getTopSelects(fields); // input이 없을 때 상단 행에 올라가는 select
@@ -480,6 +518,9 @@ export function SearchBand({
     if (hasDetailValue) setExpanded(true);
   }, [controlledKey, hasControlledValue]);
 
+  /* ---------- 이벤트 핸들러 ---------- */
+
+  // 조회: 통합 모드면 선택된 조건의 input에만 검색어를 넣고 나머지는 비운 뒤 부모에 알린다.
   const handleSearch = () => {
     if (unified) {
       const keyword = keywordRef.current?.value ?? "";
@@ -544,7 +585,13 @@ export function SearchBand({
 
   /* ---------- 필드 렌더링 ---------- */
 
-  const renderField = (field: SearchField, index: number) => {
+  // selectClassName: select 필드에만 적용되는 추가 클래스
+  // (상단 행에 올라간 select는 "topSelectField"를 받아 패널 필드와 같은 폭이 된다)
+  const renderField = (
+    field: SearchField,
+    index: number,
+    selectClassName?: string,
+  ) => {
     // select는 커스텀 SearchSelect로 렌더링
     if (field.type === "select") {
       return (
@@ -554,6 +601,7 @@ export function SearchBand({
           selectRef={field.ref}
           options={field.options}
           resetKey={resetKey}
+          className={selectClassName}
         />
       );
     }
@@ -687,10 +735,14 @@ export function SearchBand({
       {/* 키워드 행: input 또는 상단 select가 있을 때만 렌더링 (없으면 actions만 덩그러니 남는 문제 방지) */}
       {hasKeywordRow && (
         <div className="searchKeywordRow">
-          {/* input이 없을 때: select로 상단 행의 빈 자리를 채움 */}
-          {topSelects.map(renderField)}
+          {/* input이 없을 때: select로 상단 행의 빈 자리를 채움
+              → "topSelectField" 클래스로 상세검색 패널 필드와 같은 폭(260px)을 적용
+              (map(renderField)로 넘기면 3번째 인자에 배열이 들어가므로 화살표 함수 사용) */}
+          {topSelects.map((field, index) =>
+            renderField(field, index, "topSelectField"),
+          )}
 
-          {/* 통합 모드: 검색 조건 select */}
+          {/* 통합 모드: 검색 조건 select (기존 160px 폭 유지) */}
           {unified && (
             <SearchSelect
               label="검색 조건"
@@ -745,10 +797,12 @@ export function SearchBand({
             .join(" ")}
           hidden={!isExpanded}
         >
-          {panelFields.map(renderField)}
+          {panelFields.map((field, index) => renderField(field, index))}
 
           {dateFields.length > 0 && (
-            <div className="searchDateGroup">{dateFields.map(renderField)}</div>
+            <div className="searchDateGroup">
+              {dateFields.map((field, index) => renderField(field, index))}
+            </div>
           )}
 
           {/* filterOnly: 키워드 행이 없으므로 버튼을 패널 끝에 배치 */}
