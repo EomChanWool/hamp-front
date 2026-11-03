@@ -411,7 +411,38 @@ export function FoodWorkOrderDetailPage() {
     setEditForm(workOrder);
   };
 
+  const validateEditForm = (): boolean => {
+    if (!editForm.workDate) {
+      alert("작업일자를 입력해주세요.");
+      return false;
+    }
+    if (!editForm.managerId) {
+      alert("담당자를 선택해주세요.");
+      return false;
+    }
+    if (editForm.lines.length === 0) {
+      alert("수주라인을 최소 1개 이상 추가해야 합니다.");
+      return false;
+    }
+    for (const line of editForm.lines) {
+      const currentQty = Number(editQuantitiesRef.current[line.id] ?? line.instructQty);
+
+      if (!Number.isFinite(currentQty) || currentQty <= 0) {
+        alert("지시수량은 0보다 큰 숫자를 입력해주세요.");
+        return false;
+      }
+
+      if (!Number.isInteger(currentQty)) {
+        alert("지시수량은 정수로 입력해주세요.");
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleSaveEdit = async () => {
+    if (!validateEditForm()) return;
+
     try {
       setIsLoading(true);
 
