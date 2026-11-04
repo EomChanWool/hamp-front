@@ -3,7 +3,7 @@ import type { Dispatch, SetStateAction } from "react";
 
 interface OperationOption {
   operCode: string;
-  operNm: string | null; 
+  operNm: string | null;
 }
 
 export interface OperationSelectModalProps {
@@ -21,7 +21,6 @@ export function OperationSelectModal({
   isOpen, onClose, operations, modalSearchKeyword, setModalSearchKeyword,
   tempSelectedCodes, setTempSelectedCodes, onConfirm,
 }: OperationSelectModalProps) {
-  if (!isOpen) return null;
 
   const filteredOperations = useMemo(() => {
     if (!modalSearchKeyword.trim()) return operations;
@@ -32,6 +31,9 @@ export function OperationSelectModal({
         (op.operNm || "").toLowerCase().includes(keyword)
     );
   }, [operations, modalSearchKeyword]);
+
+  // 훅 호출이 모두 끝난 뒤에 닫힘 처리
+  if (!isOpen) return null;
 
   const isAllFilteredSelected =
     filteredOperations.length > 0 &&
@@ -63,8 +65,14 @@ export function OperationSelectModal({
           <button type="button" className="detailModalClose" onClick={onClose}>✕</button>
         </div>
         <div className="detailModalBody modalBodyFlex">
-          <input type="text" className="tableInput modalSearchInput" placeholder="공정 코드 또는 공정명 검색..." 
-                 value={modalSearchKeyword} onChange={(e) => setModalSearchKeyword(e.target.value)} autoFocus />
+          <input
+            type="text"
+            className="tableInput modalSearchInput"
+            placeholder="공정 코드 또는 공정명 검색..."
+            value={modalSearchKeyword}
+            onChange={(e) => setModalSearchKeyword(e.target.value)}
+            autoFocus
+          />
           <div className="modalSelectAllRow">
             <div className="modalCountText">선택된 공정 수: <strong>{tempSelectedCodes.length}</strong>개</div>
             <button type="button" className="miniButton ghostButton" onClick={handleToggleSelectAll}>
@@ -72,11 +80,20 @@ export function OperationSelectModal({
             </button>
           </div>
           <div className="modalListContainer">
-            {filteredOperations.length === 0 ? <div className="modalEmptyText">검색된 공정이 없습니다.</div> : (
+            {filteredOperations.length === 0 ? (
+              <div className="modalEmptyText">검색된 공정이 없습니다.</div>
+            ) : (
               filteredOperations.map((op) => (
-                <div key={op.operCode} onClick={() => handleToggleCheckbox(op.operCode)} 
-                     className={`modalListItem ${tempSelectedCodes.includes(op.operCode) ? "modalListItemChecked" : ""}`}>
-                  <input type="checkbox" checked={tempSelectedCodes.includes(op.operCode)} onChange={() => {}} />
+                <div
+                  key={op.operCode}
+                  onClick={() => handleToggleCheckbox(op.operCode)}
+                  className={`modalListItem ${tempSelectedCodes.includes(op.operCode) ? "modalListItemChecked" : ""}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={tempSelectedCodes.includes(op.operCode)}
+                    onChange={() => {}}
+                  />
                   <div className="modalListItemContent">
                     {/* 공정명이 없으면 "-" 표시 */}
                     <span className="modalListItemTitle">{op.operNm || "-"}</span>
@@ -89,7 +106,9 @@ export function OperationSelectModal({
         </div>
         <div className="detailModalFooter">
           <button type="button" className="ghostButton" onClick={onClose}>취소</button>
-          <button type="button" className="primaryButton" onClick={onConfirm}>선택 완료 ({tempSelectedCodes.length}개 적용)</button>
+          <button type="button" className="primaryButton" onClick={onConfirm}>
+            선택 완료 ({tempSelectedCodes.length}개 적용)
+          </button>
         </div>
       </div>
     </div>
