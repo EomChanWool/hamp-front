@@ -2058,6 +2058,10 @@ textarea.tableInput {
   transform: translate(-50%, -50%);
   width: min(740px, 92vw);
   max-height: 85vh;
+  max-height: 85dvh;
+  display: flex;
+  flex-direction: column;
+
   overflow: hidden;
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -2074,6 +2078,7 @@ textarea.tableInput {
   align-items: center;
   padding: 24px 30px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0; 
 }
 
 .detailModalHeader h3 {
@@ -2110,6 +2115,8 @@ textarea.tableInput {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px 24px;
   overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .detailField {
@@ -2144,6 +2151,7 @@ textarea.tableInput {
   padding: 20px 30px;
   border-top: 1px solid var(--border);
   background: var(--bg-subtle);
+  flex-shrink: 0;
 }
 
 .detailModalFooterRight {
@@ -2169,6 +2177,7 @@ textarea.tableInput {
 
 .modalSearchInput {
   width: 100%;
+  flex-shrink: 0;
 }
 
 .modalCountText {
@@ -2177,7 +2186,8 @@ textarea.tableInput {
 }
 
 .modalListContainer {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 120px; 
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -2228,6 +2238,7 @@ textarea.tableInput {
   justify-content: space-between;
   align-items: center;
   margin-top: 6px;
+  flex-shrink: 0; 
 }
 
 .requiredLabel {
@@ -2240,6 +2251,7 @@ textarea.tableInput {
   color: #ef4444;
   font-weight: 700;
 }
+
 
 /* ================================
    PAGE FORM

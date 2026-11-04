@@ -259,3 +259,8 @@
 [data-theme="dark"] .orderPerfDashboard__detailTable td {
   border-bottom-color: var(--border);
 }
+
+/* 다크모드: 막대 위 레이블(생산량 / 주문량 (%)) 색상 */
+[data-theme="dark"] .orderPerfDashboard .recharts-label-list text {
+  fill: var(--text-heading) !important;
+}
