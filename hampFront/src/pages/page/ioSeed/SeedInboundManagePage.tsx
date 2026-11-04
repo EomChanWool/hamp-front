@@ -15,7 +15,7 @@ import {
 } from "@/api/ioSeed/SeedGoodsReceipt";
 import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
 import { ReportModal } from "@/components/modal/ReportModal";
-import { LabelPrintModal, type LabelItem } from "@/components/modal/LabelPrintModal";
+import { QrLabelPrintModal, type QrLabelItem } from "@/components/modal/QrLabelPrintModal";
 import "@/pages/page/ioSeed/ioSeed.css";
 
 // 백엔드 reportStatus 값: '미신고' / '부분신고' / '신고완료'
@@ -80,7 +80,7 @@ export function SeedInboundManagePage() {
 
   // 체크박스 선택된 행 ID 관리 (receiptId 기준)
   const [selectedReceiptIds, setSelectedReceiptIds] = useState<number[]>([]);
-  // 라벨 인쇄 모달 오픈 여부
+  // QR 라벨 인쇄 모달 오픈 여부
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
 
   // 신고처리 모달 대상 (null이면 닫힘)
@@ -819,13 +819,14 @@ export function SeedInboundManagePage() {
     return receipts;
   }, [isCreatingNewRow, receipts]);
 
-  const selectedLabelItems: LabelItem[] = useMemo(() => {
+  // QR 라벨용 데이터
+  const selectedLabelItems: QrLabelItem[] = useMemo(() => {
     return receipts
       .filter((r) => selectedReceiptIds.includes(r.receiptId))
       .map((r) => ({
         id: String(r.receiptId),
-        barcode: r.barcode || String(r.receiptId),
-        title: "씨드 입고",
+        qrValue: r.barcode || String(r.receiptId),
+        title: `씨드 입고 (${r.barcode})`,
         name: r.itemNm || "",
         code: r.itemCode,
         qty: r.goodQty || r.receiptQty,
@@ -880,7 +881,8 @@ export function SeedInboundManagePage() {
         <ReportModal receipt={reportModalReceipt} onClose={handleCloseReportModal} onChanged={handleReportChanged} />
       )}
 
-      <LabelPrintModal
+      {/* QR 전용 라벨 모달 */}
+      <QrLabelPrintModal
         isOpen={isLabelModalOpen}
         onClose={() => setIsLabelModalOpen(false)}
         items={selectedLabelItems}
