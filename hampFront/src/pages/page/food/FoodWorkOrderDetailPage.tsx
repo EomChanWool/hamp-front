@@ -685,7 +685,7 @@ export function FoodWorkOrderDetailPage() {
                 />
               ) : (
                 <div className="food-cell-qty">
-                  {item.instructQty}
+                  {Number(item.instructQty ?? 0).toLocaleString()}
                 </div>
               )}
 

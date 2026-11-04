@@ -453,7 +453,7 @@ export function SeedReportReturnManagePage() {
           const isEditing = editingId === item.returnId;
 
           if (!isEditing) {
-            return `${item.returnQty} KG`;
+            return `${(item.returnQty ?? 0).toLocaleString()} KG`;
           }
 
           return (
@@ -480,7 +480,7 @@ export function SeedReportReturnManagePage() {
           const isEditing = editingId === item.returnId;
 
           if (!isEditing) {
-            return `${item.hullQty} KG`;
+            return `${(item.hullQty ?? 0).toLocaleString()} KG`;
           }
 
           return (
@@ -725,7 +725,7 @@ export function SeedReportReturnManagePage() {
                                       <div className="seedPendingStat">
                                         <div className="seedPendingStat__label">신고수량</div>
                                         <div className="seedPendingStat__value">
-                                          <span>{item.returnQty}</span>
+                                          <span>{(item.returnQty ?? 0).toLocaleString()}</span>
                                           <span className="seedPendingStat__unit">KG</span>
                                         </div>
                                       </div>
@@ -733,7 +733,7 @@ export function SeedReportReturnManagePage() {
                                       <div className="seedPendingStat">
                                         <div className="seedPendingStat__label">껍질수량</div>
                                         <div className="seedPendingStat__value">
-                                          <span>{item.hullQty}</span>
+                                          <span>{(item.hullQty ?? 0).toLocaleString()}</span>
                                           <span className="seedPendingStat__unit">KG</span>
                                         </div>
                                       </div>
