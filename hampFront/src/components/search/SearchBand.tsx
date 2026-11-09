@@ -62,6 +62,8 @@ type SearchSelectField = BaseField & {
   options: { value: string; label: string }[];
   name?: string;
   value?: string;
+  // 사용자가 항목을 직접 선택했을 때 부모에게 알리는 콜백
+  onChange?: (value: string) => void;
 };
 
 export type SearchField =
@@ -84,6 +86,7 @@ type SearchSelectProps = {
   resetKey: number;
   // 위치별로 폭 등을 다르게 줄 때 쓰는 추가 클래스 (예: "topSelectField")
   className?: string;
+  onChange?: (value: string) => void;
 };
 
 // select의 기본(초기) 값: 빈 값("") 옵션이 있으면 그것, 없으면 첫 번째 옵션
@@ -96,6 +99,7 @@ function SearchSelect({
   options,
   resetKey,
   className,
+  onChange,
 }: SearchSelectProps) {
   const uid = useId();
   const labelId = `${uid}-label`;
@@ -120,6 +124,19 @@ function SearchSelect({
     if (resetKey === 0) return;
     setValue(selectRef.current?.value ?? initialValue);
   }, [resetKey, selectRef, initialValue]);
+
+  // 옵션 목록이 바뀌어(예: 구분 변경으로 품목명 옵션 교체) 현재 선택값이 새 목록에 없으면 기본값("전체")으로 되돌린다.
+  const optionsKey = options.map((option) => option.value).join(",");
+  useEffect(() => {
+    if (options.some((option) => option.value === value)) return;
+
+    const fallback = getSelectDefault(options);
+    setValue(fallback);
+    if (selectRef.current) {
+      selectRef.current.value = fallback;
+    }
+    // options 배열은 매 렌더마다 새로 만들어지므로 내용 기반 키(optionsKey)로만 감지
+  }, [optionsKey, value, selectRef]);
 
   // 드롭다운 바깥을 클릭하면 닫기
   useEffect(() => {
@@ -159,6 +176,11 @@ function SearchSelect({
       selectRef.current.value = option.value;
     }
     setOpen(false);
+
+    // 값이 실제로 바뀐 경우에만 부모에게 알림
+    if (option.value !== value) {
+      onChange?.(option.value);
+    }
   };
 
   // 키보드 조작 (↑ ↓ Home End Enter Space Esc Tab)
@@ -602,6 +624,7 @@ export function SearchBand({
           options={field.options}
           resetKey={resetKey}
           className={selectClassName}
+          onChange={field.onChange}
         />
       );
     }
