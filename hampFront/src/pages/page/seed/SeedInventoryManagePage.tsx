@@ -20,7 +20,12 @@ const SELECTABLE_CATEGORIES: ItemCategory[] = [0, 2];
 
 export function SeedInventoryManagePage() {
     const [historyList, setHistoryList] = useState<StockHistoryResponse[]>([]);
+    // 등록/수정 행에서 쓰는 품목 옵션 (원료 + 완제품 전체)
     const [itemOptions, setItemOptions] = useState<ItemOptionResponse[]>([]);
+    // 검색바 "품목명" 셀렉트 전용 옵션. 검색바의 "구분" 선택값에 따라 다시 조회
+    const [searchItemOptions, setSearchItemOptions] = useState<ItemOptionResponse[]>([]);
+    // 검색바에서 현재 선택 중인 구분 ('' = 전체, '0' = 원료, '2' = 완제품)
+    const [searchCategory, setSearchCategory] = useState('');
     const [totalElements, setTotalElements] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
@@ -91,6 +96,35 @@ export function SeedInventoryManagePage() {
         fetchItemOptions();
     }, [fetchItemOptions]);
 
+    // 검색바 "구분"이 바뀔 때마다 품목명 옵션을 구분에 맞게 다시 조회한다.
+    // - cancelled 플래그: 구분을 빠르게 연속 변경했을 때 늦게 도착한 이전 응답이 덮어쓰지 않도록 방지
+    useEffect(() => {
+        let cancelled = false;
+
+        const fetchSearchItemOptions = async () => {
+            try {
+                const category: ItemCategory[] =
+                    searchCategory === ''
+                        ? SELECTABLE_CATEGORIES
+                        : [Number(searchCategory) as ItemCategory];
+
+                const res = await ItemApi.getOptions({
+                    productType: 0,
+                    category,
+                });
+                if (!cancelled) setSearchItemOptions(res.data ?? []);
+            } catch (error) {
+                console.error('검색용 품목 옵션 조회 실패:', error);
+            }
+        };
+
+        fetchSearchItemOptions();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [searchCategory]);
+
     const searchFields: SearchField[] = useMemo(
         () => [
             {
@@ -103,6 +137,8 @@ export function SeedInventoryManagePage() {
                     { label: '원료', value: '0' },
                     { label: '완제품', value: '2' },
                 ],
+                // 이전에 고른 품목이 새 옵션에 없으면 SearchBand 쪽에서 자동으로 '전체'로 되돌린다.
+                onChange: (value: string) => setSearchCategory(value),
             },
             {
                 type: 'select',
@@ -111,7 +147,8 @@ export function SeedInventoryManagePage() {
                 name: 'itemCode',
                 options: [
                     { label: '전체', value: '' },
-                    ...itemOptions.map((opt) => ({
+                    // searchItemOptions (구분별로 조회된 옵션)
+                      ...searchItemOptions.map((opt) => ({
                         label: `${opt.itemNm} (${opt.itemCode ?? '-'})`,
                         value: opt.itemCode,
                     })),
@@ -130,7 +167,7 @@ export function SeedInventoryManagePage() {
                 ],
             },
         ],
-        [itemOptions]
+        [searchItemOptions]
     );
 
     const loadHistories = useCallback(async () => {
@@ -193,6 +230,7 @@ export function SeedInventoryManagePage() {
         if (itemCodeRef.current) itemCodeRef.current.value = '';
         if (ioTypeRef.current) ioTypeRef.current.value = '';
 
+        setSearchCategory('');
         setPage(0);
         setSearchFilters({ category: '', itemCode: '', ioType: '' });
         setSorting([]);
