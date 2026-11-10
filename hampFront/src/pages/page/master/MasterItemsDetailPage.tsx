@@ -638,8 +638,13 @@ export function MasterItemsDetailPage() {
                           <span className="routing-seq">
                             {String(route.operSeq ?? index + 1).padStart(2, "0")}
                           </span>
-                          <Badge tone="info">{route.operCode}</Badge>
-                          <span className="routing-oper-nm">
+                          <span className="routing-code-wrap">
+                            <Badge tone="info">{route.operCode}</Badge>
+                          </span>
+                          <span
+                            className="routing-oper-nm"
+                            title={matchedOp ? matchedOp.operNm : ""}
+                          >
                             {matchedOp ? matchedOp.operNm : ""}
                           </span>
                         </div>
@@ -805,8 +810,13 @@ export function MasterItemsDetailPage() {
                         <span className="routing-seq">
                           {String(route.operSeq ?? index + 1).padStart(2, "0")}
                         </span>
-                        <Badge tone="info">{route.operCode}</Badge>
-                        <span className="routing-oper-nm">
+                        <span className="routing-code-wrap">
+                          <Badge tone="info">{route.operCode}</Badge>
+                        </span>
+                        <span
+                          className="routing-oper-nm"
+                          title={matchedOp ? matchedOp.operNm : ""}
+                        >
                           {matchedOp ? matchedOp.operNm : ""}
                         </span>
                       </div>
