@@ -354,6 +354,11 @@
 .routing-drag-handle:not(.is-dragging) { cursor: grab; }
 
 .routing-seq { font-weight: 600; color: #374151; min-width: 24px; flex-shrink: 0; }
+
+/* 공정코드 뱃지 래퍼 */
+.routing-code-wrap { display: inline-flex; align-items: center; flex-shrink: 0; white-space: nowrap; }
+
+/* 공정명: 남는 공간을 차지하되, 정말 부족할 때만 말줄임 */
 .routing-oper-nm { font-weight: 500; color: #1f2937; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1 1 auto; }
 .routing-item-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: auto; }
 
@@ -459,7 +464,9 @@
    한 줄 구성: [순번 코드 공정명] [IN 칩.. OUT 칩..] ........ [공정구분]
 -------------------------------------------------------- */
 .routing-list-item.is-readonly { cursor: default; flex-wrap: nowrap; }  /* 읽기 전용이라 grab 커서 제거, 웹에서는 한 줄 */
-.routing-list-item.is-readonly .routing-item-left { flex: 0 1 260px; }  /* 공정 정보 영역 폭 고정 → 자재 칩 시작 위치가 행마다 정렬됨 */
+
+/* 공정 정보 영역(순번 + 코드 뱃지 + 공정명) */
+.routing-list-item.is-readonly .routing-item-left { flex: 0 0 clamp(320px, 40%, 520px); }
 
 .routing-mtrl-summary { flex: 1 1 0; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
 .routing-mtrl-summary-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
