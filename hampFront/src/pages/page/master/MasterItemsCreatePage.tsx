@@ -21,7 +21,6 @@ import { Badge } from "@/components/common/Badge";
 import {
   RoutingMaterialSection,
   toMaterialRequests,
-  type RoutingMaterialDraft,
 } from "@/components/common/RoutingMatarialSection";
 
 interface OperationOption {
@@ -54,31 +53,15 @@ export function MasterItemsCreatePage() {
     soleProductionYn: "0",
   });
 
+  // [중복 공정 지원]
   const {
     routings,
+    clearRoutings,
     syncRoutings,
-    removeRouting: handleRemoveRouting,
+    removeRouting,
     moveRouting,
+    setStepMaterials,
   } = useItemRoutings();
-
-  //  공정코드(operCode)별 투입/산출 자재 목록
-  //  - 훅(useItemRoutings)은 건드리지 않고, 공정코드를 key 로 별도 보관합니다.
-  //  - 공정 순서를 바꾸거나 삭제해도 key 가 operCode 라서 자재가 꼬이지 않습니다.
-  const [routingMaterials, setRoutingMaterials] = useState<Record<string, RoutingMaterialDraft[]>>({});
-
-  /** 특정 공정의 자재 목록 교체 */
-  const handleMaterialsChange = (operCode: string, next: RoutingMaterialDraft[]) => {
-    setRoutingMaterials((prev) => ({ ...prev, [operCode]: next }));
-  };
-
-  /** 특정 공정을 제외할 때 해당 공정의 자재도 함께 제거 */
-  const removeMaterialsOf = (operCode: string) => {
-    setRoutingMaterials((prev) => {
-      const next = { ...prev };
-      delete next[operCode];
-      return next;
-    });
-  };
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -86,6 +69,7 @@ export function MasterItemsCreatePage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalSearchKeyword, setModalSearchKeyword] = useState("");
+  // 중복을 허용하는 공정코드 배열 (같은 공정 = 여러 번 포함)
   const [tempSelectedCodes, setTempSelectedCodes] = useState<string[]>([]);
 
   const routingItemRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -125,84 +109,30 @@ export function MasterItemsCreatePage() {
 
     // 원료(0)만 공정 라우팅(+ 자재) 초기화
     if (key === "category" && value === "0") {
-      syncRoutings([]);
-      setRoutingMaterials({});
+      clearRoutings(); // 단계와 자재가 한 객체라 한 번에 초기화됨
     }
   };
 
-  const resetMaterialsOnFinalChange = (nextCodes: string[]): boolean => {
-    const prevCodes = routings.map((r) => r.operCode ?? "");
-    const prevFinal = prevCodes[prevCodes.length - 1];
-    const nextFinal = nextCodes[nextCodes.length - 1];
-    if (prevFinal === nextFinal) return true;
+  /**
+   * 공정 순서 이동 (드래그 / 화살표 / 앞으로·뒤로 버튼 공통). 실제로 이동했으면 true
+   */
+  const handleMoveRouting = (from: number, to: number): boolean => moveRouting(from, to);
 
-    const affected = [prevFinal, nextFinal].filter(
-      (code): code is string =>
-        !!code &&
-        nextCodes.includes(code) &&
-        (routingMaterials[code] ?? []).length > 0
-    );
-
-    if (affected.length > 0) {
-      const ok = window.confirm(
-        "최종공정이 변경되어 해당 공정의 투입/산출 자재가 모두 삭제됩니다.\n계속하시겠습니까?"
-      );
-      if (!ok) return false;
-
-      setRoutingMaterials((prev) => {
-        const next = { ...prev };
-        affected.forEach((code) => delete next[code]);
-        return next;
-      });
-    }
-    return true;
-  };
-
-  /** 공정 순서 이동 (드래그 / 화살표 / 앞으로·뒤로 버튼 공통). 실제로 이동했으면 true */
-  const handleMoveRouting = (from: number, to: number): boolean => {
-    if (from === to || from < 0 || to < 0 || from >= routings.length || to >= routings.length) {
-      return false;
-    }
-    const nextCodes = routings.map((r) => r.operCode ?? "");
-    const [moved] = nextCodes.splice(from, 1);
-    nextCodes.splice(to, 0, moved);
-
-    if (!resetMaterialsOnFinalChange(nextCodes)) return false;
-    moveRouting(from, to);
-    return true;
-  };
-
-  /** "이 공정 제외" : 제외하는 공정의 자재 삭제 + 최종공정이 바뀌면 해당 공정 자재도 삭제 */
+  /** "이 공정 제외" : 해당 "단계"만 제거 (같은 공정의 다른 단계는 유지). 확인창 취소 시 아무 변화 없음 */
   const handleRemoveSelectedRouting = (index: number) => {
-    const target = routings[index];
-    if (!target) return;
-    const nextCodes = routings.filter((_, i) => i !== index).map((r) => r.operCode ?? "");
-
-    if (!resetMaterialsOnFinalChange(nextCodes)) return;
-    removeMaterialsOf(target.operCode ?? "");
-    handleRemoveRouting(index);
+    if (!removeRouting(index)) return;
     setSelectedIndex(null);
   };
 
   const handleOpenModal = () => {
     setModalSearchKeyword("");
-    const currentCodes = routings.map((r) => r.operCode).filter(Boolean) as string[];
-    setTempSelectedCodes(currentCodes);
+    // [중복 공정 지원] 중복 제거 없이 현재 단계 순서 그대로 전달 (이송 3단계 → "이송" 3개)
+    setTempSelectedCodes(routings.map((r) => r.operCode));
     setIsModalOpen(true);
   };
 
   const handleConfirmModal = () => {
-    const nextCodes = tempSelectedCodes;
-
-    // 최종공정(마지막 공정)이 바뀌면 해당 공정 자재 삭제 (취소하면 모달 유지)
-    if (!resetMaterialsOnFinalChange(nextCodes)) return;
-
-    // 목록에서 빠진 공정의 자재도 함께 정리
-    setRoutingMaterials((prev) =>
-      Object.fromEntries(Object.entries(prev).filter(([code]) => nextCodes.includes(code)))
-    );
-
-    syncRoutings(nextCodes);
+    if (!syncRoutings(tempSelectedCodes)) return;
     setIsModalOpen(false);
   };
 
@@ -250,9 +180,7 @@ export function MasterItemsCreatePage() {
           operCode: r.operCode?.trim() || null,
           operSeq: r.operSeq,
           finalYn: r.finalYn || "N",
-          // 현재 남아있는 공정의 자재만 전송 (제외된 공정의 자재는 자동으로 빠짐, yieldRate 포함)
-          // 중간공정은 자재 0건 / IN 또는 OUT만 있어도 그대로 전송
-          materials: toMaterialRequests(routingMaterials[r.operCode ?? ""]),
+          materials: toMaterialRequests(r.materials),
         }))
         : null,
     };
@@ -277,8 +205,6 @@ export function MasterItemsCreatePage() {
   const isRoutingAllowed = form.category === "1" || form.category === "2";
   const selectedRouting = selectedIndex !== null && routings[selectedIndex] ? routings[selectedIndex] : null;
   const selectedMatchedOp = selectedRouting ? operations.find((op) => op.operCode === selectedRouting.operCode) : null;
-  // 선택된 공정의 operCode (자재 맵의 key)
-  const selectedOperCode = selectedRouting?.operCode ?? "";
 
   return (
     <section className="screenStack">
@@ -449,7 +375,8 @@ export function MasterItemsCreatePage() {
 
                 <div className="routing-guide-text">
                   ⠿ 드래그로 순서 변경, 항목 선택 시 우측에서 상세 편집
-                  (마지막 공정이 최종공정이며, 최종공정이 바뀌면 해당 공정의 투입/산출 자재는 초기화됩니다)
+                  (마지막 공정이 최종공정이며, 최종공정이 바뀌면 해당 공정의 투입/산출 자재는 초기화됩니다.
+                  같은 공정을 여러 단계로 추가할 수 있으며 자재는 단계별로 따로 관리됩니다)
                 </div>
 
                 {routings.length === 0 ? (
@@ -471,7 +398,8 @@ export function MasterItemsCreatePage() {
 
                         return (
                           <div
-                            key={`${route.operCode}-${index}`}
+                            // [중복 공정 지원] 같은 공정이 반복돼도 유일한 단계 고유키 사용
+                            key={route.rowKey}
                             ref={(el) => { routingItemRefs.current[index] = el; }}
                             draggable
                             onDragStart={() => setDraggedIndex(index)}
@@ -629,11 +557,12 @@ export function MasterItemsCreatePage() {
                             </div>
                           </div>
 
-                          {/* 이 공정의 투입(IN) / 산출(OUT) 자재 (+ 산출 자재 수율) */}
+                          {/* 이 "단계"의 투입(IN) / 산출(OUT) 자재 (+ 산출 자재 수율) */}
+                          {/* [중복 공정 지원] resetKey / materials / onChange 모두 operCode 가 아닌 단계(rowKey) 기준 */}
                           <RoutingMaterialSection
-                            resetKey={selectedOperCode}
-                            materials={routingMaterials[selectedOperCode] ?? []}
-                            onChange={(next) => handleMaterialsChange(selectedOperCode, next)}
+                            resetKey={selectedRouting.rowKey}
+                            materials={selectedRouting.materials}
+                            onChange={(next) => setStepMaterials(selectedRouting.rowKey, next)}
                             excludeItemCode={form.itemCode.trim()}
                             productType={form.productType === "" ? undefined : form.productType}
                             finalYn={selectedRouting?.finalYn ?? "N"}
