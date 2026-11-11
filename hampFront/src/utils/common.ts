@@ -53,3 +53,18 @@ export const isValidPhone = (value?: string | null): boolean => {
   if (!trimmed) return true;
   return PHONE_REGEX.test(trimmed);
 };
+
+/**
+ * 소수 수량 입력값 정리 (DB decimal(12,2) 기준)
+ * - 숫자와 소수점 하나만 남기고, 소수점 아래는 2자리까지
+ */
+export const sanitizeDecimalInput = (value: string): string => {
+  const [intPart, ...rest] = value.replace(/[^0-9.]/g, "").split(".");
+  return rest.length === 0 ? intPart : `${intPart}.${rest.join("").slice(0, 2)}`;
+};
+
+/** 소수 수량 입력값 → 숫자. 빈 값이면 null */
+export const parseDecimalInput = (value: string): number | null => {
+  const num = Number(value);
+  return value === "" || value === "." || Number.isNaN(num) ? null : num;
+};
