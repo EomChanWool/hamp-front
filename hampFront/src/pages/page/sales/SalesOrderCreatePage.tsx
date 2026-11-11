@@ -3,12 +3,21 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import {
   SalesOrderApi,
-  type SalesOrderCreateRequest,
-  type SalesOrderLineRequest
+  type SalesOrderCreateRequest
 } from "@/api/sales/SalesOrder";
 import { BusinessPartnerApi } from "@/api/sales/BusinessPartner";
-import { ItemApi } from "@/api/master/Item";
+import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
 import { AmountInput } from "@/components/common/AmountInput";
+import { parseDecimalInput, sanitizeDecimalInput } from "@/utils/common";
+
+type SalesOrderLineDraft = {
+  itemCode: string;
+  planQty: string;
+};
+
+type SalesOrderCreateForm = Omit<SalesOrderCreateRequest, "lines"> & {
+  lines: SalesOrderLineDraft[];
+};
 
 export function SalesOrderCreatePage() {
   const navigate = useNavigate();
@@ -16,26 +25,32 @@ export function SalesOrderCreatePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 폼 상태 관리
-  const [form, setForm] = useState<SalesOrderCreateRequest>({
+  const [form, setForm] = useState<SalesOrderCreateForm>({
     bpCode: "",
     dueDate: "",
     note: "",
+    itemCode: "",
+    orderQty: null,
+    orderAmount: null,
     lines: [],
   });
 
   const [businessPartnerOptions, setBusinessPartnerOptions] = useState<any[]>([]);
   const [itemOptions, setItemOptions] = useState<any[]>([]);
+  const [rawItemOptions, setRawItemOptions] = useState<ItemOptionResponse[]>([]);
 
   // 옵션 목록 조회 함수
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const [bpRes, itemRes] = await Promise.all([
+        const [bpRes, itemRes, rawItemRes] = await Promise.all([
           BusinessPartnerApi.getOptions(),
           ItemApi.getOptions({ category: [2] }),
+          ItemApi.getOptions({ category: [0] }),
         ]);
         setBusinessPartnerOptions(bpRes.data ?? []);
         setItemOptions(itemRes.data ?? []);
+        setRawItemOptions(rawItemRes.data ?? []);
       } catch (error) {
         console.error("옵션 목록 조회 실패:", error);
       }
@@ -43,7 +58,7 @@ export function SalesOrderCreatePage() {
     fetchOptions();
   }, []);
 
-  const handleChange = (key: keyof SalesOrderCreateRequest, value: any) => {
+  const handleChange = (key: keyof SalesOrderCreateForm, value: any) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -51,13 +66,13 @@ export function SalesOrderCreatePage() {
   const addLine = () => {
     setForm((prev) => ({
       ...prev,
-      lines: [...(prev.lines || []), { itemCode: "", orderQty: 0, orderAmount: 0 }]
+      lines: [...prev.lines, { itemCode: "", planQty: "" }]
     }));
   };
 
   // 품목(Line) 변경
-  const handleLineChange = (index: number, key: keyof SalesOrderLineRequest, value: any) => {
-    const newLines = [...(form.lines || [])];
+  const handleLineChange = (index: number, key: keyof SalesOrderLineDraft, value: string) => {
+    const newLines = [...form.lines];
     newLines[index] = { ...newLines[index], [key]: value };
     setForm((prev) => ({ ...prev, lines: newLines }));
   };
@@ -66,7 +81,7 @@ export function SalesOrderCreatePage() {
   const removeLine = (index: number) => {
     setForm((prev) => ({
       ...prev,
-      lines: prev.lines?.filter((_, i) => i !== index)
+      lines: prev.lines.filter((_, i) => i !== index)
     }));
   };
 
@@ -83,9 +98,18 @@ export function SalesOrderCreatePage() {
       return;
     }
 
+    const payload: SalesOrderCreateRequest = {
+      ...form,
+      itemCode: form.itemCode || null,
+      lines: form.lines.map((line) => ({
+        itemCode: line.itemCode,
+        planQty: parseDecimalInput(line.planQty),
+      })),
+    };
+
     setIsSubmitting(true);
     try {
-      await SalesOrderApi.create(form);
+      await SalesOrderApi.create(payload);
       alert("성공적으로 등록되었습니다.");
       navigate("/sales/sales-order", { replace: true });
     } catch (error) {
@@ -154,10 +178,68 @@ export function SalesOrderCreatePage() {
               </div>
             </div>
 
-            {/* 2. 품목 정보 섹션 */}
+            {/* 2. 투입원료 섹션 */}
+            <div className="createSection">
+              <h2 className="createSectionTitle">투입원료</h2>
+              <div className="createGrid2Cols">
+                <div className="createField">
+                  <label>투입원료</label>
+                  <select
+                    className="tableInput"
+                    value={form.itemCode ?? ""}
+                    onChange={(e) => handleChange("itemCode", e.target.value)}
+                    disabled={isSubmitting}
+                  >
+                    <option value="">투입원료를 선택해주세요</option>
+                    {rawItemOptions.map((opt) => (
+                      <option key={opt.itemCode} value={opt.itemCode}>
+                        {opt.itemCode} ({opt.itemNm ?? "-"})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="createField">
+                  <label>투입수량</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      className="tableInput"
+                      style={{ textAlign: "right", flex: 1, minWidth: 0 }}
+                      value={form.orderQty ?? ""}
+                      disabled={isSubmitting}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, "");
+                        handleChange("orderQty", val === "" ? null : Number(val));
+                      }}
+                    />
+                    <span style={{ whiteSpace: "nowrap", minWidth: "40px" }}>
+                      {rawItemOptions.find((opt) => opt.itemCode === form.itemCode)?.unit ?? ""}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="createField">
+                  <label>가공비</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <AmountInput
+                      className="tableInput"
+                      style={{ textAlign: "right", flex: 1, minWidth: 0 }}
+                      value={form.orderAmount}
+                      disabled={isSubmitting}
+                      onValueChange={(amount) => handleChange("orderAmount", amount)}
+                    />
+                    <span style={{ whiteSpace: "nowrap", minWidth: "24px" }}>원</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. 생산 품목 섹션 */}
             <div className="createSection">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                <label className="requiredLabel" style={{ margin: 0, fontWeight: 600 }}>품목 정보</label>
+                <label className="requiredLabel" style={{ margin: 0, fontWeight: 600 }}>생산 품목</label>
                 <button type="button" className="miniButton primary" onClick={addLine} disabled={isSubmitting}>
                   + 품목 추가
                 </button>
@@ -171,10 +253,7 @@ export function SalesOrderCreatePage() {
                         <div className="th-content">품목코드</div>
                       </th>
                       <th>
-                        <div className="th-content">주문수량</div>
-                      </th>
-                      <th>
-                        <div className="th-content">주문금액</div>
+                        <div className="th-content">예정 산출수량</div>
                       </th>
                       <th>
                         <div className="th-content">삭제</div>
@@ -182,7 +261,7 @@ export function SalesOrderCreatePage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {form.lines?.map((line, idx) => (
+                    {form.lines.map((line, idx) => (
                       <tr key={idx}>
                         <td>
                           <select
@@ -210,55 +289,25 @@ export function SalesOrderCreatePage() {
                           >
                             <input
                               type="text"
-                              inputMode="numeric"
+                              inputMode="decimal"
                               className="tableInput"
                               style={{
                                 textAlign: "right",
                                 flex: 1,
                                 minWidth: 0,
                               }}
-                              value={line.orderQty}
+                              value={line.planQty}
+                              placeholder="미정"
                               disabled={isSubmitting}
-                              onChange={(e) => {
-                                const val = e.target.value.replace(/[^0-9]/g, "");
-                                handleLineChange(
-                                  idx,
-                                  "orderQty",
-                                  val === "" ? 0 : Number(val)
-                                );
-                              }}
+                              onChange={(e) =>
+                                handleLineChange(idx, "planQty", sanitizeDecimalInput(e.target.value))
+                              }
                             />
 
                             <span style={{ whiteSpace: "nowrap", minWidth: "40px" }}>
                               {itemOptions.find(
                                 (opt) => opt.itemCode === line.itemCode
                               )?.unit ?? ""}
-                            </span>
-                          </div>
-                        </td>
-                        <td>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                              width: "100%",
-                            }}
-                          >
-                            <AmountInput
-                              className="tableInput"
-                              style={{
-                                textAlign: "right",
-                                flex: 1,
-                                minWidth: 0,
-                              }}
-                              value={line.orderAmount}
-                              disabled={isSubmitting}
-                              onValueChange={(amount) => handleLineChange(idx, "orderAmount", amount)}
-                            />
-
-                            <span style={{ whiteSpace: "nowrap", minWidth: "24px" }}>
-                              원
                             </span>
                           </div>
                         </td>
@@ -274,9 +323,9 @@ export function SalesOrderCreatePage() {
                         </td>
                       </tr>
                     ))}
-                    {(!form.lines || form.lines.length === 0) && (
+                    {form.lines.length === 0 && (
                       <tr>
-                        <td colSpan={4} style={{ textAlign: "center", padding: "20px" }}>
+                        <td colSpan={3} style={{ textAlign: "center", padding: "20px" }}>
                           등록된 품목 정보가 없습니다. 우측 상단의 [+ 품목 추가] 버튼을 눌러주세요.
                         </td>
                       </tr>

@@ -7,10 +7,10 @@ import type {
   SalesOrderUpdateRequest,
 } from "@/api/sales/SalesOrder";
 import { BusinessPartnerApi } from "@/api/sales/BusinessPartner";
-import { ItemApi } from "@/api/master/Item";
+import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
 import Spinner from "@/components/common/Spinner";
 import { AmountInput } from "@/components/common/AmountInput";
-import { formatDateTime } from "@/utils/common";
+import { formatDateTime, parseDecimalInput, sanitizeDecimalInput } from "@/utils/common";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
 
 export function SalesOrderDetailPage() {
@@ -27,6 +27,7 @@ export function SalesOrderDetailPage() {
   const [form, setForm] = useState<Record<string, any>>({});
   const [businessPartnerOptions, setBusinessPartnerOptions] = useState<any[]>([]);
   const [itemOptions, setItemOptions] = useState<any[]>([]);
+  const [rawItemOptions, setRawItemOptions] = useState<ItemOptionResponse[]>([]);
 
   const isBusy = isUpdating || isDeleting;
 
@@ -73,16 +74,95 @@ export function SalesOrderDetailPage() {
         { label: "비고", key: "note", editable: true },
       ],
     },
+    {
+      title: "투입원료",
+      fields: [
+        {
+          label: "투입원료",
+          key: "itemCode",
+          editable: true,
+          renderEditor: (value, _onChange, disabled) => (
+            <select
+              className="tableInput"
+              value={value ?? ""}
+              disabled={disabled}
+              onChange={(e) => {
+                const selectedCode = e.target.value;
+                const selected = rawItemOptions.find((opt) => opt.itemCode === selectedCode);
+                setForm((prev) => ({
+                  ...prev,
+                  itemCode: selectedCode,
+                  itemNm: selected?.itemNm ?? "",
+                  unit: selected?.unit ?? "",
+                }));
+              }}
+            >
+              <option value="">투입원료를 선택해주세요</option>
+              {rawItemOptions.map((opt) => (
+                <option key={opt.itemCode} value={opt.itemCode}>
+                  {opt.itemCode} ({opt.itemNm ?? "-"})
+                </option>
+              ))}
+            </select>
+          ),
+          renderValue: (value) => {
+            if (!value) return "-";
+            return form.itemNm ? `${value} (${form.itemNm})` : value;
+          },
+        },
+        {
+          label: "투입수량",
+          key: "orderQty",
+          editable: true,
+          renderEditor: (value, onChange, disabled) => (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <input
+                type="text"
+                inputMode="numeric"
+                className="tableInput"
+                style={{ textAlign: "right" }}
+                value={value ?? ""}
+                disabled={disabled}
+                onChange={(e) => onChange(e.target.value.replace(/[^0-9]/g, ""))}
+              />
+              <span style={{ whiteSpace: "nowrap" }}>{form.unit}</span>
+            </div>
+          ),
+          renderValue: (value) =>
+            value ? `${Number(value).toLocaleString("ko-KR")}${form.unit ? ` ${form.unit}` : ""}` : "-",
+        },
+        {
+          label: "가공비",
+          key: "orderAmount",
+          editable: true,
+          renderEditor: (value, onChange, disabled) => (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <AmountInput
+                className="tableInput"
+                style={{ textAlign: "right" }}
+                value={value ? Number(value) : null}
+                disabled={disabled}
+                onValueChange={(amount) => onChange(String(amount))}
+              />
+              <span style={{ whiteSpace: "nowrap" }}>원</span>
+            </div>
+          ),
+          renderValue: (value) => (value ? `${Number(value).toLocaleString("ko-KR")} 원` : "-"),
+        },
+      ],
+    },
   ];
 
   const fetchOptions = async () => {
     try {
-      const [bpRes, itemRes] = await Promise.all([
+      const [bpRes, itemRes, rawItemRes] = await Promise.all([
         BusinessPartnerApi.getOptions(),
         ItemApi.getOptions({ category: [2] }),
+        ItemApi.getOptions({ category: [0] }),
       ]);
       setBusinessPartnerOptions(bpRes.data ?? []);
       setItemOptions(itemRes.data ?? []);
+      setRawItemOptions(rawItemRes.data ?? []);
     } catch (error) {
       console.error("옵션 목록 조회 실패:", error);
     }
@@ -105,8 +185,16 @@ export function SalesOrderDetailPage() {
           dueDate: data.dueDate,
           status: data.status,
           note: data.note,
+          itemCode: data.itemCode ?? "",
+          itemNm: data.itemNm ?? "",
+          unit: data.unit ?? "",
+          orderQty: data.orderQty != null ? String(data.orderQty) : "",
+          orderAmount: data.orderAmount != null ? String(data.orderAmount) : "",
           createdAt: formatDateTime(data.createdAt),
-          lines: data.lines || [],
+          lines: (data.lines || []).map((line) => ({
+            ...line,
+            planQty: line.planQty != null ? String(line.planQty) : "",
+          })),
         });
       }
     } catch (error) {
@@ -134,8 +222,16 @@ export function SalesOrderDetailPage() {
         dueDate: order.dueDate,
         status: order.status,
         note: order.note,
+        itemCode: order.itemCode ?? "",
+        itemNm: order.itemNm ?? "",
+        unit: order.unit ?? "",
+        orderQty: order.orderQty != null ? String(order.orderQty) : "",
+        orderAmount: order.orderAmount != null ? String(order.orderAmount) : "",
         createdAt: formatDateTime(order.createdAt),
-        lines: order.lines || [],
+        lines: (order.lines || []).map((line) => ({
+          ...line,
+          planQty: line.planQty != null ? String(line.planQty) : "",
+        })),
       });
     }
   }, [isEditing, order]);
@@ -143,7 +239,7 @@ export function SalesOrderDetailPage() {
   const addLine = () => {
     setForm((prev) => ({
       ...prev,
-      lines: [...(prev.lines || []), { itemCode: "", itemNm: "", unit: "", orderQty: 0, orderAmount: 0 }],
+      lines: [...(prev.lines || []), { itemCode: "", itemNm: "", unit: "", planQty: "" }],
     }));
   };
 
@@ -173,11 +269,13 @@ export function SalesOrderDetailPage() {
         dueDate: form.dueDate || null,
         status: form.status || null,
         note: form.note || null,
+        itemCode: form.itemCode || null,
+        orderQty: form.orderQty ? Number(form.orderQty) : null,
+        orderAmount: form.orderAmount ? Number(form.orderAmount) : null,
         lines: (form.lines || []).map((line: any) => ({
           salesOrderLineId: line.salesOrderLineId,
           itemCode: line.itemCode,
-          orderQty: Number(line.orderQty) || 0,
-          orderAmount: Number(line.orderAmount) || 0,
+          planQty: parseDecimalInput(line.planQty ?? ""),
         })),
       };
 
@@ -312,8 +410,7 @@ export function SalesOrderDetailPage() {
                 <tr>
                   <th><div className="th-content">품목코드</div></th>
                   <th><div className="th-content">품목명</div></th>
-                  <th><div className="th-content">주문수량</div></th>
-                  <th><div className="th-content">주문금액</div></th>
+                  <th><div className="th-content">예정 산출수량</div></th>
                   {isEditing && <th><div className="th-content">삭제</div></th>}
                 </tr>
               </thead>
@@ -372,7 +469,7 @@ export function SalesOrderDetailPage() {
                         >
                           <input
                             type="text"
-                            inputMode="numeric"
+                            inputMode="decimal"
                             className="tableInput"
                             style={{
                               textAlign: "right",
@@ -381,16 +478,12 @@ export function SalesOrderDetailPage() {
                               minWidth: 0,
                               boxSizing: "border-box",
                             }}
-                            value={line.orderQty ?? 0}
+                            value={line.planQty ?? ""}
+                            placeholder="미정"
                             disabled={isBusy}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/[^0-9]/g, "");
-                              handleLineChange(
-                                idx,
-                                "orderQty",
-                                val === "" ? 0 : Number(val)
-                              );
-                            }}
+                            onChange={(e) =>
+                              handleLineChange(idx, "planQty", sanitizeDecimalInput(e.target.value))
+                            }
                           />
                           <span
                             style={{
@@ -403,24 +496,10 @@ export function SalesOrderDetailPage() {
                             {line.unit || ""}
                           </span>
                         </div>
+                      ) : line.planQty ? (
+                        `${Number(line.planQty).toLocaleString("ko-KR")}${line.unit ? ` ${line.unit}` : ""}`
                       ) : (
-                        `${(line.orderQty ?? 0).toLocaleString("ko-KR")}${line.unit ? ` ${line.unit}` : ""}`
-                      )}
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <AmountInput
-                            className="tableInput"
-                            style={{ textAlign: "right" }}
-                            value={line.orderAmount ?? 0}
-                            disabled={isBusy}
-                            onValueChange={(amount) => handleLineChange(idx, "orderAmount", amount)}
-                          />
-                          <span style={{ whiteSpace: "nowrap" }}>원</span>
-                        </div>
-                      ) : (
-                        `${(line.orderAmount ?? 0).toLocaleString("ko-KR")} 원`
+                        "미정"
                       )}
                     </td>
                     {isEditing && (
@@ -439,7 +518,7 @@ export function SalesOrderDetailPage() {
                 ))}
                 {(!form.lines || form.lines.length === 0) && (
                   <tr>
-                    <td colSpan={isEditing ? 5 : 4} style={{ textAlign: "center", padding: "20px" }}>
+                    <td colSpan={isEditing ? 4 : 3} style={{ textAlign: "center", padding: "20px" }}>
                       등록된 품목 정보가 없습니다. {isEditing && "우측 상단의 [+ 품목 추가] 버튼을 눌러주세요."}
                     </td>
                   </tr>

@@ -6,6 +6,9 @@ export interface SalesOrderCreateRequest {
     bpCode: string;
     dueDate?: string | null;
     note?: string | null;
+    itemCode?: string | null;
+    orderQty?: number | null;
+    orderAmount?: number | null;
     lines?: SalesOrderLineRequest[];
 }
 
@@ -15,6 +18,9 @@ export interface SalesOrderUpdateRequest {
     dueDate?: string | null;
     status?: string | null;
     note?: string | null;
+    itemCode?: string | null;
+    orderQty?: number | null;
+    orderAmount?: number | null;
     lines?: SalesOrderLineRequest[];
 }
 
@@ -38,6 +44,11 @@ export interface SalesOrderDetailResponse {
     dueDate: string;
     status: string;
     note: string;
+    itemCode: string | null;
+    itemNm: string | null;
+    unit: string | null;
+    orderQty: number | null;
+    orderAmount: number | null;
     createdAt: string;
     updatedAt: string;
     lines: SalesOrderLineResponse[];
@@ -47,8 +58,7 @@ export interface SalesOrderDetailResponse {
 export interface SalesOrderLineRequest {
     salesOrderLineId?: number;
     itemCode: string;
-    orderQty: number;
-    orderAmount: number;
+    planQty?: number | null;
 }
 
 /** 수주라인 등록 응답 */
@@ -60,6 +70,7 @@ export interface SalesOrderLineResponse {
     unit: string;
     orderQty: number;
     orderAmount: number;
+    planQty: number | null;
     produceQty: number;
     availableQty: number;
     shippedQty: number;
