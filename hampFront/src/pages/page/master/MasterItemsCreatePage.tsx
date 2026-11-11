@@ -6,9 +6,11 @@ import axios from "axios";
 import {
   PRODUCT_TYPE_LABEL,
   CATEGORY_LABEL,
+  SOLE_PRODUCTION_LABEL, 
   type ItemCreateRequest,
   type ProductType,
   type ItemCategory,
+  type SoleProductionYn,
   ItemApi,
 } from "@/api/master/Item";
 import { OperationApi } from "@/api/master/Operation";
@@ -41,6 +43,7 @@ export function MasterItemsCreatePage() {
     itemNm: string;
     unit: string;
     standard: string;
+    soleProductionYn: string;
   }>({
     itemCode: "",
     productType: "",
@@ -48,6 +51,7 @@ export function MasterItemsCreatePage() {
     itemNm: "",
     unit: "",
     standard: "",
+    soleProductionYn: "0",
   });
 
   const {
@@ -119,8 +123,8 @@ export function MasterItemsCreatePage() {
   const handleChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
 
-    // 원료 또는 반제품이면 공정 라우팅(+ 자재) 초기화
-    if (key === "category" && (value === "0" || value === "1")) {
+    // 원료(0)만 공정 라우팅(+ 자재) 초기화
+    if (key === "category" && value === "0") {
       syncRoutings([]);
       setRoutingMaterials({});
     }
@@ -208,12 +212,13 @@ export function MasterItemsCreatePage() {
       return false;
     }
 
-    // 완제품만 공정 라우팅 필수
+    // 완제품(2)만 공정 라우팅 필수 / 반제품(1)은 선택 / 원료(0)는 사용 불가
+    //   ※ 공정별 자재 IN/OUT 최소 건수 및 "라우팅 전체 투입자재 1건 이상" 검증은 백엔드에서 처리
     if (form.category === "2" && routings.length === 0) {
       alert("완제품 등록 시 공정 라우팅을 최소 1개 이상 추가해야 합니다.");
       return false;
     }
-    
+
     return true;
   };
 
@@ -227,6 +232,9 @@ export function MasterItemsCreatePage() {
     if (!validateForm()) return;
 
     const selectedCategory = form.category !== "" ? (Number(form.category) as ItemCategory) : null;
+    // 반제품(1)·완제품(2)만 라우팅 전송 가능 (원료(0)는 null)
+    const isRoutingAllowedOnSubmit = selectedCategory === 1 || selectedCategory === 2;
+
     const payload: ItemCreateRequest = {
       itemCode: form.itemCode.trim(),
       productType: form.productType !== "" ? (Number(form.productType) as ProductType) : null,
@@ -234,12 +242,16 @@ export function MasterItemsCreatePage() {
       itemNm: form.itemNm.trim() || null,
       unit: form.unit.trim() || null,
       standard: form.standard.trim() || null,
-      routings: selectedCategory === 2
+      // 단독생산 전용 여부 (0/1)
+      soleProductionYn: (Number(form.soleProductionYn) === 1 ? 1 : 0) as SoleProductionYn,
+      // 완제품만 → 반제품·완제품. 반제품은 공정을 안 넣으면 빈 배열 전송
+      routings: isRoutingAllowedOnSubmit
         ? routings.map((r) => ({
           operCode: r.operCode?.trim() || null,
           operSeq: r.operSeq,
           finalYn: r.finalYn || "N",
-          // 현재 남아있는 공정의 자재만 전송 (제외된 공정의 자재는 자동으로 빠짐)
+          // 현재 남아있는 공정의 자재만 전송 (제외된 공정의 자재는 자동으로 빠짐, yieldRate 포함)
+          // 중간공정은 자재 0건 / IN 또는 OUT만 있어도 그대로 전송
           materials: toMaterialRequests(routingMaterials[r.operCode ?? ""]),
         }))
         : null,
@@ -259,7 +271,10 @@ export function MasterItemsCreatePage() {
     }
   };
 
+  // 완제품(2): 라우팅 필수
   const isRoutingRequired = form.category === "2";
+  // 반제품(1)·완제품(2): 라우팅 사용 가능 / 원료(0): 사용 불가
+  const isRoutingAllowed = form.category === "1" || form.category === "2";
   const selectedRouting = selectedIndex !== null && routings[selectedIndex] ? routings[selectedIndex] : null;
   const selectedMatchedOp = selectedRouting ? operations.find((op) => op.operCode === selectedRouting.operCode) : null;
   // 선택된 공정의 operCode (자재 맵의 key)
@@ -386,15 +401,38 @@ export function MasterItemsCreatePage() {
                     })}
                   </div>
                 </div>
+
+                {/* 단독생산 전용 여부 (1이면 수주 산출라인에서 다른 품목과 조합 불가) */}
+                <div className="createField">
+                  <label>단독생산 전용</label>
+                  <select
+                    className="tableInput"
+                    value={form.soleProductionYn}
+                    disabled={isSubmitting}
+                    onChange={(e) => handleChange("soleProductionYn", e.target.value)}
+                  >
+                    <option value="0">{SOLE_PRODUCTION_LABEL[0]}</option>
+                    <option value="1">{SOLE_PRODUCTION_LABEL[1]}</option>
+                  </select>
+                  <div className="routing-guide-text">
+                    '예' 선택 시 수주 산출라인에서 다른 품목과 조합할 수 없습니다
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* 3. 공정 라우팅 설정 영역 */}
-            {isRoutingRequired && (
+            {isRoutingAllowed && (
               <div className="createSection">
                 <div className="routing-header-wrapper">
                   <label className="requiredLabel routing-header-label">
-                    공정 라우팅 설정 <span className="required">*</span>
+                    공정 라우팅 설정{" "}
+                    {/* 완제품은 필수(*), 반제품은 선택 */}
+                    {isRoutingRequired ? (
+                      <span className="required">*</span>
+                    ) : (
+                      <span style={{ marginLeft: 4, fontWeight: 400, opacity: 0.6 }}>(선택)</span>
+                    )}
                   </label>
                   <div className="routing-header-right">
                     <span className="routing-count-text">총 {routings.length}단계</span>
@@ -416,7 +454,9 @@ export function MasterItemsCreatePage() {
 
                 {routings.length === 0 ? (
                   <div className="routingEmptyBox">
-                    선택된 공정이 없습니다. [+ 공정 선택 / 추가] 버튼을 눌러주세요.
+                    {isRoutingRequired
+                      ? "선택된 공정이 없습니다. [+ 공정 선택 / 추가] 버튼을 눌러주세요."
+                      : "선택된 공정이 없습니다. 반제품은 공정 라우팅을 선택적으로 등록할 수 있습니다."}
                   </div>
                 ) : (
                   <div className="routing-layout-grid">
@@ -589,7 +629,7 @@ export function MasterItemsCreatePage() {
                             </div>
                           </div>
 
-                          {/* 이 공정의 투입(IN) / 산출(OUT) 자재 */}
+                          {/* 이 공정의 투입(IN) / 산출(OUT) 자재 (+ 산출 자재 수율) */}
                           <RoutingMaterialSection
                             resetKey={selectedOperCode}
                             materials={routingMaterials[selectedOperCode] ?? []}
