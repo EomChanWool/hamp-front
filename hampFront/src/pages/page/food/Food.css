@@ -2401,3 +2401,248 @@
 [data-theme="dark"] .food-routing-material-unit {
   color: #94a3b8;
 }
+
+/* ================================================
+   DARK MODE - 작업지시 등록 (woc)
+   ================================================ */
+
+/* 1) 변수 재정의 */
+[data-theme="dark"] .woc {
+  color-scheme: dark; /* number input, 스크롤바 등 네이티브 UI */
+
+  --woc-primary: #3b82f6;
+  --woc-primary-dark: #93c5fd; /* 다크에서는 텍스트용 밝은 파랑 */
+  --woc-text: var(--text-heading, #f1f5f9);
+  --woc-muted: var(--text-body, #cbd5e1);
+  --woc-muted-2: var(--text-muted, #94a3b8);
+  --woc-border: var(--border, rgba(255, 255, 255, 0.1));
+  --woc-border-strong: rgba(255, 255, 255, 0.18);
+  --woc-surface: var(--bg-card, #1a1f2b);
+  --woc-bg-soft: var(--bg-subtle, #151a24);
+
+  --woc-error: #f87171;
+  --woc-error-dark: #fca5a5;
+  --woc-error-soft: rgba(248, 113, 113, 0.1);
+  --woc-error-line: rgba(248, 113, 113, 0.35);
+
+  --woc-amber: #fbbf24;
+  --woc-amber-dark: #fcd34d;
+  --woc-amber-soft: rgba(245, 158, 11, 0.12);
+
+  --woc-green-dark: #4ade80;
+  --woc-green-soft: rgba(34, 197, 94, 0.16);
+}
+
+/* 2) 입력 */
+[data-theme="dark"] .woc-input:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.32);
+}
+
+[data-theme="dark"] .woc-input:focus-visible {
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.28);
+}
+
+[data-theme="dark"] .woc-input:disabled {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--woc-muted-2);
+}
+
+[data-theme="dark"] .woc-input[aria-invalid="true"] {
+  color: #fca5a5;
+}
+
+[data-theme="dark"] .woc-input[aria-invalid="true"]:focus-visible {
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.28);
+}
+
+[data-theme="dark"] .woc-unitInput:has(.woc-input[aria-invalid="true"]) > span {
+  color: #fca5a5;
+}
+
+/* 3) 커스텀 셀렉트 (searchBand 셀렉트 기준) */
+
+/* 트리거: 패널보다 한 단계 어둡게 눌린 배경 */
+[data-theme="dark"] .woc-select__trigger {
+  background: var(--bg-subtle, #12151f);
+  border-color: var(--border, #2e3138);
+  color: var(--text-heading, #e2e8f0);
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: left;
+}
+
+[data-theme="dark"] .woc-select__trigger:hover:not([aria-disabled="true"]) {
+  background: var(--bg-card, #1a1d27);
+  border-color: #475569;
+}
+
+/* 열림 / 키보드 포커스 */
+[data-theme="dark"] .woc-select__trigger.is-open,
+[data-theme="dark"] .woc-select__trigger:focus-visible {
+  background: var(--bg-card, #1a1d27);
+  border-color: var(--woc-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
+  outline: none;
+}
+
+/* 비활성 */
+[data-theme="dark"] .woc-select__trigger[aria-disabled="true"] {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border, #2e3138);
+  color: var(--text-muted, #64748b);
+  cursor: not-allowed;
+}
+
+[data-theme="dark"] .woc-select__value.is-placeholder {
+  color: #8b95a5; /* #64748b는 어두운 배경에서 대비 부족 */
+}
+
+[data-theme="dark"] .woc-select__chevron {
+  color: var(--text-muted, #64748b);
+}
+
+[data-theme="dark"] .woc-select__trigger.is-open .woc-select__chevron {
+  color: #93c5fd;
+}
+
+/* 드롭다운 목록 */
+[data-theme="dark"] .woc-select__list {
+  padding: 5px;
+  background: var(--bg-card, #1a1d27);
+  border: 1px solid var(--border, #2e3138);
+  border-radius: 9px;
+  box-shadow:
+    0 14px 35px rgba(0, 0, 0, 0.42),
+    0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* 옵션 */
+[data-theme="dark"] .woc-select__option {
+  padding: 9px 10px;
+  border-radius: 6px;
+  transition: background 0.12s ease;
+}
+
+[data-theme="dark"] .woc-select__label {
+  color: var(--text-heading, #e2e8f0);
+}
+
+[data-theme="dark"] .woc-select__desc {
+  color: var(--text-muted, #64748b);
+}
+
+[data-theme="dark"] .woc-select__option:hover,
+[data-theme="dark"] .woc-select__option.is-active {
+  background: var(--bg-subtle, #12151f);
+}
+
+/* 선택된 옵션: tint 배경 + 우측 체크 */
+[data-theme="dark"] .woc-select__option.is-selected {
+  position: relative;
+  padding-right: 34px;
+  background: rgba(59, 130, 246, 0.14);
+}
+
+[data-theme="dark"] .woc-select__option.is-selected .woc-select__label {
+  font-weight: 600;
+  color: #93c5fd;
+}
+
+[data-theme="dark"] .woc-select__option.is-selected::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 15px;
+  height: 15px;
+  transform: translateY(-50%);
+  background: #93c5fd;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+[data-theme="dark"] .woc-select__option.is-selected.is-active,
+[data-theme="dark"] .woc-select__option.is-selected:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+[data-theme="dark"] .woc-select__empty {
+  color: var(--text-muted, #64748b);
+}
+
+/* 4) 수주 정보 카드 */
+[data-theme="dark"] .woc-infocard__icon {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .woc-infocard.is-raw {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(96, 165, 250, 0.35);
+}
+
+[data-theme="dark"] .woc-infocard.is-raw .woc-infocard__icon {
+  background: #2563eb;
+  color: #fff;
+}
+
+[data-theme="dark"] .woc-infocard.is-raw .woc-infocard__label,
+[data-theme="dark"] .woc-infocard.is-raw .woc-infocard__value {
+  color: #93c5fd;
+}
+
+/* 5) 태그 */
+[data-theme="dark"] .woc-tag {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .woc-tag.fixed {
+  background: var(--woc-green-soft);
+}
+
+[data-theme="dark"] .woc-tag.park {
+  background: rgba(245, 158, 11, 0.16);
+}
+
+[data-theme="dark"] .woc-line.is-derived .woc-tag.park {
+  color: #cbd5e1;
+  background: var(--woc-surface);
+  border-color: var(--woc-border-strong);
+}
+
+[data-theme="dark"] .woc-line.is-derived .woc-process__note::before {
+  color: #0f172a;
+}
+
+/* 6) 공정 스테퍼 */
+[data-theme="dark"] .woc-stepper__step.byproduct .woc-stepper__dot {
+  background: rgba(251, 191, 36, 0.35);
+}
+
+[data-theme="dark"] .woc-stepper__step.output .woc-stepper__dot {
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.3);
+}
+
+/* 7) 버튼 */
+[data-theme="dark"] .woc-btn.primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* primary-dark를 밝은 텍스트색으로 바꿨으므로 hover 배경은 별도 지정 */
+[data-theme="dark"] .woc-btn.primary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+[data-theme="dark"] .woc-btn.ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* 8) 초과 경고 팝업 */
+[data-theme="dark"] .woc-dialog {
+  border: 1px solid var(--woc-border);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .woc-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.65);
+}
