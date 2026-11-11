@@ -26,24 +26,31 @@ export interface RoutingMaterialDraft {
   yieldRate?: number | null;
 }
 
-/** 서버 응답(routings[].materials) → { [operCode]: 자재[] } 맵으로 변환 (상세 페이지 로딩용) */
+export const toMaterialDrafts = (
+  materials?: ItemRoutingResponse["materials"] | null
+): RoutingMaterialDraft[] =>
+  (materials ?? []).map((m) => {
+    const ioType: MaterialIoType = m.ioType === "OUT" ? "OUT" : "IN";
+    return {
+      itemCode: m.itemCode,
+      itemNm: m.itemNm,
+      unit: m.unit,
+      ioType,
+      // 수율은 OUT 자재만 의미가 있으므로 IN 은 null 로 정리
+      yieldRate: ioType === "OUT" ? m.yieldRate ?? null : null,
+    };
+  });
+
+/**
+ * 서버 응답(routings[].materials) → { [operCode]: 자재[] } 맵
+ * @deprecated [중복 공정 지원] */
 export const buildMaterialMap = (
   routings?: ItemRoutingResponse[] | null
 ): Record<string, RoutingMaterialDraft[]> => {
   const map: Record<string, RoutingMaterialDraft[]> = {};
   (routings ?? []).forEach((r) => {
     if (!r.operCode) return;
-    map[r.operCode] = (r.materials ?? []).map((m) => {
-      const ioType: MaterialIoType = m.ioType === "OUT" ? "OUT" : "IN";
-      return {
-        itemCode: m.itemCode,
-        itemNm: m.itemNm,
-        unit: m.unit,
-        ioType,
-        // 수율은 OUT 자재만 의미가 있으므로 IN 은 null 로 정리
-        yieldRate: ioType === "OUT" ? m.yieldRate ?? null : null,
-      };
-    });
+    map[r.operCode] = toMaterialDrafts(r.materials);
   });
   return map;
 };
@@ -202,17 +209,20 @@ function MaterialGroup({
 }
 
 /* ============================================================
-   공정 1건의 "투입/산출 자재" 섹션 (등록/상세 페이지 우측 패널에서 사용)
+   공정 "1단계"의 투입/산출 자재 섹션 (등록/상세 페이지 우측 패널에서 사용)
 ============================================================ */
 interface RoutingMaterialSectionProps {
-  /** 현재 선택된 공정의 자재 목록 (IN/OUT 섞여 있음) */
+  /** 현재 선택된 "단계"의 자재 목록 (IN/OUT 섞여 있음) */
   materials: RoutingMaterialDraft[];
   /** 자재 목록이 바뀔 때 호출 (전체 목록을 새로 넘겨줌) */
   onChange: (next: RoutingMaterialDraft[]) => void;
   /** 자기 자신 품목은 자재로 선택 못 하도록 제외 (등록 시엔 입력 중인 품목코드) */
   excludeItemCode?: string;
   disabled?: boolean;
-  /** 공정이 바뀔 때 [+ 추가] 열림 상태를 초기화하기 위한 key (보통 operCode) */
+  /**
+   * 단계가 바뀔 때 [+ 추가] 열림 상태를 초기화하기 위한 key
+   * [중복 공정 지원] operCode 가 아니라 단계 고유 키(rowKey)를 넘겨야 합니다.
+   */
   resetKey?: string;
   // 현재 품목 종류 (0: 식품, 1: 작물)
   productType?: ProductType;
