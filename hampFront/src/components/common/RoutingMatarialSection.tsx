@@ -95,6 +95,9 @@ function MaterialGroup({
   // [+ 추가] 클릭 시 나타나는 품목 선택 select 노출 여부
   const [isPicking, setIsPicking] = useState(false);
 
+  // 범위(0~100) 밖 입력이 자동 보정된 자재 표시용 (itemCode → true)
+  const [yieldAdjusted, setYieldAdjusted] = useState<Record<string, boolean>>({});
+
   const handlePick = (itemCode: string) => {
     const picked = availableOptions.find((o) => o.itemCode === itemCode);
     if (!picked) return;
@@ -104,17 +107,22 @@ function MaterialGroup({
 
   // 수율 입력값 → number | null 변환
   //  - 빈 문자열이면 null (미입력)
-  //  - 0 ~ 100 범위로 보정
+  //  - 0 ~ 100 범위로 보정 (기존 동작 유지)
+  //  - 보정이 일어난 경우(범위 밖 입력) 안내 메시지를 띄우기 위해 플래그 저장
   const handleYieldInput = (itemCode: string, raw: string) => {
     if (!onYieldChange) return;
 
     if (raw === "") {
+      setYieldAdjusted((prev) => ({ ...prev, [itemCode]: false })); // 안내 해제
       onYieldChange(itemCode, null);
       return;
     }
 
     const num = Number(raw);
     if (Number.isNaN(num)) return;
+
+    // 보정 전 값이 범위 밖이면 안내 표시, 정상 범위로 다시 입력하면 해제
+    setYieldAdjusted((prev) => ({ ...prev, [itemCode]: num < 0 || num > 100 }));
 
     onYieldChange(itemCode, Math.min(100, Math.max(0, num)));
   };
@@ -163,43 +171,52 @@ function MaterialGroup({
           <div className="routing-mtrl-empty">등록된 자재가 없습니다.</div>
         ) : (
           list.map((m) => (
-            <div key={`${m.ioType}-${m.itemCode}`} className="routing-mtrl-item">
-              {/* 품목코드 칩: 라이트=IN 초록/OUT 빨강 톤, 다크=시안 이미지처럼 회색 칩 (CSS에서 분기) */}
-              <span className={`routing-mtrl-code ${m.ioType === "IN" ? "is-in" : "is-out"}`}>
-                {m.itemCode}
-              </span>
-              <span className="routing-mtrl-name" title={m.itemNm}>
-                {m.itemNm}
-              </span>
-              {m.unit && <span className="routing-mtrl-unit">{m.unit}</span>}
-
-              {/* 산출(OUT) 자재만 계획 수율(%) 입력 (비워두면 미확정) */}
-              {m.ioType === "OUT" && (
-                <span className="routing-mtrl-yield">
-                  <input
-                    type="number"
-                    className="tableInput routing-mtrl-yield-input"
-                    min={0}
-                    max={100}
-                    step="any"
-                    placeholder="수율"
-                    title="계획 수율(%) - 비워두면 미확정"
-                    value={m.yieldRate ?? ""}
-                    disabled={disabled}
-                    onChange={(e) => handleYieldInput(m.itemCode, e.target.value)}
-                  />
-                  <span className="routing-mtrl-yield-unit">%</span>
+            <div key={`${m.ioType}-${m.itemCode}`}>
+              <div className="routing-mtrl-item">
+                {/* 품목코드 칩: 라이트=IN 초록/OUT 빨강 톤, 다크=시안 이미지처럼 회색 칩 (CSS에서 분기) */}
+                <span className={`routing-mtrl-code ${m.ioType === "IN" ? "is-in" : "is-out"}`}>
+                  {m.itemCode}
                 </span>
-              )}
+                <span className="routing-mtrl-name" title={m.itemNm}>
+                  {m.itemNm}
+                </span>
+                {m.unit && <span className="routing-mtrl-unit">{m.unit}</span>}
 
-              <button
-                type="button"
-                className="routing-mtrl-remove"
-                disabled={disabled}
-                onClick={() => onRemove(m.itemCode)}
-              >
-                삭제
-              </button>
+                {/* 산출(OUT) 자재만 계획 수율(%) 입력 (비워두면 미확정) */}
+                {m.ioType === "OUT" && (
+                  <span className="routing-mtrl-yield">
+                    <input
+                      type="number"
+                      className="tableInput routing-mtrl-yield-input"
+                      min={0}
+                      max={100}
+                      step="any"
+                      placeholder="수율"
+                      title="계획 수율(%) - 비워두면 미확정"
+                      value={m.yieldRate ?? ""}
+                      disabled={disabled}
+                      onChange={(e) => handleYieldInput(m.itemCode, e.target.value)}
+                    />
+                    <span className="routing-mtrl-yield-unit">%</span>
+                  </span>
+                )}
+
+                <button
+                  type="button"
+                  className="routing-mtrl-remove"
+                  disabled={disabled}
+                  onClick={() => onRemove(m.itemCode)}
+                >
+                  삭제
+                </button>
+              </div>
+
+              {/* 범위 밖 입력으로 자동 보정된 경우 안내 메시지 표시 */}
+              {m.ioType === "OUT" && yieldAdjusted[m.itemCode] && m.yieldRate != null && (
+                <div className="routing-mtrl-yield-error" role="alert">
+                  수율은 0~100 사이로 입력해주세요. (범위를 벗어나 {m.yieldRate}%로 조정되었습니다)
+                </div>
+              )}
             </div>
           ))
         )}
