@@ -4,12 +4,12 @@ import {
   type ItemOptionResponse,
   type ItemRoutingResponse,
   type RoutingMaterialRequest,
+  type MaterialIoType,
+  type ProductType,
 } from "@/api/master/Item";
 import "@/pages/page/master/MasterItem.css";
 
-
-/** 투입(IN) / 산출(OUT) 구분 ※ 백엔드 ioType 실제 값이 다르면 여기만 수정 */
-export type MaterialIoType = "IN" | "OUT";
+export type { MaterialIoType };
 
 /** 화면에서 다루는 자재 1건 (표시용 itemNm / unit 포함) */
 export interface RoutingMaterialDraft {
@@ -17,6 +17,13 @@ export interface RoutingMaterialDraft {
   itemNm: string;
   unit: string;
   ioType: MaterialIoType;
+  /**
+   * 계획 수율(%) (0 ~ 100)
+   * - 산출(OUT) 자재에만 입력 가능, 미입력이면 null
+   * - 투입(IN) 자재는 항상 null
+   */
+  // 계획 수율
+  yieldRate?: number | null;
 }
 
 /** 서버 응답(routings[].materials) → { [operCode]: 자재[] } 맵으로 변환 (상세 페이지 로딩용) */
@@ -26,12 +33,17 @@ export const buildMaterialMap = (
   const map: Record<string, RoutingMaterialDraft[]> = {};
   (routings ?? []).forEach((r) => {
     if (!r.operCode) return;
-    map[r.operCode] = (r.materials ?? []).map((m) => ({
-      itemCode: m.itemCode,
-      itemNm: m.itemNm,
-      unit: m.unit,
-      ioType: m.ioType === "OUT" ? "OUT" : "IN",
-    }));
+    map[r.operCode] = (r.materials ?? []).map((m) => {
+      const ioType: MaterialIoType = m.ioType === "OUT" ? "OUT" : "IN";
+      return {
+        itemCode: m.itemCode,
+        itemNm: m.itemNm,
+        unit: m.unit,
+        ioType,
+        // 수율은 OUT 자재만 의미가 있으므로 IN 은 null 로 정리
+        yieldRate: ioType === "OUT" ? m.yieldRate ?? null : null,
+      };
+    });
   });
   return map;
 };
@@ -40,7 +52,13 @@ export const buildMaterialMap = (
 export const toMaterialRequests = (
   list?: RoutingMaterialDraft[] | null
 ): RoutingMaterialRequest[] =>
-  (list ?? []).map(({ itemCode, ioType }) => ({ itemCode, ioType }));
+  (list ?? []).map(({ itemCode, ioType, yieldRate }) =>
+    ioType === "OUT"
+      ? // OUT 자재만 yieldRate 전송 (미입력이면 null)
+      { itemCode, ioType, yieldRate: yieldRate ?? null }
+      : // IN 자재는 yieldRate 를 보내지 않음 (서버에서 OUT 에만 입력 가능)
+      { itemCode, ioType }
+  );
 
 /* ============================================================
    IN 또는 OUT 한 묶음 (헤더 + [+ 추가] + 스크롤 목록)
@@ -53,6 +71,8 @@ interface MaterialGroupProps {
   disabled?: boolean;
   onAdd: (option: ItemOptionResponse) => void;
   onRemove: (itemCode: string) => void;
+  // 수율 변경 (OUT 그룹에서만 사용)
+  onYieldChange?: (itemCode: string, yieldRate: number | null) => void;
 }
 
 function MaterialGroup({
@@ -63,6 +83,7 @@ function MaterialGroup({
   disabled,
   onAdd,
   onRemove,
+  onYieldChange,
 }: MaterialGroupProps) {
   // [+ 추가] 클릭 시 나타나는 품목 선택 select 노출 여부
   const [isPicking, setIsPicking] = useState(false);
@@ -72,6 +93,23 @@ function MaterialGroup({
     if (!picked) return;
     onAdd(picked);
     setIsPicking(false); // 하나 추가하면 닫기 (연속 추가는 [+ 추가] 다시 클릭)
+  };
+
+  // 수율 입력값 → number | null 변환
+  //  - 빈 문자열이면 null (미입력)
+  //  - 0 ~ 100 범위로 보정
+  const handleYieldInput = (itemCode: string, raw: string) => {
+    if (!onYieldChange) return;
+
+    if (raw === "") {
+      onYieldChange(itemCode, null);
+      return;
+    }
+
+    const num = Number(raw);
+    if (Number.isNaN(num)) return;
+
+    onYieldChange(itemCode, Math.min(100, Math.max(0, num)));
   };
 
   return (
@@ -127,6 +165,26 @@ function MaterialGroup({
                 {m.itemNm}
               </span>
               {m.unit && <span className="routing-mtrl-unit">{m.unit}</span>}
+
+              {/* 산출(OUT) 자재만 계획 수율(%) 입력 (비워두면 미확정) */}
+              {m.ioType === "OUT" && (
+                <span className="routing-mtrl-yield">
+                  <input
+                    type="number"
+                    className="tableInput routing-mtrl-yield-input"
+                    min={0}
+                    max={100}
+                    step="any"
+                    placeholder="수율"
+                    title="계획 수율(%) - 비워두면 미확정"
+                    value={m.yieldRate ?? ""}
+                    disabled={disabled}
+                    onChange={(e) => handleYieldInput(m.itemCode, e.target.value)}
+                  />
+                  <span className="routing-mtrl-yield-unit">%</span>
+                </span>
+              )}
+
               <button
                 type="button"
                 className="routing-mtrl-remove"
@@ -156,8 +214,8 @@ interface RoutingMaterialSectionProps {
   disabled?: boolean;
   /** 공정이 바뀔 때 [+ 추가] 열림 상태를 초기화하기 위한 key (보통 operCode) */
   resetKey?: string;
-  // 현재 품목 종류 (0: 식품, 1: 섬유)
-  productType?: 0 | 1;
+  // 현재 품목 종류 (0: 식품, 1: 작물)
+  productType?: ProductType;
   // 최종공정 여부 (Y: 최종공정, N: 일반공정)
   finalYn: string;
 
@@ -243,7 +301,7 @@ export function RoutingMaterialSection({
   const availableOutOptions = useMemo(() => {
     const options = [...outOptions];
 
-    // 최종공정이면 현재 등록 중인 품목을 산출 옵션에 추가
+    // 최종공정이면 자기 자신(완제품/반제품)을 산출 옵션에 추가
     if (
       finalYn === "Y" &&
       currentItem?.itemCode &&
@@ -253,11 +311,8 @@ export function RoutingMaterialSection({
       options.unshift(currentItem);
     }
 
-    return options.filter(
-      (o) =>
-        !used.has(o.itemCode) ||
-        o.itemCode === currentItem?.itemCode
-    );
+    // 이미 이 공정에 추가된 품목은 제외
+    return options.filter((o) => !used.has(o.itemCode));
   }, [outOptions, used, finalYn, currentItem]);
 
   const inList = materials.filter((m) => m.ioType === "IN");
@@ -266,12 +321,28 @@ export function RoutingMaterialSection({
   const handleAdd = (ioType: MaterialIoType, option: ItemOptionResponse) => {
     onChange([
       ...materials,
-      { itemCode: option.itemCode, itemNm: option.itemNm, unit: option.unit, ioType },
+      {
+        itemCode: option.itemCode,
+        itemNm: option.itemNm,
+        unit: option.unit,
+        ioType,
+        // 새로 추가한 자재의 수율은 미입력(null)으로 시작 (OUT 에서만 입력 UI 노출)
+        yieldRate: null,
+      },
     ]);
   };
 
   const handleRemove = (ioType: MaterialIoType, itemCode: string) => {
     onChange(materials.filter((m) => !(m.ioType === ioType && m.itemCode === itemCode)));
+  };
+
+  // 산출(OUT) 자재의 계획 수율 변경
+  const handleYieldChange = (itemCode: string, yieldRate: number | null) => {
+    onChange(
+      materials.map((m) =>
+        m.ioType === "OUT" && m.itemCode === itemCode ? { ...m, yieldRate } : m
+      )
+    );
   };
 
   return (
@@ -298,6 +369,7 @@ export function RoutingMaterialSection({
         disabled={disabled}
         onAdd={(o) => handleAdd("OUT", o)}
         onRemove={(code) => handleRemove("OUT", code)}
+        onYieldChange={handleYieldChange}
       />
     </div>
   );

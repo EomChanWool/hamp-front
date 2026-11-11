@@ -7,11 +7,13 @@ import axios from "axios";
 import {
   PRODUCT_TYPE_LABEL,
   CATEGORY_LABEL,
+  SOLE_PRODUCTION_LABEL,
   ItemApi,
   type ItemDetailResponse,
   type ItemUpdateRequest,
   type ProductType,
   type ItemCategory,
+  type SoleProductionYn,
 } from "@/api/master/Item";
 import { OperationApi } from "@/api/master/Operation";
 import Spinner from "@/components/common/Spinner";
@@ -86,8 +88,8 @@ export function MasterItemsDetailPage() {
   const handleFieldChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
 
-    // 원료(0) 또는 반제품(1)은 공정 라우팅(+ 자재)을 사용하지 않음
-    if (key === "category" && (value === "0" || value === "1")) {
+    // 원료(0)만 공정 라우팅(+ 자재)을 사용하지 않음
+    if (key === "category" && value === "0") {
       syncRoutings([]);
       setRoutingMaterials({});
       setSelectedIndex(null);
@@ -144,6 +146,28 @@ export function MasterItemsDetailPage() {
           renderValue: () =>
             item ? CATEGORY_LABEL[item.category as ItemCategory] ?? "-" : "-",
         },
+        // 단독생산 전용 여부 (1이면 수주 산출라인에서 다른 품목과 조합 불가)
+        {
+          label: "단독생산 전용",
+          key: "soleProductionYn",
+          editable: true,
+          renderEditor: (value, _onChange, disabled) => (
+            <select
+              className="tableInput"
+              value={value}
+              disabled={disabled}
+              title="예: 수주 산출라인에서 다른 품목과 조합 불가"
+              onChange={(e) => handleFieldChange("soleProductionYn", e.target.value)}
+            >
+              <option value="0">{SOLE_PRODUCTION_LABEL[0]}</option>
+              <option value="1">{SOLE_PRODUCTION_LABEL[1]}</option>
+            </select>
+          ),
+          renderValue: () =>
+            item
+              ? SOLE_PRODUCTION_LABEL[item.soleProductionYn as SoleProductionYn] ?? "-"
+              : "-",
+        },
       ],
     },
   ];
@@ -183,6 +207,8 @@ export function MasterItemsDetailPage() {
             itemNm: itemData.itemNm || "",
             unit: itemData.unit || "",
             standard: itemData.standard || "",
+            // 단독생산 전용 여부 (값이 없으면 0)
+            soleProductionYn: itemData.soleProductionYn?.toString() ?? "0",
             useYn: itemData.useYn || "",
             createdAt: formatDateTime(itemData.createdAt),
           });
@@ -190,7 +216,7 @@ export function MasterItemsDetailPage() {
           if (itemData.routings && Array.isArray(itemData.routings)) {
             // 최종공정(finalYn)은 훅이 마지막 공정으로 자동 지정하므로 공정코드만 동기화
             syncRoutings(itemData.routings.map((r) => r.operCode).filter(Boolean) as string[]);
-            // 서버 응답의 공정별 자재(materials)를 화면용 맵으로 변환
+            // 서버 응답의 공정별 자재(materials, yieldRate 포함)를 화면용 맵으로 변환
             setRoutingMaterials(buildMaterialMap(itemData.routings));
           } else {
             syncRoutings([]);
@@ -227,6 +253,8 @@ export function MasterItemsDetailPage() {
         itemNm: item.itemNm || "",
         unit: item.unit || "",
         standard: item.standard || "",
+        // 단독생산 전용 여부 복원
+        soleProductionYn: item.soleProductionYn?.toString() ?? "0",
         useYn: item.useYn || "",
         createdAt: formatDateTime(item.createdAt),
       });
@@ -341,7 +369,8 @@ export function MasterItemsDetailPage() {
     const selectedCategory =
       form.category !== "" ? (Number(form.category) as ItemCategory) : null;
 
-    // 완제품만 공정 라우팅 필수
+    // 완제품(2)만 공정 라우팅 필수 / 반제품(1)은 선택 / 원료(0)는 사용 불가
+    //    ※ 공정별 자재 IN/OUT 최소 건수 및 "라우팅 전체 투입자재 1건 이상" 검증은 백엔드에서 처리
     if (selectedCategory === 2 && routings.length === 0) {
       alert("완제품은 공정 라우팅을 최소 1개 이상 설정해야 합니다.");
       return false;
@@ -359,6 +388,9 @@ export function MasterItemsDetailPage() {
       const selectedCategory =
         form.category !== "" ? (Number(form.category) as ItemCategory) : null;
 
+      // 반제품(1)·완제품(2)만 라우팅 전송 가능 (원료(0)는 null)
+      const isRoutingAllowedOnSave = selectedCategory === 1 || selectedCategory === 2;
+
       const updatePayload: ItemUpdateRequest = {
         productType:
           form.productType !== "" && form.productType != null
@@ -368,16 +400,19 @@ export function MasterItemsDetailPage() {
         itemNm: form.itemNm?.trim() ? form.itemNm.trim() : null,
         unit: form.unit?.trim() ? form.unit.trim() : null,
         standard: form.standard?.trim() ? form.standard.trim() : null,
-        routings:
-          selectedCategory === 2
-            ? routings.map((r) => ({
-              operCode: r.operCode?.trim() || null,
-              operSeq: r.operSeq ?? 1,
-              finalYn: r.finalYn || "N",
-              // 현재 남아있는 공정의 자재만 전송
-              materials: toMaterialRequests(routingMaterials[r.operCode ?? ""]),
-            }))
-            : null,
+        // 단독생산 전용 여부 (0/1)
+        soleProductionYn: (Number(form.soleProductionYn) === 1 ? 1 : 0) as SoleProductionYn,
+        // 완제품만 → 반제품·완제품. 반제품은 공정이 0건이면 빈 배열 전송
+        routings: isRoutingAllowedOnSave
+          ? routings.map((r) => ({
+            operCode: r.operCode?.trim() || null,
+            operSeq: r.operSeq ?? 1,
+            finalYn: r.finalYn || "N",
+            // 현재 남아있는 공정의 자재만 전송 (자재 yieldRate 포함)
+            // 중간공정은 자재 0건 / IN 또는 OUT만 있어도 그대로 전송
+            materials: toMaterialRequests(routingMaterials[r.operCode ?? ""]),
+          }))
+          : null,
       };
 
       const response = await ItemApi.update(item.itemCode, updatePayload);
@@ -393,6 +428,8 @@ export function MasterItemsDetailPage() {
             itemNm: updatePayload.itemNm ?? prev.itemNm,
             unit: updatePayload.unit ?? prev.unit,
             standard: updatePayload.standard ?? prev.standard,
+            // 단독생산 전용 여부 반영
+            soleProductionYn: updatePayload.soleProductionYn ?? prev.soleProductionYn,
             routings: updatePayload.routings
               ? updatePayload.routings.map((r, idx) => ({
                 routingId: 0,
@@ -407,6 +444,8 @@ export function MasterItemsDetailPage() {
                   itemNm: m.itemNm,
                   unit: m.unit,
                   ioType: m.ioType,
+                  // 계획 수율(%) - OUT 자재만 값이 있을 수 있음, 미확정이면 null
+                  yieldRate: m.yieldRate ?? null,
                 })),
               }))
               : [],
@@ -461,7 +500,10 @@ export function MasterItemsDetailPage() {
   if (!item) return null;
 
   const currentCategory = isEditing ? form.category : item.category?.toString();
+  // 완제품(2): 라우팅 필수
   const isRoutingRequired = currentCategory === "2";
+  // 반제품(1)·완제품(2): 라우팅 사용 가능 / 원료(0): 사용 불가
+  const isRoutingAllowed = currentCategory === "1" || currentCategory === "2";
   const selectedRouting =
     selectedIndex !== null && routings[selectedIndex] ? routings[selectedIndex] : null;
   const selectedMatchedOp = selectedRouting
@@ -550,12 +592,17 @@ export function MasterItemsDetailPage() {
         }
       >
         {/* 공정 라우팅 영역 */}
-        {(isRoutingRequired || (routings && routings.length > 0)) && (
+        {/* 원료는 숨김 / 완제품은 항상 표시 / 반제품은 수정 모드이거나 등록된 공정이 있을 때 표시 */}
+        {isRoutingAllowed && (isRoutingRequired || isEditing || (routings && routings.length > 0)) && (
           <div className="routingSection">
             <div className="routing-header-wrapper">
               <label className="requiredLabel routing-header-label">
                 공정 라우팅 설정{" "}
                 {isRoutingRequired && isEditing && <span className="required">*</span>}
+                {/* 반제품은 선택 입력 */}
+                {!isRoutingRequired && isEditing && (
+                  <span style={{ marginLeft: 4, fontWeight: 400, opacity: 0.6 }}>(선택)</span>
+                )}
               </label>
               <div className="routing-header-right">
                 <span className="routing-count-text">총 {routings.length}단계</span>
@@ -768,7 +815,7 @@ export function MasterItemsDetailPage() {
                         </div>
                       </div>
 
-                      {/* 이 공정의 투입(IN) / 산출(OUT) 자재 */}
+                      {/* 이 공정의 투입(IN) / 산출(OUT) 자재 (+ 산출 자재 수율) */}
                       <RoutingMaterialSection
                         resetKey={selectedOperCode}
                         materials={routingMaterials[selectedOperCode] ?? []}
@@ -776,6 +823,11 @@ export function MasterItemsDetailPage() {
                         excludeItemCode={item.itemCode}
                         productType={item.productType}
                         finalYn={selectedRouting?.finalYn ?? "N"}
+                        currentItem={{
+                          itemCode: item.itemCode,
+                          itemNm: form.itemNm?.trim() || item.itemNm || "",
+                          unit: form.unit?.trim() || item.unit || "",
+                        }}
                         disabled={isBusy}
                       />
 
@@ -841,6 +893,8 @@ export function MasterItemsDetailPage() {
                                 <span key={`OUT-${m.itemCode}`} className="routing-mtrl-chip is-out" title={m.itemCode}>
                                   {m.itemNm}
                                   {m.unit && <small>{m.unit}</small>}
+                                  {/* 산출 자재의 계획 수율(%) 표시 (미확정이면 숨김) */}
+                                  {m.yieldRate != null && <small>{m.yieldRate}%</small>}
                                 </span>
                               ))}
                             </div>
