@@ -139,7 +139,7 @@
   flex-direction: column;
   gap: 10px;
   padding: 16px 20px 18px;
-  border-radius: 16px;
+  border-radius: 12px;
   background: var(--eq-surface);
   border: 1px solid var(--eq-line);
   box-shadow: var(--eq-shadow-node);
@@ -203,7 +203,7 @@
   position: relative; /* 연동 오류 오버레이 기준 */
   background: var(--eq-surface);
   border: 1px solid var(--eq-line);
-  border-radius: 24px;
+  border-radius: 12px;
   box-shadow: var(--eq-shadow);
   overflow: hidden;
 }
