@@ -11,10 +11,12 @@ import { useTableSorting } from "@/hooks/useTableSorting";
 import {
   PRODUCT_TYPE_LABEL,
   CATEGORY_LABEL,
+  SOLE_PRODUCTION_LABEL, 
   ItemApi,
   type ItemResponse,
   type ProductType,
   type ItemCategory,
+  type SoleProductionYn,
 } from "@/api/master/Item";
 import Spinner from "@/components/common/Spinner";
 
@@ -282,6 +284,14 @@ export function MasterItemsPage() {
         cell: ({ getValue }) => {
           const val = getValue<string>();
           return val ? val : "-";
+        },
+      },
+      {
+        accessorKey: "soleProductionYn",
+        header: "단독생산",
+        cell: ({ getValue }) => {
+          const val = getValue<SoleProductionYn | undefined>();
+          return val === undefined || val === null ? "-" : SOLE_PRODUCTION_LABEL[val] ?? "-";
         },
       },
       {
