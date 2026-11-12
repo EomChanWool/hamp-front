@@ -328,66 +328,38 @@
   margin: 0;
 }
 
-.seedTableHeader {
-  display: grid;
-  grid-template-columns: 1.6fr 0.8fr 0.9fr 0.9fr;
-  gap: 8px;
-  padding: 0 11px 10px;
-  font-size: 12px;
-  color: var(--text-muted, #94a3b8);
-  border-bottom: 1px solid var(--border, #e2e8f0);
-}
-
-.seedTableHeader span:not(:first-child) {
-  text-align: center;
-}
-
-.seedTableHeader span:last-child {
-  text-align: right;
-}
-
+/* 품목 카드 목록 (2열) */
 .seedItemList {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* 빈 상태 문구는 전체 폭 사용 */
+.seedItemList > :only-child:not(.seedItemRow) {
+  grid-column: 1 / -1;
 }
 
 .seedItemRow {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1.6fr 0.8fr 0.9fr 0.9fr;
-  align-items: center;
-  gap: 8px;
-  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
   border: 1px solid var(--border, #e2e8f0);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--bg-card, #fff);
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
-.seedItemRow::before {
-  content: '';
-  position: absolute;
-  left: -1px;
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: var(--primary, #3b82f6);
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-
 .seedItemRow:hover {
   border-color: var(--border-strong, #cbd5e1);
   background: var(--bg-subtle, #f8fafc);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
 .seedItemRow:active {
   background: var(--bg-subtle, #f1f5f9);
-  box-shadow: none;
 }
 
 .seedItemRow:focus-visible {
@@ -398,25 +370,37 @@
 .seedItemRow.selected {
   border-color: var(--primary, #3b82f6);
   background: color-mix(in srgb, var(--primary, #3b82f6) 7%, var(--bg-card, #fff));
-}
-
-.seedItemRow.selected::before {
-  opacity: 1;
+  box-shadow: 0 0 0 1px var(--primary, #3b82f6);
 }
 
 [data-theme="dark"] .seedItemRow.selected {
   border-color: #60a5fa;
   background: color-mix(in srgb, #60a5fa 10%, var(--bg-card, #1e293b));
+  box-shadow: 0 0 0 1px #60a5fa;
 }
 
-[data-theme="dark"] .seedItemRow.selected::before {
-  background: #60a5fa;
+.seedItemRow__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.seedItemRow__bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .seedItemRow__identity {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+}
+
+.seedItemRow__text {
   min-width: 0;
 }
 
@@ -480,9 +464,8 @@
 }
 
 .seedCategoryBadge {
-  width: fit-content;
+  flex-shrink: 0;
   display: inline-flex;
-  justify-self: center;
   align-items: center;
   font-size: 11px;
   font-weight: 500;
@@ -521,16 +504,31 @@
 }
 
 .seedItemRow__stock {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+}
+
+.seedItemRow__stockValue {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-heading, #0f172a);
+}
+
+.seedItemRow__stockUnit {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-heading, #0f172a);
-  text-align: center;
+  color: var(--text-muted, #94a3b8);
 }
 
 .seedItemRow__time {
+  flex-shrink: 0;
   font-size: 12px;
   color: var(--text-muted, #94a3b8);
-  text-align: right;
 }
 
 /* =========================================================================
@@ -909,34 +907,8 @@
 }
 
 @container content (max-width: 720px) {
-  .seedTableHeader {
-    display: none;
-  }
-
-  .seedItemRow {
-    grid-template-columns: 1fr auto;
-    grid-template-areas:
-      "identity stock"
-      "badge time";
-    row-gap: 6px;
-    align-items: center;
-  }
-
-  .seedItemRow__identity {
-    grid-area: identity;
-  }
-
-  .seedCategoryBadge {
-    grid-area: badge;
-    justify-self: start;
-  }
-
-  .seedItemRow__stock {
-    grid-area: stock;
-  }
-
-  .seedItemRow__time {
-    grid-area: time;
+  .seedItemList {
+    grid-template-columns: 1fr;
   }
 
   .inventorySummaryCard__badgeIcon {
@@ -993,6 +965,15 @@
 
   .inventorySummaryCard__statChip {
     flex: 1 1 100%;
+  }
+
+  .seedItemRow {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .seedItemRow__stockValue {
+    font-size: 20px;
   }
 
   .seedTabGroup {
