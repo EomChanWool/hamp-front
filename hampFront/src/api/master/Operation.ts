@@ -49,6 +49,7 @@ export interface OperationDetailResponse extends OperationResponse {
 export interface OperationOptionResponse {
   operCode: string;
   operNm: string;
+  operType: OperType;
 }
 
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
