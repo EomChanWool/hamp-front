@@ -139,6 +139,19 @@ export interface SalesOrderOptionResponse {
     bpNm: string;
 }
 
+/**
+ * 수주 옵션 조회 요청 파라미터
+ * - GET /sales-orders/options 의 쿼리 파라미터
+ */
+export interface SalesOrderOptionParams {
+    /**
+     * 미배정 수주만 조회할지 여부
+     * - true  : 미배정 수주만 조회
+     * - false : 전체 수주 조회 (서버 기본값)
+     */
+    unassignedOnly?: boolean;
+}
+
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 수주 단건/기본 응답 API 최종 응답 타입 */
@@ -262,9 +275,15 @@ export const SalesOrderApi = {
         return res.data;
     },
 
-    /** 수주 셀렉트 옵션 조회 */
-        getOptions: async (): Promise<ApiResponseListSalesOrderOptionResponse> => {
-        const res = await apiClient.get<ApiResponseListSalesOrderOptionResponse>('/sales-orders/options');
+    /**
+     * 수주 셀렉트 옵션 조회
+     * @param params.unassignedOnly 미배정 수주만 조회할지 여부 (기본값 false, 생략 시 전체 조회)
+     */
+    getOptions: async (params?: SalesOrderOptionParams): Promise<ApiResponseListSalesOrderOptionResponse> => {
+        const res = await apiClient.get<ApiResponseListSalesOrderOptionResponse>('/sales-orders/options', {
+            // 파라미터를 생략하면 서버 기본값(false)이 적용된다
+            params: { unassignedOnly: params?.unassignedOnly ?? false },
+        });
         return res.data;
     },
 };
