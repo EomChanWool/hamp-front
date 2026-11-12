@@ -1,11 +1,22 @@
 import { apiClient } from '@/api/apiClient';
 import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
+/** 공정 구분 (0: 일반, 1: 포장, 2: 이동) */
+export type OperType = 0 | 1 | 2;
+
+/** 공정 구분 매핑 라벨 (화면 표시용) */
+export const OPER_TYPE_LABEL: Record<OperType, string> = {
+  0: '일반',
+  1: '포장',
+  2: '이동',
+} as const;
+
 /** 공정 등록 요청 */
 export interface OperationCreateRequest {
   depCode: string;
   operNm?: string | null;
   stdTime?: string | null;
+  operType?: OperType | null;
 }
 
 /** 공정 정보 수정 요청 */
@@ -13,6 +24,7 @@ export interface OperationUpdateRequest {
   depCode?: string | null;
   operNm?: string | null;
   stdTime?: string | null;
+  operType?: OperType | null;
 }
 
 /** 공정 정보 응답 */
@@ -22,6 +34,7 @@ export interface OperationResponse {
   operNm: string;
   useYn: string;
   stdTime: string;
+  operType: OperType;
   createdAt: string;
   updatedAt: string;
 }
@@ -36,6 +49,7 @@ export interface OperationDetailResponse extends OperationResponse {
 export interface OperationOptionResponse {
   operCode: string;
   operNm: string;
+  operType: OperType;
 }
 
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────

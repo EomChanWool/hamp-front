@@ -15,7 +15,7 @@ import {
   type ItemCategory,
   type SoleProductionYn,
 } from "@/api/master/Item";
-import { OperationApi } from "@/api/master/Operation";
+import { OperationApi, OPER_TYPE_LABEL, type OperType } from "@/api/master/Operation";
 import Spinner from "@/components/common/Spinner";
 import { OperationSelectModal } from "@/components/modal/OperationSelectModal";
 import { useItemRoutings } from "@/hooks/useItemRoutings";
@@ -29,6 +29,7 @@ import "./MasterItem.css";
 interface OperationOption {
   operCode: string;
   operNm: string;
+  operType: OperType;
 }
 
 export function MasterItemsDetailPage() {
@@ -612,7 +613,7 @@ export function MasterItemsDetailPage() {
 
                         <div className="routing-item-right">
                           <span className={`routing-type-badge ${isFinal ? "is-final" : ""}`}>
-                            {isFinal ? "최종공정" : "일반공정"}
+                            {isFinal ? "최종공정" : matchedOp && OPER_TYPE_LABEL[matchedOp.operType] ? `${OPER_TYPE_LABEL[matchedOp.operType]}공정` : ""}
                           </span>
 
                           <div className="routing-arrow-group">
@@ -820,7 +821,7 @@ export function MasterItemsDetailPage() {
 
                       <div className="routing-item-right">
                         <span className={`routing-type-badge ${isFinal ? "is-final" : ""}`}>
-                          {isFinal ? "최종공정" : "일반공정"}
+                          {isFinal ? "최종공정" : matchedOp && OPER_TYPE_LABEL[matchedOp.operType] ? `${OPER_TYPE_LABEL[matchedOp.operType]}공정` : ""}
                         </span>
                       </div>
                     </div>

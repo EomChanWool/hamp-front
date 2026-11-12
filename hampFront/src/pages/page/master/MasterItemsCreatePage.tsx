@@ -13,7 +13,7 @@ import {
   type SoleProductionYn,
   ItemApi,
 } from "@/api/master/Item";
-import { OperationApi } from "@/api/master/Operation";
+import { OperationApi, OPER_TYPE_LABEL, type OperType } from "@/api/master/Operation";
 import { OperationSelectModal } from "@/components/modal/OperationSelectModal";
 import { useItemRoutings } from "@/hooks/useItemRoutings";
 import './MasterItem.css';
@@ -26,6 +26,7 @@ import {
 interface OperationOption {
   operCode: string;
   operNm: string;
+  operType: OperType;
 }
 
 export function MasterItemsCreatePage() {
@@ -443,7 +444,7 @@ export function MasterItemsCreatePage() {
 
                             <div className="routing-item-right">
                               <span className={`routing-type-badge ${isFinal ? "is-final" : ""}`}>
-                                {isFinal ? "최종공정" : "일반공정"}
+                                {isFinal ? "최종공정" : matchedOp && OPER_TYPE_LABEL[matchedOp.operType] ? `${OPER_TYPE_LABEL[matchedOp.operType]}공정` : ""}
                               </span>
 
                               <div className="routing-arrow-group">

@@ -1,10 +1,14 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import { OPER_TYPE_LABEL, type OperType } from "@/api/master/Operation";
 
 interface OperationOption {
   operCode: string;
   operNm: string | null;
+  operType: OperType;
 }
+
+const OPER_TYPE_TABS: (OperType | "ALL")[] = ["ALL", 0, 1, 2];
 
 export interface OperationSelectModalProps {
   isOpen: boolean;
@@ -22,16 +26,19 @@ export function OperationSelectModal({
   isOpen, onClose, operations, modalSearchKeyword, setModalSearchKeyword,
   tempSelectedCodes, setTempSelectedCodes, onConfirm,
 }: OperationSelectModalProps) {
+  const [operTypeTab, setOperTypeTab] = useState<OperType | "ALL">("ALL");
 
   const filteredOperations = useMemo(() => {
-    if (!modalSearchKeyword.trim()) return operations;
+    const typed =
+      operTypeTab === "ALL" ? operations : operations.filter((op) => op.operType === operTypeTab);
+    if (!modalSearchKeyword.trim()) return typed;
     const keyword = modalSearchKeyword.toLowerCase();
-    return operations.filter(
+    return typed.filter(
       (op) =>
         op.operCode.toLowerCase().includes(keyword) ||
         (op.operNm || "").toLowerCase().includes(keyword)
     );
-  }, [operations, modalSearchKeyword]);
+  }, [operations, modalSearchKeyword, operTypeTab]);
 
   // 훅 호출이 모두 끝난 뒤에 닫힘 처리
   if (!isOpen) return null;
@@ -92,6 +99,20 @@ export function OperationSelectModal({
             onChange={(e) => setModalSearchKeyword(e.target.value)}
             autoFocus
           />
+          <div className="modalTabGroup" role="tablist" aria-label="공정 구분">
+            {OPER_TYPE_TABS.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                role="tab"
+                aria-selected={operTypeTab === tab}
+                onClick={() => setOperTypeTab(tab)}
+                className={`modalTabButton${operTypeTab === tab ? " modalTabButtonActive" : ""}`}
+              >
+                {tab === "ALL" ? "전체" : OPER_TYPE_LABEL[tab]}
+              </button>
+            ))}
+          </div>
           <div className="modalSelectAllRow">
             {/* [중복 공정 지원] 공정 종류 수가 아니라 "총 단계 수"를 표시 */}
             <div className="modalCountText">선택된 공정 단계: <strong>{tempSelectedCodes.length}</strong>단계</div>

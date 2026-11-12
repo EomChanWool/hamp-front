@@ -11,8 +11,9 @@ import type {
     OperationUpdateRequest,
     OperationOptionResponse,
     OperationCreateRequest,
+    OperType,
 } from "@/api/master/Operation";
-import { OperationApi } from "@/api/master/Operation";
+import { OperationApi, OPER_TYPE_LABEL } from "@/api/master/Operation";
 import Spinner from "@/components/common/Spinner";
 import { DepartmentApi, type DepartmentOptionResponse } from "@/api/master/Department";
 
@@ -63,11 +64,13 @@ export function MasterOperationPage() {
         depCode?: string;
         operNm?: string;
         stdTime?: string;
+        operType?: OperType;
     }>({
         operCode: "",
         depCode: "",
         operNm: "",
         stdTime: "",
+        operType: 0,
     });
 
     const [isUpdating, setIsUpdating] = useState(false);
@@ -222,6 +225,7 @@ export function MasterOperationPage() {
             depCode: "",
             operNm: "",
             stdTime: "",
+            operType: 0,
         };
         setIsCreatingNewRow(true);
     };
@@ -245,6 +249,7 @@ export function MasterOperationPage() {
                 depCode: editFormRef.current.depCode?.trim() ?? "",
                 operNm: editFormRef.current.operNm?.trim() ?? "",
                 stdTime: editFormRef.current.stdTime?.toString().trim() ?? "",
+                operType: editFormRef.current.operType ?? 0,
             };
 
             const response = await OperationApi.create(payload);
@@ -284,13 +289,14 @@ export function MasterOperationPage() {
             depCode: row.depCode ?? "",
             operNm: row.operNm ?? "",
             stdTime: row.stdTime?.toString() ?? "",
+            operType: row.operType ?? 0,
         };
         setEditingOperCode(row.operCode);
     };
 
     const handleCancelEdit = () => {
         setEditingOperCode(null);
-        editFormRef.current = { depCode: "", operNm: "", stdTime: "" };
+        editFormRef.current = { depCode: "", operNm: "", stdTime: "", operType: 0 };
     };
 
     // 인라인 수정 저장
@@ -303,6 +309,7 @@ export function MasterOperationPage() {
                 depCode: editFormRef.current.depCode?.trim() ? editFormRef.current.depCode.trim() : "",
                 operNm: editFormRef.current.operNm?.trim() ? editFormRef.current.operNm.trim() : "",
                 stdTime: editFormRef.current.stdTime?.toString().trim() ? editFormRef.current.stdTime.toString().trim() : "",
+                operType: editFormRef.current.operType ?? 0,
             };
 
             const response = await OperationApi.update(operCode, updatePayload);
@@ -416,6 +423,33 @@ export function MasterOperationPage() {
                         );
                     }
                     return row.original.operNm || "-";
+                },
+            },
+            {
+                accessorKey: "operType",
+                header: "공정구분",
+                cell: ({ row }) => {
+                    const isNewRow = row.original.operCode === "__NEW_ROW__";
+                    const isEditing = row.original.operCode === editingOperCode;
+
+                    if (isNewRow || isEditing) {
+                        return (
+                            <select
+                                className="tableInput"
+                                defaultValue={String(editFormRef.current.operType ?? 0)}
+                                onChange={(e) => {
+                                    editFormRef.current.operType = Number(e.target.value) as OperType;
+                                }}
+                            >
+                                {Object.entries(OPER_TYPE_LABEL).map(([value, label]) => (
+                                    <option key={value} value={value}>
+                                        {label}
+                                    </option>
+                                ))}
+                            </select>
+                        );
+                    }
+                    return OPER_TYPE_LABEL[row.original.operType] ?? "-";
                 },
             },
             {
@@ -537,6 +571,7 @@ export function MasterOperationPage() {
                 depCode: "",
                 operNm: "",
                 stdTime: "",
+                operType: 0,
                 useYn: "Y",
                 createdAt: "",
                 updatedAt: "",
