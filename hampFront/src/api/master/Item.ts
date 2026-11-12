@@ -59,7 +59,12 @@ export interface RoutingMaterialRequest {
 export interface ItemRoutingRequest {
   operCode?: string | null;
   operSeq?: number | null;
-  /** 최종 공정 여부 ('Y' | 'N') */
+  /**
+   * 최종 공정 여부 ('Y' | 'N' | 'G')
+   * - Y: 전체공정 최종 (LOT·재고 트리거)
+   * - N: 일반
+   * - G: 일반공정 최종 (수율 확정 지점 - 포장 등 Y 이전에 수율이 이미 확정될 때 선택 사용)
+   */
   finalYn?: string | null;
   materials?: RoutingMaterialRequest[] | null;
 }
@@ -83,10 +88,42 @@ export interface ItemRoutingResponse {
   routingId: number;
   itemCode: string;
   operCode: string;
+  operNm: string;
   operSeq: number;
-  /** 최종 공정 여부 ('Y' | 'N') */
+  /** 최종 공정 여부 (Y: 전체공정 최종, N: 일반, G: 일반공정 최종/수율 확정 지점) */
   finalYn: string;
   materials: RoutingMaterialResponse[];
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Sub Models (품목 생산 체인)
+// ══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * 품목 생산 체인 응답 (GET /items/{itemCode}/routing-chain)
+ * - 품목의 공정 라우팅과, 그 라우팅의 투입(IN) 자재를 만드는 생산 공정까지 재귀적으로 포함
+ * - inputChains 안의 각 요소가 다시 ItemRoutingChainResponse 구조 (트리 형태)
+ */
+export interface ItemRoutingChainResponse {
+  itemCode: string;
+  itemNm: string;
+  unit: string;
+  /**
+   * 부산물 원천 품목 코드
+   * - 다른 품목 공정의 부산물로 생산되는 경우 그 품목 코드
+   * - 자기 자신의 라우팅으로 생산되거나, 라우팅 자체가 없는 원물이면 null
+   */
+  byproductOfItemCode: string | null;
+  /**
+   * 이 품목(부산물이면 byproductOfItemCode 품목)의 공정 라우팅 전체
+   * - 등록된 라우팅이 없는 원물이면 빈 배열
+   */
+  routings: ItemRoutingResponse[];
+  /**
+   * 위 라우팅들에 등록된 투입(IN) 자재의 생산 체인 (재귀)
+   * - 더 거슬러 올라갈 라우팅이 없으면 빈 배열
+   */
+  inputChains: ItemRoutingChainResponse[];
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -179,6 +216,9 @@ export type ApiResponsePageItemResponse = ApiResponsePage<ItemResponse>;
 /** 품목 옵션 목록 API 최종 응답 타입 */
 export type ApiResponseListItemOptionResponse = ApiResponse<ItemOptionResponse[]>;
 
+/** 품목 생산 체인 조회 API 최종 응답 타입 */
+export type ApiResponseItemRoutingChainResponse = ApiResponse<ItemRoutingChainResponse>;
+
 // ══════════════════════════════════════════════════════════════════════════════
 // 품목 관리 API 함수
 // ══════════════════════════════════════════════════════════════════════════════
@@ -202,6 +242,16 @@ export const ItemApi = {
   /** 품목 단건 상세 조회 (라우팅/자재 포함) */
   getDetail: async (itemCode: string): Promise<ApiResponseItemDetailResponse> => {
     const res = await apiClient.get<ApiResponseItemDetailResponse>(`/items/${itemCode}`);
+    return res.data;
+  },
+
+  /**
+   * 품목 생산 체인 조회
+   * - 투입 자재의 생산 공정까지 재귀적으로 포함 (수주 품목의 생산 흐름 표출용)
+   * @param itemCode 품목 코드 (path)
+   */
+  getRoutingChain: async (itemCode: string): Promise<ApiResponseItemRoutingChainResponse> => {
+    const res = await apiClient.get<ApiResponseItemRoutingChainResponse>(`/items/${itemCode}/routing-chain`);
     return res.data;
   },
 
