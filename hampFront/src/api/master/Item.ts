@@ -88,7 +88,7 @@ export interface ItemRoutingResponse {
   routingId: number;
   itemCode: string;
   operCode: string;
-  operNm: string;
+  operNm?: string;
   operSeq: number;
   /** 최종 공정 여부 (Y: 전체공정 최종, N: 일반, G: 일반공정 최종/수율 확정 지점) */
   finalYn: string;
