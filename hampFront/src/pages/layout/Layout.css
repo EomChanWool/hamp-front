@@ -20,12 +20,15 @@
   gap: 8px;
   flex-shrink: 0;
   padding: 4px 4px 8px 6px;
+  overflow: hidden;
+  transition: padding var(--sidebar-duration) var(--sidebar-ease);
 }
 
 .brandInfo {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
   overflow: hidden;
   min-width: 0;
   cursor: pointer;
@@ -153,6 +156,7 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  background: var(--bg-app, var(--bg-subtle));
 }
 
 .sidebarWrap > .sidebar {
@@ -397,17 +401,20 @@
 ================================ */
 
 .mainContent {
+  --sidebar-w: 264px;
+  --sidebar-duration: 0.25s;
+  --sidebar-ease: cubic-bezier(0.4, 0, 0.2, 1);
+
   display: grid;
-  grid-template-columns: 264px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
-  transition: grid-template-columns 0.3s ease;
   flex: 1;
   min-height: 0;
   overflow: hidden;
 }
 
 .mainContent.collapsed {
-  grid-template-columns: 80px minmax(0, 1fr);
+  --sidebar-w: 80px;
 }
 
 .contentArea {
@@ -428,6 +435,7 @@
   --nav-hover: rgba(15, 23, 42, 0.05);
   --nav-active: rgba(15, 23, 42, 0.06);
 
+  width: var(--sidebar-w);
   color: var(--text-main);
   background: var(--bg-app, var(--bg-subtle));
   border: none;
@@ -441,6 +449,7 @@
   box-sizing: border-box;
   scrollbar-width: thin;
   scrollbar-color: #e2e8f0 transparent;
+  transition: width var(--sidebar-duration) var(--sidebar-ease);
 }
 
 [data-theme="dark"] .sidebar {
@@ -472,6 +481,8 @@
 
 .navGroupHeader {
   width: 100%;
+  max-width: 100%;
+  margin-inline: auto;
   min-height: 40px;
   padding: 0 10px;
   border-radius: 10px;
@@ -484,11 +495,14 @@
   gap: 12px;
   text-align: left;
   cursor: pointer;
+  overflow: hidden;
   transition:
     background 0.15s ease,
     border-color 0.15s ease,
     box-shadow 0.15s ease,
-    color 0.15s ease;
+    color 0.15s ease,
+    max-width var(--sidebar-duration) var(--sidebar-ease),
+    padding var(--sidebar-duration) var(--sidebar-ease);
 }
 
 .navGroupHeader .groupLabel {
@@ -513,7 +527,9 @@
   overflow: hidden;
   line-height: 1;
   color: var(--text-sub);
-  transition: color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .navGroupHeader > svg {
@@ -559,15 +575,21 @@
 
 /* collapsed */
 .mainContent.collapsed .navGroupHeader {
-  justify-content: center;
-  width: 44px;
-  height: 44px;
+  max-width: 44px;
   min-height: 44px;
-  padding: 0;
+  padding: 0 12px;
 }
 
-.mainContent.collapsed .navGroupHeader .groupLabel {
-  justify-content: center;
+.mainContent.collapsed .navGroupHeader .groupLabel span {
+  opacity: 0;
+}
+
+.mainContent.collapsed .navGroupHeader > svg {
+  display: none;
+}
+
+.mainContent.collapsed .brandText {
+  display: none;
 }
 
 /* ================================
@@ -660,12 +682,6 @@
   color: var(--text-heading);
 }
 
-.navItems button span {
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.3;
-}
-
 /* Collapsed flyout */
 .mainContent.collapsed .navGroup {
   position: relative;
@@ -697,15 +713,16 @@
   opacity: 0;
   transform: translateX(-6px);
   pointer-events: none;
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
+  transition: none;
 }
 
 .mainContent.collapsed .navGroup.flyoutOpen .navItems {
   opacity: 1;
   transform: translateX(0);
   pointer-events: auto;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .mainContent.collapsed .navItems button {
@@ -714,20 +731,10 @@
   border-radius: 8px;
 }
 
-.mainContent.collapsed .navMenu {
-  justify-items: center;
-}
-
 .mainContent.collapsed .brand {
   position: relative;
-  justify-content: center;
-  padding: 4px 0 8px;
-}
-
-.mainContent.collapsed .brand {
-  position: relative;
-  justify-content: center;
-  padding: 4px 0 8px;
+  justify-content: flex-start;
+  padding: 4px 4px 8px 10px;
 }
 
 .mainContent.collapsed .sidebarToggle {
@@ -742,7 +749,7 @@
   border-radius: 10px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.15s ease;
+  transition: none;
 }
 
 .mainContent.collapsed .brandMark {
@@ -753,6 +760,7 @@
 .mainContent.collapsed .brand:has(.sidebarToggle:focus-visible) .sidebarToggle {
   opacity: 1;
   pointer-events: auto;
+  transition: opacity 0.15s ease;
 }
 
 .mainContent.collapsed .brand:hover .brandMark,
@@ -764,6 +772,7 @@
   .mainContent.collapsed .brand {
     flex-direction: column;
     gap: 10px;
+    padding: 4px 0 8px;
   }
 
   .mainContent.collapsed .sidebarToggle {
@@ -1918,11 +1927,15 @@
   }
 
   .mainContent {
-    grid-template-columns: 232px minmax(0, 1fr);
+    --sidebar-w: 232px;
   }
 
   .mainContent.collapsed {
-    grid-template-columns: 92px minmax(0, 1fr);
+    --sidebar-w: 92px;
+  }
+
+  .mainContent.collapsed .brand {
+    padding-left: 18px;
   }
 
   .sidebar {
@@ -2105,5 +2118,14 @@
 
   .facilityTitle {
     font-size: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .brand,
+  .navGroupHeader,
+  .navItems {
+    transition: none;
   }
 }

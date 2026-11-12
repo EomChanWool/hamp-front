@@ -185,12 +185,10 @@ export function SideMenu({ collapsed, onToggleCollapsed, onLogoClick }: SideMenu
         aria-label="메인 대시보드로 이동"
       >
         <div className="brandMark">H</div>
-        {!collapsed && (
-          <div className="brandText">
-            <strong>HEMP-MES</strong>
-            <small>Production Control</small>
-          </div>
-        )}
+        <div className="brandText" aria-hidden={collapsed}>
+          <strong>HEMP-MES</strong>
+          <small>Production Control</small>
+        </div>
       </div>
       {toggleButton}
     </div>
@@ -264,12 +262,10 @@ export function SideMenu({ collapsed, onToggleCollapsed, onLogoClick }: SideMenu
                   >
                     <span className="groupLabel">
                       <group.icon className="h-5 w-5" />
-                      {!collapsed && <span>{group.title}</span>}
+                      <span>{group.title}</span>
                     </span>
-                    {!collapsed &&
-                      (isOpen ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />)}
+                    {isOpen ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
                   </button>
-
                   {/* 소메뉴 아이템 리스트 영역 */}
                   <div
                     ref={(el) => {
