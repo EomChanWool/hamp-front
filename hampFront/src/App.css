@@ -283,7 +283,7 @@ textarea {
 
 input,
 select {
-  height: 42px;
+  height: 36px;
   padding: 0 14px;
 }
 
@@ -735,6 +735,13 @@ button {
 input.tableInput {
   height: 42px;
   padding: 0 14px;
+}
+
+td input.tableInput {
+  height: 36px;
+  padding: 0 12px;
+  font-size: inherit;
+  min-width: 0;
 }
 
 textarea.tableInput {
