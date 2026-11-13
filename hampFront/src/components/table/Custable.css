@@ -108,6 +108,7 @@ th:last-child {
 
 td {
   color: var(--text-body);
+  height: 65px;
 }
 
 td .rowActions {
