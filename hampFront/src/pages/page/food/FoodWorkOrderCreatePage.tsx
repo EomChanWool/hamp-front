@@ -167,26 +167,17 @@ const collectRawStageByproducts = (root: ItemRoutingChainResponse): { itemCode: 
 
     const rawFed = node.inputChains.length > 0 && node.inputChains.every((c) => c.routings.length === 0);
     if (rawFed) {
-      let remaining = 100; // 원물 대비 남은 양 (%)
-      [...node.routings]
-        .sort((a, b) => a.operSeq - b.operSeq)
-        .forEach((r) => {
-          const outs = r.materials.filter(
-            (m) => m.ioType === "OUT" && m.itemCode !== node.itemCode && m.yieldRate != null,
-          );
-          let removed = 0;
-          outs.forEach((m) => {
-            const pctOfRaw = (remaining * (m.yieldRate as number)) / 100; // 이 공정 투입량 기준 → 원물 대비 %
-            removed += pctOfRaw;
-            const prev = acc.get(m.itemCode);
-            acc.set(m.itemCode, {
-              itemCode: m.itemCode,
-              itemNm: m.itemNm ?? m.itemCode,
-              pct: (prev?.pct ?? 0) + pctOfRaw,
-            });
+      node.routings.forEach((r) =>
+        r.materials.forEach((m) => {
+          if (m.ioType !== "OUT" || m.itemCode === node.itemCode || m.yieldRate == null) return;
+          const prev = acc.get(m.itemCode);
+          acc.set(m.itemCode, {
+            itemCode: m.itemCode,
+            itemNm: m.itemNm ?? m.itemCode,
+            pct: (prev?.pct ?? 0) + m.yieldRate,
           });
-          remaining -= removed;
-        });
+        }),
+      );
     }
     node.inputChains.forEach(walk);
   };
@@ -208,13 +199,13 @@ const computeLineByproducts = (
   });
 
   if (chain && typeof rawValue === "number" && rawValue > 0) {
-    const rawKg = convertUnit(rawValue, rawUnit, "KG");
+    const rawKg = convertUnit(rawValue, rawUnit, "G");
     collectRawStageByproducts(chain).forEach((c) => {
       merged.set(c.itemNm, {
         name: c.itemNm,
         code: c.itemCode,
         qty: Math.round(rawKg * c.pct * 10) / 1000, // rawKg * pct / 100, 소수 3자리
-        unit: "KG",
+        unit: "G",
       });
     });
   }
@@ -788,6 +779,7 @@ export function FoodWorkOrderCreatePage() {
     return map;
   }, [lines, estimate, chains]);
 
+  // 라인별 부산물 (서버 값 + 1차/2차 껍질 합산)
   const byproductsById = useMemo(() => {
     const map: Record<number, LineByproduct[]> = {};
     lines.forEach((line) => {
@@ -1275,6 +1267,7 @@ export function FoodWorkOrderCreatePage() {
                   const id = line.salesOrderLineId;
                   const est = estimate?.byLineId[id]; // 이 라인의 예상 투입원료 계산 결과
                   const info = lineInfoById[id];
+                  // 연계 여부는 서버 플래그가 아니라 체인 판정 결과(info.derived)로 본다
                   const isDerived = !!info?.derived;
                   const override = pickOverride(id, isDerived, rawOverrides, parkOverrides);
                   const rawValue = effectiveRaw(info, override, rawUnit); // 화면에 보이는 값 (직접 입력 우선)
@@ -1293,6 +1286,7 @@ export function FoodWorkOrderCreatePage() {
                       ? `${line.instructQty.toLocaleString()}${line.unit} 산출 기준 약 ${rawValue.toLocaleString()}${rawFieldUnit}`
                       : "";
 
+                  // 서버값 + 1차/2차 껍질 합산된 부산물 목록
                   const byproducts = byproductsById[id] ?? [];
 
                   // 서버가 직접 연계로 판정한 품목만 서버 note 를 쓴다 (체인으로만 연계 판정된 품목의 서버 note 는 원물 기준이라 맞지 않음)
@@ -1366,7 +1360,6 @@ export function FoodWorkOrderCreatePage() {
                           ) : (
                             (est || isDerived) && (
                               <p className="woc-field__hint">
-                                {/* 연계 품목은 원물이 아니라 헴프박 기준으로 안내한다 */}
                                 {isDerived
                                   ? info?.autoParkKg == null &&
                                     "필요 헴프박을 자동 계산할 수 없어 직접 입력이 필요합니다(수율 미등록 또는 단위 차이). "
