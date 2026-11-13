@@ -833,16 +833,6 @@ export function FoodWorkOrderCreatePage() {
     [orderOptionList],
   );
 
-  // 헴프박을 이어받는(연계생산) 라인은 아래쪽에 묶어서 보여준다
-  const displayLines = useMemo(
-    () =>
-      [...lines].sort(
-        (a, b) =>
-          Number(!!lineInfoById[a.salesOrderLineId]?.derived) - Number(!!lineInfoById[b.salesOrderLineId]?.derived),
-      ),
-    [lines, lineInfoById],
-  );
-
   // 회원 옵션 데이터 조회
   useEffect(() => {
     const fetchUserOptions = async () => {
@@ -1259,11 +1249,11 @@ export function FoodWorkOrderCreatePage() {
               <span className="woc-panel__count">총 {lines.length}개</span>
             </div>
 
-            {displayLines.length === 0 ? (
+            {lines.length === 0 ? (
               <p className="woc-empty">수주를 선택하면 산출 품목과 공정이 여기에 표시됩니다.</p>
             ) : (
               <ul className="woc-lines">
-                {displayLines.map((line) => {
+                {lines.map((line) => {
                   const id = line.salesOrderLineId;
                   const est = estimate?.byLineId[id]; // 이 라인의 예상 투입원료 계산 결과
                   const info = lineInfoById[id];
@@ -1293,7 +1283,7 @@ export function FoodWorkOrderCreatePage() {
                   const serverNote = !isDerived || est?.parkDerived ? est?.note : "";
 
                   return (
-                    <li key={id} className={`woc-line${isDerived ? " is-derived" : ""}`}>
+                    <li key={id} className="woc-line">
                       <div className="woc-line__head">
                         <strong className="woc-line__name">{line.itemNm}</strong>
                         <span className="woc-line__code">{line.itemCode}</span>

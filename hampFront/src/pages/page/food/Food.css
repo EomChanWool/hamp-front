@@ -1877,66 +1877,6 @@
   background: #fef3c7;
 }
 
-.woc-line.is-derived {
-  position: relative;
-  padding: 20px 22px 22px;
-  background: var(--woc-bg-soft);
-  border: 1px solid var(--woc-border);
-  border-radius: 12px;
-}
-.woc-line.is-derived:last-child {
-  padding-bottom: 22px;
-}
-.woc .woc-lines > .woc-line.is-derived {
-  margin: 12px 0 0 0;
-}
-/* 이름 앞 막대: 파란색 → 회색 */
-.woc-line.is-derived .woc-line__name::before {
-  background: #94a3b8;
-}
-
-/* 헴프박 연계 태그: 노란 알약 → 회색 테두리 태그 */
-.woc-line.is-derived .woc-tag.park {
-  padding: 3px 8px;
-  color: #475569;
-  background: var(--woc-surface);
-  border: 1px solid var(--woc-border-strong);
-}
-
-/* 공정 스테퍼: 흰 박스로 분리 */
-.woc-line.is-derived .woc-process {
-  margin-top: 16px;
-}
-.woc-line.is-derived .woc-stepper {
-  padding: 16px 8px 12px;
-  background: var(--woc-surface);
-  border: 1px solid var(--woc-border);
-  border-radius: 10px;
-}
-
-/* 공유 공정 안내문: 회색 정보 아이콘 + 안내 한 줄 */
-.woc-line.is-derived .woc-process__note {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  margin-top: 12px;
-  color: var(--woc-muted);
-}
-.woc-line.is-derived .woc-process__note::before {
-  content: "i";
-  flex: none;
-  width: 14px;
-  height: 14px;
-  margin-top: 1px;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 14px;
-  text-align: center;
-  color: #fff;
-  background: #94a3b8;
-  border-radius: 50%;
-}
-
 /* ───────── 공정 스테퍼 ───────── */
 .woc-process {
   min-width: 0; 
@@ -2397,12 +2337,6 @@
   .woc-line__fields {
     grid-template-columns: minmax(0, 1fr);
   }
-  .woc-line.is-derived {
-    padding: 16px;
-  }
-  .woc-line.is-derived:last-child {
-    padding-bottom: 16px;
-  }
   .woc-usage__figure strong {
     font-size: 30px;
   }
@@ -2626,16 +2560,6 @@
 
 [data-theme="dark"] .woc-tag.park {
   background: rgba(245, 158, 11, 0.16);
-}
-
-[data-theme="dark"] .woc-line.is-derived .woc-tag.park {
-  color: #cbd5e1;
-  background: var(--woc-surface);
-  border-color: var(--woc-border-strong);
-}
-
-[data-theme="dark"] .woc-line.is-derived .woc-process__note::before {
-  color: #0f172a;
 }
 
 /* 6) 공정 스테퍼 */
