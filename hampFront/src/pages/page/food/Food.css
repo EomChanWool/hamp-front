@@ -1403,7 +1403,9 @@
   }
 }
 
-/* 작업지시 등록 (FoodWorkOrderCreatePage) - 기존 Food.css와 충돌하지 않도록 woc- 접두사 사용 */
+/* ==========================================================================
+   작업지시 등록 (FoodWorkOrderCreatePage) - woc- 접두사
+   ========================================================================== */
 
 .woc {
   --woc-primary: #2563eb;
@@ -1429,6 +1431,8 @@
   margin: 0 auto;
   padding: 8px 0 48px;
   color: var(--woc-text);
+
+  container: woc / inline-size;
 }
 
 .woc em {
@@ -1440,9 +1444,10 @@
 /* ───────── 헤더 ───────── */
 .woc-header {
   display: flex;
+  flex-wrap: wrap; 
   align-items: flex-end;
   justify-content: space-between;
-  gap: 16px;
+  gap: 8px 16px;
   margin-bottom: 24px;
 }
 .woc-header__title {
@@ -1473,11 +1478,13 @@
 }
 .woc-main {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   min-width: 0;
 }
 
 .woc-panel {
+  min-width: 0;
   padding: 24px;
   background: var(--woc-surface);
   border: 1px solid var(--woc-border);
@@ -1529,6 +1536,7 @@
   font-size: 12px;
   line-height: 1.5;
   color: var(--woc-muted-2);
+  overflow-wrap: anywhere; 
 }
 .woc-field__error {
   margin: 0;
@@ -1598,7 +1606,7 @@
   font-weight: 600;
   color: var(--woc-muted);
   pointer-events: none;
-  font-family: 'Montserrat', 'Noto Sans KR', sans-serif;
+  font-family: "Montserrat", "Noto Sans KR", sans-serif;
 }
 .woc-unitInput input[type="number"] {
   -moz-appearance: textfield;
@@ -1660,6 +1668,9 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--woc-muted-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .woc-infocard__value {
   font-size: 15px;
@@ -1802,9 +1813,11 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  min-width: 0;
 }
 
 .woc-line {
+  min-width: 0;
   padding: 22px 0;
   border-top: 1px solid var(--woc-border);
 }
@@ -1838,7 +1851,7 @@
 .woc-line__code {
   font-size: 12px;
   color: var(--woc-muted-2);
-  font-family: 'Montserrat', 'Noto Sans KR', sans-serif;
+  font-family: "Montserrat", "Noto Sans KR", sans-serif;
 }
 .woc-line__fields {
   display: grid;
@@ -1926,6 +1939,7 @@
 
 /* ───────── 공정 스테퍼 ───────── */
 .woc-process {
+  min-width: 0; 
   margin-top: 20px;
 }
 .woc-process__note {
@@ -1946,7 +1960,6 @@
   margin: 0;
   padding: 0 0 4px;
   list-style: none;
-  /* overflow-x: auto; */
 }
 
 .woc-stepper__step {
@@ -2071,6 +2084,7 @@
   top: 16px;
   display: grid;
   gap: 12px;
+  min-width: 0;
 }
 
 .woc-usage {
@@ -2114,6 +2128,7 @@
 .woc-usage__list li {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   font-size: 13px;
   color: var(--woc-muted);
 }
@@ -2334,19 +2349,15 @@
   }
 }
 
-/* ───────── 반응형 ───────── */
-@media (max-width: 1024px) {
-  .woc-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .woc-side {
-    position: static;
-  }
-}
-@media (max-width: 760px) {
-  .woc-grid3 {
-    grid-template-columns: minmax(0, 1fr);
-  }
+/* ───────── 반응형 (컨테이너 쿼리) ─────────
+   기준 = .woc 의 실제 폭 (뷰포트 − 사이드바 − 여백)
+   1280 이하 : 수주 정보 카드 3열 (투입원료 카드는 한 줄 전체)
+   1000 이하 : 본문/요약 패널 1열 (요약 패널이 본문 아래로)
+    620 이하 : 기본정보 입력 1열
+    560 이하 : 라인 입력 1열, 패널 여백 축소
+    460 이하 : 수주 정보 카드 1열
+   (수주 정보 카드 2열 구간: 640 이하) */
+@container woc (max-width: 1280px) {
   .woc-infocards {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -2354,35 +2365,52 @@
     grid-column: 1 / -1;
   }
 }
-@media (max-width: 560px) {
+
+@container woc (max-width: 1000px) {
+  .woc-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .woc-side {
+    position: static;
+  }
+}
+
+@container woc (max-width: 640px) {
+  .woc-infocards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .woc-infocard.is-raw .woc-infocard__value {
+    font-size: 26px;
+  }
+}
+
+@container woc (max-width: 620px) {
+  .woc-grid3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container woc (max-width: 560px) {
   .woc-panel {
     padding: 18px;
   }
   .woc-line__fields {
     grid-template-columns: minmax(0, 1fr);
   }
-  .woc-infocards {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  /* 서브 카드: 들여쓰기·여백 축소 + 연결선 폭 맞춤 */
   .woc-line.is-derived {
-    margin-left: 12px;
     padding: 16px;
   }
   .woc-line.is-derived:last-child {
     padding-bottom: 16px;
   }
-  .woc-line.is-derived::before {
-    left: -13px;
+  .woc-usage__figure strong {
+    font-size: 30px;
   }
-  .woc-line.is-derived::after {
-    left: -13px;
-    top: 29px;
-    width: 12px;
-  }
-  .woc-line.is-derived:last-child::before {
-    bottom: calc(100% - 31px);
+}
+
+@container woc (max-width: 460px) {
+  .woc-infocards {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -2396,43 +2424,6 @@
   .woc-select__chevron {
     transition: none;
   }
-}
-
-/* DARK MODE */
-[data-theme="dark"] .food-routing-material-col {
-  background: rgba(0, 0, 0, 0.18);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] .food-routing-material-title {
-  color: #94a3b8;
-}
-
-[data-theme="dark"] .food-routing-material-col.is-in .food-routing-material-dot {
-  background: #60a5fa;
-}
-
-[data-theme="dark"] .food-routing-material-col.is-out .food-routing-material-dot {
-  background: #34d399;
-}
-
-[data-theme="dark"] .food-routing-material-count {
-  background: rgba(148, 163, 184, 0.2);
-  color: #cbd5e1;
-}
-
-[data-theme="dark"] .food-routing-material-item {
-  border-top-color: rgba(255, 255, 255, 0.08);
-}
-
-[data-theme="dark"] .food-routing-material-name,
-[data-theme="dark"] .food-routing-material-qty {
-  color: rgba(255, 255, 255, 0.94);
-}
-
-[data-theme="dark"] .food-routing-material-code,
-[data-theme="dark"] .food-routing-material-unit {
-  color: #94a3b8;
 }
 
 /* ================================================
@@ -2680,3 +2671,41 @@
 [data-theme="dark"] .woc-dialog::backdrop {
   background: rgba(0, 0, 0, 0.65);
 }
+
+/* DARK MODE */
+[data-theme="dark"] .food-routing-material-col {
+  background: rgba(0, 0, 0, 0.18);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .food-routing-material-title {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .food-routing-material-col.is-in .food-routing-material-dot {
+  background: #60a5fa;
+}
+
+[data-theme="dark"] .food-routing-material-col.is-out .food-routing-material-dot {
+  background: #34d399;
+}
+
+[data-theme="dark"] .food-routing-material-count {
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .food-routing-material-item {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .food-routing-material-name,
+[data-theme="dark"] .food-routing-material-qty {
+  color: rgba(255, 255, 255, 0.94);
+}
+
+[data-theme="dark"] .food-routing-material-code,
+[data-theme="dark"] .food-routing-material-unit {
+  color: #94a3b8;
+}
+
