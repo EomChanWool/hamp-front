@@ -2032,6 +2032,39 @@
   font-weight: 600;
 }
 
+/* ───────── 생산 체인 (품목 생산 체인 조회 API 결과 표시) ───────── */
+
+/* 체인 조회 상태 안내 (불러오는 중 / 불러오기 실패) */
+.woc-chain__state {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--woc-muted-2);
+}
+.woc-chain__state.error {
+  font-weight: 600;
+  color: var(--woc-error-dark);
+}
+
+/* 체인 영역: 라인 하단에 붙는 컨테이너 (.woc-process 와 함께 쓰여 상단 여백을 공유) */
+.woc-chain {
+  margin-top: 16px;
+}
+
+/* 공정 수가 많은 체인(헴프 파우더는 13단계)은 한 줄로 두고 가로 스크롤 */
+.woc-chain .woc-stepper {
+  padding: 4px 0 8px;
+  overflow-x: auto;
+}
+.woc-chain .woc-stepper__step {
+  flex: 1 0 76px;
+}
+
+/* 단계 이름이 길어도(예: 재선별(입도), 겉피탈피(탈곡)) 줄바꿈이 어색하지 않게 */
+.woc-chain .woc-stepper__name {
+  padding: 0 2px;
+}
+
 /* ───────── 우측 요약 패널 ───────── */
 .woc-side {
   position: sticky;
@@ -2404,6 +2437,7 @@
 
 /* ================================================
    DARK MODE - 작업지시 등록 (woc)
+   ※ 생산 체인(.woc-chain*)은 위의 변수(--woc-*) 재정의만으로 다크모드가 적용되어 별도 규칙이 없다
    ================================================ */
 
 /* 1) 변수 재정의 */

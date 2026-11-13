@@ -105,7 +105,7 @@ export interface WorkOrderRoutingStepResponse {
     operCode: string;
     operNm: string;
     operSeq: number;
-    finalYn: string; // "Y" | "N"
+    finalYn: string; // "Y" | "N" | "G" (Y: 전체공정 최종, N: 일반, G: 일반공정 최종/수율 확정 지점)
     done: boolean; // 이 작업지시라인에서 이미 종료 처리된 공정인지 (DB 기준)
     inProgress: boolean; // 이 작업지시라인에서 지금 진행 중인 공정인지 (시작O, 종료X) (DB 기준)
     inputQty: number | null; // 이 공정을 시작할 때 기록한 투입수량 (시작 전이면 null)
@@ -176,6 +176,86 @@ export interface WorkOrderPerformanceFinishRequest {
     defects?: WorkOrderPerformanceDefectRequest[];
 }
 
+// ── 예상 투입원료(estimate) 요청/응답 모델 ──────────────────────────────────────────
+// POST /work-orders/estimate-raw-material
+// 작업지시 등록 시 산출수량 기준으로 예상 투입원료를 계산한다 (참고용 추정치)
+
+/** 예상 투입원료 계산 - 작업지시 라인별 요청 */
+export interface WorkOrderMaterialEstimateLineRequest {
+    /** 산출 품목코드 (예: "HEMP_OIL") */
+    itemCode: string;
+    /** 산출수량 (미입력 시 이 라인은 추정에서 제외) */
+    outputQty?: number | null;
+}
+
+/** 예상 투입원료 계산 요청 */
+export interface WorkOrderMaterialEstimateRequest {
+    /** 작업지시 라인별 산출 품목/산출수량 (1건 이상 필수) */
+    lines: WorkOrderMaterialEstimateLineRequest[];
+    /** 수주에 계약된 투입원료 수량(kg, 참고용) - 있으면 초과 여부(overRaw)를 함께 계산 */
+    committedRawQty?: number | null;
+}
+
+/** 예상 투입원료 계산 - 라인별 부산물 추정 응답 */
+export interface WorkOrderMaterialEstimateByproductResponse {
+    /** 부산물 품목코드 */
+    itemCode: string;
+    /** 부산물 품목명 */
+    itemNm: string;
+    /** 부산물 추정량 (해당 품목 단위 기준, 올림) */
+    qty: number;
+}
+
+/** 예상 투입원료 계산 - 라인별 추정 응답 (요청 순서 그대로) */
+export interface WorkOrderMaterialEstimateLineResponse {
+    /** 산출 품목코드 */
+    itemCode: string;
+    /**
+     * 예상 투입 원료(kg)
+     * - 연계생산 품목(parkDerived=true)은 그 생산 체인에서 멈춘 자재(예: 헴프박) 기준, 그 외는 원물 기준
+     * - 산출수량 미입력/수율 미확정이면 null
+     */
+    rawNeeded: number | null;
+    /** 다른 품목 공정의 부산물로 충당되는 자재 기반 연계생산 품목 여부 (원물을 따로 투입하지 않음) */
+    parkDerived: boolean;
+    /** 계산 가정/상태 설명 (참고용) */
+    note: string | null;
+    /** 이 라인을 생산하는 과정에서 함께 발생하는 부산물 품목별 추정량 (없으면 빈 배열) */
+    byproducts: WorkOrderMaterialEstimateByproductResponse[];
+}
+
+/** 예상 투입원료 계산 - 전체 라인 합계/경고 판단용 요약 응답 */
+export interface WorkOrderMaterialEstimateSummaryResponse {
+    /** 독립 품목(헴프오일/헴프씨드 등)의 예상 원물 소요량 합계 (kg, 올림) */
+    totalRawNeeded: number;
+    /** 독립 품목 중 산출수량 미입력/수율 미확정으로 합계에서 제외된 라인이 있는지 여부 */
+    hasUnknownRaw: boolean;
+    /** 헴프오일 라인에서 발생하는 헴프박(부산물) 공급량 합계 (kg, 내림) */
+    parkSupply: number;
+    /** 헴프오일 라인 포함 여부 */
+    hasOilLine: boolean;
+    /** 헴프박 기반 연계생산 품목의 필요량 합계 (kg, 올림 - 산출수량 입력/수율 확정된 라인만) */
+    parkDemand: number;
+    /** 헴프박 기반 연계생산 품목(파우더/농축액 등) 포함 여부 */
+    hasParkConsumer: boolean;
+    /** 연계생산 품목 중 산출수량 미입력/수율 미확정으로 parkDemand에서 제외된 라인이 있는지 여부 */
+    hasUnknownParkConsumer: boolean;
+    /** 요청으로 받은 투입원료 계약 수량 (kg) - 미전달 시 null */
+    committedRawQty: number | null;
+    /** totalRawNeeded가 committedRawQty를 초과하는지 (committedRawQty가 없으면 false) */
+    overRaw: boolean;
+    /** parkDemand가 parkSupply를 초과하는지 (헴프박 부족) */
+    parkShort: boolean;
+}
+
+/** 예상 투입원료 계산 응답 */
+export interface WorkOrderMaterialEstimateResponse {
+    /** 요청 순서 그대로의 라인별 추정 결과 */
+    lines: WorkOrderMaterialEstimateLineResponse[];
+    /** 전체 라인 합계/경고 판단용 요약 */
+    summary: WorkOrderMaterialEstimateSummaryResponse;
+}
+
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 작업지시 단건/기본 응답 API 최종 응답 타입 */
@@ -198,6 +278,9 @@ export type ApiResponseWorkOrderLineScanResponse = ApiResponse<WorkOrderLineScan
 
 /** 작업지시 공정 시작 API 최종 응답 타입 (기본 ApiResponse 활용) */
 export type ApiResponseWorkOrderPerformanceStartResponse = ApiResponse<string>;
+
+/** 예상 투입원료 계산 API 최종 응답 타입 */
+export type ApiResponseWorkOrderMaterialEstimateResponse = ApiResponse<WorkOrderMaterialEstimateResponse>;
 
 
 // ── 작업지시 관리 API 함수 ────────────────────────────────────────────────────────
@@ -228,6 +311,15 @@ export const WorkOrderApi = {
     /** 작업지시 등록 */
     create: async (data: WorkOrderCreateRequest): Promise<ApiResponseWorkOrderResponse> => {
         const res = await apiClient.post('/work-orders', data);
+        return res.data;
+    },
+
+    /**
+     * 예상 투입원료 계산 (작업지시 등록 - 산출수량 기준, 참고용 추정치)
+     * - 라인별 산출수량을 보내면 예상 투입원료, 부산물, 초과/부족 경고 요약을 돌려준다
+     */
+    estimateRawMaterial: async (data: WorkOrderMaterialEstimateRequest): Promise<ApiResponseWorkOrderMaterialEstimateResponse> => {
+        const res = await apiClient.post('/work-orders/estimate-raw-material', data);
         return res.data;
     },
 
