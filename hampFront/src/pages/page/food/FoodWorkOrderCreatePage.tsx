@@ -8,8 +8,18 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { WorkOrderApi } from "@/api/WorkOrder";
+import {
+  WorkOrderApi,
+  type WorkOrderMaterialEstimateLineResponse,
+  type WorkOrderMaterialEstimateSummaryResponse,
+} from "@/api/WorkOrder";
 import { UserApi, type UserOptionResponse } from "@/api/User";
+import {
+  SalesOrderApi,
+  type SalesOrderDetailResponse,
+  type SalesOrderOptionResponse,
+} from "@/api/sales/SalesOrder";
+import { ItemApi, type ItemRoutingChainResponse, type ItemRoutingResponse } from "@/api/master/Item";
 import "./Food.css";
 import { BanknotesIcon, BuildingOffice2Icon, CalendarDaysIcon, CubeIcon } from "@heroicons/react/24/outline";
 
@@ -20,254 +30,281 @@ const todayStr = () => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
-const round1 = (n: number) => Math.round(n * 10) / 10;
+/* ───────────── 단위 변환 ───────────── */
+
+/**
+ * 단위 처리
+ * - 서버 추정치 단위(SERVER_RAW_UNIT)와 수주 투입원료 단위(G, KG 등)를 맞춰서 변환한 뒤 사용한다
+ */
+// 서버 예상 투입원료 API(rawNeeded, parkSupply 등)가 내려주는 수량 단위 - 서버 단위가 다르면 여기만 바꾸면 된다
+const SERVER_RAW_UNIT = "KG";
+// 헴프박(부산물 기반 연계생산) 수량 단위 - 서버가 항상 kg 기준으로 내려준다
+const PARK_UNIT = "KG";
+
+// 단위별 g 환산 계수 (모르는 단위는 변환하지 않는다)
+const UNIT_TO_G: Record<string, number> = { G: 1, KG: 1000, T: 1_000_000 };
+
+const convertUnit = (value: number, from?: string | null, to?: string | null): number => {
+  const f = UNIT_TO_G[(from ?? "").toUpperCase()];
+  const t = UNIT_TO_G[(to ?? "").toUpperCase()];
+  if (!f || !t || f === t) return value;
+  return Math.round(((value * f) / t) * 1000) / 1000; // 부동소수점 오차 방지 (소수 3자리)
+};
 
 /* ───────────── 타입 ───────────── */
 
-interface SalesOrderLine {
+/** 작업지시 라인 (수주 단건 조회의 수주라인 + 사용자가 입력하는 지시수량) */
+interface WorkOrderLine {
   salesOrderLineId: number;
   itemCode: string;
   itemNm: string;
   unit: string;
   planQty: number | null; // 계약 시점에 수량이 정해져 있으면 숫자, 미정이면 null
+  instructQty: number | ""; // 산출수량 (= 지시수량)
 }
 
-interface SalesOrder {
-  orderCode: string;
-  bpNm: string;
-  dueDate: string;
-  rawItemNm: string;
-  rawQty: number;
-  rawUnit: string;
-  amount: number;
-  lines: SalesOrderLine[];
-}
-
-interface WorkOrderLine extends SalesOrderLine {
-  instructQty: number | "";
-  rawInput: number | ""; // 예상 투입 원료(헴프박 연계 품목은 필요 헴프박) kg - 자동계산, 직접 수정 가능
-}
-
-interface ProcessStep {
-  name: string;
-  yieldText?: string;
-  kind?: "output" | "byproduct";
-  shared?: boolean; // 오일 라인과 공유하는 공정
-}
-
-interface ProcessFlowDef {
-  steps: ProcessStep[];
-  byproduct?: { name: string; yieldText: string; usedBy: string };
-  sharedNote?: string;
-}
-
+/** 화면 표시용 투입원료 / 헴프박 수급 요약 (예상 투입원료 API 응답을 화면용으로 가공) */
 interface RawSummary {
-  rawTotal: number;
-  committed: number;
-  overRaw: boolean;
-  overBy: number;
-  items: { id: number; name: string; raw: number }[];
-  parkSupply: number;
-  parkDemand: number;
+  rawTotal: number; // 독립 품목의 예상 원물 소요량 합계 (수주 투입원료 단위 기준)
+  committed: number; // 수주에 계약된 투입원료 수량 (수주 투입원료 단위 기준)
+  overRaw: boolean; // 계약 수량 초과 여부
+  overBy: number; // 초과 수량
+  items: { id: number; name: string; raw: number }[]; // 라인별 예상 원물 소요량 (큰 순)
+  parkSupply: number; // 헴프오일 라인에서 나오는 헴프박(부산물) 공급량 (kg)
+  parkDemand: number; // 헴프박 기반 연계생산 품목의 필요량 (kg)
   hasOilLine: boolean;
   hasParkConsumer: boolean;
-  parkShort: boolean;
-  hasUnknown: boolean;
+  parkShort: boolean; // 헴프박 부족 여부
+  hasUnknown: boolean; // 산출수량 미입력/수율 미확정으로 추정에서 빠진 라인 존재 여부
 }
 
-/* ───────────── 수주 데이터 (TODO: 수주 목록 API 연동 시 교체) ───────────── */
+/** 예상 투입원료 계산 결과 (라인 ID 기준으로 매핑해 둔다) */
+interface EstimateState {
+  server: WorkOrderMaterialEstimateSummaryResponse; // 서버가 계산한 요약 원본 (직접 입력값은 반영되지 않음)
+  byLineId: Record<number, WorkOrderMaterialEstimateLineResponse>;
+}
 
-const SALES_ORDERS: SalesOrder[] = [
-  {
-    orderCode: "SO-0001",
-    bpNm: "그린팜 영농조합",
-    dueDate: "2026-11-20",
-    rawItemNm: "헴프 원물",
-    rawQty: 100,
-    rawUnit: "kg",
-    amount: 500000,
-    lines: [
-      { salesOrderLineId: 13, itemCode: "HEMP_OIL", itemNm: "헴프오일", unit: "L", planQty: 100 },
-      { salesOrderLineId: 14, itemCode: "HEMP_POWDER", itemNm: "단백질파우더", unit: "kg", planQty: 10 },
-      { salesOrderLineId: 15, itemCode: "HEMP_PARK_CONC", itemNm: "헴프박농축액", unit: "kg", planQty: 5 },
-    ],
-  },
-  {
-    orderCode: "SO-0002",
-    bpNm: "한빛바이오",
-    dueDate: "2026-11-25",
-    rawItemNm: "헴프 원물",
-    rawQty: 80,
-    rawUnit: "kg",
-    amount: 400000,
-    lines: [
-      { salesOrderLineId: 21, itemCode: "HEMP_SEED_PRODUCT", itemNm: "헴프씨드", unit: "kg", planQty: null },
-      { salesOrderLineId: 22, itemCode: "HEMP_OIL", itemNm: "헴프오일", unit: "L", planQty: 50 },
-    ],
-  },
-  {
-    orderCode: "SO-0004",
-    bpNm: "대한헴프",
-    dueDate: "2026-12-01",
-    rawItemNm: "헴프 원물",
-    rawQty: 600,
-    rawUnit: "kg",
-    amount: 1500000,
-    lines: [
-      { salesOrderLineId: 41, itemCode: "HEMP_OIL", itemNm: "헴프오일", unit: "L", planQty: 100 },
-      { salesOrderLineId: 42, itemCode: "HEMP_POWDER", itemNm: "단백질파우더", unit: "kg", planQty: 50 },
-    ],
-  },
-];
+/** 품목별 생산 체인 조회 상태 */
+interface ChainState {
+  status: "loading" | "done" | "error";
+  data?: ItemRoutingChainResponse;
+}
 
-/* ───────────── 공정 / 수율 ───────────── */
-
-// 수율은 중간값 추정치(참고용)
-const YIELD = {
-  rawToSeed: 0.65, // 원료 → 탈피·선별 (63~68%)
-  seedToOil: 0.275, // 착유 → 오일 (25~30%)
-  seedToSeedProduct: 1.0, // 2차선별 → 씨드 (수율 미정이라 100% 가정)
-  seedToPark: 0.725, // 착유 → 헴프박 (70~75%)
-  parkToPowder: 0.9, // 헴프박 분쇄 → 파우더 (90%)
+const EMPTY_SUMMARY: RawSummary = {
+  rawTotal: 0,
+  committed: 0,
+  overRaw: false,
+  overBy: 0,
+  items: [],
+  parkSupply: 0,
+  parkDemand: 0,
+  hasOilLine: false,
+  hasParkConsumer: false,
+  parkShort: false,
+  hasUnknown: false,
 };
 
-// 헴프박(오일 부산물)을 이어받아 만드는 품목 - 원물을 따로 투입하지 않는다
-const PARK_DERIVED = new Set(["HEMP_POWDER", "HEMP_PARK_CONC"]);
-
-const COMMON_STEPS: ProcessStep[] = [{ name: "원료" }, { name: "전처리" }, { name: "탈피" }, { name: "선별" }];
-const asShared = (steps: ProcessStep[]): ProcessStep[] => steps.map((s) => ({ ...s, shared: true }));
-// const SHARED_NOTE =
-//   "원료~착유는 헴프오일 라인과 같은 공정입니다. 별도 원물 없이 오일 생산 중 나오는 헴프박을 이어받습니다.";
-
-const PROCESS_FLOW: Record<string, ProcessFlowDef> = {
-  HEMP_OIL: {
-    steps: [...COMMON_STEPS, { name: "착유" }, { name: "헴프오일", kind: "output", yieldText: "25~30%" }],
-    byproduct: { name: "헴프박", yieldText: "70~75%", usedBy: "단백질파우더·헴프박농축액" },
-  },
-  HEMP_SEED_PRODUCT: {
-    steps: [...COMMON_STEPS, { name: "2차선별" }, { name: "헴프씨드", kind: "output", yieldText: "미정" }],
-  },
-  HEMP_POWDER: {
-    steps: [
-      ...asShared([...COMMON_STEPS, { name: "착유" }]),
-      { name: "헴프박", kind: "byproduct" },
-      { name: "분쇄" },
-      { name: "단백질파우더", kind: "output", yieldText: "90%" },
-    ],
-    // sharedNote: SHARED_NOTE,
-  },
-  HEMP_PARK_CONC: {
-    steps: [
-      ...asShared([...COMMON_STEPS, { name: "착유" }]),
-      { name: "헴프박", kind: "byproduct" },
-      { name: "농축" },
-      { name: "헴프박농축액", kind: "output", yieldText: "미정" },
-    ],
-    // sharedNote: SHARED_NOTE,
-  },
+/**
+ * 라인에 실제로 적용할 예상 투입 원료
+ * - 사용자가 직접 입력(수정)한 값이 있으면 그 값 (이미 화면 단위로 입력된 값이라 변환하지 않는다)
+ * - 없으면 서버 추정치. 일반 품목은 서버 단위(kg) → 수주 투입원료 단위로 변환, 헴프박 연계 품목은 kg 그대로
+ * - 서버가 추정하지 못했고(null) 직접 입력도 없으면 "" (미입력)
+ */
+const effectiveRaw = (
+  estLine: WorkOrderMaterialEstimateLineResponse | undefined,
+  override: number | "" | undefined,
+  rawUnit: string,
+): number | "" => {
+  if (override !== undefined) return override;
+  const server = estLine?.rawNeeded;
+  if (server == null) return "";
+  return estLine?.parkDerived ? server : convertUnit(server, SERVER_RAW_UNIT, rawUnit);
 };
 
-// 산출수량 기준 예상 투입 원료(kg) 자동계산 - 계산 불가하면 ''
-const calcAutoRaw = (itemCode: string, qty: number | ""): number | "" => {
-  if (qty === "" || qty <= 0) return "";
-  switch (itemCode) {
-    case "HEMP_OIL":
-      return round1(qty / YIELD.seedToOil / YIELD.rawToSeed);
-    case "HEMP_SEED_PRODUCT":
-      return round1(qty / YIELD.seedToSeedProduct / YIELD.rawToSeed);
-    case "HEMP_POWDER":
-      return round1(qty / YIELD.parkToPowder); // 필요한 헴프박(kg)
-    default:
-      return ""; // 헴프박농축액 등 수율 미확정
-  }
-};
-
-const rawHint = (itemCode: string): string => {
-  switch (itemCode) {
-    case "HEMP_OIL":
-      return "착유 27.5%, 원료→선별 65% 가정으로 자동계산";
-    case "HEMP_SEED_PRODUCT":
-      return "2차선별 100%(가정), 원료→선별 65% 가정으로 자동계산";
-    case "HEMP_POWDER":
-      return "분쇄 수율 90%로 자동계산 · 오일 부산물로 충당";
-    default:
-      return "수율 미확정이라 직접 입력 · 오일 부산물로 충당";
-  }
-};
-
-// 투입원료 / 헴프박 수급 집계
-const summarize = (lines: WorkOrderLine[], order: SalesOrder | null): RawSummary => {
+/**
+ * 화면 표시용 투입원료 요약 계산
+ * - 서버 추정치를 기본으로 하되, 사용자가 직접 입력한 값(수율 미확정 품목 등)을 반영해 합계/초과 여부를 다시 계산한다
+ * - 헴프박 공급량(parkSupply)과 헴프오일 포함 여부는 서버 계산값을 그대로 쓴다
+ * - rawTotal / committed 는 모두 수주 투입원료 단위(rawUnit) 기준으로 맞춘다
+ */
+const buildRawSummary = (
+  estimate: EstimateState,
+  lines: WorkOrderLine[],
+  overrides: Record<number, number | "">,
+  committedQty: number,
+  rawUnit: string,
+): RawSummary => {
   let rawTotal = 0;
-  let parkSupply = 0;
   let parkDemand = 0;
-  let hasOilLine = false;
-  let hasParkConsumer = false;
+  let hasParkConsumer = estimate.server.hasParkConsumer;
   let hasUnknown = false;
   const items: RawSummary["items"] = [];
 
   lines.forEach((line) => {
-    const has = typeof line.rawInput === "number" && line.rawInput > 0;
-    const val = has ? Number(line.rawInput) : 0;
+    const id = line.salesOrderLineId;
+    const estLine = estimate.byLineId[id];
+    const val = effectiveRaw(estLine, overrides[id], rawUnit);
+    const has = typeof val === "number" && val > 0;
 
-    if (PARK_DERIVED.has(line.itemCode)) {
+    if (estLine?.parkDerived) {
+      // 헴프박 기반 연계생산 품목 - 원물이 아니라 필요한 헴프박(kg) 기준
       hasParkConsumer = true;
       if (has) parkDemand += val;
       else hasUnknown = true;
     } else if (has) {
       rawTotal += val;
-      items.push({ id: line.salesOrderLineId, name: line.itemNm, raw: val });
-      if (line.itemCode === "HEMP_OIL") {
-        hasOilLine = true;
-        parkSupply += val * YIELD.rawToSeed * YIELD.seedToPark;
-      }
+      items.push({ id, name: line.itemNm, raw: val });
     } else {
-      hasUnknown = true;
+      hasUnknown = true; // 서버도 추정 못 했고 직접 입력도 없는 라인
     }
   });
 
-  const committed = order?.rawQty ?? 0;
+  // 계약 수량은 수주 단위 그대로 사용 (서버에는 변환해서 보냈으므로 서버 반환값을 다시 쓰지 않는다)
+  const committed = committedQty;
+  const parkSupply = estimate.server.parkSupply;
   return {
     rawTotal,
     committed,
-    overRaw: !!order && rawTotal > committed,
+    overRaw: Math.ceil(rawTotal) > committed,
     overBy: Math.ceil(rawTotal - committed),
     items: items.sort((a, b) => b.raw - a.raw),
     parkSupply,
     parkDemand,
-    hasOilLine,
+    hasOilLine: estimate.server.hasOilLine,
     hasParkConsumer,
-    parkShort: hasParkConsumer && parkDemand > parkSupply,
+    parkShort: hasParkConsumer && Math.ceil(parkDemand) > parkSupply,
     hasUnknown,
   };
 };
 
-/* ───────────── 공정 스테퍼 ───────────── */
+/* ───────────── 공정 체인 표시 (한 줄 스테퍼) ───────────── */
 
-function ProcessStepper({ itemCode }: { itemCode: string }) {
-  const flow = PROCESS_FLOW[itemCode];
-  if (!flow) return null;
+interface ChainStep {
+  key: string;
+  name: string;
+  yieldText?: string;
+  kind?: "output" | "byproduct";
+  shared?: boolean;
+}
+
+/** 공정에서 "해당 품목" 자체가 산출되는 수율만 표시 (껍질 등 다른 부산물의 수율은 제외) */
+const ownYieldText = (routing: ItemRoutingResponse, itemCode: string): string => {
+  const out = routing.materials.find((m) => m.ioType === "OUT" && m.itemCode === itemCode && m.yieldRate != null);
+  return out ? `수율 ${out.yieldRate}%` : "";
+};
+
+/** 부산물 원천 품목(헴프오일 등)의 이름 - 라우팅 자재에서 찾고, 없으면 코드로 대체 */
+const findByproductSourceName = (node: ItemRoutingChainResponse): string => {
+  const code = node.byproductOfItemCode;
+  if (!code) return "";
+  const found = node.routings.flatMap((r) => r.materials).find((m) => m.itemCode === code);
+  return found?.itemNm ?? code;
+};
+
+/**
+ * 생산 체인 트리를 한 줄 스테퍼용 단계 목록으로 펼친다
+ * - 투입 자재 체인(inputChains)을 먼저 처리해 가장 안쪽(원물)부터 최종 품목 순서로 쌓는다
+ * - 부산물 품목(헴프박): 부산물이 실제로 나오는 공정(착유)까지만 넣고, 그 뒤에 "헴프박" 부산물 표시 단계를 붙인다
+ *   (이후 착유포집/여과/오일저장은 오일 라인 공정이라 표시하지 않는다)
+ * - 공정이 없는 원물: 원물 이름으로 한 단계만 넣는다
+ */
+const buildChainSteps = (root: ItemRoutingChainResponse): { steps: ChainStep[]; notes: string[][] } => {
+  const steps: ChainStep[] = [];
+  const notes: string[][] = []; // [부산물 이름, 원천 품목 이름]
+  const seen = new Set<string>();
+
+  const walk = (node: ItemRoutingChainResponse) => {
+    node.inputChains.forEach(walk);
+
+    if (seen.has(node.itemCode)) return;
+    seen.add(node.itemCode);
+
+    const routings = [...node.routings].sort((a, b) => a.operSeq - b.operSeq);
+
+    if (node.byproductOfItemCode) {
+      const idx = routings.findIndex((r) =>
+        r.materials.some((m) => m.ioType === "OUT" && m.itemCode === node.itemCode),
+      );
+      const visible = idx >= 0 ? routings.slice(0, idx + 1) : routings;
+      visible.forEach((r) => steps.push({ key: `r-${r.routingId}`, name: r.operNm ?? r.operCode ?? "" }));
+
+      const last = visible[visible.length - 1];
+      steps.push({
+        key: `bp-${node.itemCode}`,
+        name: node.itemNm ?? node.itemCode,
+        kind: "byproduct",
+        yieldText: last ? ownYieldText(last, node.itemCode) : "",
+      });
+      notes.push([node.itemNm, findByproductSourceName(node)]);
+      return;
+    }
+
+    if (routings.length === 0) {
+      steps.push({ key: `raw-${node.itemCode}`, name: node.itemNm ?? node.itemCode }); // 공정 없는 원물
+      return;
+    }
+
+    routings.forEach((r) =>
+      steps.push({ key: `r-${r.routingId}`, name: r.operNm ?? r.operCode ?? "", yieldText: ownYieldText(r, node.itemCode) }),
+    );
+  };
+
+  walk(root);
+
+  // 부산물 지점 이전 구간은 다른 품목 라인과 공유하는 공정이라 점선/회색으로 표시
+  let lastByproductIdx = -1;
+  steps.forEach((s, i) => {
+    if (s.kind === "byproduct") lastByproductIdx = i;
+  });
+  steps.forEach((s, i) => {
+    if (i < lastByproductIdx) s.shared = true;
+  });
+
+  // 마지막 단계 = 최종 품목 산출 (부산물이 마지막이면 그대로 둔다)
+  const tail = steps[steps.length - 1];
+  if (tail && !tail.kind) tail.kind = "output";
+
+  return { steps, notes };
+};
+
+/** 품목 생산 체인 영역 (조회 상태별 안내 포함) */
+function RoutingChainView({ state }: { state?: ChainState }) {
+  if (!state || state.status === "loading") {
+    return <p className="woc-chain__state">생산 체인을 불러오는 중입니다...</p>;
+  }
+  if (state.status === "error" || !state.data) {
+    return <p className="woc-chain__state error">생산 체인을 불러오지 못했습니다.</p>;
+  }
+
+  const { steps, notes } = buildChainSteps(state.data);
+  if (steps.length === 0) return null;
 
   return (
-    <div className="woc-process">
+    <div className="woc-process woc-chain">
       <ol className="woc-stepper" aria-label="공정 순서">
-        {flow.steps.map((step, i) => {
+        {steps.map((step, index) => {
           const cls = ["woc-stepper__step", step.kind, step.shared && "shared"].filter(Boolean).join(" ");
           return (
-            <li key={`${step.name}-${i}`} className={cls}>
+            <li key={step.key} className={cls}>
               <span className="woc-stepper__dot" aria-hidden="true" />
               <span className="woc-stepper__name">{step.name}</span>
-              {step.yieldText && <span className="woc-stepper__yield">수율 {step.yieldText}</span>}
+              {index === steps.length - 1 && step.yieldText && (
+                <span className="woc-stepper__yield">
+                  {step.yieldText}
+                </span>
+              )}
             </li>
           );
         })}
       </ol>
-      {flow.byproduct && (
-        <p className="woc-process__note byproduct">
-          부산물 <strong>{flow.byproduct.name}</strong> 수율 {flow.byproduct.yieldText} · {flow.byproduct.usedBy}{" "}
-          라인에서 사용
+
+      {/* 점선 구간 안내: 부산물을 어떤 품목 생산 공정에서 이어받는지 */}
+      {notes.map(([byproductNm, sourceNm]) => (
+        <p key={byproductNm} className="woc-process__note">
+          점선 구간은 <strong>{sourceNm}</strong> 생산 공정과 같은 공정입니다. 별도 원물 없이 해당 공정에서 나오는{" "}
+          {byproductNm}을(를) 이어받습니다.
         </p>
-      )}
-      {flow.sharedNote && <p className="woc-process__note">{flow.sharedNote}</p>}
+      ))}
     </div>
   );
 }
@@ -353,7 +390,7 @@ function OverDialog({
           ))}
         </ul>
 
-        <p className="woc-dialog__tip">지시수량이나 예상 투입 원료를 줄이면 저장할 수 있습니다.</p>
+        <p className="woc-dialog__tip">지시수량을 줄이면 저장할 수 있습니다.</p>
 
         <button type="button" className="woc-btn primary block" onClick={() => ref.current?.close()}>
           수량 수정하기
@@ -554,7 +591,9 @@ function CustomSelect({ id, labelId, value, options, placeholder, disabled, inva
 export function FoodWorkOrderCreatePage() {
   const navigate = useNavigate();
   const rootRef = useRef<HTMLElement>(null);
-  const ackedTotalRef = useRef<number | null>(null); // 이미 경고를 보여준 소요량 - 같은 값이면 blur마다 다시 띄우지 않는다
+  const ackedTotalRef = useRef<number | null>(null); // 이미 경고를 보여준 소요량 - 같은 값이면 다시 띄우지 않는다
+  const orderReqRef = useRef(0); // 수주 단건 조회/체인 조회 요청 식별자 - 수주를 바꾸면 이전 응답은 무시한다
+  const estimateReqRef = useRef(0); // 예상 투입원료 계산 요청 식별자 - 최신 요청의 응답만 반영한다
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -562,6 +601,7 @@ export function FoodWorkOrderCreatePage() {
   const [isOverDialogOpen, setIsOverDialogOpen] = useState(false);
 
   const [userOptions, setUserOptions] = useState<UserOptionResponse[]>([]);
+  const [orderOptionList, setOrderOptionList] = useState<SalesOrderOptionResponse[]>([]);
 
   const [form, setForm] = useState({
     workDate: todayStr(),
@@ -569,14 +609,28 @@ export function FoodWorkOrderCreatePage() {
     orderCode: "",
   });
 
+  const [orderDetail, setOrderDetail] = useState<SalesOrderDetailResponse | null>(null); // 선택한 수주의 단건 조회 결과
+  const [isOrderLoading, setIsOrderLoading] = useState(false);
   const [lines, setLines] = useState<WorkOrderLine[]>([]);
 
-  const selectedOrder = useMemo(
-    () => SALES_ORDERS.find((o) => o.orderCode === form.orderCode) ?? null,
-    [form.orderCode],
-  );
+  const [chains, setChains] = useState<Record<string, ChainState>>({}); // 품목코드별 생산 체인
+  const [estimate, setEstimate] = useState<EstimateState | null>(null); // 예상 투입원료 계산 결과
+  const [isEstimating, setIsEstimating] = useState(false);
+  const [estimateFailed, setEstimateFailed] = useState(false);
+  // 사용자가 직접 입력(수정)한 예상 투입 원료 - 라인 ID 기준, 지시수량을 바꾸면 해당 라인은 다시 서버 추정치를 따른다
+  const [rawOverrides, setRawOverrides] = useState<Record<number, number | "">>({});
 
-  const summary = useMemo(() => summarize(lines, selectedOrder), [lines, selectedOrder]);
+  // 투입원료 단위: 수주(계약 투입원료)의 단위를 기준으로 한다
+  const rawUnit = orderDetail?.unit ?? SERVER_RAW_UNIT;
+
+  // 서버 추정치 + 직접 입력값을 합친 화면용 요약
+  const summary = useMemo(
+    () =>
+      estimate
+        ? buildRawSummary(estimate, lines, rawOverrides, orderDetail?.orderQty ?? 0, rawUnit)
+        : EMPTY_SUMMARY,
+    [estimate, lines, rawOverrides, orderDetail, rawUnit],
+  );
 
   const managerOptions = useMemo<SelectOption[]>(
     () => userOptions.map((user) => ({ value: user.userId, label: `${user.userNm} (${user.userId})` })),
@@ -585,18 +639,22 @@ export function FoodWorkOrderCreatePage() {
 
   const orderOptions = useMemo<SelectOption[]>(
     () =>
-      SALES_ORDERS.map((order) => ({
+      orderOptionList.map((order) => ({
         value: order.orderCode,
         label: `${order.orderCode} · ${order.bpNm}`,
-        description: `납기 ${order.dueDate}`,
       })),
-    [],
+    [orderOptionList],
   );
 
-  // 헴프박을 이어받는 라인은 오일 라인 바로 아래에 묶어서 보여준다
+  // 헴프박을 이어받는(연계생산) 라인은 아래쪽에 묶어서 보여준다 - 예상 투입원료 결과가 있어야 구분 가능
   const displayLines = useMemo(
-    () => [...lines].sort((a, b) => Number(PARK_DERIVED.has(a.itemCode)) - Number(PARK_DERIVED.has(b.itemCode))),
-    [lines],
+    () =>
+      [...lines].sort(
+        (a, b) =>
+          Number(!!estimate?.byLineId[a.salesOrderLineId]?.parkDerived) -
+          Number(!!estimate?.byLineId[b.salesOrderLineId]?.parkDerived),
+      ),
+    [lines, estimate],
   );
 
   // 회원 옵션 데이터 조회
@@ -613,6 +671,22 @@ export function FoodWorkOrderCreatePage() {
     };
 
     fetchUserOptions();
+  }, []);
+
+  // 수주 옵션 데이터 조회 - 작업지시가 아직 배정되지 않은 수주만 가져온다
+  useEffect(() => {
+    const fetchOrderOptions = async () => {
+      try {
+        const res = await SalesOrderApi.getOptions({ unassignedOnly: true });
+        if (res && res.data) {
+          setOrderOptionList(res.data);
+        }
+      } catch (error) {
+        console.error("수주 옵션 조회 실패:", error);
+      }
+    };
+
+    fetchOrderOptions();
   }, []);
 
   // 검증 실패 후 첫 번째 오류 입력칸으로 포커스 이동
@@ -640,8 +714,86 @@ export function FoodWorkOrderCreatePage() {
     window.setTimeout(focusFirstInvalid, 0);
   };
 
-  // 입력칸을 벗어날 때(blur) 초과 상태면 경고 - 타이핑 중간 값에는 반응하지 않는다
+  /* ───── 예상 투입원료(estimate) 계산 ───── */
+
+  // 지시수량이 바뀌면(디바운스 400ms) 서버에서 예상 투입원료를 다시 계산한다
+  useEffect(() => {
+    if (!orderDetail || lines.length === 0) return;
+
+    const reqId = ++estimateReqRef.current;
+    const snapshot = lines; // 응답을 라인 ID로 매핑할 때 쓸 요청 시점의 라인
+
+    const timer = window.setTimeout(async () => {
+      setIsEstimating(true);
+      try {
+        const res = await WorkOrderApi.estimateRawMaterial({
+          // 요청 순서 = 응답 순서이므로 산출수량이 없는 라인도 outputQty=null 로 함께 보낸다 (서버가 추정에서 제외)
+          lines: snapshot.map((line) => ({
+            itemCode: line.itemCode,
+            outputQty: typeof line.instructQty === "number" && line.instructQty > 0 ? line.instructQty : null,
+          })),
+          // 계약 투입원료를 서버 추정 단위(kg)로 변환해서 보낸다 (수주 단위가 G인데 숫자만 그대로 비교되던 문제)
+          committedRawQty:
+            orderDetail.orderQty != null
+              ? convertUnit(orderDetail.orderQty, orderDetail.unit, SERVER_RAW_UNIT)
+              : null,
+        });
+        if (reqId !== estimateReqRef.current) return;
+
+        const data = res.data;
+        const byLineId: EstimateState["byLineId"] = {};
+        data.lines.forEach((estLine, i) => {
+          const line = snapshot[i];
+          if (line) byLineId[line.salesOrderLineId] = estLine;
+        });
+
+        setEstimate({ server: data.summary, byLineId });
+        setEstimateFailed(false);
+      } catch (error) {
+        if (reqId !== estimateReqRef.current) return;
+        console.error("예상 투입원료 계산 실패:", error);
+        setEstimateFailed(true);
+      } finally {
+        if (reqId === estimateReqRef.current) setIsEstimating(false);
+      }
+    }, 400);
+
+    return () => window.clearTimeout(timer);
+  }, [lines, orderDetail]);
+
+  // 서버 계산 결과가 새로 도착했을 때, 직접 입력값까지 반영한 합계가 계약 수량을 넘으면 경고
+  useEffect(() => {
+    if (estimate) openOverDialog(summary);
+  }, [estimate]);
+
+  // 예상 투입 원료 입력칸을 벗어날 때(blur) 초과 상태면 경고 - 타이핑 중간 값에는 반응하지 않는다
   const handleLineBlur = () => openOverDialog(summary);
+
+  /* ───── 생산 체인 조회 ───── */
+
+  // 수주라인의 품목별로 생산 체인(투입 자재의 생산 공정까지)을 조회한다
+  const loadChains = async (itemCodes: string[], reqId: number) => {
+    const codes = Array.from(new Set(itemCodes));
+    const initial: Record<string, ChainState> = {};
+    codes.forEach((code) => {
+      initial[code] = { status: "loading" };
+    });
+    setChains(initial);
+
+    await Promise.all(
+      codes.map(async (code) => {
+        try {
+          const res = await ItemApi.getRoutingChain(code);
+          if (reqId !== orderReqRef.current) return;
+          setChains((prev) => ({ ...prev, [code]: { status: "done", data: res.data } }));
+        } catch (error) {
+          if (reqId !== orderReqRef.current) return;
+          console.error(`생산 체인 조회 실패 (${code}):`, error);
+          setChains((prev) => ({ ...prev, [code]: { status: "error" } }));
+        }
+      }),
+    );
+  };
 
   /* ───── 핸들러 ───── */
 
@@ -649,34 +801,73 @@ export function FoodWorkOrderCreatePage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  // 수주 하나 = 작업지시 하나 - 선택한 수주의 산출라인 전부가 작업지시 라인이 된다
-  const handleOrderChange = (orderCode: string) => {
-    const order = SALES_ORDERS.find((o) => o.orderCode === orderCode) ?? null;
-    const nextLines: WorkOrderLine[] = (order?.lines ?? []).map((line) => {
-      const instructQty = line.planQty ?? "";
-      return { ...line, instructQty, rawInput: calcAutoRaw(line.itemCode, instructQty) };
-    });
+  // 수주 하나 = 작업지시 하나 - 수주를 고르면 단건 조회로 산출라인을 가져오고, 생산 체인/예상 투입원료도 함께 불러온다
+  const handleOrderChange = async (orderCode: string) => {
+    const reqId = ++orderReqRef.current;
+    estimateReqRef.current += 1; // 진행 중이던 이전 수주의 계산 응답은 버린다
 
     setForm((prev) => ({ ...prev, orderCode }));
-    setLines(nextLines);
+    setOrderDetail(null);
+    setLines([]);
+    setChains({});
+    setEstimate(null);
+    setRawOverrides({});
+    setEstimateFailed(false);
+    setIsEstimating(false);
     setSubmitted(false);
     ackedTotalRef.current = null;
-    openOverDialog(summarize(nextLines, order));
+
+    if (!orderCode) return;
+
+    setIsOrderLoading(true);
+    try {
+      const res = await SalesOrderApi.getDetail(orderCode);
+      if (reqId !== orderReqRef.current) return;
+
+      const detail = res.data;
+      setOrderDetail(detail);
+      setLines(
+        detail.lines.map((line) => ({
+          salesOrderLineId: line.salesOrderLineId,
+          itemCode: line.itemCode,
+          itemNm: line.itemNm,
+          unit: line.unit,
+          planQty: line.planQty,
+          instructQty: line.planQty ?? "", // 계약수량이 정해져 있으면 그 값으로 시작
+        })),
+      );
+      // 라인이 세팅되면 위의 estimate effect 가 자동으로 예상 투입원료를 계산한다
+      loadChains(
+        detail.lines.map((line) => line.itemCode),
+        reqId,
+      );
+    } catch (error) {
+      if (reqId !== orderReqRef.current) return;
+      console.error("수주 단건 조회 실패:", error);
+      const errorMessage = axios.isAxiosError(error) ? error.response?.data?.message : null;
+      alert(errorMessage || "수주 정보를 불러오는 중 오류가 발생했습니다.");
+      setForm((prev) => ({ ...prev, orderCode: "" }));
+    } finally {
+      if (reqId === orderReqRef.current) setIsOrderLoading(false);
+    }
   };
 
-  // 산출수량이 바뀌면 예상 투입 원료를 다시 자동계산한다
+  // 지시수량이 바뀌면 그 라인은 직접 입력값을 버리고 새 서버 추정치를 따른다
   const handleQtyChange = (id: number, value: string) => {
     const qty = value === "" ? "" : Number(value);
-    setLines((prev) =>
-      prev.map((line) =>
-        line.salesOrderLineId === id ? { ...line, instructQty: qty, rawInput: calcAutoRaw(line.itemCode, qty) } : line,
-      ),
-    );
+    setLines((prev) => prev.map((line) => (line.salesOrderLineId === id ? { ...line, instructQty: qty } : line)));
+    setRawOverrides((prev) => {
+      if (!(id in prev)) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   };
 
+  // 예상 투입 원료 직접 입력 - 서버가 추정하지 못한 품목(수율 미확정 등)은 여기서 입력한다
   const handleRawChange = (id: number, value: string) => {
     const raw = value === "" ? "" : Number(value);
-    setLines((prev) => prev.map((line) => (line.salesOrderLineId === id ? { ...line, rawInput: raw } : line)));
+    setRawOverrides((prev) => ({ ...prev, [id]: raw }));
   };
 
   const handleCancel = () => {
@@ -743,9 +934,9 @@ export function FoodWorkOrderCreatePage() {
 
   /* ───── 렌더 ───── */
 
-  const rawUnit = selectedOrder?.rawUnit ?? "kg";
   const remaining = summary.committed - summary.rawTotal;
   const usagePct = summary.committed > 0 ? Math.min(100, (summary.rawTotal / summary.committed) * 100) : 0;
+  const isBusy = isSubmitting || isOrderLoading;
 
   return (
     <section ref={rootRef} className="woc">
@@ -812,7 +1003,7 @@ export function FoodWorkOrderCreatePage() {
                   value={form.orderCode}
                   options={orderOptions}
                   placeholder="수주를 선택해주세요"
-                  disabled={isSubmitting}
+                  disabled={isBusy}
                   invalid={!!showError(fieldErrors.orderCode)}
                   onChange={handleOrderChange}
                 />
@@ -820,17 +1011,19 @@ export function FoodWorkOrderCreatePage() {
               </div>
             </div>
 
-            {selectedOrder && (
+            {isOrderLoading && <p className="woc-chain__state">수주 정보를 불러오는 중입니다...</p>}
+
+            {orderDetail && (
               <ul className="woc-infocards">
                 <li className="woc-infocard is-raw">
                   <span className="woc-infocard__icon" aria-hidden="true">
                     <CubeIcon />
                   </span>
                   <div className="woc-infocard__text">
-                    <span className="woc-infocard__label">계약 투입원료 · {selectedOrder.rawItemNm}</span>
+                    <span className="woc-infocard__label">계약 투입원료 · {orderDetail.itemNm ?? "-"}</span>
                     <strong className="woc-infocard__value">
-                      {selectedOrder.rawQty.toLocaleString()}
-                      <em>{selectedOrder.rawUnit}</em>
+                      {orderDetail.orderQty != null ? orderDetail.orderQty.toLocaleString() : "-"}
+                      <em>{orderDetail.unit ?? ""}</em>
                     </strong>
                   </div>
                 </li>
@@ -841,7 +1034,7 @@ export function FoodWorkOrderCreatePage() {
                   </span>
                   <div className="woc-infocard__text">
                     <span className="woc-infocard__label">거래처</span>
-                    <strong className="woc-infocard__value">{selectedOrder.bpNm}</strong>
+                    <strong className="woc-infocard__value">{orderDetail.bpNm}</strong>
                   </div>
                 </li>
 
@@ -851,7 +1044,7 @@ export function FoodWorkOrderCreatePage() {
                   </span>
                   <div className="woc-infocard__text">
                     <span className="woc-infocard__label">납기일</span>
-                    <strong className="woc-infocard__value">{selectedOrder.dueDate}</strong>
+                    <strong className="woc-infocard__value">{orderDetail.dueDate}</strong>
                   </div>
                 </li>
 
@@ -861,7 +1054,9 @@ export function FoodWorkOrderCreatePage() {
                   </span>
                   <div className="woc-infocard__text">
                     <span className="woc-infocard__label">가공비</span>
-                    <strong className="woc-infocard__value">{selectedOrder.amount.toLocaleString()}원</strong>
+                    <strong className="woc-infocard__value">
+                      {orderDetail.orderAmount != null ? `${orderDetail.orderAmount.toLocaleString()}원` : "-"}
+                    </strong>
                   </div>
                 </li>
               </ul>
@@ -882,15 +1077,24 @@ export function FoodWorkOrderCreatePage() {
               <ul className="woc-lines">
                 {displayLines.map((line) => {
                   const id = line.salesOrderLineId;
-                  const isDerived = PARK_DERIVED.has(line.itemCode);
+                  const est = estimate?.byLineId[id]; // 이 라인의 예상 투입원료 계산 결과
+                  const isDerived = !!est?.parkDerived;
+                  const rawNeeded = est?.rawNeeded ?? null; // 서버 추정치 (null 이면 직접 입력 필요)
+                  const rawValue = effectiveRaw(est, rawOverrides[id], rawUnit); // 화면에 보이는 값 (직접 입력 우선, 수주 단위로 변환됨)
                   const qtyError = qtyErrors[id];
                   const qtyInvalid = submitted && !!qtyError;
-                  const rawInvalid =
-                    summary.overRaw && !isDerived && typeof line.rawInput === "number" && line.rawInput > 0;
-                  const byproductKg =
-                    line.itemCode === "HEMP_OIL" && typeof line.rawInput === "number" && line.rawInput > 0
-                      ? Math.ceil(line.rawInput * YIELD.rawToSeed * YIELD.seedToPark)
-                      : 0;
+                  const rawInvalid = summary.overRaw && !isDerived && typeof rawValue === "number" && rawValue > 0;
+
+                  // 입력칸 단위: 일반 품목은 수주 투입원료 단위, 헴프박 연계 품목은 헴프박 단위(kg)
+                  const rawFieldUnit = isDerived ? PARK_UNIT : rawUnit;
+                  // 자동계산 안내문에 단위를 붙인다 (예: "1,000KG 산출 기준 약 1,538G")
+                  const calcText =
+                    typeof line.instructQty === "number" &&
+                      line.instructQty > 0 &&
+                      typeof rawValue === "number" &&
+                      rawOverrides[id] === undefined
+                      ? `${line.instructQty.toLocaleString()}${line.unit} 산출 기준 약 ${rawValue.toLocaleString()}${rawFieldUnit}`
+                      : "";
 
                   return (
                     <li key={id} className={`woc-line${isDerived ? " is-derived" : ""}`}>
@@ -920,7 +1124,6 @@ export function FoodWorkOrderCreatePage() {
                               aria-invalid={qtyInvalid}
                               aria-describedby={qtyInvalid ? `wocQtyErr-${id}` : undefined}
                               onChange={(e) => handleQtyChange(id, e.target.value)}
-                              onBlur={handleLineBlur}
                             />
                             <span>{line.unit}</span>
                           </div>
@@ -931,6 +1134,7 @@ export function FoodWorkOrderCreatePage() {
                           )}
                         </div>
 
+                        {/* 예상 투입 원료: 서버 추정치가 기본값, 추정 불가(null)이거나 다르게 잡고 싶으면 직접 입력 */}
                         <div className="woc-field">
                           <label htmlFor={`wocRaw-${id}`}>{isDerived ? "필요 헴프박" : "예상 투입 원료"}</label>
                           <div className="woc-unitInput">
@@ -938,33 +1142,47 @@ export function FoodWorkOrderCreatePage() {
                               id={`wocRaw-${id}`}
                               type="number"
                               min="0"
-                              step="0.1"
+                              // G 단위는 정수 단위로, kg 등은 0.1 단위로 입력
+                              step={rawFieldUnit.toUpperCase() === "G" ? "1" : "0.1"}
                               inputMode="decimal"
                               className="woc-input"
-                              value={line.rawInput}
-                              placeholder="직접 입력"
+                              value={rawValue}
+                              placeholder={isEstimating && !est ? "계산 중..." : "직접 입력"}
                               disabled={isSubmitting}
                               aria-invalid={rawInvalid}
                               aria-describedby={rawInvalid ? `wocRawErr-${id}` : undefined}
                               onChange={(e) => handleRawChange(id, e.target.value)}
                               onBlur={handleLineBlur}
                             />
-                            <span>kg</span>
+                            {/* kg 고정 → 수주 투입원료 단위 (헴프박 연계 품목은 kg) */}
+                            <span>{rawFieldUnit}</span>
                           </div>
                           {rawInvalid ? (
                             <p id={`wocRawErr-${id}`} className="woc-field__error">
                               계약 투입원료를 넘었습니다. 값을 줄여주세요.
                             </p>
                           ) : (
-                            <p className="woc-field__hint">
-                              {rawHint(line.itemCode)}
-                              {byproductKg > 0 && ` · 헴프박 약 ${byproductKg.toLocaleString()}kg 발생`}
-                            </p>
+                            est && (
+                              <p className="woc-field__hint">
+                                {rawNeeded == null && "서버에서 추정할 수 없어 직접 입력이 필요합니다. "}
+                                {calcText && `${calcText}. `}
+                                {est.note}
+                                {est.byproducts.length > 0 &&
+                                  /* 부산물 수량에 단위 추가 (응답에 unit 이 있으면 그 값, 없으면 서버 기준 단위) */
+                                  ` · 부산물 ${est.byproducts
+                                    .map(
+                                      (b) =>
+                                        `${b.itemNm} 약 ${b.qty.toLocaleString()}${(b as { unit?: string }).unit ?? SERVER_RAW_UNIT}`,
+                                    )
+                                    .join(", ")} 발생`}
+                              </p>
+                            )
                           )}
                         </div>
                       </div>
 
-                      <ProcessStepper itemCode={line.itemCode} />
+                      {/* 생산 체인: 원물부터 이 품목까지 공정 전체를 한 줄 스테퍼로 보여준다 */}
+                      <RoutingChainView state={chains[line.itemCode]} />
                     </li>
                   );
                 })}
@@ -978,71 +1196,80 @@ export function FoodWorkOrderCreatePage() {
           <div className={`woc-usage${summary.overRaw ? " is-over" : ""}`}>
             <h2 className="woc-usage__title">투입원료 사용량</h2>
 
-            {selectedOrder ? (
-              <div aria-live="polite">
-                <p className="woc-usage__figure">
-                  <strong>{Math.ceil(summary.rawTotal).toLocaleString()}</strong>
-                  <span>
-                    {" "}
-                    / {summary.committed.toLocaleString()}
-                    {rawUnit}
-                  </span>
-                </p>
-                <div className="woc-meter" aria-hidden="true">
-                  <span style={{ width: `${usagePct}%` }} />
-                </div>
-                <p className="woc-usage__status">
-                  {summary.overRaw
-                    ? `계약 수량을 ${summary.overBy.toLocaleString()}${rawUnit} 초과했습니다`
-                    : `${Math.floor(remaining).toLocaleString()}${rawUnit} 여유가 있습니다`}
-                </p>
-
-                {summary.items.length > 0 && (
-                  <ul className="woc-usage__list">
-                    {summary.items.map((item) => (
-                      <li key={item.id}>
-                        <span>{item.name}</span>
-                        <span>
-                          {item.raw.toLocaleString()}
-                          {rawUnit}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                {summary.hasParkConsumer && (
-                  <div className="woc-usage__park">
-                    <span>헴프박 공급 / 수요</span>
+            {orderDetail ? (
+              estimateFailed && !estimate ? (
+                <p className="woc-usage__msg warn">예상 투입원료를 계산하지 못했습니다. 지시수량을 다시 입력해 보세요.</p>
+              ) : !estimate ? (
+                <p className="woc-usage__empty">예상 투입원료를 계산하는 중입니다...</p>
+              ) : (
+                <div aria-live="polite">
+                  <p className="woc-usage__figure">
+                    <strong>{Math.ceil(summary.rawTotal).toLocaleString()}</strong>
                     <span>
-                      {Math.floor(summary.parkSupply).toLocaleString()}kg / 약{" "}
-                      {Math.ceil(summary.parkDemand).toLocaleString()}kg
+                      {" "}
+                      / {summary.committed.toLocaleString()}
+                      {rawUnit}
                     </span>
+                  </p>
+                  <div className="woc-meter" aria-hidden="true">
+                    <span style={{ width: `${usagePct}%` }} />
                   </div>
-                )}
+                  <p className="woc-usage__status">
+                    {summary.overRaw
+                      ? `계약 수량을 ${summary.overBy.toLocaleString()}${rawUnit} 초과했습니다`
+                      : `${Math.floor(remaining).toLocaleString()}${rawUnit} 여유가 있습니다`}
+                  </p>
 
-                {summary.hasParkConsumer && !summary.hasOilLine && (
-                  <p className="woc-usage__msg warn">
-                    헴프오일 라인이 없어 헴프박 공급원이 없습니다. 재고 헴프박으로 충당하는지 확인하세요.
-                  </p>
-                )}
-                {summary.hasOilLine && summary.parkShort && (
-                  <p className="woc-usage__msg warn">
-                    오일 부산물(헴프박)만으로는 부족합니다. 재고 헴프박이 추가로 필요할 수 있습니다.
-                  </p>
-                )}
-                {summary.hasUnknown && (
-                  <p className="woc-usage__msg muted">수율 데이터가 없는 품목은 추정에서 제외됩니다.</p>
-                )}
-              </div>
+                  {summary.items.length > 0 && (
+                    <ul className="woc-usage__list">
+                      {summary.items.map((item) => (
+                        <li key={item.id}>
+                          <span>{item.name}</span>
+                          <span>
+                            {item.raw.toLocaleString()}
+                            {rawUnit}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {summary.hasParkConsumer && (
+                    <div className="woc-usage__park">
+                      <span>헴프박 공급 / 수요</span>
+                      <span>
+                        {Math.floor(summary.parkSupply).toLocaleString()}kg / 약{" "}
+                        {Math.ceil(summary.parkDemand).toLocaleString()}kg
+                      </span>
+                    </div>
+                  )}
+
+                  {summary.hasParkConsumer && !summary.hasOilLine && (
+                    <p className="woc-usage__msg warn">
+                      헴프오일 라인이 없어 헴프박 공급원이 없습니다. 재고 헴프박으로 충당하는지 확인하세요.
+                    </p>
+                  )}
+                  {summary.hasOilLine && summary.parkShort && (
+                    <p className="woc-usage__msg warn">
+                      오일 부산물(헴프박)만으로는 부족합니다. 재고 헴프박이 추가로 필요할 수 있습니다.
+                    </p>
+                  )}
+                  {summary.hasUnknown && (
+                    <p className="woc-usage__msg muted">수율 데이터가 없는 품목은 추정에서 제외됩니다.</p>
+                  )}
+                  {estimateFailed && (
+                    <p className="woc-usage__msg warn">최근 계산에 실패해 이전 추정치를 보여주고 있습니다.</p>
+                  )}
+                </div>
+              )
             ) : (
               <p className="woc-usage__empty">수주를 선택하면 계약 투입원료 대비 사용량이 표시됩니다.</p>
             )}
           </div>
 
           <div className="woc-actions">
-            <button type="submit" className="woc-btn primary block" disabled={isSubmitting}>
-              {isSubmitting ? "등록 중..." : "작업지시 저장"}
+            <button type="submit" className="woc-btn primary block" disabled={isBusy || isEstimating}>
+              {isSubmitting ? "등록 중..." : isEstimating ? "추정치 계산 중..." : "작업지시 저장"}
             </button>
             <button type="button" className="woc-btn ghost block" onClick={handleCancel} disabled={isSubmitting}>
               취소
