@@ -49,7 +49,6 @@ export interface OperationDetailResponse extends OperationResponse {
 export interface OperationOptionResponse {
   operCode: string;
   operNm: string;
-  operType: OperType;
 }
 
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
@@ -110,8 +109,8 @@ export const OperationApi = {
   },
 
   /** 공정 셀렉트 옵션 조회 */
-  getOptions: async (): Promise<ApiResponseListOperationOptionResponse> => {
-    const res = await apiClient.get<ApiResponseListOperationOptionResponse>('/operations/options');
+  getOptions: async (params?: { operType?: OperType }): Promise<ApiResponseListOperationOptionResponse> => {
+    const res = await apiClient.get<ApiResponseListOperationOptionResponse>('/operations/options', { params });
     return res.data;
   },
 };

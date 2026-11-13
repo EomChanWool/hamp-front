@@ -87,8 +87,19 @@ export function MasterItemsCreatePage() {
   useEffect(() => {
     const fetchOperations = async () => {
       try {
-        const response = await OperationApi.getOptions();
-        const data = response.data || [];
+        const operTypes: OperType[] = [0, 1, 2];
+        const [response, ...typedResponses] = await Promise.all([
+          OperationApi.getOptions(),
+          ...operTypes.map((operType) => OperationApi.getOptions({ operType })),
+        ]);
+        const operTypeByCode = new Map<string, OperType>();
+        typedResponses.forEach((typed, i) => {
+          (typed.data || []).forEach((op) => operTypeByCode.set(op.operCode, operTypes[i]));
+        });
+        const data = (response.data || []).map((op) => ({
+          ...op,
+          operType: operTypeByCode.get(op.operCode) as OperType,
+        }));
         setOperations(data);
       } catch (error) {
         console.error("공정 옵션 목록 조회 실패:", error);
