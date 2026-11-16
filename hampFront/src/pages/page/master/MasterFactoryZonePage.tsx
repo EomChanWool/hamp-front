@@ -403,7 +403,7 @@ export function MasterFactoryZonePage() {
               <div className="rowActions" style={{ display: "flex", gap: "4px" }}>
                 <button
                   type="button"
-                  className="miniButton primary"
+                  className="miniButton primary compact"
                   disabled={isUpdating}
                   onClick={handleSaveCreate}
                 >
@@ -426,7 +426,7 @@ export function MasterFactoryZonePage() {
               <div className="rowActions" style={{ display: "flex", gap: "4px" }}>
                 <button
                   type="button"
-                  className="miniButton primary"
+                  className="miniButton primary compact"
                   disabled={isUpdating}
                   onClick={() => handleSaveEdit(row.original.facCode)}
                 >

@@ -107,7 +107,7 @@
 .food-qty-unit-wrapper {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: left;
   gap: 8px;
   width: 100%;
   min-width: 0;
@@ -300,7 +300,7 @@
   display: flex;
   align-items: center;
   /* 가로 기준 가운데 정렬 */
-  justify-content: center;
+  justify-content: left;
   /* 세로 기준 가운데 정렬 (테이블 셀 높이가 여유 있을 때) */
   text-align: center;
   /* 내부 텍스트 자체도 가운데 정렬 */
@@ -492,134 +492,232 @@
 }
 
 /* ==========================================
-   공정순서도 (행 확장 영역 / 세로 타임라인)
+   공정순서도 (행 확장 영역) — 세로 타임라인
    ========================================== */
 
-/* 확장 행 셀: CusTable 기본 패딩 제거 후 내부 콘텐츠에서 직접 여백 처리 */
+/* 토큰: 확장 행(tr)에 정의 → td 배경과 내부 콘텐츠가 함께 사용 */
+.cus-table-expanded-row {
+  --rt-bg: #f8fafc;
+  --rt-surface: #ffffff;
+  --rt-border: #e2e8f0;
+  --rt-border-strong: #cbd5e1;
+  --rt-text: #0f172a;
+  --rt-text-sub: #475569;
+  --rt-text-muted: #64748b;
+
+  --rt-primary: #2563eb; /* 채움(마커) */
+  --rt-primary-text: #1d4ed8; /* 텍스트·테두리 */
+  --rt-primary-soft: rgba(37, 99, 235, 0.12);
+
+  --rt-success: #15803d; /* 채움(마커) */
+  --rt-success-text: #15803d;
+  --rt-success-soft: rgba(21, 128, 61, 0.12);
+}
+
+[data-theme="dark"] .cus-table-expanded-row {
+  --rt-bg: var(--bg-subtle, #12151f);
+  --rt-surface: var(--bg-card, #1a1d27);
+  --rt-border: rgba(255, 255, 255, 0.1);
+  --rt-border-strong: rgba(255, 255, 255, 0.22);
+  --rt-text: var(--text-heading, #f1f5f9);
+  --rt-text-sub: var(--text-body, #cbd5e1);
+  --rt-text-muted: var(--text-muted, #94a3b8);
+
+  --rt-primary: #2563eb;
+  --rt-primary-text: #93c5fd;
+  --rt-primary-soft: rgba(59, 130, 246, 0.2);
+
+  --rt-success: #16a34a;
+  --rt-success-text: #4ade80;
+  --rt-success-soft: rgba(34, 197, 94, 0.18);
+}
+
+/* 확장 행 셀: CusTable 기본 패딩 제거 후 내부에서 직접 여백 처리 */
 .cus-table-expanded-row > td {
   padding: 0 !important;
-  background: #f8fafc;
+  background: var(--rt-bg);
   cursor: default;
 }
 
 .food-routing-content {
   padding: 20px 24px 24px;
   text-align: left;
+  white-space: normal; /* td의 nowrap 상속 차단 */
+  color: var(--rt-text);
 }
 
-/* "공정순서도" 라벨 (좌측 포인트 바) */
+/* ---------- 헤더 ---------- */
 .food-routing-label {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 18px;
-  font-size: 12.5px;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 16px;
+  font-size: 14px;
   font-weight: 700;
-  color: #64748b;
-  letter-spacing: 0.04em;
+  line-height: 1.4;
+  color: var(--rt-text);
 }
 
-.food-routing-label::before {
-  content: "";
-  width: 3px;
-  height: 12px;
-  border-radius: 2px;
-  background: #10b981;
+.food-routing-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--rt-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .food-routing-empty {
   margin: 0;
+  padding: 4px 0;
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--rt-text-muted);
 }
 
+/* ---------- 타임라인 ---------- */
 .food-routing-timeline {
-  list-style: none;
   margin: 0;
   padding: 0;
+  list-style: none;
 }
 
-/* 단계 한 줄: [마커] [본문] */
+/* [마커 26px] [카드] */
 .food-routing-step {
   position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding-bottom: 15px;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  column-gap: 16px;
+  padding-bottom: 12px;
 }
 
 .food-routing-step:last-child {
   padding-bottom: 0;
 }
 
-/* 마커 사이를 잇는 세로선 */
+/* 마커 아래 → 다음 마커 위로 이어지는 선 */
 .food-routing-step:not(:last-child)::after {
   content: "";
   position: absolute;
-  left: 15px;
-  top: 34px;
-  bottom: -2px;
+  left: 12px;
+  top: 41px;
+  bottom: -7px;
   width: 2px;
-  background: #cbd5e1;
+  background: var(--rt-border-strong);
 }
 
-/* 번호 마커 */
+.food-routing-step.is-done:not(:last-child)::after {
+  background: var(--rt-success);
+}
+
+/* ---------- 마커 ---------- */
 .food-routing-marker {
   position: relative;
   z-index: 1;
-  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #10b981;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-/* 본문 (다음/진행중일 때 박스로 강조되므로 투명 테두리 + 동일 패딩 유지) */
-.food-routing-step-body {
-  flex: 1;
-  min-width: 0;
-  padding: 0 14px;
-  border: 1px solid transparent;
-  border-radius: 10px;
+  width: 26px;
+  height: 26px;
+  margin-top: 11px;
   box-sizing: border-box;
+  border: 1.5px solid var(--rt-border-strong);
+  border-radius: 50%;
+  background: var(--rt-surface);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--rt-text-sub);
+  font-variant-numeric: tabular-nums;
 }
 
+.food-routing-step.is-done .food-routing-marker {
+  border-color: transparent;
+  background: var(--rt-success);
+  color: #ffffff;
+  font-size: 13px;
+}
+
+.food-routing-step.is-inprogress .food-routing-marker {
+  border-color: transparent;
+  background: var(--rt-primary);
+  color: #ffffff;
+  box-shadow: 0 0 0 4px var(--rt-primary-soft);
+}
+
+.food-routing-step.is-next .food-routing-marker {
+  border-color: var(--rt-primary-text);
+  color: var(--rt-primary-text);
+  box-shadow: 0 0 0 3px var(--rt-primary-soft);
+}
+
+/* ---------- 카드 ---------- */
+.food-routing-step-body {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--rt-surface);
+  border: 1px solid var(--rt-border);
+  border-radius: 10px;
+}
+
+.food-routing-step.is-inprogress .food-routing-step-body {
+  border-color: var(--rt-primary-text);
+  box-shadow: 0 0 0 1px var(--rt-primary-text);
+}
+
+.food-routing-step.is-next .food-routing-step-body {
+  border-color: var(--rt-primary-text);
+  border-style: dashed;
+}
+
+/* ---------- 카드 헤더 ---------- */
 .food-routing-step-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  min-height: 30px;
+  gap: 12px;
+  min-height: 48px;
+  padding: 12px 16px;
+  box-sizing: border-box;
 }
 
 .food-routing-step-text {
-  min-width: 0;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
-  column-gap: 8px;
+  gap: 4px 10px;
+  min-width: 0;
 }
 
 .food-routing-step-name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
-  color: #0f172a;
+  line-height: 1.4;
+  color: var(--rt-text);
   word-break: keep-all;
 }
 
-.food-routing-step-meta {
-  font-size: 12.5px;
-  color: #64748b;
+.food-routing-step-code {
+  padding: 1px 6px;
   font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--rt-text-sub);
+  background: var(--rt-bg);
+  border: 1px solid var(--rt-border);
+  border-radius: 4px;
 }
 
-/* 우측 상태 태그 */
+.food-routing-step-eq {
+  font-size: 12.5px;
+  color: var(--rt-text-muted);
+}
+
+.food-routing-step-eq::before {
+  content: "설비";
+  margin-right: 6px;
+  font-weight: 600;
+  color: var(--rt-text-sub);
+}
+
+/* ---------- 상태 태그 ---------- */
 .food-routing-tags {
   display: flex;
   align-items: center;
@@ -628,94 +726,54 @@
 }
 
 .food-routing-tag {
-  display: inline-block;
-  padding: 3px 12px;
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  box-sizing: border-box;
+  border: 1px solid transparent;
   border-radius: 999px;
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
   white-space: nowrap;
 }
 
-.food-routing-tag--next {
-  color: #1d4ed8;
-  background: rgba(59, 130, 246, 0.14);
+.food-routing-tag--done {
+  color: var(--rt-success-text);
+  background: var(--rt-success-soft);
 }
 
 .food-routing-tag--progress {
-  color: #b45309;
-  background: rgba(245, 158, 11, 0.16);
+  color: var(--rt-primary-text);
+  background: var(--rt-primary-soft);
 }
 
-.food-routing-tag--done {
-  color: #475569;
-  background: rgba(100, 116, 139, 0.14);
+.food-routing-tag--next {
+  color: var(--rt-primary-text);
+  border-color: var(--rt-primary-text);
 }
 
 .food-routing-tag--final {
-  color: #15803d;
-  background: rgba(34, 197, 94, 0.16);
+  color: var(--rt-text-sub);
+  background: var(--rt-surface);
+  border-color: var(--rt-border-strong);
 }
 
-/* 상태별 마커 색 */
-.food-routing-step.is-final .food-routing-marker {
-  background: #16a34a;
-}
-
-.food-routing-step.is-done .food-routing-marker {
-  background: #059669;
-}
-
-.food-routing-step.is-done .food-routing-step-name {
-  color: #64748b;
-}
-
-.food-routing-step.is-done:not(:last-child)::after {
-  background: #10b981;
-}
-
-/* 다음 공정: 파란 링 + 박스 강조 */
-.food-routing-step.is-next .food-routing-marker {
-  background: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.22);
-}
-
-.food-routing-step.is-next .food-routing-step-body {
-  background: rgba(59, 130, 246, 0.07);
-  border-color: rgba(59, 130, 246, 0.45);
-  box-shadow: 0 0 12px rgba(59, 130, 246, 0.12);
-}
-
-/* 진행중 공정: 주황 링 + 박스 강조 */
-.food-routing-step.is-inprogress .food-routing-marker {
-  background: #f59e0b;
-  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.22);
-}
-
-.food-routing-step.is-inprogress .food-routing-step-body {
-  background: rgba(245, 158, 11, 0.07);
-  border-color: rgba(245, 158, 11, 0.45);
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.12);
-}
-
-/* 투입/산출/불량/수율 */
+/* ---------- 실적 (투입 / 산출 / 불량 / 수율) ---------- */
 .food-routing-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin: 2px 0 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #ffffff;
+  background: var(--rt-bg);
+  border-top: 1px solid var(--rt-border);
 }
 
 .food-routing-stat {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  gap: 2px;
   min-width: 0;
-  padding: 6px 4px;
-  border-right: 1px solid #e2e8f0;
+  padding: 10px 16px;
+  border-right: 1px solid var(--rt-border);
 }
 
 .food-routing-stat:last-child {
@@ -723,17 +781,196 @@
 }
 
 .food-routing-stat-label {
-  margin-bottom: 2px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--rt-text-muted);
 }
 
 .food-routing-stat-value {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--rt-text);
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 투입 / 산출 자재 ---------- */
+.food-routing-materials {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--rt-border);
+}
+
+.food-routing-material-col {
+  min-width: 0;
+  padding: 12px 16px 14px;
+}
+
+.food-routing-material-col + .food-routing-material-col {
+  border-left: 1px solid var(--rt-border);
+}
+
+.food-routing-material-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--rt-text-sub);
+}
+
+/* 색이 아니라 모양으로 구분: 투입=빈 원, 산출=채운 원 */
+.food-routing-material-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border-radius: 50%;
+}
+
+.food-routing-material-col.is-in .food-routing-material-dot {
+  border: 2px solid var(--rt-text-sub);
+  background: transparent;
+}
+
+.food-routing-material-col.is-out .food-routing-material-dot {
+  background: var(--rt-text-sub);
+}
+
+.food-routing-material-count {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--rt-bg);
+  border: 1px solid var(--rt-border);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  color: var(--rt-text-sub);
+}
+
+.food-routing-material-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--rt-text-muted);
+}
+
+.food-routing-material-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.food-routing-material-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid var(--rt-border);
+}
+
+.food-routing-material-item:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.food-routing-material-item:last-child {
+  padding-bottom: 0;
+}
+
+.food-routing-material-name {
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--rt-text);
+  word-break: keep-all;
+}
+
+.food-routing-material-code {
+  margin-left: 6px;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--rt-text-muted);
+}
+
+.food-routing-material-qty {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--rt-text);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.food-routing-material-qty strong {
+  font-weight: 700;
+}
+
+.food-routing-material-unit {
+  min-width: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rt-text-muted);
+}
+
+/* ---------- 공정순서도 반응형 ---------- */
+@container content (max-width: 640px) {
+  .food-routing-content {
+    padding: 16px 12px 18px;
+  }
+
+  .food-routing-step {
+    column-gap: 12px;
+  }
+
+  .food-routing-step-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  /* 실적 2×2 */
+  .food-routing-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .food-routing-stat {
+    padding: 10px 12px;
+  }
+
+  .food-routing-stat:nth-child(2) {
+    border-right: none;
+  }
+
+  .food-routing-stat:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--rt-border);
+  }
+
+  /* 투입/산출 위아래 */
+  .food-routing-materials {
+    grid-template-columns: 1fr;
+  }
+
+  .food-routing-material-col {
+    padding: 12px;
+  }
+
+  .food-routing-material-col + .food-routing-material-col {
+    border-left: none;
+    border-top: 1px solid var(--rt-border);
+  }
 }
 
 /* ================================================
@@ -770,30 +1007,6 @@
 
   .food-detail-title {
     font-size: 20px;
-  }
-
-  /* 공정순서도: 좁은 화면에서는 태그를 아래로, 통계는 2열 */
-  .food-routing-content {
-    padding: 16px 14px 18px;
-  }
-
-  .food-routing-step-head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-    padding: 4px 0;
-  }
-
-  .food-routing-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .food-routing-stat:nth-child(2) {
-    border-right: none;
-  }
-
-  .food-routing-stat:nth-child(-n + 2) {
-    border-bottom: 1px solid #e2e8f0;
   }
 }
 
@@ -1162,245 +1375,13 @@
   color: var(--text-main);
 }
 
-/* 공정순서도(행 확장 영역) 다크모드 */
-[data-theme="dark"] .cus-table-expanded-row > td {
-  background: rgba(255, 255, 255, 0.03);
-}
-
+/* 품목 셀 힌트 화살표 다크모드 (공정순서도 색상은 위 --rt-* 토큰으로 처리) */
 [data-theme="dark"] .food-item-chevron {
   color: var(--text-muted);
 }
 
 [data-theme="dark"] .food-item-chevron.is-open {
   color: #60a5fa;
-}
-
-[data-theme="dark"] .food-routing-label,
-[data-theme="dark"] .food-routing-step-meta {
-  color: #94a3b8;
-}
-
-[data-theme="dark"] .food-routing-empty {
-  color: #94a3b8;
-}
-
-[data-theme="dark"] .food-routing-step-name {
-  color: #f0f0f0;
-}
-
-[data-theme="dark"] .food-routing-step.is-done .food-routing-step-name {
-  color: #94a3b8;
-}
-
-[data-theme="dark"] .food-routing-step:not(:last-child)::after {
-  background: rgba(255, 255, 255, 0.18);
-}
-
-[data-theme="dark"] .food-routing-step.is-done:not(:last-child)::after {
-  background: #10b981;
-}
-
-[data-theme="dark"] .food-routing-marker {
-  background: #34d399;
-  color: #052e1c;
-}
-
-[data-theme="dark"] .food-routing-step.is-final .food-routing-marker {
-  background: #16a34a;
-  color: #ffffff;
-}
-
-[data-theme="dark"] .food-routing-step.is-done .food-routing-marker {
-  background: #059669;
-  color: #ffffff;
-}
-
-[data-theme="dark"] .food-routing-step.is-next .food-routing-marker {
-  background: #3b82f6;
-  color: #ffffff;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
-}
-
-[data-theme="dark"] .food-routing-step.is-inprogress .food-routing-marker {
-  background: #f59e0b;
-  color: #ffffff;
-  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.3);
-}
-
-[data-theme="dark"] .food-routing-step.is-next .food-routing-step-body {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: rgba(59, 130, 246, 0.5);
-  box-shadow: 0 0 16px rgba(59, 130, 246, 0.22);
-}
-
-[data-theme="dark"] .food-routing-step.is-inprogress .food-routing-step-body {
-  background: rgba(245, 158, 11, 0.1);
-  border-color: rgba(245, 158, 11, 0.5);
-  box-shadow: 0 0 16px rgba(245, 158, 11, 0.22);
-}
-
-[data-theme="dark"] .food-routing-tag--next {
-  color: #93c5fd;
-  background: rgba(59, 130, 246, 0.2);
-}
-
-[data-theme="dark"] .food-routing-tag--progress {
-  color: #fbbf24;
-  background: rgba(245, 158, 11, 0.2);
-}
-
-[data-theme="dark"] .food-routing-tag--done {
-  color: #cbd5e1;
-  background: rgba(148, 163, 184, 0.2);
-}
-
-[data-theme="dark"] .food-routing-tag--final {
-  color: #4ade80;
-  background: rgba(34, 197, 94, 0.18);
-}
-
-[data-theme="dark"] .food-routing-stats {
-  background: rgba(0, 0, 0, 0.18);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] .food-routing-stat {
-  border-color: rgba(255, 255, 255, 0.08);
-}
-
-[data-theme="dark"] .food-routing-stat-label {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-[data-theme="dark"] .food-routing-stat-value {
-  color: rgba(255, 255, 255, 0.94);
-}
-
-/* ==========================================
-   공정순서도 - 투입/산출 자재 표출
-   ========================================== */
-
-.food-routing-materials {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin: 0 0 12px;
-}
-
-.food-routing-material-col {
-  min-width: 0;
-  padding: 10px 12px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-}
-
-.food-routing-material-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #64748b;
-}
-
-.food-routing-material-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #94a3b8;
-}
-
-.food-routing-material-col.is-in .food-routing-material-dot {
-  background: #3b82f6;
-}
-
-.food-routing-material-col.is-out .food-routing-material-dot {
-  background: #10b981;
-}
-
-.food-routing-material-count {
-  margin-left: auto;
-  padding: 0 7px;
-  border-radius: 999px;
-  background: rgba(100, 116, 139, 0.14);
-  font-size: 11px;
-  font-weight: 700;
-  color: #475569;
-}
-
-.food-routing-material-empty {
-  margin: 0;
-  font-size: 13px;
-  color: #94a3b8;
-}
-
-.food-routing-material-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.food-routing-material-item {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  padding-top: 6px;
-  border-top: 1px dashed #e2e8f0;
-}
-
-.food-routing-material-item:first-child {
-  padding-top: 0;
-  border-top: none;
-}
-
-.food-routing-material-name {
-  min-width: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: #0f172a;
-  word-break: keep-all;
-}
-
-.food-routing-material-code {
-  margin-left: 6px;
-  font-size: 11px;
-  font-weight: 500;
-  color: #64748b;
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-}
-
-.food-routing-material-qty {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 4px;
-  white-space: nowrap;
-  font-size: 14px;
-  color: #0f172a;
-}
-
-.food-routing-material-qty strong {
-  font-weight: 700;
-}
-
-.food-routing-material-unit {
-  min-width: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-}
-
-/* 좁은 화면: 투입/산출을 위아래로 */
-@container content (max-width: 640px) {
-  .food-routing-materials {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* ==========================================================================
@@ -1444,7 +1425,7 @@
 /* ───────── 헤더 ───────── */
 .woc-header {
   display: flex;
-  flex-wrap: wrap; 
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: 8px 16px;
@@ -1536,7 +1517,7 @@
   font-size: 12px;
   line-height: 1.5;
   color: var(--woc-muted-2);
-  overflow-wrap: anywhere; 
+  overflow-wrap: anywhere;
 }
 .woc-field__error {
   margin: 0;
@@ -1939,7 +1920,7 @@
 
 /* ───────── 공정 스테퍼 ───────── */
 .woc-process {
-  min-width: 0; 
+  min-width: 0;
   margin-top: 20px;
 }
 .woc-process__note {
@@ -2671,41 +2652,3 @@
 [data-theme="dark"] .woc-dialog::backdrop {
   background: rgba(0, 0, 0, 0.65);
 }
-
-/* DARK MODE */
-[data-theme="dark"] .food-routing-material-col {
-  background: rgba(0, 0, 0, 0.18);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] .food-routing-material-title {
-  color: #94a3b8;
-}
-
-[data-theme="dark"] .food-routing-material-col.is-in .food-routing-material-dot {
-  background: #60a5fa;
-}
-
-[data-theme="dark"] .food-routing-material-col.is-out .food-routing-material-dot {
-  background: #34d399;
-}
-
-[data-theme="dark"] .food-routing-material-count {
-  background: rgba(148, 163, 184, 0.2);
-  color: #cbd5e1;
-}
-
-[data-theme="dark"] .food-routing-material-item {
-  border-top-color: rgba(255, 255, 255, 0.08);
-}
-
-[data-theme="dark"] .food-routing-material-name,
-[data-theme="dark"] .food-routing-material-qty {
-  color: rgba(255, 255, 255, 0.94);
-}
-
-[data-theme="dark"] .food-routing-material-code,
-[data-theme="dark"] .food-routing-material-unit {
-  color: #94a3b8;
-}
-

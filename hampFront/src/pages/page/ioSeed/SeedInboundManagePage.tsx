@@ -732,7 +732,7 @@ export function SeedInboundManagePage() {
               <div className="rowActions">
                 <button
                   type="button"
-                  className="miniButton primary"
+                  className="miniButton primary compact"
                   disabled={isUpdating}
                   onClick={() => (isNewRow ? handleSaveCreate() : handleSaveEdit(row.original.receiptId))}
                 >

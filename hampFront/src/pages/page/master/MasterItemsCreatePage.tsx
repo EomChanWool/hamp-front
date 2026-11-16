@@ -6,7 +6,7 @@ import axios from "axios";
 import {
   PRODUCT_TYPE_LABEL,
   CATEGORY_LABEL,
-  SOLE_PRODUCTION_LABEL, 
+  SOLE_PRODUCTION_LABEL,
   type ItemCreateRequest,
   type ProductType,
   type ItemCategory,
@@ -16,12 +16,9 @@ import {
 import { OperationApi, OPER_TYPE_LABEL, type OperType } from "@/api/master/Operation";
 import { OperationSelectModal } from "@/components/modal/OperationSelectModal";
 import { useItemRoutings } from "@/hooks/useItemRoutings";
-import './MasterItem.css';
+import "./MasterItem.css";
 import { Badge } from "@/components/common/Badge";
-import {
-  RoutingMaterialSection,
-  toMaterialRequests,
-} from "@/components/common/RoutingMatarialSection";
+import { RoutingMaterialSection, toMaterialRequests } from "@/components/common/RoutingMatarialSection";
 
 interface OperationOption {
   operCode: string;
@@ -55,14 +52,7 @@ export function MasterItemsCreatePage() {
   });
 
   // [중복 공정 지원]
-  const {
-    routings,
-    clearRoutings,
-    syncRoutings,
-    removeRouting,
-    moveRouting,
-    setStepMaterials,
-  } = useItemRoutings();
+  const { routings, clearRoutings, syncRoutings, removeRouting, moveRouting, setStepMaterials } = useItemRoutings();
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -189,11 +179,11 @@ export function MasterItemsCreatePage() {
       // 완제품만 → 반제품·완제품. 반제품은 공정을 안 넣으면 빈 배열 전송
       routings: isRoutingAllowedOnSubmit
         ? routings.map((r) => ({
-          operCode: r.operCode?.trim() || null,
-          operSeq: r.operSeq,
-          finalYn: r.finalYn || "N",
-          materials: toMaterialRequests(r.materials),
-        }))
+            operCode: r.operCode?.trim() || null,
+            operSeq: r.operSeq,
+            finalYn: r.finalYn || "N",
+            materials: toMaterialRequests(r.materials),
+          }))
         : null,
     };
 
@@ -223,55 +213,74 @@ export function MasterItemsCreatePage() {
       <div className="createCard">
         <div className="createHeader">
           <h1 className="createTitle">신규 품목 등록</h1>
-          <span className="createMeta">* 표시는 필수 입력 항목입니다</span>
+          <span className="createMeta">
+            <strong className="required">*</strong> 표시는 필수 입력 항목입니다
+          </span>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="createBody">
             {/* 1. 기본 정보 섹션 */}
+            {/* 1. 기본 정보 섹션 */}
             <div className="createSection">
               <h2 className="createSectionTitle">기본정보</h2>
               <div className="createGrid2Cols">
                 <div className="createField">
-                  <label className="requiredLabel">
-                    품목코드 <span className="required">*</span>
+                  <label htmlFor="item-code" className="requiredLabel">
+                    품목코드{" "}
+                    <span className="required" aria-hidden="true">
+                      *
+                    </span>
                   </label>
                   <input
+                    id="item-code"
                     className="tableInput"
                     value={form.itemCode}
                     disabled={isSubmitting}
+                    aria-required="true"
+                    autoComplete="off"
                     onChange={(e) => handleChange("itemCode", e.target.value)}
                     placeholder="예: ITM001"
                   />
                 </div>
                 <div className="createField">
-                  <label className="requiredLabel">
-                    품목명 <span className="required">*</span>
+                  <label htmlFor="item-name" className="requiredLabel">
+                    품목명{" "}
+                    <span className="required" aria-hidden="true">
+                      *
+                    </span>
                   </label>
                   <input
+                    id="item-name"
                     className="tableInput"
                     value={form.itemNm}
                     disabled={isSubmitting}
+                    aria-required="true"
+                    autoComplete="off"
                     onChange={(e) => handleChange("itemNm", e.target.value)}
                     placeholder="예: 헴프 파우더"
                   />
                 </div>
                 <div className="createField">
-                  <label>단위</label>
+                  <label htmlFor="item-unit">단위</label>
                   <input
+                    id="item-unit"
                     className="tableInput"
                     value={form.unit}
                     disabled={isSubmitting}
+                    autoComplete="off"
                     onChange={(e) => handleChange("unit", e.target.value)}
                     placeholder="예: EA, BOX, KG"
                   />
                 </div>
                 <div className="createField">
-                  <label>규격</label>
+                  <label htmlFor="item-standard">규격</label>
                   <input
+                    id="item-standard"
                     className="tableInput"
                     value={form.standard}
                     disabled={isSubmitting}
+                    autoComplete="off"
                     onChange={(e) => handleChange("standard", e.target.value)}
                     placeholder="예: 500g"
                   />
@@ -284,10 +293,13 @@ export function MasterItemsCreatePage() {
               <h2 className="createSectionTitle">분류정보</h2>
               <div className="createGrid2Cols">
                 <div className="createField">
-                  <label className="requiredLabel">
-                    종류 <span className="required">*</span>
+                  <label id="item-product-type-label" className="requiredLabel">
+                    종류{" "}
+                    <span className="required" aria-hidden="true">
+                      *
+                    </span>
                   </label>
-                  <div className="cardButtonGroup routing-w-100">
+                  <div className="cardButtonGroup routing-w-100" role="group" aria-labelledby="item-product-type-label">
                     {Object.entries(PRODUCT_TYPE_LABEL).map(([key, label]) => {
                       const isSelected = form.productType === key;
                       return (
@@ -295,11 +307,12 @@ export function MasterItemsCreatePage() {
                           key={key}
                           type="button"
                           className={`inlineTypeButton ${isSelected ? "active" : ""}`}
+                          aria-pressed={isSelected}
                           disabled={isSubmitting}
                           onClick={() => handleChange("productType", key)}
                         >
                           <span className="inlineButtonInner">
-                            <span className="cardIcon">
+                            <span className="cardIcon" aria-hidden="true">
                               {key === "0" ? <FoodIcon /> : <PlantIcon />}
                             </span>
                             <span className="cardText">{label}</span>
@@ -311,10 +324,13 @@ export function MasterItemsCreatePage() {
                 </div>
 
                 <div className="createField">
-                  <label className="requiredLabel">
-                    품목구분 <span className="required">*</span>
+                  <label id="item-category-label" className="requiredLabel">
+                    품목구분{" "}
+                    <span className="required" aria-hidden="true">
+                      *
+                    </span>
                   </label>
-                  <div className="cardButtonGroup routing-w-100">
+                  <div className="cardButtonGroup routing-w-100" role="group" aria-labelledby="item-category-label">
                     {Object.entries(CATEGORY_LABEL).map(([key, label]) => {
                       const isSelected = form.category === key;
                       const subDescriptions: Record<string, string> = {
@@ -327,13 +343,12 @@ export function MasterItemsCreatePage() {
                           key={key}
                           type="button"
                           className={`typeCardButton ${isSelected ? "active" : ""}`}
+                          aria-pressed={isSelected}
                           disabled={isSubmitting}
                           onClick={() => handleChange("category", key)}
                         >
                           <span className="cardText main">{label}</span>
-                          {subDescriptions[key] && (
-                            <span className="cardText sub">{subDescriptions[key]}</span>
-                          )}
+                          {subDescriptions[key] && <span className="cardText sub">{subDescriptions[key]}</span>}
                         </button>
                       );
                     })}
@@ -342,17 +357,19 @@ export function MasterItemsCreatePage() {
 
                 {/* 단독생산 전용 여부 (1이면 수주 산출라인에서 다른 품목과 조합 불가) */}
                 <div className="createField">
-                  <label>단독생산 전용</label>
+                  <label htmlFor="item-sole-production">단독생산 전용</label>
                   <select
+                    id="item-sole-production"
                     className="tableInput"
                     value={form.soleProductionYn}
                     disabled={isSubmitting}
                     onChange={(e) => handleChange("soleProductionYn", e.target.value)}
+                    aria-describedby="item-sole-production-help"
                   >
                     <option value="0">{SOLE_PRODUCTION_LABEL[0]}</option>
                     <option value="1">{SOLE_PRODUCTION_LABEL[1]}</option>
                   </select>
-                  <div className="routing-guide-text">
+                  <div id="item-sole-production-help" className="routing-guide-text">
                     '예' 선택 시 수주 산출라인에서 다른 품목과 조합할 수 없습니다
                   </div>
                 </div>
@@ -364,8 +381,7 @@ export function MasterItemsCreatePage() {
               <div className="createSection">
                 <div className="routing-header-wrapper">
                   <label className="requiredLabel routing-header-label">
-                    공정 라우팅 설정{" "}
-                    {/* 완제품은 필수(*), 반제품은 선택 */}
+                    공정 라우팅 설정 {/* 완제품은 필수(*), 반제품은 선택 */}
                     {isRoutingRequired ? (
                       <span className="required">*</span>
                     ) : (
@@ -386,9 +402,9 @@ export function MasterItemsCreatePage() {
                 </div>
 
                 <div className="routing-guide-text">
-                  ⠿ 드래그로 순서 변경, 항목 선택 시 우측에서 상세 편집
-                  (마지막 공정이 최종공정이며, 최종공정이 바뀌면 해당 공정의 투입/산출 자재는 초기화됩니다.
-                  같은 공정을 여러 단계로 추가할 수 있으며 자재는 단계별로 따로 관리됩니다)
+                  ⠿ 드래그로 순서 변경, 항목 선택 시 우측에서 상세 편집 (마지막 공정이 최종공정이며, 최종공정이 바뀌면
+                  해당 공정의 투입/산출 자재는 초기화됩니다. 같은 공정을 여러 단계로 추가할 수 있으며 자재는 단계별로
+                  따로 관리됩니다)
                 </div>
 
                 {routings.length === 0 ? (
@@ -412,7 +428,9 @@ export function MasterItemsCreatePage() {
                           <div
                             // [중복 공정 지원] 같은 공정이 반복돼도 유일한 단계 고유키 사용
                             key={route.rowKey}
-                            ref={(el) => { routingItemRefs.current[index] = el; }}
+                            ref={(el) => {
+                              routingItemRefs.current[index] = el;
+                            }}
                             draggable
                             onDragStart={() => setDraggedIndex(index)}
                             onDragOver={(e) => {
@@ -444,18 +462,18 @@ export function MasterItemsCreatePage() {
                               >
                                 ⠿
                               </span>
-                              <span className="routing-seq">
-                                {String(route.operSeq ?? index + 1).padStart(2, "0")}
-                              </span>
+                              <span className="routing-seq">{String(route.operSeq ?? index + 1).padStart(2, "0")}</span>
                               <Badge tone="info">{route.operCode}</Badge>
-                              <span className="routing-oper-nm">
-                                {matchedOp ? matchedOp.operNm : ""}
-                              </span>
+                              <span className="routing-oper-nm">{matchedOp ? matchedOp.operNm : ""}</span>
                             </div>
 
                             <div className="routing-item-right">
                               <span className={`routing-type-badge ${isFinal ? "is-final" : ""}`}>
-                                {isFinal ? "최종공정" : matchedOp && OPER_TYPE_LABEL[matchedOp.operType] ? `${OPER_TYPE_LABEL[matchedOp.operType]}공정` : ""}
+                                {isFinal
+                                  ? "최종공정"
+                                  : matchedOp && OPER_TYPE_LABEL[matchedOp.operType]
+                                    ? `${OPER_TYPE_LABEL[matchedOp.operType]}공정`
+                                    : ""}
                               </span>
 
                               <div className="routing-arrow-group">
@@ -581,10 +599,10 @@ export function MasterItemsCreatePage() {
                             currentItem={
                               form.itemCode.trim() && form.itemNm.trim()
                                 ? {
-                                  itemCode: form.itemCode.trim(),
-                                  itemNm: form.itemNm.trim(),
-                                  unit: form.unit.trim(),
-                                }
+                                    itemCode: form.itemCode.trim(),
+                                    itemNm: form.itemNm.trim(),
+                                    unit: form.unit.trim(),
+                                  }
                                 : undefined
                             }
                             disabled={isSubmitting}
@@ -600,9 +618,7 @@ export function MasterItemsCreatePage() {
                           </button>
                         </div>
                       ) : (
-                        <div className="routing-empty-panel">
-                          좌측에서 공정을 선택해주세요.
-                        </div>
+                        <div className="routing-empty-panel">좌측에서 공정을 선택해주세요.</div>
                       )}
                     </div>
                   </div>
