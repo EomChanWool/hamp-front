@@ -2576,3 +2576,167 @@
 [data-theme="dark"] .woc-dialog::backdrop {
   background: rgba(0, 0, 0, 0.65);
 }
+
+/* ==========================================================================
+   작업지시 등록
+   ========================================================================== */
+
+/* 라벨 줄: [라벨] [출처 칩] ........ [자동값으로 되돌리기]
+   - 칩/버튼 유무와 관계없이 높이가 같도록 min-height 고정 → 값이 바뀌어도 입력칸이 밀리지 않는다 */
+.woc-field__labelRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  min-height: 24px;
+}
+.woc-field__labelRow > label {
+  display: flex;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--woc-muted);
+}
+
+/* 값 출처 칩 (자동 계산 / 직접 입력) - 색 + 텍스트로 구분 */
+.woc-src {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.woc-src.is-auto {
+  color: var(--woc-green-dark);
+  background: var(--woc-green-soft);
+}
+.woc-src.is-manual {
+  color: var(--woc-primary-dark);
+  background: #eff4ff;
+}
+.woc-src.is-empty {
+  display: none; /* 값이 아직 없을 때(자동값 없음 + 입력 없음)는 칩을 숨긴다 */
+}
+
+/* 자동값으로 되돌리기 - 항상 렌더링하고 visibility 로만 숨겨 레이아웃/포커스가 흔들리지 않게 한다 */
+.woc-revert {
+  margin-left: auto;
+  padding: 2px 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--woc-primary-dark);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.woc-revert:hover:not(:disabled) {
+  background: rgba(37, 99, 235, 0.08);
+}
+.woc-revert:focus-visible {
+  outline: 2px solid var(--woc-primary);
+  outline-offset: 1px;
+}
+.woc-revert.is-hidden {
+  visibility: hidden; /* 공간은 유지, 시각/포커스/스크린리더에서는 제외 */
+}
+
+/* 안내 영역 */
+.woc-hint {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* 자동 계산 근거 ("30L 산출 기준 약 167,800G") - 라벨 줄의 "자동 계산" 칩 바로 옆 */
+.woc-src__calc {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--woc-muted-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 입력칸 아래 한 줄: [참고 문구] [부산물 라벨] [칩] [칩] - 공간이 모자라면 줄바꿈 */
+.woc-hint__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.woc-hint__note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--woc-muted-2);
+  overflow-wrap: anywhere;
+}
+
+/* 경고 문구 - 아이콘 + 주황색 */
+.woc-hint__warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--woc-amber-dark);
+  background: var(--woc-amber-soft);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+.woc-hint__warn svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  color: var(--woc-amber);
+}
+
+/* 부산물 칩 목록 */
+.woc-hint__bpLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--woc-muted);
+}
+.woc-hint__bpList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.woc-chip {
+  display: inline-block;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--woc-muted);
+  background: #f1f5f9;
+  border: 1px solid var(--woc-border);
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ───────── 다크 모드 ───────── */
+[data-theme="dark"] .woc-src.is-manual {
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.18);
+}
+
+[data-theme="dark"] .woc-revert:hover:not(:disabled) {
+  background: rgba(147, 197, 253, 0.12);
+}
+
+[data-theme="dark"] .woc-chip {
+  background: rgba(255, 255, 255, 0.06);
+}
