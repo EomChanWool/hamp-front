@@ -428,7 +428,7 @@ export function ReportModal({ receipt, onClose, onChanged }: ReportModalProps) {
                                 <>
                                     <button
                                         type="button"
-                                        className="miniButton primary"
+                                        className="miniButton primary compact"
                                         onClick={() => handleUpdateReturn(item)}
                                         disabled={isSaving}
                                     >

@@ -1199,76 +1199,92 @@
    신규 등록 페이지 전용 스타일
 ================================ */
 .createCard {
+  --create-pad-x: 32px;
+  --create-ctl-border: var(--border-strong, #c7cdd5);
+  --create-required: #c0293d;
+
+  display: flex;
+  flex-direction: column;
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border, #e2e8f0);
   border-radius: 12px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  overflow: clip; /* hidden이면 sticky footer가 안 먹음 */
+}
+
+[data-theme="dark"] .createCard {
+  --create-ctl-border: #3a4150;
+  --create-required: #f87171;
 }
 
 .createHeader {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  padding: 34px 38px 24px;
+  align-items: center;
+  gap: 16px;
+  padding: 24px var(--create-pad-x);
   border-bottom: 1px solid var(--border, #e2e8f0);
 }
 
 .createTitle {
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--text-heading, #14181f);
   margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--text-heading, #14181f);
 }
 
 .createMeta {
-  font-size: 16px;
+  font-size: 13px;
   color: var(--text-muted, #9aa3b0);
 }
 
+.createMeta .required,
+.createField label .required {
+  margin-left: 2px;
+  color: var(--create-required);
+}
+
+/* 섹션: 박스 대신 헤어라인으로 구분 */
 .createBody {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 24px;
 }
 
 .createSection {
-  border: 1px solid var(--border, #e3e6ea);
-  border-radius: 10px;
-  padding: 22px;
-  background: var(--bg-card, #ffffff);
+  padding: 28px var(--create-pad-x);
+}
+
+.createSection + .createSection {
+  border-top: 1px solid var(--border, #e3e6ea);
 }
 
 .createSectionTitle {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 18px;
+  margin: 0 0 20px;
+  font-size: 16px;
   font-weight: 700;
+  line-height: 1.4;
   color: var(--text-heading, #14181f);
-  margin: 0 0 16px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--border, #e3e6ea);
 }
 
 .createGrid2Cols {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px 20px;
+  gap: 20px 24px;
+  align-items: start;
 }
 
 .createGrid3Cols {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px 20px;
+  gap: 20px 24px;
+  align-items: start;
 }
 
 .createField {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -1277,30 +1293,183 @@
 }
 
 .createField label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-body, #5b6472);
-  padding-left: 2px;
 }
 
 .createField label.requiredLabel {
   color: var(--text-heading, #14181f);
-  font-weight: 700;
 }
 
-.createField label .required {
-  color: #c0293d;
-  margin-left: 2px;
+.optionalLabel {
+  margin-left: 4px;
+  font-weight: 400;
+  color: var(--text-muted, #9aa3b0);
 }
 
+/* 입력 컨트롤: 높이 40 / 폰트 14 통일 */
+.createField > .tableInput {
+  width: 100%;
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0 12px;
+  font-size: 14px;
+  color: var(--text-heading, #14181f);
+  background: var(--bg-subtle, #fcfcfb);
+  border: 1px solid var(--create-ctl-border);
+  border-radius: 8px;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.createField > .tableInput::placeholder {
+  color: var(--text-muted, #9aa3b0);
+}
+
+.createField > .tableInput:hover:not(:disabled) {
+  border-color: var(--text-muted, #9aa3b0);
+}
+
+.createField > .tableInput:focus-visible {
+  background: var(--bg-card, #ffffff);
+  border-color: var(--primary, #0052cc);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary, #0052cc) 18%, transparent);
+}
+
+.createField > .tableInput:disabled {
+  color: var(--text-muted, #9aa3b0);
+  background: var(--border, #e3e6ea);
+  cursor: not-allowed;
+}
+
+/* 푸터: 긴 폼에서도 항상 보이도록 하단 고정 */
 .createFooter {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 10px;
-  padding: 18px 24px;
+  gap: 8px;
+  padding: 16px var(--create-pad-x);
   border-top: 1px solid var(--border, #e3e6ea);
   background: var(--bg-subtle, #fcfcfb);
+}
+
+.createFooter button {
+  min-width: 88px;
+  height: 40px;
+}
+
+/* ---- create 반응형 (변수만 바꿈) ---- */
+@container content (max-width: 1024px) {
+  .createCard {
+    --create-pad-x: 24px;
+  }
+}
+
+@container content (max-width: 640px) {
+  .createCard {
+    --create-pad-x: 20px;
+  }
+
+  .createHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .createSection {
+    padding-block: 24px;
+  }
+
+  .createGrid2Cols,
+  .createGrid3Cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+@container content (max-width: 600px) {
+  .createTitle {
+    font-size: 20px;
+  }
+}
+
+.createField .cardButtonGroup {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 8px;
+}
+
+.createField .inlineTypeButton,
+.createField .typeCardButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 60px;
+  padding: 8px 12px;
+  color: var(--text-body, #5b6472);
+  background: var(--bg-subtle, #fcfcfb);
+  border: 1px solid var(--create-ctl-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.createField .inlineTypeButton:hover:not(:disabled),
+.createField .typeCardButton:hover:not(:disabled) {
+  color: var(--text-heading, #14181f);
+  border-color: var(--text-muted, #9aa3b0);
+}
+
+/* 선택 상태: 테두리 2px처럼 보이게 inset (레이아웃 밀림 없음) */
+.createField .inlineTypeButton.active,
+.createField .typeCardButton.active {
+  color: var(--text-heading, #14181f);
+  background: color-mix(in srgb, var(--primary, #0052cc) 8%, var(--bg-card, #fff));
+  border-color: var(--primary, #0052cc);
+  box-shadow: inset 0 0 0 1px var(--primary, #0052cc);
+}
+
+.createField .inlineTypeButton:focus-visible,
+.createField .typeCardButton:focus-visible {
+  outline: 2px solid var(--primary, #0052cc);
+  outline-offset: 2px;
+}
+
+.createField .inlineTypeButton:disabled,
+.createField .typeCardButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.createField .inlineButtonInner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.createField .cardIcon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.createField .cardText {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.createField .cardText.sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted, #9aa3b0);
 }
 
 /* ==========================================

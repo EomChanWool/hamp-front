@@ -577,7 +577,7 @@ export function SeedInventoryManagePage() {
                             <div className="rowActions">
                                 <button
                                     type="button"
-                                    className="miniButton primary"
+                                    className="miniButton primary compact"
                                     disabled={isUpdating}
                                     onClick={() => (isNew ? handleSaveCreate() : handleSaveEdit(row.original.sthiId))}
                                 >

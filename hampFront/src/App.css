@@ -676,8 +676,7 @@ button {
 }
 
 .miniButton {
-  height: 36px;
-  line-height: 34px;
+  height: 32px;
   box-sizing: border-box;
   border-radius: 8px;
   background: #f1f5f9;
@@ -704,6 +703,11 @@ button {
   background: #dbeafe;
   border-color: #bfdbfe;
   color: #1e40af;
+  min-width: 94px;
+}
+
+.miniButton.primary.compact {
+  min-width: 0;
 }
 
 .miniButton.primary:hover {
@@ -888,9 +892,8 @@ textarea.tableInput {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-width: 68px;
   height: 24px;
-  padding: 0 10px;
+  padding: 0 12px;
   border-radius: 9999px;
   font-size: 12.5px;
   font-weight: 600;
