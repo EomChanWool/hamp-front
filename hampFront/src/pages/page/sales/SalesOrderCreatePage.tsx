@@ -97,6 +97,18 @@ export function SalesOrderCreatePage() {
       alert("거래처를 선택해주세요.");
       return;
     }
+    if (!form.itemCode) {
+      alert("투입원료를 선택해주세요.");
+      return;
+    }
+    if (form.orderQty == null) {
+      alert("투입수량을 입력해주세요.");
+      return;
+    }
+    if (form.orderAmount == null) {
+      alert("가공비를 입력해주세요.");
+      return;
+    }
 
     const payload: SalesOrderCreateRequest = {
       ...form,
@@ -183,14 +195,16 @@ export function SalesOrderCreatePage() {
               <h2 className="createSectionTitle">투입원료</h2>
               <div className="createGrid2Cols">
                 <div className="createField">
-                  <label>투입원료</label>
+                  <label className="requiredLabel">
+                    투입원료 <span className="required">*</span>
+                  </label>
                   <select
                     className="tableInput"
                     value={form.itemCode ?? ""}
                     onChange={(e) => handleChange("itemCode", e.target.value)}
                     disabled={isSubmitting}
                   >
-                    <option value="">투입원료를 선택해주세요</option>
+                    <option value="" disabled>투입원료를 선택해주세요</option>
                     {rawItemOptions.map((opt) => (
                       <option key={opt.itemCode} value={opt.itemCode}>
                         {opt.itemCode} ({opt.itemNm ?? "-"})
@@ -200,7 +214,9 @@ export function SalesOrderCreatePage() {
                 </div>
 
                 <div className="createField">
-                  <label>투입수량</label>
+                  <label className="requiredLabel">
+                    투입수량 <span className="required">*</span>
+                  </label>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <input
                       type="text"
@@ -221,7 +237,9 @@ export function SalesOrderCreatePage() {
                 </div>
 
                 <div className="createField">
-                  <label>가공비</label>
+                  <label className="requiredLabel">
+                    가공비 <span className="required">*</span>
+                  </label>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <AmountInput
                       className="tableInput"
