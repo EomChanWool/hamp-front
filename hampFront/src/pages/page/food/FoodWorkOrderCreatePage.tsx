@@ -1347,7 +1347,7 @@ export function FoodWorkOrderCreatePage() {
                   const warnings: string[] = [];
                   if (!isManual) {
                     if (isDerived && info?.autoParkKg == null) {
-                      warnings.push("필요 헴프박을 자동 계산할 수 없어 직접 입력이 필요합니다. (수율 미등록 또는 단위 차이)");
+                      warnings.push("필요 헴프박을 자동 계산할 수 없어 직접 입력이 필요합니다. (산출수량 미입력 또는 수율 미등록)");
                     }
                     if (!isDerived && info?.serverRaw == null && est) {
                       warnings.push("서버에서 추정할 수 없어 직접 입력이 필요합니다.");
