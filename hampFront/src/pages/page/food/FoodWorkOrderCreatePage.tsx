@@ -1333,7 +1333,7 @@ export function FoodWorkOrderCreatePage() {
                     line.instructQty > 0 &&
                     typeof rawValue === "number" &&
                     !isManual
-                      ? `${line.instructQty.toLocaleString()}${line.unit} 산출 기준 약 ${rawValue.toLocaleString()}${rawFieldUnit}`
+                      ? `${line.instructQty.toLocaleString()}${line.unit ?? ""} 산출 기준 약 ${rawValue.toLocaleString()}${rawFieldUnit}`
                       : "";
 
                   // 서버값 + 1차/2차 껍질 합산된 부산물 목록
