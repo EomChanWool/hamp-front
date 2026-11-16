@@ -81,6 +81,7 @@ export function SalesOrderDetailPage() {
           label: "투입원료",
           key: "itemCode",
           editable: true,
+          required: true,
           renderEditor: (value, _onChange, disabled) => (
             <select
               className="tableInput"
@@ -97,7 +98,7 @@ export function SalesOrderDetailPage() {
                 }));
               }}
             >
-              <option value="">투입원료를 선택해주세요</option>
+              <option value="" disabled>투입원료를 선택해주세요</option>
               {rawItemOptions.map((opt) => (
                 <option key={opt.itemCode} value={opt.itemCode}>
                   {opt.itemCode} ({opt.itemNm ?? "-"})
@@ -114,6 +115,7 @@ export function SalesOrderDetailPage() {
           label: "투입수량",
           key: "orderQty",
           editable: true,
+          required: true,
           renderEditor: (value, onChange, disabled) => (
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <input
@@ -135,6 +137,7 @@ export function SalesOrderDetailPage() {
           label: "가공비",
           key: "orderAmount",
           editable: true,
+          required: true,
           renderEditor: (value, onChange, disabled) => (
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <AmountInput
@@ -261,6 +264,18 @@ export function SalesOrderDetailPage() {
 
   const handleSave = async () => {
     if (!order || isUpdating) return;
+    if (!form.itemCode) {
+      alert("투입원료를 선택해주세요.");
+      return;
+    }
+    if (!form.orderQty) {
+      alert("투입수량을 입력해주세요.");
+      return;
+    }
+    if (!form.orderAmount) {
+      alert("가공비를 입력해주세요.");
+      return;
+    }
 
     setIsUpdating(true);
     try {
