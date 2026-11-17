@@ -18,13 +18,25 @@ export interface RoutingMaterialDraft {
   unit: string;
   ioType: MaterialIoType;
   /**
-   * 계획 수율(%) (0 ~ 100)
+   * 계획 수율(%) (0 ~ 100, 소수점 2자리까지)
    * - 산출(OUT) 자재에만 입력 가능, 미입력이면 null
    * - 투입(IN) 자재는 항상 null
    */
   // 계획 수율
   yieldRate?: number | null;
 }
+
+/** 수율 소수점 최대 자리수 */
+const YIELD_MAX_DECIMALS = 2;
+
+/** 수율 입력 허용 패턴: 숫자 + 소수점 1개 + 소수 2자리까지 (음수/문자/3자리 이상 소수 차단) */
+const YIELD_INPUT_PATTERN = new RegExp(`^\\d*\\.?\\d{0,${YIELD_MAX_DECIMALS}}$`);
+
+/** 수율을 소수점 2자리로 반올림 (부동소수점 오차 정리용) */
+const roundYield = (value: number): number => {
+  const factor = 10 ** YIELD_MAX_DECIMALS;
+  return Math.round(value * factor) / factor;
+};
 
 export const toMaterialDrafts = (
   materials?: ItemRoutingResponse["materials"] | null
@@ -62,7 +74,8 @@ export const toMaterialRequests = (
   (list ?? []).map(({ itemCode, ioType, yieldRate }) =>
     ioType === "OUT"
       ? // OUT 자재만 yieldRate 전송 (미입력이면 null)
-      { itemCode, ioType, yieldRate: yieldRate ?? null }
+      // 저장 직전에도 소수점 2자리로 정리
+      { itemCode, ioType, yieldRate: yieldRate == null ? null : roundYield(yieldRate) }
       : // IN 자재는 yieldRate 를 보내지 않음 (서버에서 OUT 에만 입력 가능)
       { itemCode, ioType }
   );
@@ -98,6 +111,11 @@ function MaterialGroup({
   // 범위(0~100) 밖 입력이 자동 보정된 자재 표시용 (itemCode → true)
   const [yieldAdjusted, setYieldAdjusted] = useState<Record<string, boolean>>({});
 
+  // 수율 입력 중인 문자열 (itemCode → 입력값)
+  //  - "5." 처럼 입력 도중의 문자열을 그대로 보여주기 위해 숫자 값과 별도로 보관
+  //  - 입력칸에서 포커스가 빠지면(blur) 삭제하고 확정된 숫자 값을 표시
+  const [yieldDraft, setYieldDraft] = useState<Record<string, string>>({});
+
   const handlePick = (itemCode: string) => {
     const picked = availableOptions.find((o) => o.itemCode === itemCode);
     if (!picked) return;
@@ -106,13 +124,18 @@ function MaterialGroup({
   };
 
   // 수율 입력값 → number | null 변환
-  //  - 빈 문자열이면 null (미입력)
+  //  - 숫자와 소수점 1개, 소수 2자리까지만 허용 (그 외 입력/붙여넣기는 무시)
+  //  - 빈 문자열(또는 "." 만 입력)이면 null (미입력)
   //  - 0 ~ 100 범위로 보정 (기존 동작 유지)
   //  - 보정이 일어난 경우(범위 밖 입력) 안내 메시지를 띄우기 위해 플래그 저장
   const handleYieldInput = (itemCode: string, raw: string) => {
     if (!onYieldChange) return;
 
-    if (raw === "") {
+    // 허용되지 않는 형식(문자, 음수, 소수 3자리 이상 등)은 입력 자체를 반영하지 않음
+    if (!YIELD_INPUT_PATTERN.test(raw)) return;
+
+    if (raw === "" || raw === ".") {
+      setYieldDraft((prev) => ({ ...prev, [itemCode]: raw }));
       setYieldAdjusted((prev) => ({ ...prev, [itemCode]: false })); // 안내 해제
       onYieldChange(itemCode, null);
       return;
@@ -122,9 +145,28 @@ function MaterialGroup({
     if (Number.isNaN(num)) return;
 
     // 보정 전 값이 범위 밖이면 안내 표시, 정상 범위로 다시 입력하면 해제
-    setYieldAdjusted((prev) => ({ ...prev, [itemCode]: num < 0 || num > 100 }));
+    const isOver = num > 100;
+    setYieldAdjusted((prev) => ({ ...prev, [itemCode]: isOver }));
 
-    onYieldChange(itemCode, Math.min(100, Math.max(0, num)));
+    if (isOver) {
+      // 100 초과 → 100으로 보정하고 입력칸에도 보정값을 표시
+      setYieldDraft((prev) => ({ ...prev, [itemCode]: "100" }));
+      onYieldChange(itemCode, 100);
+      return;
+    }
+
+    setYieldDraft((prev) => ({ ...prev, [itemCode]: raw }));
+    onYieldChange(itemCode, roundYield(num));
+  };
+
+  // 포커스가 빠지면 입력 중 문자열을 버리고 확정 값(숫자)으로 표시 ("5." → "5")
+  const handleYieldBlur = (itemCode: string) => {
+    setYieldDraft((prev) => {
+      if (!(itemCode in prev)) return prev;
+      const next = { ...prev };
+      delete next[itemCode];
+      return next;
+    });
   };
 
   return (
@@ -186,16 +228,16 @@ function MaterialGroup({
                 {m.ioType === "OUT" && (
                   <span className="routing-mtrl-yield">
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
+                      autoComplete="off"
                       className="tableInput routing-mtrl-yield-input"
-                      min={0}
-                      max={100}
-                      step="any"
                       placeholder="수율"
-                      title="계획 수율(%) - 비워두면 미확정"
-                      value={m.yieldRate ?? ""}
+                      title="계획 수율(%) - 0~100, 소수점 둘째 자리까지 / 비워두면 미확정"
+                      value={yieldDraft[m.itemCode] ?? m.yieldRate ?? ""}
                       disabled={disabled}
                       onChange={(e) => handleYieldInput(m.itemCode, e.target.value)}
+                      onBlur={() => handleYieldBlur(m.itemCode)}
                     />
                     <span className="routing-mtrl-yield-unit">%</span>
                   </span>
