@@ -1,23 +1,17 @@
 import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type SyntheticEvent,
+  useEffect, useMemo, useRef, useState,
+  type KeyboardEvent as ReactKeyboardEvent, type SyntheticEvent,
 } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   WorkOrderApi,
-  type WorkOrderMaterialEstimateLineResponse,
-  type WorkOrderMaterialEstimateSummaryResponse,
+  type WorkOrderMaterialEstimateLineResponse, type WorkOrderMaterialEstimateSummaryResponse,
 } from "@/api/WorkOrder";
 import { UserApi, type UserOptionResponse } from "@/api/User";
 import {
   SalesOrderApi,
-  type SalesOrderDetailResponse,
-  type SalesOrderOptionResponse,
+  type SalesOrderDetailResponse, type SalesOrderOptionResponse,
 } from "@/api/sales/SalesOrder";
 import { ItemApi, type ItemRoutingChainResponse, type ItemRoutingResponse } from "@/api/master/Item";
 import "./Food.css";
@@ -83,6 +77,7 @@ interface RawSummary {
   hasOilLine: boolean;
   hasParkConsumer: boolean;
   parkShort: boolean; // 헴프박 부족 여부
+  parkShortBy: number; // 부족한 헴프박 수량 (kg, 올림). 부족하지 않으면 0
   hasUnknown: boolean; // 산출수량 미입력/수율 미확정으로 추정에서 빠진 라인 존재 여부
 }
 
@@ -132,6 +127,7 @@ const EMPTY_SUMMARY: RawSummary = {
   hasOilLine: false,
   hasParkConsumer: false,
   parkShort: false,
+  parkShortBy: 0,
   hasUnknown: false,
 };
 
@@ -237,12 +233,12 @@ const pickOverride = (
  */
 const dropOverrideOf =
   (id: number) =>
-  (prev: Record<number, number | "">): Record<number, number | ""> => {
-    if (!(id in prev)) return prev;
-    const next = { ...prev };
-    delete next[id];
-    return next;
-  };
+    (prev: Record<number, number | "">): Record<number, number | ""> => {
+      if (!(id in prev)) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    };
 
 /**
  * 라인에 실제로 적용할 예상 투입 원료
@@ -262,6 +258,8 @@ const effectiveRaw = (info: LineInfo | undefined, override: number | "" | undefi
  * 화면 표시용 투입원료 요약 계산
  * - 서버 추정치를 기본으로 하되, 사용자가 직접 입력한 값(수율 미확정 품목 등)을 반영해 합계/초과 여부를 다시 계산한다
  * - rawTotal / committed 는 모두 수주 투입원료 단위(rawUnit) 기준으로 맞춘다
+ * - 헴프박은 이 작업지시의 오일 라인에서 나오는 부산물(parkSupply)만 쓸 수 있다.
+ *   재고 헴프박은 없으므로 필요량(parkDemand)이 공급량을 넘으면 부족(parkShort)으로 판정한다.
  */
 const buildRawSummary = (
   estimate: EstimateState,
@@ -308,6 +306,10 @@ const buildRawSummary = (
 
   // 계약 수량은 수주 단위 그대로 사용 (서버에는 변환해서 보냈으므로 서버 반환값을 다시 쓰지 않는다)
   const committed = committedQty;
+
+  // 화면에는 공급량을 내림(floor), 수요량을 올림(ceil)으로 보여주므로 판정도 같은 기준으로 맞춘다
+  const parkShortBy = hasParkConsumer ? Math.max(0, Math.ceil(parkDemand) - Math.floor(parkSupply)) : 0;
+
   return {
     rawTotal,
     committed,
@@ -318,7 +320,8 @@ const buildRawSummary = (
     parkDemand,
     hasOilLine: estimate.server.hasOilLine || parkSupply > 0,
     hasParkConsumer,
-    parkShort: hasParkConsumer && Math.ceil(parkDemand) > parkSupply,
+    parkShort: parkShortBy > 0,
+    parkShortBy,
     hasUnknown,
   };
 };
@@ -498,7 +501,7 @@ function LineHint({
   );
 }
 
-/* ───────────── 초과 경고 팝업 ───────────── */
+/* ───────────── 저장 불가 경고 팝업 (투입원료 초과 / 헴프박 부족) ───────────── */
 
 function OverDialog({
   open,
@@ -520,6 +523,14 @@ function OverDialog({
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
   }, [open]);
+
+  const { overRaw, parkShort } = summary;
+  const title =
+    overRaw && parkShort
+      ? "투입원료와 헴프박 수량을 확인해주세요"
+      : parkShort
+        ? "헴프박이 부족합니다"
+        : "투입원료 수량을 초과했습니다";
 
   return (
     <dialog
@@ -550,36 +561,59 @@ function OverDialog({
           </svg>
         </span>
         <h2 id="wocOverTitle" className="woc-dialog__title">
-          투입원료 수량을 초과했습니다
+          {title}
         </h2>
-        <p id="wocOverDesc" className="woc-dialog__desc">
-          예상 원물 소요량은 약{" "}
-          <strong>
-            {Math.ceil(summary.rawTotal).toLocaleString()}
-            {unit}
-          </strong>
-          로 계약된 투입원료 {summary.committed.toLocaleString()}
-          {unit}보다{" "}
-          <strong className="over">
-            {summary.overBy.toLocaleString()}
-            {unit}
-          </strong>{" "}
-          많습니다.
-        </p>
 
-        <ul className="woc-dialog__list">
-          {summary.items.map((item) => (
-            <li key={item.id}>
-              <span>{item.name}</span>
-              <span>
-                {item.raw.toLocaleString()}
+        <div id="wocOverDesc">
+          {overRaw && (
+            <p className="woc-dialog__desc">
+              예상 원물 소요량은 약{" "}
+              <strong>
+                {Math.ceil(summary.rawTotal).toLocaleString()}
                 {unit}
-              </span>
-            </li>
-          ))}
-        </ul>
+              </strong>
+              로 계약된 투입원료 {summary.committed.toLocaleString()}
+              {unit}보다{" "}
+              <strong className="over">
+                {summary.overBy.toLocaleString()}
+                {unit}
+              </strong>{" "}
+              많습니다.
+            </p>
+          )}
 
-        <p className="woc-dialog__tip">지시수량을 줄이면 저장할 수 있습니다.</p>
+          {/* 헴프박 부족 안내 - 이 작업지시의 오일 부산물만 사용 가능 */}
+          {parkShort && (
+            <p className="woc-dialog__desc">
+              헴프박 연계 품목에 필요한 헴프박은 약{" "}
+              <strong>{Math.ceil(summary.parkDemand).toLocaleString()}kg</strong>인데, 이 작업지시의 헴프오일 라인에서
+              나오는 부산물(헴프박)은 약 <strong>{Math.floor(summary.parkSupply).toLocaleString()}kg</strong>뿐입니다.
+              <strong className="over">{summary.parkShortBy.toLocaleString()}kg</strong>이 부족합니다.
+            </p>
+          )}
+        </div>
+
+        {overRaw && (
+          <ul className="woc-dialog__list">
+            {summary.items.map((item) => (
+              <li key={item.id}>
+                <span>{item.name}</span>
+                <span>
+                  {item.raw.toLocaleString()}
+                  {unit}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <p className="woc-dialog__tip">
+          {overRaw && parkShort
+            ? "지시수량을 조정해 두 조건을 모두 맞추면 저장할 수 있습니다."
+            : parkShort
+              ? "헴프오일 라인의 지시수량을 늘리거나 헴프박 연계 품목의 지시수량을 줄이면 저장할 수 있습니다."
+              : "지시수량을 줄이면 저장할 수 있습니다."}
+        </p>
 
         <button type="button" className="woc-btn primary block" onClick={() => ref.current?.close()}>
           수량 수정하기
@@ -869,15 +903,15 @@ export function FoodWorkOrderCreatePage() {
     () =>
       estimate
         ? buildRawSummary(
-            estimate,
-            lines,
-            lineInfoById,
-            byproductsById,
-            rawOverrides,
-            parkOverrides,
-            orderDetail?.orderQty ?? 0,
-            rawUnit,
-          )
+          estimate,
+          lines,
+          lineInfoById,
+          byproductsById,
+          rawOverrides,
+          parkOverrides,
+          orderDetail?.orderQty ?? 0,
+          rawUnit,
+        )
         : EMPTY_SUMMARY,
     [estimate, lines, lineInfoById, byproductsById, rawOverrides, parkOverrides, orderDetail, rawUnit],
   );
@@ -938,13 +972,13 @@ export function FoodWorkOrderCreatePage() {
     focusFirstInvalid();
   }, [submitAttempt]);
 
-  /* ───── 초과 경고 ───── */
+  /* ───── 저장 불가 경고 팝업 (투입원료 초과 / 헴프박 부족) ───── */
 
   const openOverDialog = () => setIsOverDialogOpen(true);
 
   const closeOverDialog = () => {
     setIsOverDialogOpen(false);
-    window.setTimeout(focusFirstInvalid, 0); // 팝업을 닫으면 초과된 입력칸으로 포커스 이동
+    window.setTimeout(focusFirstInvalid, 0); // 팝업을 닫으면 초과/부족한 입력칸으로 포커스 이동
   };
 
   /* ───── 예상 투입원료(estimate) 계산 ───── */
@@ -1107,7 +1141,7 @@ export function FoodWorkOrderCreatePage() {
     navigate(-1);
   };
 
-  /* ───── 검증 (오류 문구는 저장 시도 후부터, 원료 초과는 실시간) ───── */
+  /* ───── 검증 (오류 문구는 저장 시도 후부터, 원료 초과/헴프박 부족은 실시간) ───── */
 
   const fieldErrors = {
     workDate: form.workDate ? "" : "작업일자를 입력해주세요.",
@@ -1125,7 +1159,12 @@ export function FoodWorkOrderCreatePage() {
     return result;
   }, [lines]);
 
-  const hasError = Object.values(fieldErrors).some(Boolean) || Object.keys(qtyErrors).length > 0 || summary.overRaw;
+  // 헴프박 부족(summary.parkShort)도 저장을 막는 오류에 포함한다 (재고로 충당할 수 없으므로)
+  const hasError =
+    Object.values(fieldErrors).some(Boolean) ||
+    Object.keys(qtyErrors).length > 0 ||
+    summary.overRaw ||
+    summary.parkShort;
 
   const showError = (msg: string) => (submitted ? msg : "");
 
@@ -1134,8 +1173,8 @@ export function FoodWorkOrderCreatePage() {
     setSubmitted(true);
 
     if (hasError) {
-      if (summary.overRaw) {
-        openOverDialog(); // 초과 팝업은 여기(저장 시도)에서만 띄운다
+      if (summary.overRaw || summary.parkShort) {
+        openOverDialog(); // 초과/헴프박 부족 팝업은 여기(저장 시도)에서만 띄운다
       } else {
         setSubmitAttempt((n) => n + 1);
       }
@@ -1170,6 +1209,9 @@ export function FoodWorkOrderCreatePage() {
   const remaining = summary.committed - summary.rawTotal;
   const usagePct = summary.committed > 0 ? Math.min(100, (summary.rawTotal / summary.committed) * 100) : 0;
   const isBusy = isSubmitting || isOrderLoading;
+
+  // 오일 라인이 아예 없으면 헴프박을 공급받을 곳이 없다 (재고도 없음)
+  const parkNoSource = summary.hasParkConsumer && !summary.hasOilLine;
 
   return (
     <section ref={rootRef} className="woc">
@@ -1319,6 +1361,9 @@ export function FoodWorkOrderCreatePage() {
                   const qtyError = qtyErrors[id];
                   const qtyInvalid = submitted && !!qtyError;
                   const rawInvalid = summary.overRaw && !isDerived && typeof rawValue === "number" && rawValue > 0;
+                  // 헴프박이 부족하면 헴프박 연계 품목의 필요 헴프박 입력칸을 오류로 표시한다
+                  const parkInvalid = summary.parkShort && isDerived && typeof rawValue === "number" && rawValue > 0;
+                  const fieldInvalid = rawInvalid || parkInvalid;
 
                   // 입력칸 단위: 일반 품목은 수주 투입원료 단위, 헴프박 연계 품목은 헴프박 단위(kg)
                   const rawFieldUnit = isDerived ? PARK_UNIT : rawUnit;
@@ -1330,9 +1375,9 @@ export function FoodWorkOrderCreatePage() {
                   // 자동계산 안내문에 단위를 붙인다 (예: "1KG 산출 기준 약 1.111KG")
                   const calcText =
                     typeof line.instructQty === "number" &&
-                    line.instructQty > 0 &&
-                    typeof rawValue === "number" &&
-                    !isManual
+                      line.instructQty > 0 &&
+                      typeof rawValue === "number" &&
+                      !isManual
                       ? `${line.instructQty.toLocaleString()}${line.unit ?? ""} 산출 기준 약 ${rawValue.toLocaleString()}${rawFieldUnit}`
                       : "";
 
@@ -1357,7 +1402,8 @@ export function FoodWorkOrderCreatePage() {
                   // ※ 자동 계산 근거(calcText)는 라벨 줄의 "자동 계산" 칩 옆에 표시하므로 여기에는 넣지 않는다
                   const notes: string[] = [];
                   if (isDerived && !est?.parkDerived) {
-                    notes.push("다른 품목 생산의 부산물(헴프박)을 이어받아 원물까지 환산하지 않습니다.");
+                    // 재고 헴프박이 없으므로, 이 작업지시 오일 라인의 부산물만 쓴다는 점을 안내한다
+                    notes.push("이 작업지시의 헴프오일 라인에서 나오는 부산물(헴프박)만 사용하며, 원물까지 환산하지 않습니다.");
                   }
                   if (serverNote) notes.push(serverNote);
 
@@ -1416,8 +1462,6 @@ export function FoodWorkOrderCreatePage() {
                             >
                               {sourceLabel}
                             </span>
-                            {/* 자동 계산 근거 - 칩 바로 옆에 붙여 "자동 계산 · 30L 산출 기준 약 167,800G" 처럼 읽히게 한다 */}
-                            {calcText && <span className="woc-src__calc">{calcText}</span>}
                             <button
                               type="button"
                               className={`woc-revert${isManual ? "" : " is-hidden"}`}
@@ -1441,16 +1485,21 @@ export function FoodWorkOrderCreatePage() {
                               value={rawValue}
                               placeholder={isEstimating && !est ? "계산 중..." : "직접 입력"}
                               disabled={isSubmitting}
-                              aria-invalid={rawInvalid}
-                              aria-describedby={rawInvalid ? `wocRawErr-${id}` : undefined}
+                              aria-invalid={fieldInvalid}
+                              aria-describedby={fieldInvalid ? `wocRawErr-${id}` : undefined}
                               onChange={(e) => handleRawChange(id, e.target.value, isDerived)}
                             />
                             {/* kg 고정 → 수주 투입원료 단위 (헴프박 연계 품목은 kg) */}
                             <span>{rawFieldUnit}</span>
                           </div>
-                          {rawInvalid ? (
+                          {/* 자동 계산 근거 - 입력칸 아래에 표시 (예: "34KG 산출 기준 약 37.8KG") */}
+                          {calcText && <span className="woc-src__calc">{calcText}</span>}
+                          {fieldInvalid ? (
                             <p id={`wocRawErr-${id}`} className="woc-field__error">
-                              계약 투입원료를 넘었습니다. 값을 줄여주세요.
+                              {parkInvalid
+                                ? // 재고로 충당할 수 없어 저장 불가
+                                `헴프박이 약 ${summary.parkShortBy.toLocaleString()}kg 부족합니다.`
+                                : "계약 투입원료를 넘었습니다. 값을 줄여주세요."}
                             </p>
                           ) : (
                             (est || isDerived) && <LineHint warnings={warnings} notes={notes} byproducts={byproducts} />
@@ -1513,6 +1562,7 @@ export function FoodWorkOrderCreatePage() {
 
                   {summary.hasParkConsumer && (
                     <div className="woc-usage__park">
+                      {/* 공급 = 이 작업지시 오일 라인의 부산물만 (재고 없음) */}
                       <span>헴프박 공급 / 수요</span>
                       <span>
                         {Math.floor(summary.parkSupply).toLocaleString()}kg / 약{" "}
@@ -1521,14 +1571,15 @@ export function FoodWorkOrderCreatePage() {
                     </div>
                   )}
 
-                  {summary.hasParkConsumer && !summary.hasOilLine && (
+                  {parkNoSource && (
                     <p className="woc-usage__msg warn">
-                      헴프오일 라인이 없어 헴프박 공급원이 없습니다. 재고 헴프박으로 충당하는지 확인하세요.
+                      헴프오일 라인이 없어 헴프박을 공급받을 수 없습니다. 이 작업지시에
+                      헴프오일 라인이 있어야 저장할 수 있습니다.
                     </p>
                   )}
-                  {summary.hasOilLine && summary.parkShort && (
+                  {!parkNoSource && summary.parkShort && (
                     <p className="woc-usage__msg warn">
-                      오일 부산물(헴프박)만으로는 부족합니다. 재고 헴프박이 추가로 필요할 수 있습니다.
+                      오일 부산물(헴프박)이 약 {summary.parkShortBy.toLocaleString()}kg 부족합니다. 지시수량을 조정해야 저장할 수 있습니다.
                     </p>
                   )}
                   {summary.hasUnknown && (
