@@ -8,6 +8,12 @@ import {
   BusinessPartnerApi,
   type BusinessPartnerCreateRequest
 } from "@/api/sales/BusinessPartner";
+import "@/pages/layout/Layout.css";
+
+type SummaryRow = {
+  label: string;
+  value: string;
+};
 
 export function SalesBusinessPartnerCreatePage() {
   const navigate = useNavigate();
@@ -98,73 +104,102 @@ export function SalesBusinessPartnerCreatePage() {
     }
   };
 
+  // ---- 요약 패널용 파생 값 ----
+  const summaryRows: SummaryRow[] = [
+    { label: "거래처코드", value: form.bpCode.trim() },
+    { label: "거래처명", value: form.bpNm?.trim() ?? "" },
+    { label: "대표자", value: form.ceoNm?.trim() ?? "" },
+    { label: "전화번호", value: form.phone?.trim() ?? "" },
+    { label: "주소", value: form.address?.trim() ?? "" },
+    { label: "담당자", value: form.managerNm?.trim() ?? "" },
+    { label: "담당연락처", value: form.managerPhone?.trim() ?? "" },
+  ];
+
   return (
     <section className="screenStack">
-      <div className="createCard">
-        <div className="createHeader">
-          <h1 className="createTitle">신규 거래처 등록</h1>
-          <span className="createMeta">* 표시는 필수 입력 항목입니다</span>
+      <form className="formPage" onSubmit={handleSubmit}>
+        <div className="formPageHead">
+          <h1 className="formPageTitle">신규 거래처 등록</h1>
+          <span className="formPageMeta">
+            <span className="required" aria-hidden="true">*</span> 표시는 필수 입력 항목입니다
+          </span>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="createBody">
-            {/* 기본 정보 섹션 */}
-            <div className="createSection">
-              <h2 className="createSectionTitle">기본정보</h2>
-              <div className="createGrid2Cols">
-                <div className="createField">
-                  <label className="requiredLabel">
-                    거래처코드 <span className="required">*</span>
+        <div className="formLayout">
+          {/* ===== 좌측: 입력 섹션 카드 ===== */}
+          <div className="formMain">
+            {/* 1. 기본정보 */}
+            <section className="formCard" aria-labelledby="bp-sec-basic">
+              <div className="formCardHead">
+                <div>
+                  <h2 className="formCardTitle" id="bp-sec-basic">기본정보</h2>
+                  <p className="formCardDesc">거래처를 구분하는 코드와 상호, 대표자, 연락처, 주소를 입력합니다.</p>
+                </div>
+              </div>
+
+              <div className="formGrid">
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="bp-code">
+                    거래처코드 <span className="required" aria-hidden="true">*</span>
                   </label>
                   <input
-                    className="tableInput"
+                    id="bp-code"
+                    className="formInput"
                     value={form.bpCode}
                     disabled={isSubmitting}
+                    aria-required="true"
+                    autoComplete="off"
                     onChange={(e) => handleChange("bpCode", e.target.value)}
                     placeholder="예: BP001"
                     maxLength={30}
                   />
                 </div>
 
-                <div className="createField">
-                  <label>거래처명</label>
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="bp-name">거래처명</label>
                   <input
-                    className="tableInput"
+                    id="bp-name"
+                    className="formInput"
                     value={form.bpNm ?? ""}
                     disabled={isSubmitting}
+                    autoComplete="off"
                     onChange={(e) => handleChange("bpNm", e.target.value)}
                     placeholder="예: (주)한국헴프"
                     maxLength={100}
                   />
                 </div>
 
-                <div className="createField">
-                  <label>대표자명</label>
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="bp-ceo">대표자명</label>
                   <input
-                    className="tableInput"
+                    id="bp-ceo"
+                    className="formInput"
                     value={form.ceoNm ?? ""}
                     disabled={isSubmitting}
+                    autoComplete="off"
                     onChange={(e) => handleChange("ceoNm", e.target.value)}
                     placeholder="예: 홍길동"
                     maxLength={50}
                   />
                 </div>
 
-                <div className="createField">
-                  <label>전화번호</label>
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="bp-phone">전화번호</label>
                   <input
-                    className="tableInput"
+                    id="bp-phone"
+                    className="formInput"
                     type="tel"
                     value={form.phone ?? ""}
                     disabled={isSubmitting}
+                    autoComplete="off"
                     onChange={(e) => handleChange("phone", e.target.value)}
                     placeholder="예: 02-1234-5678"
                     maxLength={30}
                   />
                 </div>
 
-                <div className="createField fullWidth">
-                  <label>주소</label>
+                <div className="formField col6">
+                  <span className="formLabel" id="bp-address-label">주소</span>
                   <AddressSearchInput
                     value={form.address ?? ""}
                     onChange={(val) => handleChange("address", val)}
@@ -173,52 +208,75 @@ export function SalesBusinessPartnerCreatePage() {
                   />
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* 담당자 정보 섹션 */}
-            <div className="createSection">
-              <h2 className="createSectionTitle">담당자 정보</h2>
-              <div className="createGrid2Cols">
-                <div className="createField">
-                  <label>담당자명</label>
+            {/* 2. 담당자 정보 */}
+            <section className="formCard" aria-labelledby="bp-sec-manager">
+              <div className="formCardHead">
+                <div>
+                  <h2 className="formCardTitle" id="bp-sec-manager">담당자 정보</h2>
+                  <p className="formCardDesc">거래처 담당자의 이름과 연락처를 입력합니다.</p>
+                </div>
+              </div>
+
+              <div className="formGrid">
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="bp-manager-name">담당자명</label>
                   <input
-                    className="tableInput"
+                    id="bp-manager-name"
+                    className="formInput"
                     value={form.managerNm ?? ""}
                     disabled={isSubmitting}
+                    autoComplete="off"
                     onChange={(e) => handleChange("managerNm", e.target.value)}
                     placeholder="예: 김담당"
                     maxLength={50}
                   />
                 </div>
 
-                <div className="createField">
-                  <label>담당자 연락처</label>
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="bp-manager-phone">담당자 연락처</label>
                   <input
-                    className="tableInput"
+                    id="bp-manager-phone"
+                    className="formInput"
                     type="tel"
                     value={form.managerPhone ?? ""}
                     disabled={isSubmitting}
+                    autoComplete="off"
                     onChange={(e) => handleChange("managerPhone", e.target.value)}
                     placeholder="예: 010-1234-5678"
                     maxLength={30}
                   />
                 </div>
               </div>
-            </div>
+            </section>
           </div>
 
-          {/* 하단 버튼 */}
-          <div className="createFooter">
-            <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
-              취소
-            </button>
-            <button type="submit" className="primaryButton" disabled={isSubmitting}>
-              {isSubmitting ? "등록 중..." : "등록"}
-            </button>
-          </div>
-        </form>
-      </div>
+          {/* ===== 우측: 요약 + 액션 ===== */}
+          <aside className="formCard formAside" aria-label="거래처 요약">
+            <section className="formAsideSection" aria-labelledby="bp-summary-title">
+              <h2 className="formCardTitle" id="bp-summary-title">거래처 요약</h2>
+              <dl className="formSummaryList">
+                {summaryRows.map((row) => (
+                  <div className="formSummaryRow" key={row.label}>
+                    <dt>{row.label}</dt>
+                    <dd className={row.value ? undefined : "isEmpty"}>{row.value || "미입력"}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+
+            <div className="formActions">
+              <button type="submit" className="primaryButton" disabled={isSubmitting}>
+                {isSubmitting ? "등록 중..." : "등록"}
+              </button>
+              <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
+                취소
+              </button>
+            </div>
+          </aside>
+        </div>
+      </form>
     </section>
   );
 }
-

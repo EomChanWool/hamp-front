@@ -1,0 +1,137 @@
+.selectBox {
+  position: relative;
+  min-width: 0;
+}
+
+.selectBox .selectBoxTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.selectBoxValue,
+.selectBoxPlaceholder {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.selectBoxPlaceholder {
+  color: var(--text-muted, #9aa3b0);
+}
+
+.selectBoxChevron {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted, #9aa3b0);
+  transition: transform 0.15s ease;
+}
+
+.selectBox .selectBoxTrigger[aria-expanded="true"] .selectBoxChevron {
+  transform: rotate(180deg);
+}
+
+.selectBoxPanel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  padding: 6px;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-strong, #c7cdd5);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="dark"] .selectBoxPanel {
+  border-color: #334155;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+}
+
+.selectBox .selectBoxSearch {
+  width: 100%;
+  box-sizing: border-box;
+  height: 38px;
+  margin-bottom: 6px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-heading, #14181f);
+  background: var(--ctl-bg);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  outline: none;
+}
+
+.selectBox .selectBoxSearch::placeholder {
+  color: var(--text-muted, #9aa3b0);
+}
+
+.selectBox .selectBoxSearch:focus-visible {
+  background: var(--bg-card, #ffffff);
+  border-color: var(--primary, #0052cc);
+  box-shadow: 0 0 0 3px var(--ctl-focus-ring);
+}
+
+.selectBoxList {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.selectBoxOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.selectBoxOption.isActive {
+  background: var(--ctl-bg);
+}
+
+.selectBoxOption.isSelected {
+  background: color-mix(in srgb, var(--primary, #0052cc) 10%, var(--bg-card, #ffffff));
+}
+
+.selectBoxOptionText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.selectBoxOptionLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-heading, #14181f);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.selectBoxOptionDesc {
+  font-size: 12px;
+  color: var(--text-muted, #9aa3b0);
+}
+
+.selectBoxCheck {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--primary, #0052cc);
+}
+
+.selectBoxEmpty {
+  padding: 16px 12px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--text-muted, #9aa3b0);
+}

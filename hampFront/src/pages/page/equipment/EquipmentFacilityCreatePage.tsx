@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type SyntheticEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import type {
@@ -17,7 +17,33 @@ import { useImageGallery } from "@/hooks/useImageGallery";
 import ImageGallery from "@components/common/ImageGallery";
 import ImageModal from "@components/modal/ImageModal";
 import UserMultiSelect from "@components/common/UserMultiSelect";
+import { SelectBox, type SelectBoxOption } from "@/components/common/SelectBox";
 import "@/pages/layout/Layout.css";
+
+const STATUS_OPTIONS: SelectBoxOption[] = [
+    { value: "0", label: "정지" },
+    { value: "1", label: "작동" },
+    { value: "2", label: "고장" },
+];
+
+// 요약 패널의 상태 칩 색상 (정지: 기본 / 작동: isOn / 고장: isError)
+const STATUS_CHIP: Record<string, string> = {
+    "0": "",
+    "1": "isOn",
+    "2": "isError",
+};
+
+const USE_OPTIONS: SelectBoxOption[] = [
+    { value: "true", label: "사용" },
+    { value: "false", label: "미사용" },
+];
+
+type SummaryRow = {
+    label: string;
+    value: string;
+    /** 값이 있으면 칩 형태로 표시 (상태용) */
+    chip?: string;
+};
 
 export function EquipmentFacilityCreatePage() {
     const navigate = useNavigate();
@@ -71,6 +97,27 @@ export function EquipmentFacilityCreatePage() {
         useYn: true,
         managerUserIds: [],
     });
+
+    // SelectBox용 옵션 (이름 + 코드 2줄 표기)
+    const equipmentSelectOptions = useMemo<SelectBoxOption[]>(
+        () =>
+            equipmentOptions.map((option) => ({
+                value: option.eqCode,
+                label: option.eqNm ?? option.eqCode,
+                description: option.eqCode,
+            })),
+        [equipmentOptions]
+    );
+
+    const factorySelectOptions = useMemo<SelectBoxOption[]>(
+        () =>
+            factoryZoneOptions.map((option) => ({
+                value: option.facCode,
+                label: option.facNm ?? option.facCode,
+                description: option.facCode,
+            })),
+        [factoryZoneOptions]
+    );
 
     const handleChange = (key: string, value: any) => {
         setForm((prev) => ({ ...prev, [key]: value }));
@@ -149,36 +196,53 @@ export function EquipmentFacilityCreatePage() {
         }
     };
 
+    // ---- 요약 패널용 파생 값 ----
+    const selectedEquipment = equipmentOptions.find((option) => option.eqCode === form.eqCode);
+    const selectedFactory = factoryZoneOptions.find((option) => option.facCode === form.facCode);
+    const statusKey = String(form.currentStatus);
+    const statusLabel = STATUS_OPTIONS.find((option) => option.value === statusKey)?.label ?? "";
+
+    const summaryRows: SummaryRow[] = [
+        { label: "설비코드", value: form.fcltCode.trim() },
+        { label: "설비명", value: form.fcltNm.trim() },
+        { label: "현재상태", value: statusLabel, chip: STATUS_CHIP[statusKey] ?? "" },
+        { label: "사용여부", value: form.useYn ? "사용" : "미사용" },
+        { label: "장비", value: selectedEquipment?.eqNm ?? "" },
+        { label: "공장", value: selectedFactory?.facNm ?? "" },
+        { label: "담당자", value: `${form.managerUserIds.length}명` },
+        { label: "이미지", value: `${gallery.newFiles.length}장` },
+    ];
+
     return (
         <section className="screenStack">
-            <form onSubmit={handleSubmit}>
-                {/* 01. 설비 사진 및 기본 정보 (담당자 포함) */}
-                <div className="facilityHeaderCard">
-                    <h2 className="createSectionTitle">설비 사진 및 기본 정보</h2>
-                    <div className="facilityHeaderTop">
-                        <div className="facilityImageCol">
-                            <ImageGallery
-                                images={gallery.images}
-                                activeIndex={gallery.activeIndex}
-                                onActiveIndexChange={gallery.setActiveIndex}
-                                onFilesSelected={gallery.addFiles}
-                                onRemove={gallery.removeAt}
-                                title="설비 이미지"
-                                showHeader={false}
-                                onPreviewClick={() => setIsModalOpen(true)}
-                            />
-                        </div>
+            <form className="formPage" onSubmit={handleSubmit}>
+                <div className="formPageHead">
+                    <h1 className="formPageTitle">신규 설비 등록</h1>
+                    <span className="formPageMeta">
+                        <span className="required" aria-hidden="true">*</span> 표시는 필수 입력 항목입니다
+                    </span>
+                </div>
 
-                        <div className="facilityCreateFieldsCol">
-                            {/* 설비코드 / 설비명 — 상세화면의 facilityTitleInput 영역에 대응하는
-                                등록 전용 필수 입력값이라 일반 필드(createField) 형태로 유지 */}
-                            <div className="facilityCreateFieldGrid">
-                                <div className="createField">
-                                    <label className="requiredLabel">
-                                        설비코드 <span className="required">*</span>
+                <div className="formLayout formLayout--media">
+                    {/* ===== 좌측: 입력 섹션 카드 ===== */}
+                    <div className="formMain">
+                        {/* 1. 기본정보 */}
+                        <section className="formCard" aria-labelledby="fclt-sec-basic">
+                            <div className="formCardHead">
+                                <div>
+                                    <h2 className="formCardTitle" id="fclt-sec-basic">기본정보</h2>
+                                    <p className="formCardDesc">설비를 구분하는 코드와 이름, 운영 상태를 입력합니다.</p>
+                                </div>
+                            </div>
+
+                            <div className="formGrid">
+                                <div className="formField col3">
+                                    <label className="formLabel" htmlFor="fclt-code">
+                                        설비코드 <span className="required" aria-hidden="true">*</span>
                                     </label>
                                     <input
-                                        className="tableInput"
+                                        id="fclt-code"
+                                        className="formInput"
                                         value={form.fcltCode}
                                         disabled={isSubmitting}
                                         onChange={(e) => handleChange("fcltCode", e.target.value)}
@@ -187,10 +251,11 @@ export function EquipmentFacilityCreatePage() {
                                     />
                                 </div>
 
-                                <div className="createField">
-                                    <label>설비명</label>
+                                <div className="formField col3">
+                                    <label className="formLabel" htmlFor="fclt-name">설비명</label>
                                     <input
-                                        className="tableInput"
+                                        id="fclt-name"
+                                        className="formInput"
                                         value={form.fcltNm}
                                         disabled={isSubmitting}
                                         onChange={(e) => handleChange("fcltNm", e.target.value)}
@@ -198,108 +263,146 @@ export function EquipmentFacilityCreatePage() {
                                         placeholder="예) HEMP 추출기"
                                     />
                                 </div>
-                            </div>
 
-                            {/* 현재상태 / 사용여부 / 담당자 — 하단 "장비/공장 정보" 섹션과 동일한
-                                인풋 폼 스타일(createField)로 통일하고, 담당자도 기본 2열 그리드
-                                안에 함께 배치한다 (더 이상 wide로 폭을 넓히지 않음) */}
-                            <div className="createGrid2Cols">
-                                <div className="createField">
-                                    <label>현재상태</label>
-                                    <select
-                                        className="tableInput"
-                                        value={form.currentStatus}
+                                <div className="formField col3">
+                                    <label className="formLabel" htmlFor="fclt-status">현재상태</label>
+                                    <SelectBox
+                                        id="fclt-status"
+                                        value={statusKey}
+                                        options={STATUS_OPTIONS}
                                         disabled={isSubmitting}
-                                        onChange={(e) => handleChange("currentStatus", e.target.value)}
-                                    >
-                                        <option value="0">정지</option>
-                                        <option value="1">작동</option>
-                                        <option value="2">고장</option>
-                                    </select>
+                                        onChange={(v) => handleChange("currentStatus", v)}
+                                    />
                                 </div>
 
-                                <div className="createField">
-                                    <label>사용여부</label>
-                                    <select
-                                        className="tableInput"
+                                <div className="formField col3">
+                                    <label className="formLabel" htmlFor="fclt-use">사용여부</label>
+                                    <SelectBox
+                                        id="fclt-use"
                                         value={form.useYn ? "true" : "false"}
+                                        options={USE_OPTIONS}
                                         disabled={isSubmitting}
-                                        onChange={(e) => handleChange("useYn", e.target.value === "true")}
-                                    >
-                                        <option value="true">사용</option>
-                                        <option value="false">미사용</option>
-                                    </select>
-                                </div>
-
-                                {/* 담당자 다중 선택 — 태그가 줄바꿈되며 세로로 늘어날 수 있어
-                                    2열 그리드 전체 폭을 차지하도록 fullWidth 적용 */}
-                                <div className="createField fullWidth">
-                                    <label>
-                                        담당자 (총 {userOptions.length}명 중 {form.managerUserIds.length}명 선택)
-                                    </label>
-                                    <UserMultiSelect
-                                        options={userOptions}
-                                        value={form.managerUserIds}
-                                        onChange={(userIds) => handleChange("managerUserIds", userIds)}
-                                        disabled={isSubmitting}
+                                        onChange={(v) => handleChange("useYn", v === "true")}
                                     />
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        </section>
 
-                {/* 02. 장비/공장 정보 */}
-                <div className="createCard">
-                    <div className="createBody">
-                        <div className="createSection">
-                            <h2 className="createSectionTitle">장비/공장 정보</h2>
-                            <div className="createGrid2Cols">
-                                <div className="createField">
-                                    <label>장비명</label>
-                                    <select
-                                        className="tableInput"
-                                        value={form.eqCode}
-                                        disabled={isSubmitting}
-                                        onChange={(e) => handleChange("eqCode", e.target.value)}
-                                    >
-                                        <option value="">장비를 선택해주세요</option>
-                                        {equipmentOptions.map((option) => (
-                                            <option key={option.eqCode} value={option.eqCode}>
-                                                {option.eqNm} ({option.eqCode})
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="createField">
-                                    <label>공장명</label>
-                                    <select
-                                        className="tableInput"
-                                        value={form.facCode}
-                                        disabled={isSubmitting}
-                                        onChange={(e) => handleChange("facCode", e.target.value)}
-                                    >
-                                        <option value="">공장을 선택해주세요</option>
-                                        {factoryZoneOptions.map((option) => (
-                                            <option key={option.facCode} value={option.facCode}>
-                                                {option.facNm} ({option.facCode})
-                                            </option>
-                                        ))}
-                                    </select>
+                        {/* 2. 장비/공장 정보 */}
+                        <section className="formCard" aria-labelledby="fclt-sec-place">
+                            <div className="formCardHead">
+                                <div>
+                                    <h2 className="formCardTitle" id="fclt-sec-place">장비/공장 정보</h2>
+                                    <p className="formCardDesc">설비가 속한 장비와 공장을 선택합니다.</p>
                                 </div>
                             </div>
-                        </div>
+
+                            <div className="formGrid">
+                                <div className="formField col3">
+                                    <label className="formLabel" htmlFor="fclt-eq">장비명</label>
+                                    <SelectBox
+                                        id="fclt-eq"
+                                        value={form.eqCode}
+                                        options={equipmentSelectOptions}
+                                        placeholder="장비를 선택해주세요"
+                                        searchPlaceholder="장비명 또는 코드 검색"
+                                        clearLabel="선택 안 함"
+                                        searchable
+                                        disabled={isSubmitting}
+                                        onChange={(v) => handleChange("eqCode", v)}
+                                    />
+                                </div>
+
+                                <div className="formField col3">
+                                    <label className="formLabel" htmlFor="fclt-fac">공장명</label>
+                                    <SelectBox
+                                        id="fclt-fac"
+                                        value={form.facCode}
+                                        options={factorySelectOptions}
+                                        placeholder="공장을 선택해주세요"
+                                        searchPlaceholder="공장명 또는 코드 검색"
+                                        clearLabel="선택 안 함"
+                                        searchable
+                                        disabled={isSubmitting}
+                                        onChange={(v) => handleChange("facCode", v)}
+                                    />
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* 3. 담당자 */}
+                        <section className="formCard" aria-labelledby="fclt-sec-manager">
+                            <div className="formCardHead">
+                                <div>
+                                    <h2 className="formCardTitle" id="fclt-sec-manager">담당자</h2>
+                                    <p className="formCardDesc">설비를 관리할 담당자를 선택합니다. 여러 명을 선택할 수 있습니다.</p>
+                                </div>
+                                <span className="formCardMeta">
+                                    총 {userOptions.length}명 중 {form.managerUserIds.length}명 선택
+                                </span>
+                            </div>
+
+                            <UserMultiSelect
+                                options={userOptions}
+                                value={form.managerUserIds}
+                                onChange={(userIds) => handleChange("managerUserIds", userIds)}
+                                disabled={isSubmitting}
+                            />
+                        </section>
                     </div>
 
-                    <div className="createFooter">
-                        <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
-                            취소
-                        </button>
-                        <button type="submit" className="primaryButton" disabled={isSubmitting}>
-                            {isSubmitting ? "등록 중..." : "등록"}
-                        </button>
-                    </div>
+                    {/* ===== 우측: 이미지 미리보기 + 요약 + 액션 ===== */}
+                    <aside className="formCard formAside" aria-label="설비 이미지 및 요약">
+                        <section className="formAsideSection" aria-labelledby="fclt-media-title">
+                            <h2 className="formCardTitle" id="fclt-media-title">설비 이미지</h2>
+                            <div className="formMedia">
+                                <ImageGallery
+                                    images={gallery.images}
+                                    activeIndex={gallery.activeIndex}
+                                    onActiveIndexChange={gallery.setActiveIndex}
+                                    onFilesSelected={gallery.addFiles}
+                                    onRemove={gallery.removeAt}
+                                    title="설비 이미지"
+                                    showHeader={false}
+                                    onPreviewClick={() => setIsModalOpen(true)}
+                                />
+                            </div>
+                        </section>
+
+                        <section className="formAsideSection" aria-labelledby="fclt-summary-title">
+                            <h2 className="formCardTitle" id="fclt-summary-title">설비 요약</h2>
+                            <dl className="formSummaryList">
+                                {summaryRows.map((row) => (
+                                    <div className="formSummaryRow" key={row.label}>
+                                        <dt>{row.label}</dt>
+                                        <dd className={row.value ? undefined : "isEmpty"}>
+                                            {row.value && row.chip !== undefined ? (
+                                                <span className={`formStatus${row.chip ? ` ${row.chip}` : ""}`}>
+                                                    {row.value}
+                                                </span>
+                                            ) : (
+                                                row.value || "미입력"
+                                            )}
+                                        </dd>
+                                    </div>
+                                ))}
+                            </dl>
+                        </section>
+
+                        <div className="formActions">
+                            <button type="submit" className="primaryButton" disabled={isSubmitting}>
+                                {isSubmitting ? "등록 중..." : "등록"}
+                            </button>
+                            <button
+                                type="button"
+                                className="ghostButton"
+                                onClick={handleCancel}
+                                disabled={isSubmitting}
+                            >
+                                취소
+                            </button>
+                        </div>
+                    </aside>
                 </div>
             </form>
 

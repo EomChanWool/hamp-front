@@ -34,26 +34,26 @@
 }
 
 .file-drop-zone__icon {
-    width: 56px;
-    height: 56px;
+    width: 40px;
+    height: 40px;
     display: grid;
     place-items: center;
-    border-radius: 14px;
+    border-radius: 10px;
     background: var(--primary-light, #dff7ec);
     color: #17875f;
-    font-size: 1.5rem;
+    font-size: 16px;
 }
 
 .file-drop-zone__main-text {
     margin-top: 4px;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     color: var(--text-heading, #14181f);
 }
 
 .file-drop-zone__sub-text {
     margin: 0;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-muted, #9aa3b0);
     line-height: 1.5;
 }
