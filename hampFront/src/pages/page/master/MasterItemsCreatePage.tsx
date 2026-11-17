@@ -82,7 +82,8 @@ export function MasterItemsCreatePage() {
   });
 
   // [중복 공정 지원]
-  const { routings, restoreRoutings, clearRoutings, syncRoutings, removeRouting, moveRouting, setStepMaterials } = useItemRoutings();
+  const { routings, restoreRoutings, clearRoutings, syncRoutings, removeRouting, moveRouting, setStepMaterials } =
+    useItemRoutings();
 
   // 원료로 변경하면서 초기화된 라우팅을 임시 보관 (반제품/완제품으로 돌아오면 복원)
   const removedRoutingsRef = useRef<RoutingStep[] | null>(null);
@@ -569,11 +570,7 @@ export function MasterItemsCreatePage() {
 
                             <div className="routing-item-right">
                               <span className={`routing-type-badge ${isFinal ? "is-final" : ""}`}>
-                                {isFinal
-                                  ? "최종공정"
-                                  : matchedOp && OPER_TYPE_LABEL[matchedOp.operType]
-                                    ? `${OPER_TYPE_LABEL[matchedOp.operType]}공정`
-                                    : ""}
+                                {getRoutingTypeLabel(route.finalYn, matchedOp)}
                               </span>
 
                               <div className="routing-arrow-group">
@@ -683,7 +680,7 @@ export function MasterItemsCreatePage() {
                                 id="routing-oper-final"
                                 type="text"
                                 className="formInput"
-                                value={selectedRouting.finalYn === "Y" ? "최종공정" : "일반공정"}
+                                value={getRoutingTypeLabel(selectedRouting.finalYn, selectedMatchedOp)}
                                 disabled
                                 title="마지막 공정이 자동으로 최종공정이 됩니다"
                               />

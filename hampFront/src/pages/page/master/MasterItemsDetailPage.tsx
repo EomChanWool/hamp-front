@@ -93,7 +93,7 @@ export function MasterItemsDetailPage() {
         if (prevCategory !== "0" && routings.length > 0) {
           const ok = window.confirm(
             "원료는 공정 라우팅을 사용하지 않아 설정한 공정과 자재 정보가 초기화됩니다.\n" +
-            "(다시 반제품/완제품으로 변경하면 복원되며, 저장 전에는 서버 데이터에 영향이 없습니다)\n\n계속하시겠습니까?"
+              "(다시 반제품/완제품으로 변경하면 복원되며, 저장 전에는 서버 데이터에 영향이 없습니다)\n\n계속하시겠습니까?"
           );
           // 취소 → 품목구분 변경 자체를 막아 기존 라우팅 유지
           if (!ok) return;
@@ -661,7 +661,7 @@ export function MasterItemsDetailPage() {
 
                         <div className="routing-item-right">
                           <span className={`routing-type-badge ${isFinal ? "is-final" : ""}`}>
-                            {isFinal ? "최종공정" : matchedOp && OPER_TYPE_LABEL[matchedOp.operType] ? `${OPER_TYPE_LABEL[matchedOp.operType]}공정` : ""}
+                            {getRoutingTypeLabel(route.finalYn, matchedOp)}
                           </span>
 
                           <div className="routing-arrow-group">
@@ -867,7 +867,7 @@ export function MasterItemsDetailPage() {
 
                       <div className="routing-item-right">
                         <span className={`routing-type-badge ${isFinal ? "is-final" : ""}`}>
-                          {isFinal ? "최종공정" : matchedOp && OPER_TYPE_LABEL[matchedOp.operType] ? `${OPER_TYPE_LABEL[matchedOp.operType]}공정` : ""}
+                          {getRoutingTypeLabel(route.finalYn, matchedOp)}
                         </span>
                       </div>
                     </div>
