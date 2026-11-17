@@ -32,6 +32,15 @@ interface OperationOption {
   operType: OperType;
 }
 
+/** 라우팅 단계 공정구분 라벨 — 마지막 단계는 최종공정, 그 외는 공정 유형별 라벨 */
+const getRoutingTypeLabel = (finalYn: string | undefined, matchedOp?: OperationOption | null): string => {
+  if (finalYn === "Y") return "최종공정";
+  if (matchedOp && OPER_TYPE_LABEL[matchedOp.operType]) {
+    return `${OPER_TYPE_LABEL[matchedOp.operType]}공정`;
+  }
+  return "";
+};
+
 export function MasterItemsDetailPage() {
   const { itemCode } = useParams<{ itemCode: string }>();
   const navigate = useNavigate();
@@ -624,7 +633,7 @@ export function MasterItemsDetailPage() {
 
                         <div className="routing-item-right">
                           <span className={`routing-type-badge ${isFinal ? "is-final" : ""}`}>
-                            {isFinal ? "최종공정" : matchedOp && OPER_TYPE_LABEL[matchedOp.operType] ? `${OPER_TYPE_LABEL[matchedOp.operType]}공정` : ""}
+                            {getRoutingTypeLabel(route.finalYn, matchedOp)}
                           </span>
 
                           <div className="routing-arrow-group">
@@ -727,16 +736,14 @@ export function MasterItemsDetailPage() {
 
                         <div className="routing-form-group">
                           <label className="routing-label">공정구분</label>
-                          {/* 최종공정은 훅에서 "마지막 공정"으로 자동 지정되므로 직접 변경 불가(읽기 전용) */}
-                          <select
-                            className="tableInput routing-select"
-                            value={selectedRouting.finalYn ?? "N"}
+                          {/* 최종공정은 훅에서 "마지막 공정"으로 자동 지정되므로 직접 변경 불가 → 선택 UI 대신 읽기 전용 표시 */}
+                          <input
+                            type="text"
+                            className="tableInput routing-input-readonly"
+                            value={getRoutingTypeLabel(selectedRouting.finalYn, selectedMatchedOp)}
                             disabled
                             title="마지막 공정이 자동으로 최종공정이 됩니다"
-                          >
-                            <option value="N">일반공정</option>
-                            <option value="Y">최종공정</option>
-                          </select>
+                          />
                           <div className="routing-guide-text">마지막 공정이 자동으로 최종공정입니다</div>
                         </div>
                       </div>
@@ -832,7 +839,7 @@ export function MasterItemsDetailPage() {
 
                       <div className="routing-item-right">
                         <span className={`routing-type-badge ${isFinal ? "is-final" : ""}`}>
-                          {isFinal ? "최종공정" : matchedOp && OPER_TYPE_LABEL[matchedOp.operType] ? `${OPER_TYPE_LABEL[matchedOp.operType]}공정` : ""}
+                          {getRoutingTypeLabel(route.finalYn, matchedOp)}
                         </span>
                       </div>
                     </div>
