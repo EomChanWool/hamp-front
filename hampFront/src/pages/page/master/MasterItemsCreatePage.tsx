@@ -47,6 +47,15 @@ const CATEGORY_SUB_DESC: Record<string, string> = {
 /** 라벨 맵에서 키(문자열)로 라벨 조회 — 미선택/미존재 시 빈 문자열 */
 const labelOf = (map: object, key: string): string => (map as Record<string, string>)[key] ?? "";
 
+/** 라우팅 단계 공정구분 라벨 — 마지막 단계는 최종공정, 그 외는 공정 유형별 라벨 */
+const getRoutingTypeLabel = (finalYn: string | undefined, matchedOp?: OperationOption | null): string => {
+  if (finalYn === "Y") return "최종공정";
+  if (matchedOp && OPER_TYPE_LABEL[matchedOp.operType]) {
+    return `${OPER_TYPE_LABEL[matchedOp.operType]}공정`;
+  }
+  return "";
+};
+
 export function MasterItemsCreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -537,11 +546,7 @@ export function MasterItemsCreatePage() {
 
                             <div className="routing-item-right">
                               <span className={`routing-type-badge ${isFinal ? "is-final" : ""}`}>
-                                {isFinal
-                                  ? "최종공정"
-                                  : matchedOp && OPER_TYPE_LABEL[matchedOp.operType]
-                                    ? `${OPER_TYPE_LABEL[matchedOp.operType]}공정`
-                                    : ""}
+                                {getRoutingTypeLabel(route.finalYn, matchedOp)}
                               </span>
 
                               <div className="routing-arrow-group">
@@ -651,7 +656,7 @@ export function MasterItemsCreatePage() {
                                 id="routing-oper-final"
                                 type="text"
                                 className="formInput"
-                                value={selectedRouting.finalYn === "Y" ? "최종공정" : "일반공정"}
+                                value={getRoutingTypeLabel(selectedRouting.finalYn, selectedMatchedOp)}
                                 disabled
                                 title="마지막 공정이 자동으로 최종공정이 됩니다"
                               />
