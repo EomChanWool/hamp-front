@@ -6,6 +6,7 @@ import type { AuthGroupResponse } from "@/api/auth/Auth";
 import { AuthGroupApi } from "@/api/auth/Auth";
 import { UserApi } from "@/api/User";
 import { isValidPhone } from "@/utils/common";
+import "@/pages/layout/Layout.css";
 import './SystemUser.css';
 
 export function SystemUsersCreatePage() {
@@ -131,119 +132,180 @@ export function SystemUsersCreatePage() {
     }
   };
 
+  const selectedCount = form.authIds?.length ?? 0;
+
+  // ---- 요약 패널용 파생 값 ----
+  const selectedAuthNames = authGroups
+    .filter((auth) => form.authIds?.includes(auth.authId))
+    .map((auth) => auth.authNm)
+    .join(", ");
+
+  const summaryRows: { label: string; value: string }[] = [
+    { label: "사용자ID", value: form.userId.trim() },
+    { label: "이름", value: form.userNm.trim() },
+    { label: "전화번호", value: form.phone?.trim() ?? "" },
+    { label: "직책", value: form.position?.trim() ?? "" },
+    { label: "권한 그룹", value: selectedAuthNames },
+  ];
+
   return (
     <section className="screenStack">
-      <div className="createCard">
-        <div className="createHeader">
-          <h1 className="createTitle">신규 사용자 등록</h1>
-          <span className="createMeta">* 표시는 필수 입력 항목입니다</span>
+      <form className="formPage" onSubmit={handleSubmit}>
+        <div className="formPageHead">
+          <h1 className="formPageTitle">신규 사용자 등록</h1>
+          <span className="formPageMeta">
+            <span className="required" aria-hidden="true">*</span> 표시는 필수 입력 항목입니다
+          </span>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="createBody">
-            {/* 1. 기본 정보 섹션 */}
-            <div className="createSection">
-              <h2 className="createSectionTitle">기본정보</h2>
-              <div className="createGrid2Cols">
-                <div className="createField">
-                  <label className="requiredLabel">
-                    사용자ID <span className="required">*</span>
+        <div className="formLayout">
+          <div className="formMain">
+            {/* 1. 기본정보 */}
+            <section className="formCard" aria-labelledby="user-sec-basic">
+              <div className="formCardHead">
+                <div>
+                  <h2 className="formCardTitle" id="user-sec-basic">기본정보</h2>
+                  <p className="formCardDesc">사용자를 구분하는 ID와 이름, 연락처, 직책을 입력합니다.</p>
+                </div>
+              </div>
+
+              <div className="formGrid">
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="user-id">
+                    사용자ID <span className="required" aria-hidden="true">*</span>
                   </label>
                   <input
-                    className="tableInput"
+                    id="user-id"
+                    className="formInput"
                     value={form.userId}
                     disabled={isSubmitting}
+                    aria-required="true"
+                    autoComplete="off"
                     onChange={(e) => handleChange("userId", e.target.value)}
                     placeholder="아이디 입력"
                   />
                 </div>
 
-                <div className="createField">
-                  <label className="requiredLabel">
-                    이름 <span className="required">*</span>
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="user-name">
+                    이름 <span className="required" aria-hidden="true">*</span>
                   </label>
                   <input
-                    className="tableInput"
+                    id="user-name"
+                    className="formInput"
                     value={form.userNm}
                     disabled={isSubmitting}
+                    aria-required="true"
+                    autoComplete="off"
                     onChange={(e) => handleChange("userNm", e.target.value)}
                     placeholder="이름 입력"
                   />
                 </div>
 
-                <div className="createField">
-                  <label>전화번호</label>
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="user-phone">전화번호</label>
                   <input
-                    className="tableInput"
+                    id="user-phone"
+                    className="formInput"
+                    type="tel"
                     value={form.phone ?? ""}
                     disabled={isSubmitting}
+                    autoComplete="off"
                     onChange={(e) => handleChange("phone", e.target.value)}
                     placeholder="010-0000-0000"
                   />
                 </div>
 
-                <div className="createField">
-                  <label>직책</label>
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="user-position">직책</label>
                   <input
-                    className="tableInput"
+                    id="user-position"
+                    className="formInput"
                     value={form.position ?? ""}
                     disabled={isSubmitting}
+                    autoComplete="off"
                     onChange={(e) => handleChange("position", e.target.value)}
                     placeholder="직책 입력"
                   />
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* 2. 권한 정보 섹션 */}
-            <div className="createSection">
-              <h2 className="createSectionTitle">권한정보</h2>
-              <div className="createField authGroupField">
-                <label className="requiredLabel">
-                  권한 그룹 <span className="required">*</span>
-                </label>
-
-                {isLoadingGroups ? (
-                  <div className="authGroupEmpty">권한 그룹 목록을 불러오는 중...</div>
-                ) : authGroups.length === 0 ? (
-                  <div className="authGroupEmpty">선택 가능한 권한 그룹이 없습니다.</div>
-                ) : (
-                  <div className="cardButtonGroup" style={{ flexWrap: 'wrap' }}>
-                    {authGroups.map((auth) => {
-                      const isChecked = form.authIds?.includes(auth.authId) ?? false;
-                      return (
-                        <div
-                          key={auth.authId}
-                          className={`typeCardButton ${isChecked ? "active" : ""}`}
-                          onClick={() => {
-                            if (isSubmitting) return;
-                            handleAuthCheck(auth.authId, !isChecked);
-                          }}
-                          style={{ cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
-                        >
-                          <div className="cardText main">{auth.authNm}</div>
-                          {auth.authDesc && (
-                            <div className="cardText sub">{auth.authDesc}</div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+            {/* 2. 권한정보 */}
+            <section className="formCard" aria-labelledby="user-sec-auth">
+              <div className="formCardHead">
+                <div>
+                  <h2 className="formCardTitle" id="user-sec-auth">
+                    권한정보 <span className="required" aria-hidden="true">*</span>
+                  </h2>
+                  <p className="formCardDesc">사용자에게 부여할 권한 그룹을 선택합니다. 여러 개를 선택할 수 있습니다.</p>
+                </div>
+                <span className="formCardMeta">
+                  총 {authGroups.length}개 중 {selectedCount}개 선택
+                </span>
               </div>
-            </div>
-          </div>
 
-          <div className="createFooter">
-            <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
-              취소
-            </button>
-            <button type="submit" className="primaryButton" disabled={isSubmitting}>
-              {isSubmitting ? "등록 중..." : "등록"}
-            </button>
+              {isLoadingGroups ? (
+                <div className="formEmpty">
+                  <div className="formEmptyTitle">권한 그룹 목록을 불러오는 중입니다</div>
+                </div>
+              ) : authGroups.length === 0 ? (
+                <div className="formEmpty">
+                  <div className="formEmptyTitle">선택 가능한 권한 그룹이 없습니다</div>
+                  <p className="formEmptyDesc">권한 그룹을 먼저 등록한 뒤 사용자를 등록해주세요.</p>
+                </div>
+              ) : (
+                <div
+                  className="cardButtonGroup"
+                  style={{ flexWrap: "wrap" }}
+                  role="group"
+                  aria-labelledby="user-sec-auth"
+                >
+                  {authGroups.map((auth) => {
+                    const isChecked = form.authIds?.includes(auth.authId) ?? false;
+                    return (
+                      <button
+                        key={auth.authId}
+                        type="button"
+                        className={`typeCardButton ${isChecked ? "active" : ""}`}
+                        aria-pressed={isChecked}
+                        disabled={isSubmitting}
+                        onClick={() => handleAuthCheck(auth.authId, !isChecked)}
+                      >
+                        <span className="cardText main">{auth.authNm}</span>
+                        {auth.authDesc && <span className="cardText sub">{auth.authDesc}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
           </div>
-        </form>
-      </div>
+          {/* ===== 우측: 요약 + 액션 ===== */}
+          <aside className="formCard formAside" aria-label="사용자 요약">
+            <section className="formAsideSection" aria-labelledby="user-summary-title">
+              <h2 className="formCardTitle" id="user-summary-title">사용자 요약</h2>
+              <dl className="formSummaryList">
+                {summaryRows.map((row) => (
+                  <div className="formSummaryRow" key={row.label}>
+                    <dt>{row.label}</dt>
+                    <dd className={row.value ? undefined : "isEmpty"}>{row.value || "미입력"}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+
+            <div className="formActions">
+              <button type="submit" className="primaryButton" disabled={isSubmitting}>
+                {isSubmitting ? "등록 중..." : "등록"}
+              </button>
+              <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
+                취소
+              </button>
+            </div>
+          </aside>
+        </div>
+      </form>
     </section>
   );
 }

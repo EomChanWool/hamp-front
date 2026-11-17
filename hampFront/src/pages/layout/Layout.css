@@ -7,7 +7,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 12px 24px 16px 18px;
+  padding: 12px 30px 16px 18px;
   background: transparent;
   flex-shrink: 0;
   z-index: 10;
@@ -1195,283 +1195,6 @@
   outline-offset: 2px;
 }
 
-/* ================================
-   신규 등록 페이지 전용 스타일
-================================ */
-.createCard {
-  --create-pad-x: 32px;
-  --create-ctl-border: var(--border-strong, #c7cdd5);
-  --create-required: #c0293d;
-
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-card, #ffffff);
-  border: 1px solid var(--border, #e2e8f0);
-  border-radius: 12px;
-  overflow: clip; /* hidden이면 sticky footer가 안 먹음 */
-}
-
-[data-theme="dark"] .createCard {
-  --create-ctl-border: #3a4150;
-  --create-required: #f87171;
-}
-
-.createHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding: 24px var(--create-pad-x);
-  border-bottom: 1px solid var(--border, #e2e8f0);
-}
-
-.createTitle {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.3;
-  letter-spacing: -0.01em;
-  color: var(--text-heading, #14181f);
-}
-
-.createMeta {
-  font-size: 13px;
-  color: var(--text-muted, #9aa3b0);
-}
-
-.createMeta .required,
-.createField label .required {
-  margin-left: 2px;
-  color: var(--create-required);
-}
-
-/* 섹션: 박스 대신 헤어라인으로 구분 */
-.createBody {
-  display: flex;
-  flex-direction: column;
-}
-
-.createSection {
-  padding: 28px var(--create-pad-x);
-}
-
-.createSection + .createSection {
-  border-top: 1px solid var(--border, #e3e6ea);
-}
-
-.createSectionTitle {
-  margin: 0 0 20px;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.4;
-  color: var(--text-heading, #14181f);
-}
-
-.createGrid2Cols {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px 24px;
-  align-items: start;
-}
-
-.createGrid3Cols {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px 24px;
-  align-items: start;
-}
-
-.createField {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.createField.fullWidth {
-  grid-column: 1 / -1;
-}
-
-.createField label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-body, #5b6472);
-}
-
-.createField label.requiredLabel {
-  color: var(--text-heading, #14181f);
-}
-
-.optionalLabel {
-  margin-left: 4px;
-  font-weight: 400;
-  color: var(--text-muted, #9aa3b0);
-}
-
-/* 입력 컨트롤: 높이 40 / 폰트 14 통일 */
-.createField > .tableInput {
-  width: 100%;
-  box-sizing: border-box;
-  height: 40px;
-  padding: 0 12px;
-  font-size: 14px;
-  color: var(--text-heading, #14181f);
-  background: var(--bg-subtle, #fcfcfb);
-  border: 1px solid var(--create-ctl-border);
-  border-radius: 8px;
-  outline: none;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    background 0.15s ease;
-}
-
-.createField > .tableInput::placeholder {
-  color: var(--text-muted, #9aa3b0);
-}
-
-.createField > .tableInput:hover:not(:disabled) {
-  border-color: var(--text-muted, #9aa3b0);
-}
-
-.createField > .tableInput:focus-visible {
-  background: var(--bg-card, #ffffff);
-  border-color: var(--primary, #0052cc);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary, #0052cc) 18%, transparent);
-}
-
-.createField > .tableInput:disabled {
-  color: var(--text-muted, #9aa3b0);
-  background: var(--border, #e3e6ea);
-  cursor: not-allowed;
-}
-
-/* 푸터: 긴 폼에서도 항상 보이도록 하단 고정 */
-.createFooter {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 8px;
-  padding: 16px var(--create-pad-x);
-  border-top: 1px solid var(--border, #e3e6ea);
-  background: var(--bg-subtle, #fcfcfb);
-}
-
-.createFooter button {
-  min-width: 88px;
-  height: 40px;
-}
-
-/* ---- create 반응형 (변수만 바꿈) ---- */
-@container content (max-width: 1024px) {
-  .createCard {
-    --create-pad-x: 24px;
-  }
-}
-
-@container content (max-width: 640px) {
-  .createCard {
-    --create-pad-x: 20px;
-  }
-
-  .createHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
-
-  .createSection {
-    padding-block: 24px;
-  }
-
-  .createGrid2Cols,
-  .createGrid3Cols {
-    grid-template-columns: 1fr;
-  }
-}
-
-@container content (max-width: 600px) {
-  .createTitle {
-    font-size: 20px;
-  }
-}
-
-.createField .cardButtonGroup {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  gap: 8px;
-}
-
-.createField .inlineTypeButton,
-.createField .typeCardButton {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-height: 60px;
-  padding: 8px 12px;
-  color: var(--text-body, #5b6472);
-  background: var(--bg-subtle, #fcfcfb);
-  border: 1px solid var(--create-ctl-border);
-  border-radius: 8px;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    color 0.15s ease;
-}
-
-.createField .inlineTypeButton:hover:not(:disabled),
-.createField .typeCardButton:hover:not(:disabled) {
-  color: var(--text-heading, #14181f);
-  border-color: var(--text-muted, #9aa3b0);
-}
-
-/* 선택 상태: 테두리 2px처럼 보이게 inset (레이아웃 밀림 없음) */
-.createField .inlineTypeButton.active,
-.createField .typeCardButton.active {
-  color: var(--text-heading, #14181f);
-  background: color-mix(in srgb, var(--primary, #0052cc) 8%, var(--bg-card, #fff));
-  border-color: var(--primary, #0052cc);
-  box-shadow: inset 0 0 0 1px var(--primary, #0052cc);
-}
-
-.createField .inlineTypeButton:focus-visible,
-.createField .typeCardButton:focus-visible {
-  outline: 2px solid var(--primary, #0052cc);
-  outline-offset: 2px;
-}
-
-.createField .inlineTypeButton:disabled,
-.createField .typeCardButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.createField .inlineButtonInner {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.createField .cardIcon svg {
-  width: 20px;
-  height: 20px;
-}
-
-.createField .cardText {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.createField .cardText.sub {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--text-muted, #9aa3b0);
-}
-
 /* ==========================================
    FacilityHeaderCard — 설비 상세보기 / 설비 등록 상단 카드
    ========================================== */
@@ -2209,18 +1932,6 @@
     grid-template-columns: 1fr;
   }
 
-  .facilityCreateFieldsCol .createGrid2Cols {
-    grid-template-columns: 1fr;
-  }
-
-  .facilityCreateFieldsCol .createGrid3Cols {
-    grid-template-columns: 1fr;
-  }
-
-  .facilityCreateFieldGrid {
-    grid-template-columns: 1fr;
-  }
-
   .barcodeActionBtn {
     width: 100%;
     margin-left: 0;
@@ -2242,29 +1953,6 @@
   }
 
   .detailCard .detailFooter {
-    padding: 20px;
-  }
-
-  .createHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
-    padding: 24px 20px 20px;
-  }
-
-  .createGrid2Cols {
-    grid-template-columns: 1fr;
-  }
-
-  .createGrid3Cols {
-    grid-template-columns: 1fr;
-  }
-
-  .createBody {
-    padding: 20px;
-  }
-
-  .createFooter {
     padding: 20px;
   }
 }
@@ -2296,5 +1984,706 @@
   .navGroupHeader,
   .navItems {
     transition: none;
+  }
+}
+
+/* ================================================================
+   공용 폼 키트 (form*) + SelectBox
+   → Layout.scss의 createCard 블록 아래에 추가 (이전 orderCreate.scss 블록은 삭제)
+   ※ createCard 등 기존 공용 클래스는 건드리지 않음
+================================================================ */
+
+.formPage,
+.selectBox {
+  --ctl-h: 44px;
+  --ctl-bg: color-mix(in srgb, var(--text-heading, #14181f) 4%, var(--bg-card, #ffffff));
+  --ctl-bg-hover: color-mix(in srgb, var(--text-heading, #14181f) 7%, var(--bg-card, #ffffff));
+  --ctl-focus-ring: color-mix(in srgb, var(--primary, #0052cc) 18%, transparent);
+  --ctl-danger: #c0293d;
+}
+
+[data-theme="dark"] .formPage,
+[data-theme="dark"] .selectBox {
+  --ctl-danger: #f87171;
+}
+
+.formPage {
+  --oc-card-pad: 24px;
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ---------- 헤더 ---------- */
+.formPageHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.formPageTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--text-heading, #14181f);
+}
+
+.formPageMeta {
+  font-size: 13px;
+  color: var(--text-muted, #9aa3b0);
+}
+
+.formPage .required {
+  color: var(--ctl-danger);
+}
+
+/* ---------- 레이아웃: 좌측 폼 + 우측 요약 ---------- */
+.formLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--form-aside-w, 400px);
+  gap: 20px;
+  align-items: start;
+}
+
+.formMain {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* ---------- 섹션 카드 ---------- */
+.formCard {
+  padding: var(--oc-card-pad, 24px);
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border, #e3e6ea);
+  border-radius: 12px;
+}
+
+.formCardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.formCardTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--text-heading, #14181f);
+}
+
+.formCardDesc {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted, #9aa3b0);
+}
+
+/* ---------- 필드 그리드 (6칸) ---------- */
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 20px 16px;
+  align-items: start;
+}
+
+.formGrid > .col2 { grid-column: span 2; }
+.formGrid > .col3 { grid-column: span 3; }
+.formGrid > .col4 { grid-column: span 4; }
+.formGrid > .col6 { grid-column: 1 / -1; }
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.formLabel {
+  display: flex;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-body, #5b6472);
+}
+
+/* ---------- 입력 컨트롤 (input / SelectBox 트리거 공통) ---------- */
+.formPage .formInput,
+.selectBox .selectBoxTrigger {
+  width: 100%;
+  box-sizing: border-box;
+  height: var(--ctl-h);
+  padding: 0 14px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-heading, #14181f);
+  background: var(--ctl-bg);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  outline: none;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.formPage .formInput::placeholder {
+  color: var(--text-muted, #9aa3b0);
+}
+
+.formPage .formInput:hover:not(:disabled),
+.selectBox .selectBoxTrigger:hover:not(:disabled) {
+  background: var(--ctl-bg-hover);
+}
+
+.formPage .formInput:focus-visible,
+.selectBox .selectBoxTrigger:focus-visible,
+.selectBox .selectBoxTrigger[aria-expanded="true"] {
+  background: var(--bg-card, #ffffff);
+  border-color: var(--primary, #0052cc);
+  box-shadow: 0 0 0 3px var(--ctl-focus-ring);
+}
+
+.formPage .formInput:disabled,
+.selectBox .selectBoxTrigger:disabled {
+  color: var(--text-muted, #9aa3b0);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+[data-theme="dark"] .formPage .formInput {
+  color-scheme: dark;
+}
+
+/* 단위 suffix (입력칸 안쪽 우측) */
+.formInputWrap {
+  position: relative;
+  min-width: 0;
+}
+
+.formPage .formInput.hasSuffix {
+  padding-right: 48px;
+  text-align: right;
+}
+
+.formInputSuffix {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--text-muted, #9aa3b0);
+  pointer-events: none;
+}
+
+.formPage .formInput.formTextarea {
+  height: auto;
+  min-height: 96px;
+  padding: 12px 14px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+/* ---------- 생산 품목 행 리스트 (SalesOrderCreatePage 전용: orderLine*) ---------- */
+.orderLineHead,
+.orderLineRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px 44px;
+  gap: 12px;
+  align-items: center;
+}
+
+.orderLineHead {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-body, #5b6472);
+}
+
+.orderLineList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.formIconBtn {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--text-muted, #9aa3b0);
+  background: transparent;
+  border: 1px solid var(--border, #e3e6ea);
+  border-radius: 10px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.formIconBtn:hover:not(:disabled) {
+  color: var(--ctl-danger);
+  border-color: color-mix(in srgb, var(--ctl-danger) 40%, transparent);
+  background: color-mix(in srgb, var(--ctl-danger) 8%, transparent);
+}
+
+.formIconBtn:focus-visible {
+  outline: 2px solid var(--primary, #0052cc);
+  outline-offset: 2px;
+}
+
+.formIconBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 빈 상태 */
+.formEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 32px 20px;
+  text-align: center;
+  background: var(--bg-subtle, #fcfcfb);
+  border: 1px dashed var(--border-strong, #c7cdd5);
+  border-radius: 10px;
+}
+
+.formEmptyIcon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 4px;
+  color: var(--primary, #0052cc);
+  background: color-mix(in srgb, var(--primary, #0052cc) 10%, var(--bg-card, #ffffff));
+  border-radius: 12px;
+}
+
+.formEmptyTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-heading, #14181f);
+}
+
+.formEmptyDesc {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--text-muted, #9aa3b0);
+}
+
+/* ---------- 우측 요약 패널 ---------- */
+.formAside {
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formProgressText {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--text-body, #5b6472);
+}
+
+.formProgressText strong {
+  font-size: 14px;
+  color: var(--text-heading, #14181f);
+}
+
+.formProgressBar {
+  height: 6px;
+  overflow: hidden;
+  background: var(--ctl-bg-hover);
+  border-radius: 999px;
+}
+
+.formProgressFill {
+  height: 100%;
+  background: var(--primary, #0052cc);
+  border-radius: inherit;
+  transition: width 0.25s ease;
+}
+
+.formSummaryList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 16px;
+  background: var(--ctl-bg);
+  border-radius: 10px;
+}
+
+.formSummaryRow {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.formSummaryRow dt {
+  font-size: 13px;
+  color: var(--text-muted, #9aa3b0);
+}
+
+.formSummaryRow dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-heading, #14181f);
+  word-break: break-word;
+}
+
+.formSummaryRow dd.isEmpty {
+  font-weight: 400;
+  color: var(--text-muted, #9aa3b0);
+}
+
+.formActions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.formActions button {
+  width: 100%;
+  height: 44px;
+}
+
+/* ================================================================
+   SelectBox (공용 커스텀 드롭다운)
+================================================================ */
+.selectBox {
+  position: relative;
+  min-width: 0;
+}
+
+.selectBox .selectBoxTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.selectBoxValue,
+.selectBoxPlaceholder {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.selectBoxPlaceholder {
+  color: var(--text-muted, #9aa3b0);
+}
+
+.selectBoxChevron {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted, #9aa3b0);
+  transition: transform 0.15s ease;
+}
+
+.selectBox .selectBoxTrigger[aria-expanded="true"] .selectBoxChevron {
+  transform: rotate(180deg);
+}
+
+.selectBoxPanel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  padding: 6px;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-strong, #c7cdd5);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="dark"] .selectBoxPanel {
+  border-color: #334155;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+}
+
+.selectBox .selectBoxSearch {
+  width: 100%;
+  box-sizing: border-box;
+  height: 38px;
+  margin-bottom: 6px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-heading, #14181f);
+  background: var(--ctl-bg);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  outline: none;
+}
+
+.selectBox .selectBoxSearch::placeholder {
+  color: var(--text-muted, #9aa3b0);
+}
+
+.selectBox .selectBoxSearch:focus-visible {
+  background: var(--bg-card, #ffffff);
+  border-color: var(--primary, #0052cc);
+  box-shadow: 0 0 0 3px var(--ctl-focus-ring);
+}
+
+.selectBoxList {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.selectBoxOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.selectBoxOption.isActive {
+  background: var(--ctl-bg);
+}
+
+.selectBoxOption.isSelected {
+  background: color-mix(in srgb, var(--primary, #0052cc) 10%, var(--bg-card, #ffffff));
+}
+
+.selectBoxOptionText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.selectBoxOptionLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-heading, #14181f);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.selectBoxOptionDesc {
+  font-size: 12px;
+  color: var(--text-muted, #9aa3b0);
+}
+
+.selectBoxCheck {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--primary, #0052cc);
+}
+
+.selectBoxEmpty {
+  padding: 16px 12px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--text-muted, #9aa3b0);
+}
+
+/* ================================================================
+   반응형 (기존 createCard와 동일하게 container query 사용)
+================================================================ */
+@container content (max-width: 1024px) {
+  .formLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .formAside {
+    position: static;
+  }
+}
+
+@container content (max-width: 640px) {
+  .formPage {
+    --oc-card-pad: 20px;
+  }
+
+  .formPageHead {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .formGrid > .col2,
+  .formGrid > .col3,
+  .formGrid > .col4 {
+    grid-column: 1 / -1;
+  }
+
+  .orderLineHead {
+    display: none;
+  }
+
+  .orderLineRow {
+    grid-template-columns: minmax(0, 1fr) 44px;
+  }
+
+  .orderLineRow > .selectBox {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ================================================================
+   폼 키트 확장 — 이미지 패널 / 상태 칩 / UserMultiSelect 톤 맞춤
+   (설비 등록 등 이미지 + 담당자 선택이 있는 폼에서 사용)
+================================================================ */
+
+/* 우측 패널을 이미지 폭에 맞게 넓힘: <div className="formLayout formLayout--media"> */
+.formLayout--media {
+  --form-aside-w: 400px;
+}
+
+.formCardHead {
+  flex-wrap: wrap;
+}
+
+.formCardMeta {
+  font-size: 13px;
+  color: var(--text-muted, #9aa3b0);
+  white-space: nowrap;
+}
+
+/* 우측 패널 내부 구획 */
+.formAsideSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.formAsideSection + .formAsideSection {
+  padding-top: 16px;
+  border-top: 1px solid var(--border, #e3e6ea);
+}
+
+.formMedia {
+  min-width: 0;
+}
+
+/* 상태 칩 (요약 패널) */
+.formStatus {
+  --status-fg: var(--text-body, #5b6472);
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 2px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--status-fg);
+  background: color-mix(in srgb, var(--status-fg) 12%, transparent);
+  border-radius: 999px;
+}
+
+.formStatus::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.formStatus.isOn {
+  --status-fg: #17875f;
+}
+
+.formStatus.isError {
+  --status-fg: var(--ctl-danger);
+}
+
+[data-theme="dark"] .formStatus.isOn {
+  --status-fg: #57d3a1;
+}
+
+/* UserMultiSelect 검색 input을 폼 키트 입력칸과 같은 톤으로 (이 폼 안에서만 적용) */
+.formPage .userMultiSelect .userMultiSelectSearchInput {
+  height: var(--ctl-h);
+  padding: 0 14px;
+  font-size: 14px;
+  background: var(--ctl-bg);
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+
+.formPage .userMultiSelect .userMultiSelectSearchInput:hover:not(:disabled) {
+  background: var(--ctl-bg-hover);
+  border-color: transparent;
+}
+
+.formPage .userMultiSelect .userMultiSelectSearchInput:focus {
+  background: var(--bg-card, #ffffff);
+  border-color: var(--primary, #0052cc);
+  box-shadow: 0 0 0 3px var(--ctl-focus-ring);
+}
+
+/* ---------- 단일 카드 폼 (필드가 적은 등록 페이지) ---------- */
+/* <form className="formPage formPage--compact"> : 폼 폭 제한 (입력칸이 과하게 길어지는 것 방지) */
+.formPage--compact {
+  max-width: 880px;
+}
+
+/* 카드 하단 액션 (요약 패널 없이 카드 안에서 등록/취소) */
+.formFooter {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border, #e3e6ea);
+}
+
+.formFooter button {
+  min-width: 88px;
+  height: 44px;
+}
+
+/* ---------- 4열 그리드 (필드가 적은 폼을 카드 폭에 맞게 한 줄로 펼침) ---------- */
+/* <div className="formGrid formGrid--4"> + 자식은 col* 클래스 없이 formField만 */
+.formGrid--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.formGrid--4 > .formField {
+  grid-column: auto;
+}
+
+@container content (max-width: 1100px) {
+  .formGrid--4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container content (max-width: 640px) {
+  .formGrid--4 {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

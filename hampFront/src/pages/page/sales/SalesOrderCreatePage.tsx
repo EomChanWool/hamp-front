@@ -1,4 +1,4 @@
-import { useEffect, useState, type SyntheticEvent } from "react";
+import { useEffect, useMemo, useState, type SyntheticEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import {
@@ -8,8 +8,9 @@ import {
 import { BusinessPartnerApi } from "@/api/sales/BusinessPartner";
 import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
 import { AmountInput } from "@/components/common/AmountInput";
+import { SelectBox, type SelectBoxOption } from "@/components/common/SelectBox";
 import { parseDecimalInput, sanitizeDecimalInput } from "@/utils/common";
-
+import "@/pages/layout/Layout.css";
 type SalesOrderLineDraft = {
   itemCode: string;
   planQty: string;
@@ -18,6 +19,8 @@ type SalesOrderLineDraft = {
 type SalesOrderCreateForm = Omit<SalesOrderCreateRequest, "lines"> & {
   lines: SalesOrderLineDraft[];
 };
+
+const REQUIRED_TOTAL = 4;
 
 export function SalesOrderCreatePage() {
   const navigate = useNavigate();
@@ -57,6 +60,37 @@ export function SalesOrderCreatePage() {
     };
     fetchOptions();
   }, []);
+
+  // SelectBox용 옵션 (이름 + 코드 2줄 표기)
+  const bpSelectOptions = useMemo<SelectBoxOption[]>(
+    () =>
+      businessPartnerOptions.map((opt) => ({
+        value: opt.bpCode,
+        label: opt.bpNm ?? opt.bpCode,
+        description: opt.bpCode,
+      })),
+    [businessPartnerOptions]
+  );
+
+  const rawItemSelectOptions = useMemo<SelectBoxOption[]>(
+    () =>
+      rawItemOptions.map((opt) => ({
+        value: opt.itemCode,
+        label: opt.itemNm ?? opt.itemCode,
+        description: opt.itemCode,
+      })),
+    [rawItemOptions]
+  );
+
+  const itemSelectOptions = useMemo<SelectBoxOption[]>(
+    () =>
+      itemOptions.map((opt) => ({
+        value: opt.itemCode,
+        label: opt.itemNm ?? opt.itemCode,
+        description: opt.itemCode,
+      })),
+    [itemOptions]
+  );
 
   const handleChange = (key: keyof SalesOrderCreateForm, value: any) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -133,96 +167,138 @@ export function SalesOrderCreatePage() {
     }
   };
 
+  // ---- 요약 패널용 파생 값 ----
+  const selectedBp = businessPartnerOptions.find((opt) => opt.bpCode === form.bpCode);
+  const selectedRawItem = rawItemOptions.find((opt) => opt.itemCode === form.itemCode);
+  const rawUnit = selectedRawItem?.unit ?? "";
+
+  const requiredDone = [form.bpCode, form.itemCode, form.orderQty, form.orderAmount].filter(
+    (v) => v !== "" && v != null
+  ).length;
+
+  const summaryRows: { label: string; value: string }[] = [
+    { label: "거래처", value: selectedBp ? (selectedBp.bpNm ?? selectedBp.bpCode) : "" },
+    { label: "납기일자", value: form.dueDate ?? "" },
+    {
+      label: "투입원료",
+      value: selectedRawItem ? (selectedRawItem.itemNm ?? selectedRawItem.itemCode) : "",
+    },
+    {
+      label: "투입수량",
+      value:
+        form.orderQty != null
+          ? `${form.orderQty.toLocaleString("ko-KR")}${rawUnit ? ` ${rawUnit}` : ""}`
+          : "",
+    },
+    {
+      label: "가공비",
+      value: form.orderAmount != null ? `${form.orderAmount.toLocaleString("ko-KR")}원` : "",
+    },
+    { label: "생산 품목", value: `${form.lines.length}개` },
+  ];
+
   return (
     <section className="screenStack">
-      <div className="createCard">
-        <div className="createHeader">
-          <h1 className="createTitle">신규 수주 등록</h1>
-          <span className="createMeta">* 표시는 필수 입력 항목입니다</span>
+      <form className="formPage" onSubmit={handleSubmit}>
+        <div className="formPageHead">
+          <h1 className="formPageTitle">신규 수주 등록</h1>
+          <span className="formPageMeta">
+            <span className="required" aria-hidden="true">*</span> 표시는 필수 입력 항목입니다
+          </span>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="createBody">
-            {/* 1. 기본 정보 섹션 */}
-            <div className="createSection">
-              <h2 className="createSectionTitle">기본정보</h2>
-              <div className="createGrid2Cols">
-                
-                <div className="createField">
-                  <label className="requiredLabel">
-                    거래처명 <span className="required">*</span>
+        <div className="formLayout">
+          {/* ===== 좌측: 입력 섹션 카드 ===== */}
+          <div className="formMain">
+            {/* 1. 기본정보 */}
+            <section className="formCard" aria-labelledby="order-sec-basic">
+              <div className="formCardHead">
+                <div>
+                  <h2 className="formCardTitle" id="order-sec-basic">기본정보</h2>
+                  <p className="formCardDesc">거래처와 납기 정보를 입력합니다.</p>
+                </div>
+              </div>
+
+              <div className="formGrid">
+                <div className="formField col4">
+                  <label className="formLabel" htmlFor="order-bp">
+                    거래처명 <span className="required" aria-hidden="true">*</span>
                   </label>
-                  <select
-                    className="tableInput"
+                  <SelectBox
+                    id="order-bp"
                     value={form.bpCode}
-                    onChange={(e) => handleChange("bpCode", e.target.value)}
+                    options={bpSelectOptions}
+                    placeholder="거래처를 선택해주세요"
+                    searchPlaceholder="거래처명 또는 코드 검색"
+                    searchable
                     disabled={isSubmitting}
-                  >
-                    <option value="" disabled>거래처를 선택해주세요</option>
-                    {businessPartnerOptions.map((opt) => (
-                      <option key={opt.bpCode} value={opt.bpCode}>
-                        {opt.bpNm} ({opt.bpCode ?? "-"})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => handleChange("bpCode", v)}
+                  />
                 </div>
 
-                <div className="createField">
-                  <label>납기일자</label>
+                <div className="formField col2">
+                  <label className="formLabel" htmlFor="order-due">납기일자</label>
                   <input
+                    id="order-due"
                     type="date"
-                    className="tableInput"
+                    className="formInput"
                     value={form.dueDate ?? ""}
                     onChange={(e) => handleChange("dueDate", e.target.value)}
                     disabled={isSubmitting}
                   />
                 </div>
 
-                <div className="createField fullWidth">
-                  <label>비고</label>
+                <div className="formField col6">
+                  <label className="formLabel" htmlFor="order-note">비고</label>
                   <input
-                    className="tableInput"
+                    id="order-note"
+                    className="formInput"
+                    placeholder="전달이 필요한 내용을 입력해주세요"
                     value={form.note ?? ""}
                     onChange={(e) => handleChange("note", e.target.value)}
                     disabled={isSubmitting}
                   />
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* 2. 투입원료 섹션 */}
-            <div className="createSection">
-              <h2 className="createSectionTitle">투입원료</h2>
-              <div className="createGrid2Cols">
-                <div className="createField">
-                  <label className="requiredLabel">
-                    투입원료 <span className="required">*</span>
+            {/* 2. 투입원료 */}
+            <section className="formCard" aria-labelledby="order-sec-input">
+              <div className="formCardHead">
+                <div>
+                  <h2 className="formCardTitle" id="order-sec-input">투입원료</h2>
+                  <p className="formCardDesc">가공에 투입할 원료와 수량, 가공비를 입력합니다.</p>
+                </div>
+              </div>
+
+              <div className="formGrid">
+                <div className="formField col6">
+                  <label className="formLabel" htmlFor="order-item">
+                    투입원료 <span className="required" aria-hidden="true">*</span>
                   </label>
-                  <select
-                    className="tableInput"
+                  <SelectBox
+                    id="order-item"
                     value={form.itemCode ?? ""}
-                    onChange={(e) => handleChange("itemCode", e.target.value)}
+                    options={rawItemSelectOptions}
+                    placeholder="투입원료를 선택해주세요"
+                    searchPlaceholder="원료명 또는 코드 검색"
+                    searchable
                     disabled={isSubmitting}
-                  >
-                    <option value="" disabled>투입원료를 선택해주세요</option>
-                    {rawItemOptions.map((opt) => (
-                      <option key={opt.itemCode} value={opt.itemCode}>
-                        {opt.itemCode} ({opt.itemNm ?? "-"})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => handleChange("itemCode", v)}
+                  />
                 </div>
 
-                <div className="createField">
-                  <label className="requiredLabel">
-                    투입수량 <span className="required">*</span>
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="order-qty">
+                    투입수량 <span className="required" aria-hidden="true">*</span>
                   </label>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div className="formInputWrap">
                     <input
+                      id="order-qty"
                       type="text"
                       inputMode="numeric"
-                      className="tableInput"
-                      style={{ textAlign: "right", flex: 1, minWidth: 0 }}
+                      className="formInput hasSuffix"
+                      placeholder="0"
                       value={form.orderQty ?? ""}
                       disabled={isSubmitting}
                       onChange={(e) => {
@@ -230,90 +306,102 @@ export function SalesOrderCreatePage() {
                         handleChange("orderQty", val === "" ? null : Number(val));
                       }}
                     />
-                    <span style={{ whiteSpace: "nowrap", minWidth: "40px" }}>
-                      {rawItemOptions.find((opt) => opt.itemCode === form.itemCode)?.unit ?? ""}
-                    </span>
+                    {rawUnit && <span className="formInputSuffix">{rawUnit}</span>}
                   </div>
                 </div>
 
-                <div className="createField">
-                  <label className="requiredLabel">
-                    가공비 <span className="required">*</span>
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="order-amount">
+                    가공비 <span className="required" aria-hidden="true">*</span>
                   </label>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div className="formInputWrap">
                     <AmountInput
-                      className="tableInput"
-                      style={{ textAlign: "right", flex: 1, minWidth: 0 }}
+                      id="order-amount"
+                      className="formInput hasSuffix"
                       value={form.orderAmount}
                       disabled={isSubmitting}
                       onValueChange={(amount) => handleChange("orderAmount", amount)}
                     />
-                    <span style={{ whiteSpace: "nowrap", minWidth: "24px" }}>원</span>
+                    <span className="formInputSuffix">원</span>
                   </div>
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* 3. 생산 품목 섹션 */}
-            <div className="createSection">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                <label className="requiredLabel" style={{ margin: 0, fontWeight: 600 }}>생산 품목</label>
-                <button type="button" className="miniButton primary" onClick={addLine} disabled={isSubmitting}>
-                  + 품목 추가
-                </button>
+            {/* 3. 생산 품목 */}
+            <section className="formCard" aria-labelledby="order-sec-lines">
+              <div className="formCardHead">
+                <div>
+                  <h2 className="formCardTitle" id="order-sec-lines">생산 품목</h2>
+                  <p className="formCardDesc">가공 후 산출되는 품목과 예정 수량을 입력합니다.</p>
+                </div>
+                {form.lines.length > 0 && (
+                  <button
+                    type="button"
+                    className="miniButton primary"
+                    onClick={addLine}
+                    disabled={isSubmitting}
+                  >
+                    + 품목 추가
+                  </button>
+                )}
               </div>
 
-              <div className="tableWrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>
-                        <div className="th-content">품목코드</div>
-                      </th>
-                      <th>
-                        <div className="th-content">예정 산출수량</div>
-                      </th>
-                      <th>
-                        <div className="th-content">삭제</div>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {form.lines.map((line, idx) => (
-                      <tr key={idx}>
-                        <td>
-                          <select
-                            className="tableInput"
+              {form.lines.length === 0 ? (
+                <div className="formEmpty">
+                  <span className="formEmptyIcon" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" fill="none" width="22" height="22">
+                      <path
+                        d="M10 4.5v11M4.5 10h11"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </span>
+                  <strong className="formEmptyTitle">등록된 생산 품목이 없습니다</strong>
+                  <p className="formEmptyDesc">산출 예정인 품목을 추가해주세요.</p>
+                  <button
+                    type="button"
+                    className="miniButton primary"
+                    onClick={addLine}
+                    disabled={isSubmitting}
+                  >
+                    + 품목 추가
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="orderLineHead" aria-hidden="true">
+                    <span>품목</span>
+                    <span>예정 산출수량</span>
+                    <span />
+                  </div>
+
+                  <div className="orderLineList">
+                    {form.lines.map((line, idx) => {
+                      const unit =
+                        itemOptions.find((opt) => opt.itemCode === line.itemCode)?.unit ?? "";
+
+                      return (
+                        <div className="orderLineRow" key={idx}>
+                          <SelectBox
+                            ariaLabel={`생산 품목 ${idx + 1} 품목`}
                             value={line.itemCode}
-                            onChange={(e) => handleLineChange(idx, "itemCode", e.target.value)}
+                            options={itemSelectOptions}
+                            placeholder="품목을 선택해주세요"
+                            searchPlaceholder="품목명 또는 코드 검색"
+                            searchable
                             disabled={isSubmitting}
-                          >
-                            <option value="" disabled>품목을 선택해주세요</option>
-                            {itemOptions.map((opt) => (
-                              <option key={opt.itemCode} value={opt.itemCode}>
-                                {opt.itemCode} ({opt.itemNm ?? "-"})
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                              width: "100%",
-                            }}
-                          >
+                            onChange={(v) => handleLineChange(idx, "itemCode", v)}
+                          />
+
+                          <div className="formInputWrap">
                             <input
                               type="text"
                               inputMode="decimal"
-                              className="tableInput"
-                              style={{
-                                textAlign: "right",
-                                flex: 1,
-                                minWidth: 0,
-                              }}
+                              className="formInput hasSuffix"
+                              aria-label={`생산 품목 ${idx + 1} 예정 산출수량`}
                               value={line.planQty}
                               placeholder="미정"
                               disabled={isSubmitting}
@@ -321,49 +409,86 @@ export function SalesOrderCreatePage() {
                                 handleLineChange(idx, "planQty", sanitizeDecimalInput(e.target.value))
                               }
                             />
-
-                            <span style={{ whiteSpace: "nowrap", minWidth: "40px" }}>
-                              {itemOptions.find(
-                                (opt) => opt.itemCode === line.itemCode
-                              )?.unit ?? ""}
-                            </span>
+                            {unit && <span className="formInputSuffix">{unit}</span>}
                           </div>
-                        </td>
-                        <td style={{ textAlign: "center" }}>
+
                           <button
                             type="button"
-                            className="miniButton danger"
+                            className="formIconBtn"
+                            aria-label={`생산 품목 ${idx + 1} 삭제`}
                             onClick={() => removeLine(idx)}
                             disabled={isSubmitting}
                           >
-                            삭제
+                            <svg viewBox="0 0 20 20" fill="none" width="18" height="18" aria-hidden="true">
+                              <path
+                                d="M4 6h12M8 6V4.5h4V6m-6 0 .6 9h6.8l.6-9M8.5 9v4M11.5 9v4"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
                           </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {form.lines.length === 0 && (
-                      <tr>
-                        <td colSpan={3} style={{ textAlign: "center", padding: "20px" }}>
-                          등록된 품목 정보가 없습니다. 우측 상단의 [+ 품목 추가] 버튼을 눌러주세요.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </section>
           </div>
 
-          <div className="createFooter">
-            <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
-              취소
-            </button>
-            <button type="submit" className="primaryButton" disabled={isSubmitting}>
-              {isSubmitting ? "등록 중..." : "등록"}
-            </button>
-          </div>
-        </form>
-      </div>
+          {/* ===== 우측: 요약 + 액션 ===== */}
+          <aside className="formCard formAside" aria-label="수주 요약">
+            <h2 className="formCardTitle">수주 요약</h2>
+
+            <div className="formProgress">
+              <div className="formProgressText">
+                <span>필수 입력</span>
+                <strong>
+                  {requiredDone}/{REQUIRED_TOTAL}
+                </strong>
+              </div>
+              <div
+                className="formProgressBar"
+                role="progressbar"
+                aria-label="필수 입력 진행률"
+                aria-valuemin={0}
+                aria-valuemax={REQUIRED_TOTAL}
+                aria-valuenow={requiredDone}
+              >
+                <div
+                  className="formProgressFill"
+                  style={{ width: `${(requiredDone / REQUIRED_TOTAL) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            <dl className="formSummaryList">
+              {summaryRows.map((row) => (
+                <div className="formSummaryRow" key={row.label}>
+                  <dt>{row.label}</dt>
+                  <dd className={row.value ? undefined : "isEmpty"}>{row.value || "미입력"}</dd>
+                </div>
+              ))}
+            </dl>
+
+            <div className="formActions">
+              <button type="submit" className="primaryButton" disabled={isSubmitting}>
+                {isSubmitting ? "등록 중..." : "등록"}
+              </button>
+              <button
+                type="button"
+                className="ghostButton"
+                onClick={handleCancel}
+                disabled={isSubmitting}
+              >
+                취소
+              </button>
+            </div>
+          </aside>
+        </div>
+      </form>
     </section>
   );
 }

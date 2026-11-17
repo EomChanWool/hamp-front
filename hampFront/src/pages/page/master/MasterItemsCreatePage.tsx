@@ -16,15 +16,36 @@ import {
 import { OperationApi, OPER_TYPE_LABEL, type OperType } from "@/api/master/Operation";
 import { OperationSelectModal } from "@/components/modal/OperationSelectModal";
 import { useItemRoutings } from "@/hooks/useItemRoutings";
-import "./MasterItem.css";
+import { SelectBox, type SelectBoxOption } from "@/components/common/SelectBox";
 import { Badge } from "@/components/common/Badge";
 import { RoutingMaterialSection, toMaterialRequests } from "@/components/common/RoutingMatarialSection";
+import "@/pages/layout/Layout.css";
+import "./MasterItem.css";
 
 interface OperationOption {
   operCode: string;
   operNm: string;
   operType: OperType;
 }
+
+type SummaryRow = {
+  label: string;
+  value: string;
+};
+
+const SOLE_PRODUCTION_OPTIONS: SelectBoxOption[] = [
+  { value: "0", label: SOLE_PRODUCTION_LABEL[0] },
+  { value: "1", label: SOLE_PRODUCTION_LABEL[1] },
+];
+
+const CATEGORY_SUB_DESC: Record<string, string> = {
+  "0": "입고 소재",
+  "1": "공정 중간산출",
+  "2": "출하 대상",
+};
+
+/** 라벨 맵에서 키(문자열)로 라벨 조회 — 미선택/미존재 시 빈 문자열 */
+const labelOf = (map: object, key: string): string => (map as Record<string, string>)[key] ?? "";
 
 export function MasterItemsCreatePage() {
   const navigate = useNavigate();
@@ -208,25 +229,50 @@ export function MasterItemsCreatePage() {
   const selectedRouting = selectedIndex !== null && routings[selectedIndex] ? routings[selectedIndex] : null;
   const selectedMatchedOp = selectedRouting ? operations.find((op) => op.operCode === selectedRouting.operCode) : null;
 
+  // ---- 요약 패널용 파생 값 ----
+  const routingSummary = form.category === "" ? "" : isRoutingAllowed ? `${routings.length}단계` : "사용 안 함";
+
+  const summaryRows: SummaryRow[] = [
+    { label: "품목코드", value: form.itemCode.trim() },
+    { label: "품목명", value: form.itemNm.trim() },
+    { label: "종류", value: labelOf(PRODUCT_TYPE_LABEL, String(form.productType)) },
+    { label: "품목구분", value: labelOf(CATEGORY_LABEL, form.category) },
+    { label: "단위", value: form.unit.trim() },
+    { label: "규격", value: form.standard.trim() },
+    { label: "단독생산", value: labelOf(SOLE_PRODUCTION_LABEL, form.soleProductionYn) },
+    { label: "공정", value: routingSummary },
+  ];
+
   return (
     <section className="screenStack">
-      <div className="createCard">
-        <div className="createHeader">
-          <h1 className="createTitle">신규 품목 등록</h1>
-          <span className="createMeta">
-            <strong className="required">*</strong> 표시는 필수 입력 항목입니다
+      <form className="formPage" onSubmit={handleSubmit}>
+        <div className="formPageHead">
+          <h1 className="formPageTitle">신규 품목 등록</h1>
+          <span className="formPageMeta">
+            <span className="required" aria-hidden="true">
+              *
+            </span>{" "}
+            표시는 필수 입력 항목입니다
           </span>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="createBody">
-            {/* 1. 기본 정보 섹션 */}
-            {/* 1. 기본 정보 섹션 */}
-            <div className="createSection">
-              <h2 className="createSectionTitle">기본정보</h2>
-              <div className="createGrid2Cols">
-                <div className="createField">
-                  <label htmlFor="item-code" className="requiredLabel">
+        <div className="formLayout">
+          {/* ===== 좌측: 입력 섹션 카드 ===== */}
+          <div className="formMain">
+            {/* 1. 기본정보 */}
+            <section className="formCard" aria-labelledby="item-sec-basic">
+              <div className="formCardHead">
+                <div>
+                  <h2 className="formCardTitle" id="item-sec-basic">
+                    기본정보
+                  </h2>
+                  <p className="formCardDesc">품목을 구분하는 코드와 이름, 단위, 규격을 입력합니다.</p>
+                </div>
+              </div>
+
+              <div className="formGrid">
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="item-code">
                     품목코드{" "}
                     <span className="required" aria-hidden="true">
                       *
@@ -234,7 +280,7 @@ export function MasterItemsCreatePage() {
                   </label>
                   <input
                     id="item-code"
-                    className="tableInput"
+                    className="formInput"
                     value={form.itemCode}
                     disabled={isSubmitting}
                     aria-required="true"
@@ -243,8 +289,9 @@ export function MasterItemsCreatePage() {
                     placeholder="예: ITM001"
                   />
                 </div>
-                <div className="createField">
-                  <label htmlFor="item-name" className="requiredLabel">
+
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="item-name">
                     품목명{" "}
                     <span className="required" aria-hidden="true">
                       *
@@ -252,7 +299,7 @@ export function MasterItemsCreatePage() {
                   </label>
                   <input
                     id="item-name"
-                    className="tableInput"
+                    className="formInput"
                     value={form.itemNm}
                     disabled={isSubmitting}
                     aria-required="true"
@@ -261,11 +308,14 @@ export function MasterItemsCreatePage() {
                     placeholder="예: 헴프 파우더"
                   />
                 </div>
-                <div className="createField">
-                  <label htmlFor="item-unit">단위</label>
+
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="item-unit">
+                    단위
+                  </label>
                   <input
                     id="item-unit"
-                    className="tableInput"
+                    className="formInput"
                     value={form.unit}
                     disabled={isSubmitting}
                     autoComplete="off"
@@ -273,11 +323,14 @@ export function MasterItemsCreatePage() {
                     placeholder="예: EA, BOX, KG"
                   />
                 </div>
-                <div className="createField">
-                  <label htmlFor="item-standard">규격</label>
+
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="item-standard">
+                    규격
+                  </label>
                   <input
                     id="item-standard"
-                    className="tableInput"
+                    className="formInput"
                     value={form.standard}
                     disabled={isSubmitting}
                     autoComplete="off"
@@ -286,19 +339,27 @@ export function MasterItemsCreatePage() {
                   />
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* 2. 분류 정보 섹션 */}
-            <div className="createSection">
-              <h2 className="createSectionTitle">분류정보</h2>
-              <div className="createGrid2Cols">
-                <div className="createField">
-                  <label id="item-product-type-label" className="requiredLabel">
+            {/* 2. 분류정보 */}
+            <section className="formCard" aria-labelledby="item-sec-class">
+              <div className="formCardHead">
+                <div>
+                  <h2 className="formCardTitle" id="item-sec-class">
+                    분류정보
+                  </h2>
+                  <p className="formCardDesc">품목의 종류와 구분, 생산 방식을 선택합니다.</p>
+                </div>
+              </div>
+
+              <div className="formGrid">
+                <div className="formField col3">
+                  <span className="formLabel" id="item-product-type-label">
                     종류{" "}
                     <span className="required" aria-hidden="true">
                       *
                     </span>
-                  </label>
+                  </span>
                   <div className="cardButtonGroup routing-w-100" role="group" aria-labelledby="item-product-type-label">
                     {Object.entries(PRODUCT_TYPE_LABEL).map(([key, label]) => {
                       const isSelected = form.productType === key;
@@ -323,21 +384,16 @@ export function MasterItemsCreatePage() {
                   </div>
                 </div>
 
-                <div className="createField">
-                  <label id="item-category-label" className="requiredLabel">
+                <div className="formField col3">
+                  <span className="formLabel" id="item-category-label">
                     품목구분{" "}
                     <span className="required" aria-hidden="true">
                       *
                     </span>
-                  </label>
+                  </span>
                   <div className="cardButtonGroup routing-w-100" role="group" aria-labelledby="item-category-label">
                     {Object.entries(CATEGORY_LABEL).map(([key, label]) => {
                       const isSelected = form.category === key;
-                      const subDescriptions: Record<string, string> = {
-                        "0": "입고 소재",
-                        "1": "공정 중간산출",
-                        "2": "출하 대상",
-                      };
                       return (
                         <button
                           key={key}
@@ -348,7 +404,7 @@ export function MasterItemsCreatePage() {
                           onClick={() => handleChange("category", key)}
                         >
                           <span className="cardText main">{label}</span>
-                          {subDescriptions[key] && <span className="cardText sub">{subDescriptions[key]}</span>}
+                          {CATEGORY_SUB_DESC[key] && <span className="cardText sub">{CATEGORY_SUB_DESC[key]}</span>}
                         </button>
                       );
                     })}
@@ -356,40 +412,42 @@ export function MasterItemsCreatePage() {
                 </div>
 
                 {/* 단독생산 전용 여부 (1이면 수주 산출라인에서 다른 품목과 조합 불가) */}
-                <div className="createField">
-                  <label htmlFor="item-sole-production">단독생산 전용</label>
-                  <select
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="item-sole-production">
+                    단독생산 전용
+                  </label>
+                  <SelectBox
                     id="item-sole-production"
-                    className="tableInput"
                     value={form.soleProductionYn}
+                    options={SOLE_PRODUCTION_OPTIONS}
                     disabled={isSubmitting}
-                    onChange={(e) => handleChange("soleProductionYn", e.target.value)}
-                    aria-describedby="item-sole-production-help"
-                  >
-                    <option value="0">{SOLE_PRODUCTION_LABEL[0]}</option>
-                    <option value="1">{SOLE_PRODUCTION_LABEL[1]}</option>
-                  </select>
-                  <div id="item-sole-production-help" className="routing-guide-text">
-                    '예' 선택 시 수주 산출라인에서 다른 품목과 조합할 수 없습니다
-                  </div>
+                    onChange={(v) => handleChange("soleProductionYn", v)}
+                  />
+                  <p className="formCardDesc">'예' 선택 시 수주 산출라인에서 다른 품목과 조합할 수 없습니다.</p>
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* 3. 공정 라우팅 설정 영역 */}
+            {/* 3. 공정 라우팅 설정 */}
             {isRoutingAllowed && (
-              <div className="createSection">
-                <div className="routing-header-wrapper">
-                  <label className="requiredLabel routing-header-label">
-                    공정 라우팅 설정 {/* 완제품은 필수(*), 반제품은 선택 */}
-                    {isRoutingRequired ? (
-                      <span className="required">*</span>
-                    ) : (
-                      <span style={{ marginLeft: 4, fontWeight: 400, opacity: 0.6 }}>(선택)</span>
-                    )}
-                  </label>
+              <section className="formCard" aria-labelledby="item-sec-routing">
+                <div className="formCardHead">
+                  <div>
+                    <h2 className="formCardTitle" id="item-sec-routing">
+                      공정 라우팅 설정{" "}
+                      {/* 완제품은 필수(*), 반제품은 선택 */}
+                      {isRoutingRequired ? (
+                        <span className="required" aria-hidden="true">
+                          *
+                        </span>
+                      ) : (
+                        <span className="formOptionalTag">(선택)</span>
+                      )}
+                    </h2>
+                    <p className="formCardDesc">드래그로 순서를 바꾸고, 항목을 선택하면 우측에서 상세 편집할 수 있습니다.</p>
+                  </div>
                   <div className="routing-header-right">
-                    <span className="routing-count-text">총 {routings.length}단계</span>
+                    <span className="formCardMeta">총 {routings.length}단계</span>
                     <button
                       type="button"
                       className="miniButton primary"
@@ -401,17 +459,27 @@ export function MasterItemsCreatePage() {
                   </div>
                 </div>
 
-                <div className="routing-guide-text">
-                  ⠿ 드래그로 순서 변경, 항목 선택 시 우측에서 상세 편집 (마지막 공정이 최종공정이며, 최종공정이 바뀌면
-                  해당 공정의 투입/산출 자재는 초기화됩니다. 같은 공정을 여러 단계로 추가할 수 있으며 자재는 단계별로
-                  따로 관리됩니다)
-                </div>
+                <p className="routing-guide-text">
+                  마지막 공정이 최종공정이며, 최종공정이 바뀌면 해당 공정의 투입/산출 자재는 초기화됩니다. 같은 공정을
+                  여러 단계로 추가할 수 있으며 자재는 단계별로 따로 관리됩니다.
+                </p>
 
                 {routings.length === 0 ? (
-                  <div className="routingEmptyBox">
-                    {isRoutingRequired
-                      ? "선택된 공정이 없습니다. [+ 공정 선택 / 추가] 버튼을 눌러주세요."
-                      : "선택된 공정이 없습니다. 반제품은 공정 라우팅을 선택적으로 등록할 수 있습니다."}
+                  <div className="formEmpty">
+                    <div className="formEmptyTitle">선택된 공정이 없습니다</div>
+                    <p className="formEmptyDesc">
+                      {isRoutingRequired
+                        ? "완제품은 공정을 최소 1개 이상 추가해야 합니다."
+                        : "반제품은 공정 라우팅을 선택적으로 등록할 수 있습니다."}
+                    </p>
+                    <button
+                      type="button"
+                      className="miniButton primary"
+                      disabled={isSubmitting}
+                      onClick={handleOpenModal}
+                    >
+                      + 공정 선택 / 추가
+                    </button>
                   </div>
                 ) : (
                   <div className="routing-layout-grid">
@@ -562,27 +630,31 @@ export function MasterItemsCreatePage() {
 
                           <div className="routing-form-row">
                             <div className="routing-form-group">
-                              <label className="routing-label">공정명</label>
+                              <label className="routing-label" htmlFor="routing-oper-nm">
+                                공정명
+                              </label>
                               <input
+                                id="routing-oper-nm"
                                 type="text"
-                                className="tableInput routing-input-readonly"
+                                className="formInput"
                                 value={selectedMatchedOp ? selectedMatchedOp.operNm : ""}
                                 disabled
                               />
                             </div>
 
                             <div className="routing-form-group">
-                              <label className="routing-label">공정구분</label>
-                              {/* 최종공정은 훅에서 "마지막 공정"으로 자동 지정되므로 직접 변경 불가(읽기 전용) */}
-                              <select
-                                className="tableInput routing-select"
-                                value={selectedRouting.finalYn ?? "N"}
+                              <label className="routing-label" htmlFor="routing-oper-final">
+                                공정구분
+                              </label>
+                              {/* 최종공정은 훅에서 "마지막 공정"으로 자동 지정되므로 직접 변경 불가 → 선택 UI 대신 읽기 전용 표시 */}
+                              <input
+                                id="routing-oper-final"
+                                type="text"
+                                className="formInput"
+                                value={selectedRouting.finalYn === "Y" ? "최종공정" : "일반공정"}
                                 disabled
                                 title="마지막 공정이 자동으로 최종공정이 됩니다"
-                              >
-                                <option value="N">일반공정</option>
-                                <option value="Y">최종공정</option>
-                              </select>
+                              />
                               <div className="routing-guide-text">마지막 공정이 자동으로 최종공정입니다</div>
                             </div>
                           </div>
@@ -595,7 +667,7 @@ export function MasterItemsCreatePage() {
                             onChange={(next) => setStepMaterials(selectedRouting.rowKey, next)}
                             excludeItemCode={form.itemCode.trim()}
                             productType={form.productType === "" ? undefined : form.productType}
-                            finalYn={selectedRouting?.finalYn ?? "N"}
+                            finalYn={selectedRouting.finalYn ?? "N"}
                             currentItem={
                               form.itemCode.trim() && form.itemNm.trim()
                                 ? {
@@ -623,20 +695,37 @@ export function MasterItemsCreatePage() {
                     </div>
                   </div>
                 )}
-              </div>
+              </section>
             )}
           </div>
 
-          <div className="createFooter">
-            <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
-              취소
-            </button>
-            <button type="submit" className="primaryButton" disabled={isSubmitting}>
-              {isSubmitting ? "등록 중..." : "등록"}
-            </button>
-          </div>
-        </form>
-      </div>
+          {/* ===== 우측: 요약 + 액션 ===== */}
+          <aside className="formCard formAside" aria-label="품목 요약">
+            <section className="formAsideSection" aria-labelledby="item-summary-title">
+              <h2 className="formCardTitle" id="item-summary-title">
+                품목 요약
+              </h2>
+              <dl className="formSummaryList">
+                {summaryRows.map((row) => (
+                  <div className="formSummaryRow" key={row.label}>
+                    <dt>{row.label}</dt>
+                    <dd className={row.value ? undefined : "isEmpty"}>{row.value || "미입력"}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+
+            <div className="formActions">
+              <button type="submit" className="primaryButton" disabled={isSubmitting}>
+                {isSubmitting ? "등록 중..." : "등록"}
+              </button>
+              <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
+                취소
+              </button>
+            </div>
+          </aside>
+        </div>
+      </form>
 
       <OperationSelectModal
         isOpen={isModalOpen}
