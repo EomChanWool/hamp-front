@@ -18,7 +18,7 @@ import {
 import { OperationApi, OPER_TYPE_LABEL, type OperType } from "@/api/master/Operation";
 import Spinner from "@/components/common/Spinner";
 import { OperationSelectModal } from "@/components/modal/OperationSelectModal";
-import { useItemRoutings } from "@/hooks/useItemRoutings";
+import { useItemRoutings, type RoutingStep } from "@/hooks/useItemRoutings";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
 import {
   RoutingMaterialSection,
@@ -59,12 +59,16 @@ export function MasterItemsDetailPage() {
   const {
     routings,
     loadRoutings,
+    restoreRoutings,
     clearRoutings,
     syncRoutings,
     removeRouting,
     moveRouting,
     setStepMaterials,
   } = useItemRoutings();
+
+  // 원료로 변경하면서 초기화된 라우팅을 임시 보관 (반제품/완제품으로 돌아오면 복원)
+  const removedRoutingsRef = useRef<RoutingStep[] | null>(null);
 
   // 라우팅 UI(드래그/선택/상세패널) 상태
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -80,13 +84,34 @@ export function MasterItemsDetailPage() {
   const isBusy = isUpdating || isDeleting;
 
   const handleFieldChange = (key: string, value: string) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    // 품목구분 변경 시 라우팅 처리
+    if (key === "category") {
+      const prevCategory = form.category;
 
-    // 원료(0)만 공정 라우팅(+ 자재)을 사용하지 않음
-    if (key === "category" && value === "0") {
-      clearRoutings(); // 단계와 자재가 한 객체라 한 번에 초기화됨
-      setSelectedIndex(null);
+      if (value === "0") {
+        // 반제품/완제품 → 원료: 공정이 이미 있으면 사용자 확인 후 초기화
+        if (prevCategory !== "0" && routings.length > 0) {
+          const ok = window.confirm(
+            "원료는 공정 라우팅을 사용하지 않아 설정한 공정과 자재 정보가 초기화됩니다.\n" +
+              "(다시 반제품/완제품으로 변경하면 복원되며, 저장 전에는 서버 데이터에 영향이 없습니다)\n\n계속하시겠습니까?"
+          );
+          // 취소 → 품목구분 변경 자체를 막아 기존 라우팅 유지
+          if (!ok) return;
+
+          // 초기화 전에 현재 라우팅(단계 + 단계별 자재)을 보관
+          removedRoutingsRef.current = routings;
+        }
+        // 원료(0)는 공정 라우팅(+ 자재)을 사용하지 않음
+        clearRoutings(); // 단계와 자재가 한 객체라 한 번에 초기화됨
+        setSelectedIndex(null);
+      } else if (prevCategory === "0" && removedRoutingsRef.current && routings.length === 0) {
+        // 원료 → 반제품/완제품: 보관해 둔 라우팅 복원 (rowKey/자재/수율 그대로, 선택 인덱스는 아래 보정 effect 가 0으로 맞춤)
+        restoreRoutings(removedRoutingsRef.current);
+        removedRoutingsRef.current = null;
+      }
     }
+
+    setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   // 섹션 정의: 기본 정보 / 분류 정보로 그룹핑
@@ -257,6 +282,9 @@ export function MasterItemsDetailPage() {
 
       // [중복 공정 지원] 단계 + 단계별 자재를 서버 기준으로 한 번에 복원
       loadRoutings(item.routings);
+
+      // 서버 기준으로 되돌렸으므로 임시 보관분은 폐기
+      removedRoutingsRef.current = null;
     }
   }, [isEditing, item]);
 

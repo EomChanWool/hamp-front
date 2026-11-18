@@ -89,6 +89,15 @@ export function useItemRoutings() {
     );
   };
 
+  /**
+   * 보관해 둔 단계 목록(RoutingStep[])을 그대로 복원
+   * - 원료로 바꿨다가 반제품/완제품으로 되돌릴 때 사용 (단계·자재·수율·rowKey 유지)
+   * - 확인창 없음 (사용자가 이미 원료로 바꿀 때 확인함)
+   */
+  const restoreRoutings = (steps: RoutingStep[]) => {
+    setRoutings(normalize(steps));
+  };
+
   /** 모든 단계 초기화 (원료 선택 시) - 확인창 없음 */
   const clearRoutings = () => setRoutings([]);
 
@@ -162,6 +171,7 @@ export function useItemRoutings() {
     routings,
     updateRouting,
     loadRoutings,
+    restoreRoutings,
     clearRoutings,
     syncRoutings,
     moveRouting,
