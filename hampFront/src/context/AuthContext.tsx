@@ -27,6 +27,7 @@ interface AuthContextValue {
   login: (credentials: LoginRequest) => Promise<LoginResponse>
   logout: () => Promise<void>
   changePassword: (data: ChangePasswordRequest) => Promise<ApiResponseTokenResponse>
+  updateUser: (patch: Partial<LoginResponse>) => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -142,6 +143,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [])
 
+  // 사용자 정보 일부 갱신
+  const updateUser = useCallback((patch: Partial<LoginResponse>) => {
+    setUser((prev) => {
+      if (!prev) return prev
+      const next = { ...prev, ...patch }
+      localStorage.setItem('user', JSON.stringify(next))
+      return next
+    })
+  }, [])
+
   // 비밀번호 변경
   const changePassword = useCallback(async (data: ChangePasswordRequest) => {
     try {
@@ -157,20 +168,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('token', newToken)
 
       // 2. LocalStorage 유저 정보 및 user state 토큰 업데이트
-      if (user) {
-        const updatedUser = { ...user, accessToken: newToken }
-        localStorage.setItem('user', JSON.stringify(updatedUser))
-        setUser(updatedUser)
-      }
+      updateUser({ accessToken: newToken })
+
       return response
 
     } catch (error: any) {
       console.error('비밀번호 변경 실패:', error)
       throw new Error(
-        error.response?.data?.message || '비밀번호 변경 중 오류가 발생했습니다.'
+        error.response?.data?.message || error.message || '비밀번호 변경 중 오류가 발생했습니다.'
       )
     }
-  }, [user])
+  }, [updateUser])
 
   // 사용자 로그아웃
   const logout = useCallback(async () => {
@@ -283,8 +291,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       login,
       logout,
       changePassword,
+      updateUser,
     }),
-    [isAuthenticated, isInitializing, user, login, logout, changePassword],
+    [isAuthenticated, isInitializing, user, login, logout, changePassword, updateUser],
   )
 
   return (
