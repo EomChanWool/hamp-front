@@ -1,17 +1,15 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { SalesOrderApi } from "@/api/sales/SalesOrder";
-import type {
-  SalesOrderDetailResponse,
-  SalesOrderUpdateRequest,
-} from "@/api/sales/SalesOrder";
+import type { SalesOrderDetailResponse, SalesOrderUpdateRequest } from "@/api/sales/SalesOrder";
 import { BusinessPartnerApi } from "@/api/sales/BusinessPartner";
 import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
 import Spinner from "@/components/common/Spinner";
 import { AmountInput } from "@/components/common/AmountInput";
 import { formatDateTime, parseDecimalInput, sanitizeDecimalInput } from "@/utils/common";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
+import { DetailSelect, type SelectOption } from "@/pages/layout/DetailSelect";
 
 export function SalesOrderDetailPage() {
   const { orderCode } = useParams<{ orderCode: string }>();
@@ -31,6 +29,16 @@ export function SalesOrderDetailPage() {
 
   const isBusy = isUpdating || isDeleting;
 
+  const toSelectOptions = (list: any[]): SelectOption[] =>
+    list.map((opt) => ({
+      value: opt.itemCode ?? opt.bpCode,
+      label: `${opt.itemCode ?? opt.bpCode} (${opt.itemNm ?? opt.bpNm ?? "-"})`,
+    }));
+
+  const bpSelectOptions = useMemo(() => toSelectOptions(businessPartnerOptions), [businessPartnerOptions]);
+  const rawItemSelectOptions = useMemo(() => toSelectOptions(rawItemOptions), [rawItemOptions]);
+  const itemSelectOptions = useMemo(() => toSelectOptions(itemOptions), [itemOptions]);
+
   // 섹션 정의 (bpCode 셀렉트박스 포함)
   const sections: DetailSection<SalesOrderDetailResponse>[] = [
     {
@@ -41,21 +49,11 @@ export function SalesOrderDetailPage() {
           label: "거래처코드",
           key: "bpCode",
           editable: true,
-          renderEditor: (value, onChange, disabled) => (
-            <select
-              className="tableInput"
-              value={value ?? ""}
-              disabled={disabled}
-              onChange={(e) => onChange(e.target.value)}
-            >
-              <option value="" disabled>거래처를 선택해주세요</option>
-              {businessPartnerOptions.map((opt) => (
-                <option key={opt.bpCode} value={opt.bpCode}>
-                  {opt.bpCode} ({opt.bpNm ?? "-"})
-                </option>
-              ))}
-            </select>
-          ),
+          options: bpSelectOptions,
+          placeholder: "거래처를 선택해주세요",
+          searchable: true,
+          // 읽기 모드는 코드만 표시 (거래처명은 위 필드에 이미 있음)
+          renderValue: (value) => value || "-",
         },
       ],
     },
@@ -63,12 +61,18 @@ export function SalesOrderDetailPage() {
       title: "처리 정보",
       fields: [
         {
-          label: "납기일자", key: "dueDate", editable: true, renderEditor: (value, onchange, disabled) => (
+          label: "납기일자",
+          key: "dueDate",
+          editable: true,
+          renderEditor: (value, onchange, disabled) => (
             <input
               type="date"
               className="tableInput"
-              value={value ?? ""} onChange={(e) => onchange(e.target.value)} disabled={disabled} />
-          )
+              value={value ?? ""}
+              onChange={(e) => onchange(e.target.value)}
+              disabled={disabled}
+            />
+          ),
         },
         { label: "상태", key: "status", editable: true },
         { label: "비고", key: "note", editable: true },
@@ -82,13 +86,16 @@ export function SalesOrderDetailPage() {
           key: "itemCode",
           editable: true,
           required: true,
-          renderEditor: (value, _onChange, disabled) => (
-            <select
-              className="tableInput"
+          // 선택 시 itemNm, unit도 같이 바뀌어야 해서 options 대신 renderEditor 사용
+          renderEditor: (value, _onChange, disabled, inputId) => (
+            <DetailSelect
+              id={inputId}
               value={value ?? ""}
               disabled={disabled}
-              onChange={(e) => {
-                const selectedCode = e.target.value;
+              options={rawItemSelectOptions}
+              placeholder="투입원료를 선택해주세요"
+              searchable
+              onChange={(selectedCode) => {
                 const selected = rawItemOptions.find((opt) => opt.itemCode === selectedCode);
                 setForm((prev) => ({
                   ...prev,
@@ -97,14 +104,7 @@ export function SalesOrderDetailPage() {
                   unit: selected?.unit ?? "",
                 }));
               }}
-            >
-              <option value="" disabled>투입원료를 선택해주세요</option>
-              {rawItemOptions.map((opt) => (
-                <option key={opt.itemCode} value={opt.itemCode}>
-                  {opt.itemCode} ({opt.itemNm ?? "-"})
-                </option>
-              ))}
-            </select>
+            />
           ),
           renderValue: (value) => {
             if (!value) return "-";
@@ -331,7 +331,9 @@ export function SalesOrderDetailPage() {
     return (
       <section className="screenStack">
         <div className="detailCard">
-          <div className="flex justify-center p-10"><Spinner /></div>
+          <div className="flex justify-center p-10">
+            <Spinner />
+          </div>
         </div>
       </section>
     );
@@ -356,12 +358,7 @@ export function SalesOrderDetailPage() {
         }}
         footerLeft={
           isEditing && (
-            <button
-              type="button"
-              className="btnDanger"
-              onClick={handleDelete}
-              disabled={isBusy}
-            >
+            <button type="button" className="btnDanger" onClick={handleDelete} disabled={isBusy}>
               {isDeleting ? "삭제 처리 중..." : "수주 삭제"}
             </button>
           )
@@ -369,20 +366,10 @@ export function SalesOrderDetailPage() {
         footerRight={
           isEditing ? (
             <>
-              <button
-                type="button"
-                className="ghostButton"
-                onClick={() => setIsEditing(false)}
-                disabled={isBusy}
-              >
+              <button type="button" className="ghostButton" onClick={() => setIsEditing(false)} disabled={isBusy}>
                 취소
               </button>
-              <button
-                type="button"
-                className="primaryButton"
-                onClick={handleSave}
-                disabled={isBusy}
-              >
+              <button type="button" className="primaryButton" onClick={handleSave} disabled={isBusy}>
                 {isUpdating ? "저장 중..." : "저장"}
               </button>
             </>
@@ -396,12 +383,7 @@ export function SalesOrderDetailPage() {
               >
                 목록
               </button>
-              <button
-                type="button"
-                className="primaryButton"
-                onClick={() => setIsEditing(true)}
-                disabled={isBusy}
-              >
+              <button type="button" className="primaryButton" onClick={() => setIsEditing(true)} disabled={isBusy}>
                 수정
               </button>
             </>
@@ -411,7 +393,9 @@ export function SalesOrderDetailPage() {
         {/* 품목 정보 테이블 영역 */}
         <div className="detailSection detailSection--full">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            <h3 className="detailSectionTitle" style={{ margin: 0 }}>품목 정보</h3>
+            <h3 className="detailSectionTitle" style={{ margin: 0 }}>
+              품목 정보
+            </h3>
             {isEditing && (
               <button type="button" className="miniButton primary" onClick={addLine} disabled={isBusy}>
                 + 품목 추가
@@ -423,10 +407,20 @@ export function SalesOrderDetailPage() {
             <table>
               <thead>
                 <tr>
-                  <th><div className="th-content">품목코드</div></th>
-                  <th><div className="th-content">품목명</div></th>
-                  <th><div className="th-content">예정 산출수량</div></th>
-                  {isEditing && <th><div className="th-content">삭제</div></th>}
+                  <th>
+                    <div className="th-content">품목코드</div>
+                  </th>
+                  <th>
+                    <div className="th-content">품목명</div>
+                  </th>
+                  <th>
+                    <div className="th-content">예정 산출수량</div>
+                  </th>
+                  {isEditing && (
+                    <th>
+                      <div className="th-content">삭제</div>
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -440,26 +434,26 @@ export function SalesOrderDetailPage() {
                           disabled={isBusy}
                           onChange={(e) => {
                             const selectedCode = e.target.value;
-                            const selected = itemOptions.find(
-                              (opt) => opt.itemCode === selectedCode
-                            );
+                            const selected = itemOptions.find((opt) => opt.itemCode === selectedCode);
 
                             setForm((prev) => ({
                               ...prev,
                               lines: (prev.lines || []).map((line: any, i: number) =>
                                 i === idx
                                   ? {
-                                    ...line,
-                                    itemCode: selectedCode,
-                                    itemNm: selected?.itemNm ?? "",
-                                    unit: selected?.unit ?? "",
-                                  }
-                                  : line
+                                      ...line,
+                                      itemCode: selectedCode,
+                                      itemNm: selected?.itemNm ?? "",
+                                      unit: selected?.unit ?? "",
+                                    }
+                                  : line,
                               ),
                             }));
                           }}
                         >
-                          <option value="" disabled>품목을 선택해주세요</option>
+                          <option value="" disabled>
+                            품목을 선택해주세요
+                          </option>
                           {itemOptions.map((opt) => (
                             <option key={opt.itemCode} value={opt.itemCode}>
                               {opt.itemCode} ({opt.itemNm ?? "-"})
@@ -496,9 +490,7 @@ export function SalesOrderDetailPage() {
                             value={line.planQty ?? ""}
                             placeholder="미정"
                             disabled={isBusy}
-                            onChange={(e) =>
-                              handleLineChange(idx, "planQty", sanitizeDecimalInput(e.target.value))
-                            }
+                            onChange={(e) => handleLineChange(idx, "planQty", sanitizeDecimalInput(e.target.value))}
                           />
                           <span
                             style={{
