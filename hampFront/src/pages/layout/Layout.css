@@ -813,7 +813,7 @@
   background: var(--dl-panel);
   border: 1px solid var(--border);
   border-radius: 12px;
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 [data-theme="dark"] .detailCard {
@@ -893,73 +893,178 @@
 }
 
 /* ================================
-   본문 — 카드형 섹션
+   DetailLayout — Enterprise
 ================================ */
+.detailCard {
+  --dl-bg: var(--bg-subtle, #f7f8fa);
+  --dl-panel: var(--bg-card, #ffffff);
+  --dl-ink: var(--text-heading, #14181f);
+  --dl-ink-soft: var(--text-body, #5b6472);
+  --dl-ink-faint: var(--text-muted, #8b94a1);
+  --dl-line: var(--border, #e3e6ea);
+  --dl-line-strong: var(--border-strong, #c7cdd5);
+
+  --dl-accent: var(--primary, #0052cc);
+  --dl-accent-soft: color-mix(in srgb, var(--dl-accent) 10%, var(--dl-panel));
+  --dl-accent-ink: var(--dl-accent);
+
+  --dl-danger: #c0293d;
+  --dl-danger-soft: color-mix(in srgb, var(--dl-danger) 10%, var(--dl-panel));
+
+  --dl-mono: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, monospace;
+  --dl-pad-x: 32px;
+
+  display: flex;
+  flex-direction: column;
+  background: var(--dl-panel);
+  border: 1px solid var(--dl-line);
+  border-radius: 12px;
+}
+
+[data-theme="dark"] .detailCard {
+  --dl-line-strong: #334155;
+  --dl-danger: #f87171;
+}
+
+/* ---------- DetailSelect (div 드롭다운) ---------- */
+.detailCard .selectBox {
+  --ctl-h: 40px;
+}
+
+.detailCard .selectBox .selectBoxTrigger {
+  padding: 0 12px;
+  background: var(--dl-panel);
+  border: 1px solid var(--dl-line-strong);
+  border-radius: 8px;
+}
+
+.detailCard .selectBox .selectBoxTrigger:hover:not(:disabled) {
+  background: var(--dl-panel);
+  border-color: var(--dl-ink-faint);
+}
+
+.detailCard .selectBox .selectBoxTrigger:focus-visible,
+.detailCard .selectBox .selectBoxTrigger[aria-expanded="true"] {
+  background: var(--dl-panel);
+  border-color: var(--dl-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dl-accent) 18%, transparent);
+}
+
+.detailCard .selectBox .selectBoxTrigger:disabled {
+  background: var(--dl-bg);
+  color: var(--dl-ink-faint);
+  opacity: 1;
+}
+
+/* ---------- 헤더 ---------- */
+.detailCard .detailHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 24px var(--dl-pad-x) 20px;
+  border-bottom: 1px solid var(--dl-line);
+}
+
+.detailCard .detailHeaderTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.detailCard .detailTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--dl-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detailCard .detailCode {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--dl-line);
+  border-radius: 6px;
+  background: var(--dl-bg);
+  color: var(--dl-ink-soft);
+  font-family: var(--dl-mono);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* 뱃지가 들어오면 박스 제거 */
+.detailCard .detailCode:has(.detailBadge) {
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.detailCard .detailMeta {
+  font-size: 13px;
+  color: var(--dl-ink-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------- 본문 ---------- */
 .detailCard .detailBody {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 18px;
-  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  padding: 8px var(--dl-pad-x) 12px;
 }
 
 .detailCard .detailSection {
-  border: 1px solid var(--dl-line);
-  border-radius: 10px;
-  padding: 22px;
-  background: var(--dl-panel);
+  padding: 24px 0;
 }
 
-.detailCard .detailSection:has(.detailField--full) {
-  grid-column: 1 / -1;
+.detailCard .detailSection + .detailSection {
+  border-top: 1px solid var(--dl-line);
 }
 
 .detailCard .detailSectionTitle {
   display: flex;
   align-items: center;
-  gap: 16px;
-  font-size: 20px;
+  gap: 8px;
+  margin: 0 0 18px;
+  font-size: 15px;
   font-weight: 700;
+  line-height: 1.4;
   color: var(--dl-ink);
-  margin: 0 0 16px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--dl-line);
 }
 
-.detailCard .detailSectionIcon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: var(--dl-accent-soft);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  color: var(--dl-accent-ink);
-  flex-shrink: 0;
+.detailCard .detailSectionTitle::before {
+  content: "";
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--dl-accent);
 }
 
-.detailCard .detailSection--full {
-  grid-column: 1 / -1;
-}
-
-/* ================================
-   필드 그리드
-================================ */
+/* ---------- 필드 그리드 (최대 4열, 220px 미만이면 자동 줄바꿈) ---------- */
 .detailCard .detailGrid {
-  display: flex;
-  gap: 16px;
-}
-
-.detailCard .detailSection:not(:has(.detailField--full)) .detailGrid {
-  grid-template-columns: 1fr;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(max(220px, calc((100% - 72px) / 4)), 1fr)
+  );
+  gap: 20px 24px;
 }
 
 .detailCard .detailField {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -968,101 +1073,50 @@
 }
 
 .detailCard .detailField label {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--dl-ink-soft);
-  padding-left: 2px;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  color: var(--dl-ink-faint);
 }
 
 .detailCard .detailField label.requiredLabel {
-  color: var(--dl-ink);
-  font-weight: 700;
+  color: var(--dl-ink-soft);
 }
 
 .detailCard .detailField label .required {
-  color: var(--dl-danger);
   margin-left: 2px;
+  color: var(--dl-danger);
 }
 
+/* 읽기 모드: 라벨과 왼쪽 선 일치 */
 .detailCard .detailValue {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--dl-ink);
-  min-height: 42px;
   display: flex;
   align-items: center;
-  word-break: break-word;
+  min-height: 40px;
   padding: 0 12px;
-}
-
-/* ================================
-   DETAIL BADGE
-================================ */
-
-.detailCard .detailBadge {
-  font-size: 13px;
-  font-weight: 600;
-  padding: 4px 12px;
-  border-radius: 9999px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  width: fit-content;
-}
-
-.detailCard .detailBadge.success {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.detailCard .detailBadge.danger {
-  background: #fde8e8;
-  color: #991b1b;
-}
-
-.detailCard .detailBadge.warn {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.detailCard .detailBadge.good {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.detailCard .detailBadge.muted {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.detailCard .detailBadge.success::before,
-.detailCard .detailBadge.danger::before,
-.detailCard .detailBadge.warn::before {
-  content: "";
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: currentColor;
-  margin-right: 6px;
-}
-
-.detailCard .detailField:has(.detailBadge),
-.detailCard .detailValue:has(.detailBadge) {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 4px 0 !important;
-  min-height: auto !important;
-}
-
-/* 입력 필드 (edit 모드) */
-.detailCard .tableInput {
-  height: 42px;
-  padding: 0 14px;
-  font-size: 15px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
   color: var(--dl-ink);
-  background: var(--dl-bg);
+  word-break: break-word;
+}
+
+.detailCard .detailValue--empty {
+  color: var(--dl-ink-faint);
+  font-weight: 400;
+}
+
+/* ---------- 입력 (edit 모드) ---------- */
+.detailCard .tableInput {
+  width: 100%;
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--dl-ink);
+  background: var(--dl-panel);
   border: 1px solid var(--dl-line-strong);
   border-radius: 8px;
   outline: none;
@@ -1072,127 +1126,161 @@
     background 0.15s ease;
 }
 
+.detailCard textarea.tableInput {
+  height: auto;
+  min-height: 88px;
+  padding: 10px 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
 .detailCard .tableInput::placeholder {
   color: var(--dl-ink-faint);
 }
 
-.detailCard .tableInput:hover:not(:disabled) {
+.detailCard .tableInput:hover:not(:disabled):not(:focus) {
   border-color: var(--dl-ink-faint);
 }
 
-.detailCard .tableInput:focus {
-  background: var(--dl-panel);
+.detailCard .tableInput:focus-visible {
   border-color: var(--dl-accent);
-  box-shadow: 0 0 0 3px var(--dl-accent-soft);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dl-accent) 18%, transparent);
 }
 
 .detailCard .tableInput:disabled {
-  background: var(--dl-line);
+  background: var(--dl-bg);
   color: var(--dl-ink-faint);
   cursor: not-allowed;
 }
 
-.detailCard .detailSection:has(.tableInput:focus) {
-  border-color: var(--dl-accent);
-}
+/* ---------- 뱃지 ---------- */
+.detailCard .detailBadge {
+  --bd-fg: #475569;
 
-.sectionTitleUnderline {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-heading, #14181f);
-  margin: 0 0 16px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--border, #e3e6ea);
+  gap: 6px;
+  width: fit-content;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--bd-fg);
+  background: color-mix(in srgb, var(--bd-fg) 12%, transparent);
+  border-radius: 999px;
 }
 
-[data-theme="dark"] .sectionTitleUnderline {
-  border-bottom-color: var(--border);
+.detailCard .detailBadge.success,
+.detailCard .detailBadge.good { --bd-fg: #17875f; }
+.detailCard .detailBadge.danger { --bd-fg: #c0293d; }
+.detailCard .detailBadge.warn { --bd-fg: #b45309; }
+
+[data-theme="dark"] .detailCard .detailBadge { --bd-fg: #94a3b8; }
+[data-theme="dark"] .detailCard .detailBadge.success,
+[data-theme="dark"] .detailCard .detailBadge.good { --bd-fg: #57d3a1; }
+[data-theme="dark"] .detailCard .detailBadge.danger { --bd-fg: #f87171; }
+[data-theme="dark"] .detailCard .detailBadge.warn { --bd-fg: #fbbf24; }
+
+.detailCard .detailBadge:not(.muted)::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
-/* ================================
-   푸터
-================================ */
+/* ---------- 푸터 ---------- */
 .detailCard .detailFooter {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 18px 24px;
-  border-top: 1px solid var(--dl-line-strong);
+  gap: 12px;
+  padding: 14px var(--dl-pad-x);
   background: var(--dl-bg);
+  border-top: 1px solid var(--dl-line);
+  border-radius: 0 0 12px 12px;
 }
 
 .detailCard .detailFooterActions {
   display: flex;
-  gap: 10px;
   align-items: center;
+  gap: 8px;
 }
 
 .detailCard .detailFooter button {
-  height: 42px;
-  padding: 0 20px;
+  height: 40px;
+  min-width: 80px;
+  padding: 0 18px;
   font-size: 14px;
   font-weight: 600;
-  border-radius: 8px;
-  border: 1px solid var(--dl-line-strong);
-  background: var(--dl-panel);
   color: var(--dl-ink-soft);
+  background: var(--dl-panel);
+  border: 1px solid var(--dl-line-strong);
+  border-radius: 8px;
   cursor: pointer;
   transition:
     background 0.12s ease,
     border-color 0.12s ease,
-    color 0.12s ease,
-    transform 0.05s ease;
+    color 0.12s ease;
 }
 
-.detailCard .detailFooter button:hover {
-  border-color: var(--dl-ink-faint);
+.detailCard .detailFooter button:hover:not(:disabled) {
   color: var(--dl-ink);
-}
-
-.detailCard .detailFooter button:active {
-  transform: translateY(1px);
+  border-color: var(--dl-ink-faint);
 }
 
 .detailCard .detailFooter button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
 }
 
 .detailCard .detailFooter .btnPrimary {
-  background: var(--dl-ink);
-  border-color: var(--dl-ink);
-  color: #ffffff;
+  color: #fff;
+  background: var(--dl-accent);
+  border-color: var(--dl-accent);
+}
+
+.detailCard .detailFooter .btnPrimary:hover:not(:disabled) {
+  color: #fff;
+  background: color-mix(in srgb, var(--dl-accent) 88%, #000);
+  border-color: color-mix(in srgb, var(--dl-accent) 88%, #000);
 }
 
 [data-theme="dark"] .detailCard .detailFooter .btnPrimary {
-  background: var(--primary);
-  border-color: var(--primary);
   color: #0f1117;
 }
 
-.detailCard .detailFooter .btnPrimary:hover {
-  background: var(--dl-accent-ink);
-  border-color: var(--dl-accent-ink);
+[data-theme="dark"] .detailCard .detailFooter .btnPrimary:hover:not(:disabled) {
+  color: #0f1117;
 }
 
 .detailCard .detailFooter .btnDanger {
   color: var(--dl-danger);
-  border-color: var(--dl-danger-soft);
+  border-color: color-mix(in srgb, var(--dl-danger) 35%, transparent);
 }
 
-.detailCard .detailFooter .btnDanger:hover {
+.detailCard .detailFooter .btnDanger:hover:not(:disabled) {
+  color: var(--dl-danger);
   background: var(--dl-danger-soft);
   border-color: var(--dl-danger);
 }
 
-.detailCard .detailFooter button:focus-visible,
-.detailCard .tableInput:focus-visible {
+.detailCard .detailFooter button:focus-visible {
   outline: 2px solid var(--dl-accent);
   outline-offset: 2px;
+}
+
+/* ---------- 반응형 ---------- */
+@container content (max-width: 640px) {
+  .detailCard { --dl-pad-x: 20px; }
+
+  .detailCard .detailHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .detailCard .detailTitle { font-size: 20px; }
 }
 
 /* ==========================================
