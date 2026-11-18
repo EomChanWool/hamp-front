@@ -4,7 +4,6 @@ import { Badge } from "@components/common/Badge";
 import { formatDateTime } from "@/utils/common";
 import { apiClient } from "@/api/apiClient";
 import { useAuth } from "@/context/AuthContext";
-import { AuthApi } from "@/api/auth/Auth";
 import type { UserDetailResponse, ApiResponseUserDetailResponse, UserUpdateRequest } from "@/api/User";
 import Spinner from "@/components/common/Spinner";
 import { isValidPhone } from "@/utils/common";
@@ -27,7 +26,7 @@ function Row({ label, required, children }: { label: string; required?: boolean;
 }
 
 export function SystemUsersInfoPage() {
-  const { user: authUser } = useAuth();
+  const { user: authUser, changePassword, updateUser } = useAuth();
   const navigate = useNavigate();
 
   const [user, setUser] = useState<UserDetailResponse | null>(null);
@@ -79,26 +78,34 @@ export function SystemUsersInfoPage() {
   }, [isEditing, user]);
 
   const handleSave = async () => {
-
     if (!user || isUpdating) return;
+
     if (!form.userNm.trim()) {
       alert("이름을 입력해주세요.");
       return;
     }
-    if (passwordForm.new) {
+
+    // 비밀번호 검증
+    const wantsPasswordChange = !!(passwordForm.current || passwordForm.new || passwordForm.confirm);
+    if (wantsPasswordChange) {
+      if (passwordForm.new !== passwordForm.confirm) {
+        alert("새 비밀번호와 새 비밀번호 확인이 일치하지 않습니다.");
+        return;
+      }
+      if (!passwordForm.new) {
+        alert("새 비밀번호를 입력해주세요.");
+        return;
+      }
       if (!passwordForm.current) {
         alert("현재 비밀번호를 입력해주세요.");
         return;
       }
-      if (passwordForm.new !== passwordForm.confirm) {
-        alert("새 비밀번호가 일치하지 않습니다.");
-        return;
-      }
     }
+
     // 전화번호: 선택 입력, 값이 있으면 형식 검사
     if (!isValidPhone(form.phone)) {
       alert("전화번호 형식이 올바르지 않습니다.\n예: 02-1234-5678, 010-1234-5678");
-      return false;
+      return; // (기존 return false → 반환값을 쓰지 않으므로 return 으로 통일)
     }
 
     setIsUpdating(true);
@@ -113,27 +120,28 @@ export function SystemUsersInfoPage() {
         position: position || null,
         authIds: form.authIds,
       };
-      await apiClient.put(`/users/${encodeURIComponent(user.userId)}`, updatePayload);
-
+  
       if (passwordForm.new) {
-        const passwordRes = await AuthApi.changePassword({
+        await changePassword({
           currentPassword: passwordForm.current,
           newPassword: passwordForm.new,
         });
-
-        if (passwordRes.status !== "OK") {
-          throw new Error(passwordRes.message || "비밀번호 변경에 실패했습니다.");
-        }
       }
 
-      setUser({ ...user, userNm, phone, position });
+      // 정보 수정 (위에서 저장된 새 토큰이 요청 인터셉터를 통해 자동으로 사용된다)
+      await apiClient.put(`/users/${encodeURIComponent(user.userId)}`, updatePayload);
+
+      // 화면(상세 정보) 갱신: phone 은 서버 저장 형태(null)와 맞춤
+      setUser({ ...user, userNm, phone: phone || null, position: position || null } as UserDetailResponse);
+
+      updateUser({ userNm });
 
       alert("정보가 수정되었습니다.");
       setIsEditing(false);
     } catch (e) {
       console.error(e);
       const message = axios.isAxiosError(e) ? e.response?.data?.message : null;
-      alert(message || "저장에 실패했습니다.");
+      alert(message || (e instanceof Error ? e.message : null) || "저장에 실패했습니다.");
     } finally {
       setIsUpdating(false);
     }
@@ -161,7 +169,6 @@ export function SystemUsersInfoPage() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            console.trace("form onSubmit 실행됨");
             handleSave();
           }}
         >
@@ -172,9 +179,7 @@ export function SystemUsersInfoPage() {
                 <div className="profileAvatar" aria-hidden="true">
                   {initial}
                 </div>
-                <h1 className="profileName">
-                  {user.userNm}
-                </h1>
+                <h1 className="profileName">{user.userNm}</h1>
                 <p className="profileSub">{user.userId}</p>
               </div>
 
@@ -189,12 +194,7 @@ export function SystemUsersInfoPage() {
                     >
                       취소
                     </button>
-                    <button
-                      type="button"
-                      className="primaryButton"
-                      disabled={isUpdating}
-                      onClick={handleSave}
-                    >
+                    <button type="button" className="primaryButton" disabled={isUpdating} onClick={handleSave}>
                       {isUpdating ? "저장 중..." : "저장"}
                     </button>
                   </>
