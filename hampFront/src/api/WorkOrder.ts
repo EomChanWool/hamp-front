@@ -202,6 +202,8 @@ export interface WorkOrderMaterialEstimateByproductResponse {
     itemCode: string;
     /** 부산물 품목명 */
     itemNm: string;
+    /** 부산물 품목단위 */
+    unit: string;
     /** 부산물 추정량 (해당 품목 단위 기준, 올림) */
     qty: number;
 }
