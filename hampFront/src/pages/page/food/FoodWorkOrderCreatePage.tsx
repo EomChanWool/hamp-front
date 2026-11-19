@@ -37,7 +37,7 @@ const PARK_UNIT = "KG";
 
 /** 배분 그룹 키 → 화면 표시 이름 (모르는 그룹 키는 키 그대로 표시) */
 const GROUP_LABEL: Record<string, string> = {
-  RAW: "원물(RAW)",
+  RAW: "탈각씨드(RAW)",
   PARK: "헴프박(PARK)",
 };
 
@@ -719,7 +719,7 @@ export function FoodWorkOrderCreatePage() {
                     <CubeIcon />
                   </span>
                   <div className="woc-infocard__text">
-                    <span className="woc-infocard__label">계약 투입원료 · {orderDetail.itemNm ?? "-"}</span>
+                    <span className="woc-infocard__label">계약 원물 (탈각전) · {orderDetail.itemNm ?? "-"}</span>
                     <strong className="woc-infocard__value">
                       {orderDetail.orderQty != null ? orderDetail.orderQty.toLocaleString() : "-"}
                       <em>{orderDetail.unit ?? ""}</em>
@@ -789,7 +789,7 @@ export function FoodWorkOrderCreatePage() {
                         <span className="woc-line__code">{line.itemCode}</span>
                         {/* 배분 그룹/비율 (투입량 자체는 아래 지시수량 칸에 표시) */}
                         <span className={`woc-tag ${groupTagCls}`}>
-                          {line.allocationGroup}
+                          {GROUP_LABEL[line.allocationGroup] ?? line.allocationGroup}
                           {line.allocationPercent != null ? ` ${line.allocationPercent}%` : ""}
                         </span>
                       </div>
@@ -871,7 +871,7 @@ export function FoodWorkOrderCreatePage() {
               </div>
             )}
           </div>
-          
+
           <div className="woc-actions">
             <button type="submit" className="woc-btn primary block" disabled={isBusy}>
               {isSubmitting ? "등록 중..." : "작업지시 저장"}
