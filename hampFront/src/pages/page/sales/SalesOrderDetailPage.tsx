@@ -7,9 +7,25 @@ import { BusinessPartnerApi } from "@/api/sales/BusinessPartner";
 import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
 import Spinner from "@/components/common/Spinner";
 import { AmountInput } from "@/components/common/AmountInput";
-import { formatDateTime, parseDecimalInput, sanitizeDecimalInput } from "@/utils/common";
+import { formatDateTime } from "@/utils/common";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
-import { DetailSelect, type SelectOption } from "@/pages/layout/DetailSelect";
+import { type SelectOption } from "@/pages/layout/DetailSelect";
+import { SalesOrderAllocationSection } from "@/components/common/SalesOrderAllocationSection";
+import {
+  DEFAULT_OIL_PERCENT,
+  DEFAULT_POWDER_PERCENT,
+  RAW_ITEM_CODE,
+  buildAllocationLines,
+  formatQty,
+  hasLegacyLines,
+  readAllocationPercents,
+  type AllocationPercents,
+} from "@/utils/salesOrderAllocation";
+
+const ALLOCATION_GROUP_LABEL: Record<string, string> = {
+  RAW: "원물(RAW)",
+  PARK: "헴프박(PARK)",
+};
 
 export function SalesOrderDetailPage() {
   const { orderCode } = useParams<{ orderCode: string }>();
@@ -23,8 +39,11 @@ export function SalesOrderDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
 
   const [form, setForm] = useState<Record<string, any>>({});
+  const [percents, setPercents] = useState<AllocationPercents>({
+    oilPercent: DEFAULT_OIL_PERCENT,
+    powderPercent: DEFAULT_POWDER_PERCENT,
+  });
   const [businessPartnerOptions, setBusinessPartnerOptions] = useState<any[]>([]);
-  const [itemOptions, setItemOptions] = useState<any[]>([]);
   const [rawItemOptions, setRawItemOptions] = useState<ItemOptionResponse[]>([]);
 
   const isBusy = isUpdating || isDeleting;
@@ -36,8 +55,6 @@ export function SalesOrderDetailPage() {
     }));
 
   const bpSelectOptions = useMemo(() => toSelectOptions(businessPartnerOptions), [businessPartnerOptions]);
-  const rawItemSelectOptions = useMemo(() => toSelectOptions(rawItemOptions), [rawItemOptions]);
-  const itemSelectOptions = useMemo(() => toSelectOptions(itemOptions), [itemOptions]);
 
   // 섹션 정의 (bpCode 셀렉트박스 포함)
   const sections: DetailSection<SalesOrderDetailResponse>[] = [
@@ -84,31 +101,14 @@ export function SalesOrderDetailPage() {
         {
           label: "투입원료",
           key: "itemCode",
-          editable: true,
-          required: true,
-          // 선택 시 itemNm, unit도 같이 바뀌어야 해서 options 대신 renderEditor 사용
-          renderEditor: (value, _onChange, disabled, inputId) => (
-            <DetailSelect
-              id={inputId}
-              value={value ?? ""}
-              disabled={disabled}
-              options={rawItemSelectOptions}
-              placeholder="투입원료를 선택해주세요"
-              searchable
-              onChange={(selectedCode) => {
-                const selected = rawItemOptions.find((opt) => opt.itemCode === selectedCode);
-                setForm((prev) => ({
-                  ...prev,
-                  itemCode: selectedCode,
-                  itemNm: selected?.itemNm ?? "",
-                  unit: selected?.unit ?? "",
-                }));
-              }}
-            />
-          ),
+          // 생산 배분 시뮬레이션이 헴프 원물 기준으로 고정돼 있어 수정 불가 (저장 시 항상 헴프 원물)
+          editable: false,
           renderValue: (value) => {
-            if (!value) return "-";
-            return form.itemNm ? `${value} (${form.itemNm})` : value;
+            const current = !value ? "-" : form.itemNm ? `${value} (${form.itemNm})` : value;
+            if (!isEditing || value === RAW_ITEM_CODE) return current;
+            const rawItem = rawItemOptions.find((opt) => opt.itemCode === RAW_ITEM_CODE);
+            const rawLabel = rawItem?.itemNm ? `${RAW_ITEM_CODE} (${rawItem.itemNm})` : RAW_ITEM_CODE;
+            return `${current} → 저장 시 ${rawLabel}로 변경됩니다`;
           },
         },
         {
@@ -158,13 +158,11 @@ export function SalesOrderDetailPage() {
 
   const fetchOptions = async () => {
     try {
-      const [bpRes, itemRes, rawItemRes] = await Promise.all([
+      const [bpRes, rawItemRes] = await Promise.all([
         BusinessPartnerApi.getOptions(),
-        ItemApi.getOptions({ category: [2] }),
         ItemApi.getOptions({ category: [0] }),
       ]);
       setBusinessPartnerOptions(bpRes.data ?? []);
-      setItemOptions(itemRes.data ?? []);
       setRawItemOptions(rawItemRes.data ?? []);
     } catch (error) {
       console.error("옵션 목록 조회 실패:", error);
@@ -194,10 +192,7 @@ export function SalesOrderDetailPage() {
           orderQty: data.orderQty != null ? String(data.orderQty) : "",
           orderAmount: data.orderAmount != null ? String(data.orderAmount) : "",
           createdAt: formatDateTime(data.createdAt),
-          lines: (data.lines || []).map((line) => ({
-            ...line,
-            planQty: line.planQty != null ? String(line.planQty) : "",
-          })),
+          lines: data.lines || [],
         });
       }
     } catch (error) {
@@ -231,43 +226,18 @@ export function SalesOrderDetailPage() {
         orderQty: order.orderQty != null ? String(order.orderQty) : "",
         orderAmount: order.orderAmount != null ? String(order.orderAmount) : "",
         createdAt: formatDateTime(order.createdAt),
-        lines: (order.lines || []).map((line) => ({
-          ...line,
-          planQty: line.planQty != null ? String(line.planQty) : "",
-        })),
+        lines: order.lines || [],
       });
     }
   }, [isEditing, order]);
 
-  const addLine = () => {
-    setForm((prev) => ({
-      ...prev,
-      lines: [...(prev.lines || []), { itemCode: "", itemNm: "", unit: "", planQty: "" }],
-    }));
-  };
-
-  const removeLine = (index: number) => {
-    setForm((prev) => ({
-      ...prev,
-      lines: prev.lines?.filter((_: any, i: number) => i !== index),
-    }));
-  };
-
-  const handleLineChange = (index: number, fieldName: string, value: any) => {
-    const updatedLines = [...(form.lines || [])];
-    updatedLines[index] = {
-      ...updatedLines[index],
-      [fieldName]: value,
-    };
-    setForm((prev) => ({ ...prev, lines: updatedLines }));
+  const startEditing = () => {
+    if (order) setPercents(readAllocationPercents(order.lines || []));
+    setIsEditing(true);
   };
 
   const handleSave = async () => {
     if (!order || isUpdating) return;
-    if (!form.itemCode) {
-      alert("투입원료를 선택해주세요.");
-      return;
-    }
     if (!form.orderQty) {
       alert("투입수량을 입력해주세요.");
       return;
@@ -284,14 +254,11 @@ export function SalesOrderDetailPage() {
         dueDate: form.dueDate || null,
         status: form.status || null,
         note: form.note || null,
-        itemCode: form.itemCode || null,
+        itemCode: RAW_ITEM_CODE,
         orderQty: form.orderQty ? Number(form.orderQty) : null,
         orderAmount: form.orderAmount ? Number(form.orderAmount) : null,
-        lines: (form.lines || []).map((line: any) => ({
-          salesOrderLineId: line.salesOrderLineId,
-          itemCode: line.itemCode,
-          planQty: parseDecimalInput(line.planQty ?? ""),
-        })),
+        // 기존 라인은 같은 품목의 salesOrderLineId를 이어받아 갱신한다
+        lines: buildAllocationLines(percents, order.lines || []),
       };
 
       await SalesOrderApi.update(order.orderCode, updatePayload);
@@ -383,157 +350,84 @@ export function SalesOrderDetailPage() {
               >
                 목록
               </button>
-              <button type="button" className="primaryButton" onClick={() => setIsEditing(true)} disabled={isBusy}>
+              <button type="button" className="primaryButton" onClick={startEditing} disabled={isBusy}>
                 수정
               </button>
             </>
           )
         }
       >
-        {/* 품목 정보 테이블 영역 */}
-        <div className="detailSection detailSection--full">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            <h3 className="detailSectionTitle" style={{ margin: 0 }}>
-              품목 정보
-            </h3>
-            {isEditing && (
-              <button type="button" className="miniButton primary" onClick={addLine} disabled={isBusy}>
-                + 품목 추가
-              </button>
+        {isEditing ? (
+          <>
+            {hasLegacyLines(order.lines || []) && (
+              <div className="detailSection detailSection--full">
+                <p className="soAllocLegacyNotice" role="note">
+                  이 수주에는 배분 비율 없이 등록된 기존 품목 라인이 있습니다. 저장하면 아래 배분 비율 기준의 4개 라인(헴프오일·헴프씨드·헴프 파우더·헴프박 농축액)으로 다시 저장되고, 그 밖의 품목 라인은 저장 요청에서 빠집니다.
+                </p>
+              </div>
             )}
-          </div>
+            <SalesOrderAllocationSection
+              variant="detail"
+              rawWeight={form.orderQty ? Number(form.orderQty) : null}
+              percents={percents}
+              onChange={setPercents}
+              disabled={isBusy}
+            />
+          </>
+        ) : (
+          <div className="detailSection detailSection--full">
+            <h3 className="detailSectionTitle">품목 정보</h3>
 
-          <div className="tableWrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>
-                    <div className="th-content">품목코드</div>
-                  </th>
-                  <th>
-                    <div className="th-content">품목명</div>
-                  </th>
-                  <th>
-                    <div className="th-content">예정 산출수량</div>
-                  </th>
-                  {isEditing && (
-                    <th>
-                      <div className="th-content">삭제</div>
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {form.lines?.map((line: any, idx: number) => (
-                  <tr key={idx}>
-                    <td>
-                      {isEditing ? (
-                        <select
-                          className="tableInput"
-                          value={line.itemCode ?? ""}
-                          disabled={isBusy}
-                          onChange={(e) => {
-                            const selectedCode = e.target.value;
-                            const selected = itemOptions.find((opt) => opt.itemCode === selectedCode);
-
-                            setForm((prev) => ({
-                              ...prev,
-                              lines: (prev.lines || []).map((line: any, i: number) =>
-                                i === idx
-                                  ? {
-                                      ...line,
-                                      itemCode: selectedCode,
-                                      itemNm: selected?.itemNm ?? "",
-                                      unit: selected?.unit ?? "",
-                                    }
-                                  : line,
-                              ),
-                            }));
-                          }}
-                        >
-                          <option value="" disabled>
-                            품목을 선택해주세요
-                          </option>
-                          {itemOptions.map((opt) => (
-                            <option key={opt.itemCode} value={opt.itemCode}>
-                              {opt.itemCode} ({opt.itemNm ?? "-"})
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        line.itemCode || "-"
-                      )}
-                    </td>
-                    <td>{line.itemNm || "-"}</td>
-
-                    <td>
-                      {isEditing ? (
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            width: "100%",
-                          }}
-                        >
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            className="tableInput"
-                            style={{
-                              textAlign: "right",
-                              flex: 1,
-                              width: 0,
-                              minWidth: 0,
-                              boxSizing: "border-box",
-                            }}
-                            value={line.planQty ?? ""}
-                            placeholder="미정"
-                            disabled={isBusy}
-                            onChange={(e) => handleLineChange(idx, "planQty", sanitizeDecimalInput(e.target.value))}
-                          />
-                          <span
-                            style={{
-                              width: "40px",
-                              flexShrink: 0,
-                              textAlign: "left",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {line.unit || ""}
-                          </span>
-                        </div>
-                      ) : line.planQty ? (
-                        `${Number(line.planQty).toLocaleString("ko-KR")}${line.unit ? ` ${line.unit}` : ""}`
-                      ) : (
-                        "미정"
-                      )}
-                    </td>
-                    {isEditing && (
-                      <td style={{ textAlign: "center" }}>
-                        <button
-                          type="button"
-                          className="miniButton danger"
-                          onClick={() => removeLine(idx)}
-                          disabled={isBusy}
-                        >
-                          삭제
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-                {(!form.lines || form.lines.length === 0) && (
+            <div className="tableWrap">
+              <table>
+                <thead>
                   <tr>
-                    <td colSpan={isEditing ? 4 : 3} style={{ textAlign: "center", padding: "20px" }}>
-                      등록된 품목 정보가 없습니다. {isEditing && "우측 상단의 [+ 품목 추가] 버튼을 눌러주세요."}
-                    </td>
+                    <th>
+                      <div className="th-content">품목코드</div>
+                    </th>
+                    <th>
+                      <div className="th-content">품목명</div>
+                    </th>
+                    <th>
+                      <div className="th-content">배분 그룹</div>
+                    </th>
+                    <th>
+                      <div className="th-content">배분 비율</div>
+                    </th>
+                    <th>
+                      <div className="th-content">배분 투입량</div>
+                    </th>
+                    <th>
+                      <div className="th-content">예정 산출수량</div>
+                    </th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {(order.lines || []).map((line) => (
+                    <tr key={line.salesOrderLineId ?? line.itemCode}>
+                      <td>{line.itemCode || "-"}</td>
+                      <td>{line.itemNm || "-"}</td>
+                      <td>{line.allocationGroup ? (ALLOCATION_GROUP_LABEL[line.allocationGroup] ?? line.allocationGroup) : "-"}</td>
+                      <td>{line.allocationPercent != null ? `${line.allocationPercent}%` : "-"}</td>
+                      <td>{formatQty(line.allocatedInputQty)}</td>
+                      <td>{line.planQty != null ? formatQty(line.planQty, line.unit) : "미정"}</td>
+                    </tr>
+                  ))}
+                  {(!order.lines || order.lines.length === 0) && (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: "center", padding: "20px" }}>
+                        등록된 품목 정보가 없습니다.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <p className="soAllocTableHint">
+              배분 투입량은 원물(RAW) 그룹은 탈피씨드, 헴프박(PARK) 그룹은 건조 헴프박 기준입니다. 예정 산출수량이 미정인 품목은 수율이 확정되지 않은 분기입니다.
+            </p>
           </div>
-        </div>
+        )}
       </DetailLayout>
     </section>
   );

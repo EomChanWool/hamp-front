@@ -9,18 +9,20 @@ import { BusinessPartnerApi } from "@/api/sales/BusinessPartner";
 import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
 import { AmountInput } from "@/components/common/AmountInput";
 import { SelectBox, type SelectBoxOption } from "@/components/common/SelectBox";
-import { parseDecimalInput, sanitizeDecimalInput } from "@/utils/common";
+import { SalesOrderAllocationSection } from "@/components/common/SalesOrderAllocationSection";
+import {
+  DEFAULT_OIL_PERCENT,
+  DEFAULT_POWDER_PERCENT,
+  RAW_ITEM_CODE,
+  buildAllocationLines,
+  type AllocationPercents,
+} from "@/utils/salesOrderAllocation";
 import "@/pages/layout/Layout.css";
-type SalesOrderLineDraft = {
-  itemCode: string;
-  planQty: string;
-};
 
-type SalesOrderCreateForm = Omit<SalesOrderCreateRequest, "lines"> & {
-  lines: SalesOrderLineDraft[];
-};
+type SalesOrderCreateForm = Omit<SalesOrderCreateRequest, "lines">;
 
-const REQUIRED_TOTAL = 4;
+// 거래처 · 투입수량 · 가공비 (투입원료는 헴프 원물 고정)
+const REQUIRED_TOTAL = 3;
 
 export function SalesOrderCreatePage() {
   const navigate = useNavigate();
@@ -32,27 +34,27 @@ export function SalesOrderCreatePage() {
     bpCode: "",
     dueDate: "",
     note: "",
-    itemCode: "",
+    itemCode: RAW_ITEM_CODE,
     orderQty: null,
     orderAmount: null,
-    lines: [],
+  });
+  const [percents, setPercents] = useState<AllocationPercents>({
+    oilPercent: DEFAULT_OIL_PERCENT,
+    powderPercent: DEFAULT_POWDER_PERCENT,
   });
 
   const [businessPartnerOptions, setBusinessPartnerOptions] = useState<any[]>([]);
-  const [itemOptions, setItemOptions] = useState<any[]>([]);
   const [rawItemOptions, setRawItemOptions] = useState<ItemOptionResponse[]>([]);
 
   // 옵션 목록 조회 함수
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const [bpRes, itemRes, rawItemRes] = await Promise.all([
+        const [bpRes, rawItemRes] = await Promise.all([
           BusinessPartnerApi.getOptions(),
-          ItemApi.getOptions({ category: [2] }),
           ItemApi.getOptions({ category: [0] }),
         ]);
         setBusinessPartnerOptions(bpRes.data ?? []);
-        setItemOptions(itemRes.data ?? []);
         setRawItemOptions(rawItemRes.data ?? []);
       } catch (error) {
         console.error("옵션 목록 조회 실패:", error);
@@ -72,51 +74,8 @@ export function SalesOrderCreatePage() {
     [businessPartnerOptions]
   );
 
-  const rawItemSelectOptions = useMemo<SelectBoxOption[]>(
-    () =>
-      rawItemOptions.map((opt) => ({
-        value: opt.itemCode,
-        label: opt.itemNm ?? opt.itemCode,
-        description: opt.itemCode,
-      })),
-    [rawItemOptions]
-  );
-
-  const itemSelectOptions = useMemo<SelectBoxOption[]>(
-    () =>
-      itemOptions.map((opt) => ({
-        value: opt.itemCode,
-        label: opt.itemNm ?? opt.itemCode,
-        description: opt.itemCode,
-      })),
-    [itemOptions]
-  );
-
   const handleChange = (key: keyof SalesOrderCreateForm, value: any) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  // 품목(Line) 추가
-  const addLine = () => {
-    setForm((prev) => ({
-      ...prev,
-      lines: [...prev.lines, { itemCode: "", planQty: "" }]
-    }));
-  };
-
-  // 품목(Line) 변경
-  const handleLineChange = (index: number, key: keyof SalesOrderLineDraft, value: string) => {
-    const newLines = [...form.lines];
-    newLines[index] = { ...newLines[index], [key]: value };
-    setForm((prev) => ({ ...prev, lines: newLines }));
-  };
-
-  // 품목(Line) 삭제
-  const removeLine = (index: number) => {
-    setForm((prev) => ({
-      ...prev,
-      lines: prev.lines.filter((_, i) => i !== index)
-    }));
   };
 
   const handleCancel = () => {
@@ -131,10 +90,6 @@ export function SalesOrderCreatePage() {
       alert("거래처를 선택해주세요.");
       return;
     }
-    if (!form.itemCode) {
-      alert("투입원료를 선택해주세요.");
-      return;
-    }
     if (form.orderQty == null) {
       alert("투입수량을 입력해주세요.");
       return;
@@ -147,10 +102,8 @@ export function SalesOrderCreatePage() {
     const payload: SalesOrderCreateRequest = {
       ...form,
       itemCode: form.itemCode || null,
-      lines: form.lines.map((line) => ({
-        itemCode: line.itemCode,
-        planQty: parseDecimalInput(line.planQty),
-      })),
+      // 시뮬레이션 응답을 기다리지 않고 현재 입력된 비율로 보낸다 (그룹별 합은 항상 100)
+      lines: buildAllocationLines(percents),
     };
 
     setIsSubmitting(true);
@@ -172,7 +125,11 @@ export function SalesOrderCreatePage() {
   const selectedRawItem = rawItemOptions.find((opt) => opt.itemCode === form.itemCode);
   const rawUnit = selectedRawItem?.unit ?? "";
 
-  const requiredDone = [form.bpCode, form.itemCode, form.orderQty, form.orderAmount].filter(
+  const rawItemLabel = selectedRawItem
+    ? `${selectedRawItem.itemNm ?? selectedRawItem.itemCode} (${selectedRawItem.itemCode})`
+    : RAW_ITEM_CODE;
+
+  const requiredDone = [form.bpCode, form.orderQty, form.orderAmount].filter(
     (v) => v !== "" && v != null
   ).length;
 
@@ -181,7 +138,7 @@ export function SalesOrderCreatePage() {
     { label: "납기일자", value: form.dueDate ?? "" },
     {
       label: "투입원료",
-      value: selectedRawItem ? (selectedRawItem.itemNm ?? selectedRawItem.itemCode) : "",
+      value: selectedRawItem?.itemNm ?? RAW_ITEM_CODE,
     },
     {
       label: "투입수량",
@@ -194,7 +151,14 @@ export function SalesOrderCreatePage() {
       label: "가공비",
       value: form.orderAmount != null ? `${form.orderAmount.toLocaleString("ko-KR")}원` : "",
     },
-    { label: "생산 품목", value: `${form.lines.length}개` },
+    {
+      label: "원물 배분",
+      value: `오일 ${percents.oilPercent}% · 씨드 ${100 - percents.oilPercent}%`,
+    },
+    {
+      label: "헴프박 배분",
+      value: `분말 ${percents.powderPercent}% · 농축 ${100 - percents.powderPercent}%`,
+    },
   ];
 
   return (
@@ -267,24 +231,20 @@ export function SalesOrderCreatePage() {
               <div className="formCardHead">
                 <div>
                   <h2 className="formCardTitle" id="order-sec-input">투입원료</h2>
-                  <p className="formCardDesc">가공에 투입할 원료와 수량, 가공비를 입력합니다.</p>
+                  <p className="formCardDesc">가공에 투입할 원물의 수량과 가공비를 입력합니다.</p>
                 </div>
               </div>
 
               <div className="formGrid">
                 <div className="formField col6">
-                  <label className="formLabel" htmlFor="order-item">
-                    투입원료 <span className="required" aria-hidden="true">*</span>
-                  </label>
-                  <SelectBox
+                  <label className="formLabel" htmlFor="order-item">투입원료</label>
+                  {/* 생산 배분 시뮬레이션이 헴프 원물 기준으로 고정돼 있어 선택 없이 고정 표시 */}
+                  <input
                     id="order-item"
-                    value={form.itemCode ?? ""}
-                    options={rawItemSelectOptions}
-                    placeholder="투입원료를 선택해주세요"
-                    searchPlaceholder="원료명 또는 코드 검색"
-                    searchable
-                    disabled={isSubmitting}
-                    onChange={(v) => handleChange("itemCode", v)}
+                    className="formInput"
+                    value={rawItemLabel}
+                    readOnly
+                    disabled
                   />
                 </div>
 
@@ -328,114 +288,14 @@ export function SalesOrderCreatePage() {
               </div>
             </section>
 
-            {/* 3. 생산 품목 */}
-            <section className="formCard" aria-labelledby="order-sec-lines">
-              <div className="formCardHead">
-                <div>
-                  <h2 className="formCardTitle" id="order-sec-lines">생산 품목</h2>
-                  <p className="formCardDesc">가공 후 산출되는 품목과 예정 수량을 입력합니다.</p>
-                </div>
-                {form.lines.length > 0 && (
-                  <button
-                    type="button"
-                    className="miniButton primary"
-                    onClick={addLine}
-                    disabled={isSubmitting}
-                  >
-                    + 품목 추가
-                  </button>
-                )}
-              </div>
-
-              {form.lines.length === 0 ? (
-                <div className="formEmpty">
-                  <span className="formEmptyIcon" aria-hidden="true">
-                    <svg viewBox="0 0 20 20" fill="none" width="22" height="22">
-                      <path
-                        d="M10 4.5v11M4.5 10h11"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </span>
-                  <strong className="formEmptyTitle">등록된 생산 품목이 없습니다</strong>
-                  <p className="formEmptyDesc">산출 예정인 품목을 추가해주세요.</p>
-                  <button
-                    type="button"
-                    className="miniButton primary"
-                    onClick={addLine}
-                    disabled={isSubmitting}
-                  >
-                    + 품목 추가
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="orderLineHead" aria-hidden="true">
-                    <span>품목</span>
-                    <span>예정 산출수량</span>
-                    <span />
-                  </div>
-
-                  <div className="orderLineList">
-                    {form.lines.map((line, idx) => {
-                      const unit =
-                        itemOptions.find((opt) => opt.itemCode === line.itemCode)?.unit ?? "";
-
-                      return (
-                        <div className="orderLineRow" key={idx}>
-                          <SelectBox
-                            ariaLabel={`생산 품목 ${idx + 1} 품목`}
-                            value={line.itemCode}
-                            options={itemSelectOptions}
-                            placeholder="품목을 선택해주세요"
-                            searchPlaceholder="품목명 또는 코드 검색"
-                            searchable
-                            disabled={isSubmitting}
-                            onChange={(v) => handleLineChange(idx, "itemCode", v)}
-                          />
-
-                          <div className="formInputWrap">
-                            <input
-                              type="text"
-                              inputMode="decimal"
-                              className="formInput hasSuffix"
-                              aria-label={`생산 품목 ${idx + 1} 예정 산출수량`}
-                              value={line.planQty}
-                              placeholder="미정"
-                              disabled={isSubmitting}
-                              onChange={(e) =>
-                                handleLineChange(idx, "planQty", sanitizeDecimalInput(e.target.value))
-                              }
-                            />
-                            {unit && <span className="formInputSuffix">{unit}</span>}
-                          </div>
-
-                          <button
-                            type="button"
-                            className="formIconBtn"
-                            aria-label={`생산 품목 ${idx + 1} 삭제`}
-                            onClick={() => removeLine(idx)}
-                            disabled={isSubmitting}
-                          >
-                            <svg viewBox="0 0 20 20" fill="none" width="18" height="18" aria-hidden="true">
-                              <path
-                                d="M4 6h12M8 6V4.5h4V6m-6 0 .6 9h6.8l.6-9M8.5 9v4M11.5 9v4"
-                                stroke="currentColor"
-                                strokeWidth="1.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </section>
+            {/* 3·4. 생산 배분 (원물 RAW / 헴프박 PARK) */}
+            <SalesOrderAllocationSection
+              variant="form"
+              rawWeight={form.orderQty ?? null}
+              percents={percents}
+              onChange={setPercents}
+              disabled={isSubmitting}
+            />
           </div>
 
           {/* ===== 우측: 요약 + 액션 ===== */}
