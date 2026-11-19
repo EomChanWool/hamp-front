@@ -382,17 +382,28 @@ export function MasterItemsDetailPage() {
 
       alert(response.message || "수정되었습니다.");
 
+      const updated = response.data;
       setItem((prev) =>
         prev
           ? {
             ...prev,
-            productType: updatePayload.productType ?? prev.productType,
-            category: updatePayload.category ?? prev.category,
-            itemNm: updatePayload.itemNm ?? prev.itemNm,
-            unit: updatePayload.unit ?? prev.unit,
-            standard: updatePayload.standard ?? prev.standard,
+            productType: updated?.productType ?? updatePayload.productType ?? prev.productType,
+            category: updated?.category ?? updatePayload.category ?? prev.category,
+            itemNm:
+              updated && "itemNm" in updated
+                ? (updated.itemNm ?? "")
+                : (updatePayload.itemNm ?? ""),
+            unit:
+              updated && "unit" in updated
+                ? (updated.unit ?? "")
+                : (updatePayload.unit ?? ""),
+            standard:
+              updated && "standard" in updated
+                ? (updated.standard ?? "")
+                : (updatePayload.standard ?? ""),
             // 단독생산 전용 여부 반영
-            soleProductionYn: updatePayload.soleProductionYn ?? prev.soleProductionYn,
+            soleProductionYn:
+              updated?.soleProductionYn ?? updatePayload.soleProductionYn ?? prev.soleProductionYn,
             routings: updatePayload.routings
               ? routings.map((r) => ({
                 routingId: 0,
