@@ -14,18 +14,25 @@ export type RoutingStep = Omit<
   operCode: string;
   /** 1부터 시작하는 순서 (항상 배열 순서로 재계산) */
   operSeq: number;
-  /** 마지막 단계만 "Y" (항상 자동 지정) */
-  finalYn: "Y" | "N";
+  /**
+   * 최종 공정 여부
+   * - Y: 마지막 단계 (자동 지정, 직접 변경 불가)
+   * - G: 일반공정 최종 = 수율 확정 지점 (마지막이 아닌 단계에서 사용자가 선택)
+   * - N: 일반
+   */
+  finalYn: "Y" | "N" | "G";
   /** 이 "단계"의 투입/산출 자재 */
   materials: RoutingMaterialDraft[];
 };
 
-/** 순번(operSeq) / 최종공정(finalYn)을 배열 순서 기준으로 재계산 */
+/**
+ * 순번(operSeq) / 최종공정(finalYn)을 배열 순서 기준으로 재계산
+ */
 const normalize = (steps: RoutingStep[]): RoutingStep[] =>
   steps.map((s, i) => ({
     ...s,
     operSeq: i + 1,
-    finalYn: i === steps.length - 1 ? "Y" : "N",
+    finalYn: i === steps.length - 1 ? "Y" : s.finalYn === "G" ? "G" : "N",
   }));
 
 export function useItemRoutings() {
@@ -82,7 +89,7 @@ export function useItemRoutings() {
           rowKey: newKey(),
           operCode: r.operCode as string,
           operSeq: 0, // normalize 에서 재계산
-          finalYn: "N" as const, // normalize 에서 재계산
+          finalYn: (r.finalYn === "G" ? "G" : "N") as "G" | "N", // Y 는 normalize 에서 재계산
           materials: toMaterialDrafts(r.materials),
         }))
       )
@@ -103,7 +110,7 @@ export function useItemRoutings() {
 
   /**
    * 공정 선택 모달 확정: 공정코드 배열(중복 허용, 순서 유지) → 단계 목록
-   * - 같은 공정코드는 "앞에서부터 n번째 = 기존 n번째 단계"로 매칭해 자재를 그대로 보존
+   * - 같은 공정코드는 "앞에서부터 n번째 = 기존 n번째 단계"로 매칭해 자재(및 G 지정)를 그대로 보존
    * - 모달에서 수량을 줄이면 뒤쪽 단계부터 제거, 늘리면 뒤에 새 단계 추가
    * @returns 취소했으면 false
    */
@@ -158,6 +165,40 @@ export function useItemRoutings() {
   };
 
   /**
+   * 특정 단계를 "수율 확정 지점(G, 일반공정 최종)"으로 지정/해제
+   * - 마지막 단계(Y)는 자동 지정이라 변경 불가 → false
+   * - G 여부가 바뀌면 산출 자재 선택 범위가 달라지므로, 자재가 있으면 확인 후 비움
+   * @returns 변경 안 됐으면(마지막 단계/취소) false
+   */
+  const setYieldPoint = (rowKey: string, enabled: boolean): boolean => {
+    const target = routings.find((s) => s.rowKey === rowKey);
+    if (!target || target.finalYn === "Y") return false;
+
+    const nextYn: "G" | "N" = enabled ? "G" : "N";
+    if (target.finalYn === nextYn) return false;
+
+    let clearMaterials = false;
+    if (target.materials.length > 0) {
+      const ok = window.confirm(
+        "수율 확정 지점 설정이 변경되면 해당 공정의 투입/산출 자재가 모두 삭제됩니다.\n계속하시겠습니까?"
+      );
+      if (!ok) return false;
+      clearMaterials = true;
+    }
+
+    setRoutings((prev) =>
+      normalize(
+        prev.map((s) =>
+          s.rowKey === rowKey
+            ? { ...s, finalYn: nextYn, materials: clearMaterials ? [] : s.materials }
+            : s
+        )
+      )
+    );
+    return true;
+  };
+
+  /**
    * 기존 훅의 updateRouting 호환 유지 (인덱스 기준 필드 1개 수정).
    * ※ operCode/operSeq/finalYn 은 훅이 자동 관리하므로 가급적 그 외 필드에만 사용하세요.
    */
@@ -177,5 +218,6 @@ export function useItemRoutings() {
     moveRouting,
     removeRouting,
     setStepMaterials,
+    setYieldPoint,
   };
 }

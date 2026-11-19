@@ -285,7 +285,7 @@ interface RoutingMaterialSectionProps {
   resetKey?: string;
   // 현재 품목 종류 (0: 식품, 1: 작물)
   productType?: ProductType;
-  // 최종공정 여부 (Y: 최종공정, N: 일반공정)
+  // 최종공정 여부 (Y: 전체공정 최종, G: 일반공정 최종/수율 확정 지점, N: 일반공정)
   finalYn: string;
 
   // 신규 등록 중인 품목 정보
@@ -304,6 +304,13 @@ export function RoutingMaterialSection({
 }: RoutingMaterialSectionProps) {
   const [inOptions, setInOptions] = useState<ItemOptionResponse[]>([]);
   const [outOptions, setOutOptions] = useState<ItemOptionResponse[]>([]);
+
+  /**
+   * 최종 산출물(완제품/자기 자신)을 산출 자재로 쓸 수 있는 공정 여부
+   * - Y: 전체공정 최종 (마지막 단계)
+   * - G: 일반공정 최종 (마지막은 아니지만 수율이 확정되는 지점, 예: 포장)
+   */
+  const isFinalOutputStep = finalYn === "Y" || finalYn === "G";
 
   // 투입/산출 자재 옵션 조회
   useEffect(() => {
@@ -325,10 +332,10 @@ export function RoutingMaterialSection({
             category: [0, 1],
           }),
 
-          // 산출: 최종공정이면 완제품만, 일반공정이면 원료 + 반제품
+          // 산출: 최종공정(Y/G)이면 완제품만, 일반공정이면 원료 + 반제품
           ItemApi.getOptions({
             productType,
-            category: finalYn === "Y" ? [2] : [0, 1],
+            category: isFinalOutputStep ? [2] : [0, 1],
           }),
         ]);
 
@@ -351,7 +358,7 @@ export function RoutingMaterialSection({
     return () => {
       alive = false;
     };
-  }, [productType, finalYn]);
+  }, [productType, isFinalOutputStep]);
 
   // 이미 사용 중인 품목 + 자기 자신 제외
   const used = useMemo(
@@ -370,9 +377,9 @@ export function RoutingMaterialSection({
   const availableOutOptions = useMemo(() => {
     const options = [...outOptions];
 
-    // 최종공정이면 자기 자신(완제품/반제품)을 산출 옵션에 추가
+    // 최종공정(Y/G)이면 자기 자신(완제품/반제품)을 산출 옵션에 추가
     if (
-      finalYn === "Y" &&
+      isFinalOutputStep &&
       currentItem?.itemCode &&
       currentItem.itemNm &&
       !options.some((o) => o.itemCode === currentItem.itemCode)
@@ -382,7 +389,7 @@ export function RoutingMaterialSection({
 
     // 이미 이 공정에 추가된 품목은 제외
     return options.filter((o) => !used.has(o.itemCode));
-  }, [outOptions, used, finalYn, currentItem]);
+  }, [outOptions, used, isFinalOutputStep, currentItem]);
 
   const inList = materials.filter((m) => m.ioType === "IN");
   const outList = materials.filter((m) => m.ioType === "OUT");
