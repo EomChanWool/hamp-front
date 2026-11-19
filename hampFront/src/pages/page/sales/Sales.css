@@ -560,3 +560,326 @@
     min-width: auto;
   }
 }
+
+/* ── 수주 생산 배분 입력 (SalesOrderAllocationSection 전용: soAlloc*, 등록/상세 공용) ─────────── */
+
+.soAllocGroup {
+  --so-alloc-line: var(--border, #e3e6ea);
+  --so-alloc-muted: var(--text-muted, #64748b);
+  --so-alloc-ink: var(--text-heading, #14181f);
+  --so-alloc-body: var(--text-body, #1e293b);
+  --so-alloc-accent: var(--primary, #57d3a1);
+  --so-alloc-warn: #b45309;
+  --so-alloc-danger: #c0293d;
+  --so-alloc-ctl-bg: color-mix(in srgb, var(--so-alloc-ink) 4%, var(--bg-card, #ffffff));
+  --so-alloc-track: color-mix(in srgb, var(--so-alloc-ink) 12%, var(--bg-card, #ffffff));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+[data-theme="dark"] .soAllocGroup {
+  --so-alloc-warn: #fbbf24;
+  --so-alloc-danger: #f87171;
+}
+
+.soAllocDesc {
+  margin: -8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--so-alloc-muted);
+}
+
+/* ---------- 비율 입력 ---------- */
+.soAllocControl {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.soAllocLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--so-alloc-body);
+}
+
+.soAllocControlRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* 브라우저 기본 슬라이더는 밝은 강조색이면 손잡이를 어둡게 바꿔 그리므로 트랙·손잡이를 직접 그린다.
+   채움 끝 = 손잡이 중심 (--so-alloc-pct: 0~100, 손잡이 지름 18px 기준) */
+.soAllocRange {
+  --so-alloc-thumb: 18px;
+  --so-alloc-fill: calc(var(--so-alloc-thumb) / 2 + (100% - var(--so-alloc-thumb)) * var(--so-alloc-pct, 0) / 100);
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  height: 6px;
+  margin: 0;
+  /* 전역 input 규칙(padding 0 14px, border 1px)이 걸리면 손잡이 이동 범위와 채움 기준이 어긋나므로 해제 */
+  padding: 0;
+  border: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--so-alloc-accent) 0,
+    var(--so-alloc-accent) var(--so-alloc-fill),
+    var(--so-alloc-track) var(--so-alloc-fill),
+    var(--so-alloc-track) 100%
+  );
+  outline: none;
+  cursor: pointer;
+}
+
+.soAllocRange::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  width: var(--so-alloc-thumb);
+  height: var(--so-alloc-thumb);
+  border: 2px solid var(--so-alloc-accent);
+  border-radius: 50%;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2);
+  transition: box-shadow 0.15s ease;
+}
+
+.soAllocRange::-moz-range-thumb {
+  box-sizing: border-box;
+  width: var(--so-alloc-thumb);
+  height: var(--so-alloc-thumb);
+  border: 2px solid var(--so-alloc-accent);
+  border-radius: 50%;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2);
+}
+
+.soAllocRange:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--so-alloc-accent) 25%, transparent);
+}
+
+.soAllocRange:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--so-alloc-accent) 25%, transparent);
+}
+
+.soAllocRange:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.soAllocPercentInput {
+  position: relative;
+  flex: 0 0 96px;
+}
+
+.soAllocPercentInput input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0 32px 0 12px;
+  font: inherit;
+  font-size: 14px;
+  text-align: right;
+  color: var(--so-alloc-ink);
+  background: var(--so-alloc-ctl-bg);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  outline: none;
+}
+
+.soAllocPercentInput input:focus-visible {
+  background: var(--bg-card, #ffffff);
+  border-color: var(--so-alloc-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--so-alloc-accent) 18%, transparent);
+}
+
+.soAllocPercentInput input:disabled {
+  color: var(--so-alloc-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.soAllocPercentInput span {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--so-alloc-muted);
+  pointer-events: none;
+}
+
+.soAllocRest {
+  font-size: 13px;
+  color: var(--so-alloc-muted);
+}
+
+.soAllocHint {
+  font-size: 12px;
+  color: var(--so-alloc-danger);
+}
+
+.soAllocRest strong {
+  color: var(--so-alloc-ink);
+}
+
+/* ---------- 공통 구간 / 상태 안내 ---------- */
+.soAllocBase,
+.soAllocStatus {
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  border-radius: 10px;
+}
+
+.soAllocBase {
+  color: var(--so-alloc-body);
+  background: var(--so-alloc-ctl-bg);
+}
+
+.soAllocBase strong {
+  color: var(--so-alloc-ink);
+}
+
+.soAllocStatus {
+  color: var(--so-alloc-muted);
+  border: 1px dashed var(--so-alloc-line);
+}
+
+.soAllocStatus.isError {
+  color: var(--so-alloc-danger);
+  border-color: color-mix(in srgb, var(--so-alloc-danger) 40%, transparent);
+  background: color-mix(in srgb, var(--so-alloc-danger) 6%, transparent);
+}
+
+/* ---------- 분기 카드 ---------- */
+.soAllocCards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.soAllocCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--so-alloc-line);
+  border-radius: 12px;
+  background: var(--bg-card, #ffffff);
+}
+
+.soAllocCard.isUncertain {
+  border-style: dashed;
+}
+
+.soAllocCardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.soAllocCardTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--so-alloc-ink);
+}
+
+.soAllocCode {
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--so-alloc-muted);
+}
+
+.soAllocBadge {
+  flex-shrink: 0;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--so-alloc-accent) 70%, var(--so-alloc-ink));
+  background: color-mix(in srgb, var(--so-alloc-accent) 16%, transparent);
+}
+
+.soAllocBadge.isWarn {
+  color: var(--so-alloc-warn);
+  background: color-mix(in srgb, var(--so-alloc-warn) 14%, transparent);
+}
+
+.soAllocFigures {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.soAllocFigures > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.soAllocFigures dt {
+  color: var(--so-alloc-muted);
+}
+
+.soAllocFigures dd {
+  margin: 0;
+  text-align: right;
+  color: var(--so-alloc-body);
+}
+
+.soAllocFigures dd strong {
+  color: var(--so-alloc-ink);
+}
+
+.soAllocNote {
+  margin: 0;
+  padding-top: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--so-alloc-muted);
+  border-top: 1px solid var(--so-alloc-line);
+}
+
+.soAllocCard.isUncertain .soAllocNote {
+  color: var(--so-alloc-warn);
+}
+
+/* ---------- 상세 화면 보조 문구 ---------- */
+.soAllocLegacyNotice {
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #b45309;
+  background: color-mix(in srgb, #b45309 8%, transparent);
+  border: 1px solid color-mix(in srgb, #b45309 30%, transparent);
+  border-radius: 10px;
+}
+
+[data-theme="dark"] .soAllocLegacyNotice {
+  color: #fbbf24;
+}
+
+.soAllocTableHint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted, #64748b);
+}
+
+@media (max-width: 720px) {
+  .soAllocCards {
+    grid-template-columns: 1fr;
+  }
+}

@@ -84,6 +84,9 @@ export interface SalesOrderDetailResponse {
     lines: SalesOrderLineResponse[];
 }
 
+/** 배분 그룹 키 - 원물(탈피씨드) 분기는 RAW, 부산물(헴프박) 재투입 분기는 PARK */
+export type SalesOrderAllocationGroup = 'RAW' | 'PARK';
+
 /** 수주라인(산출 라인) 등록/수정 요청 */
 export interface SalesOrderLineRequest {
     /** 수주 라인 ID (수정 시 기존 라인을 그대로 갱신하려면 지정, 신규 라인은 생략) */
@@ -213,6 +216,79 @@ export interface SalesOrderOptionParams {
     unassignedOnly?: boolean;
 }
 
+/** 시뮬레이션 부산물 추정량 */
+export interface SalesOrderSimulationByproduct {
+    itemCode: string;
+    itemNm: string;
+    unit: string;
+    qty: number | null;
+}
+
+/** 시뮬레이션 공통 구간(분기 전) 생산 가능량 */
+export interface SalesOrderSimulationCapacity {
+    itemCode: string | null;
+    itemNm: string | null;
+    unit: string | null;
+    qty: number | null;
+    byproducts: SalesOrderSimulationByproduct[];
+    note: string | null;
+}
+
+/** 시뮬레이션 분기별 배분 결과 (수율 불확실 분기는 qty가 항상 null) */
+interface SalesOrderSimulationAllocationBase {
+    percent: number;
+    itemCode: string;
+    itemNm: string;
+    unit: string;
+    qty: number | null;
+    byproducts: SalesOrderSimulationByproduct[];
+    note: string | null;
+}
+
+export interface SalesOrderSemiSeedAllocation extends SalesOrderSimulationAllocationBase {
+    /** 이 분기에 배분된 탈피씨드 투입량 */
+    semiSeedQty: number | null;
+}
+
+export interface SalesOrderParkAllocation extends SalesOrderSimulationAllocationBase {
+    /** 이 분기에 배분된 건조 헴프박 투입량 */
+    dryParkQty: number | null;
+}
+
+/** 원물 투입 시뮬레이션 요청 */
+export interface SalesOrderRawMaterialSimulationRequest {
+    rawWeight: number;
+    oilPercent: number;
+}
+
+/** 원물 투입 시뮬레이션 응답 */
+export interface SalesOrderRawMaterialSimulationResponse {
+    rawItemCode: string;
+    rawItemNm: string;
+    rawUnit: string;
+    rawWeight: number;
+    semiSeedCapacity: SalesOrderSimulationCapacity;
+    oilCapacity: SalesOrderSemiSeedAllocation;
+    seedCapacity: SalesOrderSemiSeedAllocation;
+}
+
+/** 부산물(헴프박) 재투입 시뮬레이션 요청 */
+export interface SalesOrderByproductSimulationRequest {
+    parkWeight: number;
+    powderPercent: number;
+}
+
+/** 부산물(헴프박) 재투입 시뮬레이션 응답 */
+export interface SalesOrderByproductSimulationResponse {
+    parkItemCode: string;
+    parkItemNm: string;
+    parkUnit: string;
+    parkWeight: number;
+    dryParkCapacity: SalesOrderSimulationCapacity;
+    powderCapacity: SalesOrderParkAllocation;
+    concCapacity: SalesOrderParkAllocation;
+}
+
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
 /** 수주 단건/기본 응답 API 최종 응답 타입 */
@@ -289,6 +365,22 @@ export const SalesOrderApi = {
     /** 수주 삭제 */
     delete: async (orderCode: string): Promise<ApiResponse<string>> => {
         const res = await apiClient.delete(`/sales-orders/${orderCode}`);
+        return res.data;
+    },
+
+    /** 원물 투입 시뮬레이션 (RAW 그룹 배분 미리보기) */
+    simulateRawMaterial: async (
+        data: SalesOrderRawMaterialSimulationRequest,
+    ): Promise<ApiResponse<SalesOrderRawMaterialSimulationResponse>> => {
+        const res = await apiClient.post('/sales-orders/simulate-raw-material', data);
+        return res.data;
+    },
+
+    /** 부산물(헴프박) 재투입 시뮬레이션 (PARK 그룹 배분 미리보기) */
+    simulateByproduct: async (
+        data: SalesOrderByproductSimulationRequest,
+    ): Promise<ApiResponse<SalesOrderByproductSimulationResponse>> => {
+        const res = await apiClient.post('/sales-orders/simulate-byproduct', data);
         return res.data;
     },
 
