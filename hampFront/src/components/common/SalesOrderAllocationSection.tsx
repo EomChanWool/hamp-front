@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import axios from "axios";
 import {
   SalesOrderApi,
@@ -17,6 +17,9 @@ import {
 import "@/pages/page/sales/Sales.css";
 
 const SIMULATION_DEBOUNCE_MS = 300;
+
+/** 슬라이더 값을 바꾸는 키 - 이 키를 뗄 때 조작을 마친 것으로 본다 */
+const SLIDER_KEYS = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"]);
 
 /** 시뮬레이션 응답 전에 보여줄 품목명 (응답이 오면 서버 품목명으로 바뀜) */
 const FALLBACK_NAME: Record<string, string> = {
@@ -94,12 +97,24 @@ type Props = {
   disabled?: boolean;
   /** form: 수주 등록 화면(formCard), detail: 수주 상세 화면(detailSection) */
   variant: "form" | "detail";
+  /** 투입수량 없이 비율 조작을 마쳤을 때(슬라이더에서 손을 뗄 때 등) 호출 - 화면에서 투입수량 입력을 유도 */
+  onNeedRawWeight?: () => void;
 };
 
-export function SalesOrderAllocationSection({ rawWeight, percents, onChange, disabled, variant }: Props) {
+export function SalesOrderAllocationSection({
+  rawWeight,
+  percents,
+  onChange,
+  disabled,
+  variant,
+  onNeedRawWeight,
+}: Props) {
   const { oilPercent, powderPercent } = percents;
 
   const validRawWeight = rawWeight != null && rawWeight > 0 ? rawWeight : null;
+  const handleCommit = () => {
+    if (validRawWeight == null) onNeedRawWeight?.();
+  };
   const rawKey = validRawWeight != null ? `${validRawWeight}|${oilPercent}` : null;
   const raw = useSimulation<SalesOrderRawMaterialSimulationResponse>(
     rawKey,
@@ -159,6 +174,7 @@ export function SalesOrderAllocationSection({ rawWeight, percents, onChange, dis
         disabled={disabled}
         restLabel={seed?.itemNm ?? FALLBACK_NAME[ALLOCATION_ITEM.seed]}
         onChange={(v) => onChange({ ...percents, oilPercent: v })}
+        onCommit={handleCommit}
       />
       {semiSeed && (
         <p className="soAllocBase">
@@ -213,6 +229,7 @@ export function SalesOrderAllocationSection({ rawWeight, percents, onChange, dis
         disabled={disabled}
         restLabel={conc?.itemNm ?? FALLBACK_NAME[ALLOCATION_ITEM.conc]}
         onChange={(v) => onChange({ ...percents, powderPercent: v })}
+        onCommit={handleCommit}
       />
       {parkByproduct && parkWeight != null && parkWeight > 0 && (
         <p className="soAllocBase">
@@ -314,6 +331,7 @@ function PercentControl({
   restLabel,
   disabled,
   onChange,
+  onCommit,
 }: {
   id: string;
   label: string;
@@ -321,10 +339,14 @@ function PercentControl({
   restLabel: string;
   disabled?: boolean;
   onChange: (value: number) => void;
+  /** 조작을 마친 시점(슬라이더에서 손을 뗌, 방향키를 뗌, 직접 입력 후 포커스 이동)에 호출 */
+  onCommit?: () => void;
 }) {
   // 100을 넘는 입력은 반영하지 않고 안내만 띄운다 (55 입력 중 5를 더 눌러 100%로 바뀌는 실수 방지)
   const [rejected, setRejected] = useState(false);
   const hintId = `${id}-hint`;
+  // 직접 입력칸에서 값을 바꾼 뒤 포커스를 벗어날 때만 onCommit을 부르기 위한 표시
+  const textEditedRef = useRef(false);
 
   const handleTextChange = (raw: string) => {
     const next = parsePercentInput(raw);
@@ -333,6 +355,7 @@ function PercentControl({
       return;
     }
     setRejected(false);
+    textEditedRef.current = true;
     onChange(next);
   };
 
@@ -356,6 +379,10 @@ function PercentControl({
             setRejected(false);
             onChange(clampPercent(e.target.value));
           }}
+          onPointerUp={() => onCommit?.()}
+          onKeyUp={(e) => {
+            if (SLIDER_KEYS.has(e.key)) onCommit?.();
+          }}
         />
         <div className="soAllocPercentInput">
           <input
@@ -367,7 +394,13 @@ function PercentControl({
             value={String(value)}
             disabled={disabled}
             onChange={(e) => handleTextChange(e.target.value)}
-            onBlur={() => setRejected(false)}
+            onBlur={() => {
+              setRejected(false);
+              if (textEditedRef.current) {
+                textEditedRef.current = false;
+                onCommit?.();
+              }
+            }}
           />
           <span aria-hidden="true">%</span>
         </div>
