@@ -1,26 +1,44 @@
 import { apiClient } from '@/api/apiClient';
 import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 
+
+// ── 수주 요청 / 응답 타입 ─────────────────────────────────────────────────────
+
 /** 수주 등록 요청 */
 export interface SalesOrderCreateRequest {
+    /** 거래처 코드 (최대 30자) */
     bpCode: string;
+    /** 납기일 (yyyy-MM-dd) */
     dueDate?: string | null;
+    /** 비고 (최대 255자) */
     note?: string | null;
+    /** 투입원료 품목 코드 (최대 30자, 예: HEMP_SEED_RAW) */
     itemCode?: string | null;
+    /** 투입원료 수량 */
     orderQty?: number | null;
+    /** 가공비 */
     orderAmount?: number | null;
+    /** 산출 라인 목록 */
     lines?: SalesOrderLineRequest[];
 }
 
 /** 수주 정보 수정 요청 */
 export interface SalesOrderUpdateRequest {
+    /** 거래처 코드 (최대 30자) */
     bpCode: string;
+    /** 납기일 (yyyy-MM-dd) */
     dueDate?: string | null;
+    /** 상태 (최대 30자, 예: OPEN) */
     status?: string | null;
+    /** 비고 (최대 255자) */
     note?: string | null;
+    /** 투입원료 품목 코드 (최대 30자) */
     itemCode?: string | null;
+    /** 투입원료 수량 */
     orderQty?: number | null;
+    /** 가공비 */
     orderAmount?: number | null;
+    /** 산출 라인 목록 */
     lines?: SalesOrderLineRequest[];
 }
 
@@ -38,57 +56,92 @@ export interface SalesOrderResponse {
 
 /** 수주 상세 조회 응답 */
 export interface SalesOrderDetailResponse {
+    /** 수주 코드 */
     orderCode: string;
+    /** 거래처 코드 */
     bpCode: string;
+    /** 거래처명 */
     bpNm: string;
+    /** 납기일 */
     dueDate: string;
+    /** 상태 */
     status: string;
+    /** 비고 */
     note: string;
+    /** 투입원료 품목 코드 */
     itemCode: string | null;
+    /** 투입원료 품목명 */
     itemNm: string | null;
+    /** 투입원료 단위 */
     unit: string | null;
+    /** 투입원료 수량 */
     orderQty: number | null;
+    /** 가공비 */
     orderAmount: number | null;
     createdAt: string;
     updatedAt: string;
+    /** 산출 라인 목록 */
     lines: SalesOrderLineResponse[];
 }
 
 /** 배분 그룹 키 - 원물(탈피씨드) 분기는 RAW, 부산물(헴프박) 재투입 분기는 PARK */
 export type SalesOrderAllocationGroup = 'RAW' | 'PARK';
 
-/** 수주라인 등록 요청 */
+/** 수주라인(산출 라인) 등록/수정 요청 */
 export interface SalesOrderLineRequest {
+    /** 수주 라인 ID (수정 시 기존 라인을 그대로 갱신하려면 지정, 신규 라인은 생략) */
     salesOrderLineId?: number;
+    /** 산출 품목 코드 (최대 30자) */
     itemCode: string;
-    allocationGroup: SalesOrderAllocationGroup;
-    /** 그룹 내 배분 비율(%, 0~100) - 같은 그룹 라인들의 합이 100이어야 함 */
-    allocationPercent: number;
+    /**
+     * 배분 그룹 키 (최대 20자)
+     * - 같은 투입 품목을 기준으로 나뉘는 분기를 묶는 키
+     * - 예: 원물 분기는 'RAW', 부산물 재투입 분기는 'PARK'
+     */
+    allocationGroup?: string | null;
+    /**
+     * allocationGroup 내 배분 비율(%) (0~100)
+     * - 같은 그룹 라인들의 합이 100이어야 함
+     */
+    allocationPercent?: number | null;
 }
 
-/** 수주라인 등록 응답 */
+/** 수주라인(산출 라인) 응답 */
 export interface SalesOrderLineResponse {
+    /** 수주 라인 ID */
     salesOrderLineId: number;
+    /** 수주 코드 */
     orderCode: string;
+    /** 산출 품목 코드 */
     itemCode: string;
+    /** 산출 품목명 */
     itemNm: string;
+    /** 단위 */
     unit: string;
-    orderQty: number;
-    orderAmount: number;
     /** 예정 산출수량 - 수율이 불확실한 분기는 null */
     planQty: number | null;
-    /** 미사용 라인은 null */
-    allocationGroup: SalesOrderAllocationGroup | null;
+    /** 배분 그룹 키 (예: RAW, PARK) - 미사용 라인은 null */
+    allocationGroup: string | null;
+    /** allocationGroup 내 배분 비율(%) - 미사용 라인은 null */
     allocationPercent: number | null;
-    /** 배분된 투입량 (RAW=탈피씨드, PARK=건조헴프박 기준) */
+    /**
+     * 배분된 투입량 - 미사용 라인은 null
+     * (RAW 그룹 = 탈피씨드, PARK 그룹 = 건조헴프박 기준)
+     */
     allocatedInputQty: number | null;
-    produceQty: number;
+    /** 생산완료수량 (기존 produceQty 에서 이름 변경) */
+    producedQty: number;
+    /** 출고가능수량 (생산완료 중 아직 출고 안 된 LOT 수량 합) */
     availableQty: number;
+    /** 기출고수량 (출고 확정된 LOT 수량 합) */
     shippedQty: number;
+    /** 생산현황 (생산완료/일부생산/생산중) */
     productionStatus: string;
     createdAt: string;
     updatedAt: string;
 }
+
+// ── 수주현황 / 실적현황 타입 ──────────────────────────────────────────────────
 
 /** 수주현황 조회 아이템 응답 */
 export interface SalesOrderStatusLineResponse {
@@ -285,19 +338,25 @@ export const SalesOrderApi = {
         return res.data;
     },
 
-    /** 수주 단건 상세 조회 */
+    /** 수주 단건 상세 조회 (산출 라인의 배분/생산/출고 정보 포함) */
     getDetail: async (orderCode: string): Promise<ApiResponseSalesOrderDetailResponse> => {
         const res = await apiClient.get(`/sales-orders/${orderCode}`);
         return res.data;
     },
 
-    /** 수주 등록 */
+    /**
+     * 수주 등록
+     * - lines 의 같은 allocationGroup 내 allocationPercent 합은 100 이어야 한다.
+     */
     create: async (data: SalesOrderCreateRequest): Promise<ApiResponseSalesOrderResponse> => {
         const res = await apiClient.post('/sales-orders', data);
         return res.data;
     },
 
-    /** 수주 수정 */
+    /**
+     * 수주 수정
+     * - 기존 라인을 갱신하려면 lines 에 salesOrderLineId 를 지정, 신규 라인은 생략
+     */
     update: async (orderCode: string, data: SalesOrderUpdateRequest): Promise<ApiResponseSalesOrderResponse> => {
         const res = await apiClient.put(`/sales-orders/${orderCode}`, data);
         return res.data;
