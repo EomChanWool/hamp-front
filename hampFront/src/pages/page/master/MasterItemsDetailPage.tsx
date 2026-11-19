@@ -32,7 +32,7 @@ interface OperationOption {
   operType: OperType;
 }
 
-/** 라우팅 단계 공정구분 라벨 — 마지막 단계는 최종공정, 그 외는 공정 유형별 라벨 */
+/* 라우팅 단계 공정구분 라벨 */
 const getRoutingTypeLabel = (finalYn: string | undefined, matchedOp?: OperationOption | null): string => {
   if (finalYn === "Y") return "최종공정";
   if (matchedOp && OPER_TYPE_LABEL[matchedOp.operType]) {
@@ -65,6 +65,7 @@ export function MasterItemsDetailPage() {
     removeRouting,
     moveRouting,
     setStepMaterials,
+    setYieldPoint,
   } = useItemRoutings();
 
   // 원료로 변경하면서 초기화된 라우팅을 임시 보관 (반제품/완제품으로 돌아오면 복원)
@@ -584,7 +585,8 @@ export function MasterItemsDetailPage() {
               <div className="routing-guide-text">
                 ⠿ 드래그로 순서 변경, 항목 선택 시 우측에서 상세 편집
                 (마지막 공정이 최종공정이며, 최종공정이 바뀌면 해당 공정의 투입/산출 자재는 초기화됩니다.
-                같은 공정을 여러 단계로 추가할 수 있으며 자재는 단계별로 따로 관리됩니다)
+                같은 공정을 여러 단계로 추가할 수 있으며 자재는 단계별로 따로 관리됩니다.
+                마지막이 아닌 공정에서 최종 산출물의 수율이 확정되는 경우에는 "수율 확정 지점"으로 지정하세요)
               </div>
             )}
 
@@ -601,7 +603,8 @@ export function MasterItemsDetailPage() {
                 <div className="routing-list-container">
                   {routings.map((route, index) => {
                     const matchedOp = operations.find((op) => op.operCode === route.operCode);
-                    const isFinal = route.finalYn === "Y";
+                    // G(수율 확정 지점)도 최종 계열로 강조 표시
+                    const isFinal = route.finalYn === "Y" || route.finalYn === "G";
                     const isSelected = selectedIndex === index;
                     const isDragOver = dragOverIndex === index;
                     const isDragged = draggedIndex === index;
@@ -764,7 +767,7 @@ export function MasterItemsDetailPage() {
 
                         <div className="routing-form-group">
                           <label className="routing-label">공정구분</label>
-                          {/* 최종공정은 훅에서 "마지막 공정"으로 자동 지정되므로 직접 변경 불가 → 선택 UI 대신 읽기 전용 표시 */}
+                          {/* 공정구분 라벨은 읽기 전용 표시 (Y 는 마지막 공정으로 자동 지정) */}
                           <input
                             type="text"
                             className="tableInput routing-input-readonly"
@@ -772,7 +775,23 @@ export function MasterItemsDetailPage() {
                             disabled
                             title="마지막 공정이 자동으로 최종공정이 됩니다"
                           />
-                          <div className="routing-guide-text">마지막 공정이 자동으로 최종공정입니다</div>
+                          {/*
+                              마지막 공정(Y)은 자동 지정 안내만, 그 외 공정은 "수율 확정 지점(G)" 체크박스 제공
+                              - 체크하면 해당 공정에서도 최종 산출물(완제품/자기 자신)을 산출 자재로 추가하고 수율 입력 가능
+                          */}
+                          {selectedRouting.finalYn === "Y" ? (
+                            <div className="routing-guide-text">마지막 공정이 자동으로 최종공정입니다</div>
+                          ) : (
+                            <label className="routing-guide-text" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <input
+                                type="checkbox"
+                                checked={selectedRouting.finalYn === "G"}
+                                disabled={isBusy}
+                                onChange={(e) => setYieldPoint(selectedRouting.rowKey, e.target.checked)}
+                              />
+                              수율 확정 지점 (일반공정 최종)
+                            </label>
+                          )}
                         </div>
                       </div>
 
@@ -812,7 +831,8 @@ export function MasterItemsDetailPage() {
               <div className="routing-list-container">
                 {routings.map((route, index) => {
                   const matchedOp = operations.find((op) => op.operCode === route.operCode);
-                  const isFinal = route.finalYn === "Y";
+                  // G(수율 확정 지점)도 최종 계열로 강조 표시
+                  const isFinal = route.finalYn === "Y" || route.finalYn === "G";
                   // 읽기 모드에서도 공정별 투입/산출 자재를 요약 표시
                   // [중복 공정 지원] operCode 맵 조회 대신 "이 단계"의 자재를 표시 (이송 단계마다 다르게 보임)
                   const mats = route.materials;
