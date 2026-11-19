@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type SyntheticEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import {
@@ -42,6 +42,18 @@ export function SalesOrderCreatePage() {
     oilPercent: DEFAULT_OIL_PERCENT,
     powderPercent: DEFAULT_POWDER_PERCENT,
   });
+  // 투입수량 없이 생산 배분 비율 조작을 마치면 alert 후 투입수량 칸으로 포커스 - 투입수량을 넣기 전까지 한 번만
+  // (같은 순간에 조작 종료가 겹쳐도 한 번만 뜨도록 렌더와 무관한 ref로 막는다)
+  const qtyInputRef = useRef<HTMLInputElement>(null);
+  const qtyAlertShownRef = useRef(false);
+
+  const handleNeedRawWeight = () => {
+    if (qtyAlertShownRef.current) return;
+    qtyAlertShownRef.current = true;
+    alert("생산 배분을 계산하려면 투입수량을 먼저 입력해주세요.");
+    qtyInputRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    qtyInputRef.current?.focus({ preventScroll: true });
+  };
 
   const [businessPartnerOptions, setBusinessPartnerOptions] = useState<any[]>([]);
   const [rawItemOptions, setRawItemOptions] = useState<ItemOptionResponse[]>([]);
@@ -254,6 +266,7 @@ export function SalesOrderCreatePage() {
                   </label>
                   <div className="formInputWrap">
                     <input
+                      ref={qtyInputRef}
                       id="order-qty"
                       type="text"
                       inputMode="numeric"
@@ -263,7 +276,9 @@ export function SalesOrderCreatePage() {
                       disabled={isSubmitting}
                       onChange={(e) => {
                         const val = e.target.value.replace(/[^0-9]/g, "");
-                        handleChange("orderQty", val === "" ? null : Number(val));
+                        const qty = val === "" ? null : Number(val);
+                        handleChange("orderQty", qty);
+                        if (qty != null && qty > 0) qtyAlertShownRef.current = false;
                       }}
                     />
                     {rawUnit && <span className="formInputSuffix">{rawUnit}</span>}
@@ -295,6 +310,7 @@ export function SalesOrderCreatePage() {
               percents={percents}
               onChange={setPercents}
               disabled={isSubmitting}
+              onNeedRawWeight={handleNeedRawWeight}
             />
           </div>
 
