@@ -2850,6 +2850,79 @@
   font-variant-numeric: tabular-nums;
 }
 
+
+/* 배분 그룹 태그: RAW(파랑) / 배분량(회색). PARK 는 기존 .woc-tag.park(주황) 재사용 */
+.woc-tag.raw {
+  color: var(--woc-primary-dark);
+  background: #eff4ff;
+}
+
+.woc-tag.input {
+  color: var(--woc-muted);
+  background: #f1f5f9;
+}
+
+/* 예상 산출량: 직접 입력이 아닌 읽기 전용 표시 박스 (입력칸과 같은 높이로 맞춤) */
+.woc-readonly {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 44px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--woc-text);
+  background: var(--woc-bg-soft);
+  border: 1px dashed var(--woc-border-strong);
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.woc-readonly.is-unknown {
+  font-weight: 600;
+  color: var(--woc-muted-2);
+}
+
+.woc-readonly__tag {
+  flex: none;
+  padding: 2px 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--woc-muted-2);
+  border: 1px solid var(--woc-border);
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+/* 우측 요약: 배분 그룹별 블록 */
+.woc-usage__group + .woc-usage__group {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--woc-border);
+}
+
+.woc-usage__groupHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--woc-muted);
+}
+
+/* 그룹이 여러 개라 숫자는 기존(34px)보다 조금 작게 */
+.woc-usage__group .woc-usage__figure strong {
+  font-size: 26px;
+}
+
+.woc-usage.is-over .woc-usage__group + .woc-usage__group {
+  border-top-color: var(--woc-error-line);
+}
+
 /* ───────── 다크 모드 ───────── */
 [data-theme="dark"] .woc-src.is-manual {
   color: #93c5fd;
@@ -2862,4 +2935,16 @@
 
 [data-theme="dark"] .woc-chip {
   background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .woc-tag.raw {
+  background: rgba(59, 130, 246, 0.18);
+}
+
+[data-theme="dark"] .woc-tag.input {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .woc-readonly {
+  background: rgba(255, 255, 255, 0.04);
 }
