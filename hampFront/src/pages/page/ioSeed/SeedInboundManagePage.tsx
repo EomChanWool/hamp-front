@@ -1,891 +1,773 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ColumnDef, SortingState } from "@tanstack/react-table";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type InputHTMLAttributes,
+  type ReactNode,
+} from "react";
+import axios from "axios";
 import { Panel } from "@components/card/Panel";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
-import { CusTable } from "@components/table/CusTable";
-import { CusPagination } from "@components/table/CusPagination";
+import { Badge } from "@/components/common/Badge";
 import Spinner from "@/components/common/Spinner";
+import { QrLabelPrintModal, type QrLabelItem } from "@/components/modal/QrLabelPrintModal";
 import { formatDateTime } from "@/utils/common";
-import axios from "axios";
 import {
   SeedGoodsReceiptApi,
+  type SeedGoodsReceiptOrderSummaryResponse,
   type SeedGoodsReceiptResponse,
-  type SeedGoodsReceiptCreateRequest,
-  type SeedGoodsReceiptUpdateRequest,
 } from "@/api/ioSeed/SeedGoodsReceipt";
-import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
-import { ReportModal } from "@/components/modal/ReportModal";
-import { QrLabelPrintModal, type QrLabelItem } from "@/components/modal/QrLabelPrintModal";
+import type { StatusTone } from "@/types";
+import "@components/table/Custable.css";
 import "@/pages/page/ioSeed/ioSeed.css";
 
-// 백엔드 reportStatus 값: '미신고' / '부분신고' / '신고완료'
-const REPORT_STATUS_META: Record<string, { label: string; badgeClass: string; barClass: string }> = {
-  미신고: {
-    label: "미신고",
-    badgeClass: "statusBadge statusBadge--unreported",
-    barClass: "progressFill progressFill--unreported",
-  },
-  부분신고: {
-    label: "부분신고",
-    badgeClass: "statusBadge statusBadge--partial",
-    barClass: "progressFill progressFill--partial",
-  },
-  신고완료: {
-    label: "신고완료",
-    badgeClass: "statusBadge statusBadge--completed",
-    barClass: "progressFill progressFill--completed",
-  },
+// 백엔드 status 값: 입고대기 / 미만입고 / 입고 / 초과입고 / 수주종료
+const STATUS_OPTIONS = ["입고대기", "미만입고", "입고", "초과입고", "수주종료"];
+
+const STATUS_TONE: Record<string, StatusTone> = {
+  입고대기: "muted",
+  미만입고: "info",
+  입고: "good",
+  초과입고: "danger",
+  수주종료: "good",
 };
 
-const DEFAULT_STATUS_META = REPORT_STATUS_META["미신고"];
+const CLOSED_STATUS = "수주종료";
 
-function getActionLabel(reportStatus: string): string {
-  if (reportStatus === "신고완료") return "이력보기";
-  if (reportStatus === "부분신고") return "이어서 신고";
-  return "신고처리";
+/** 수주 상세 펼침 시 입고 내역을 한 번에 받아오는 최대 건수 */
+const RECEIPT_FETCH_SIZE = 1000;
+
+type InlineForm = {
+  receivedAt: string;
+  receiptQty: string;
+  note: string;
+  boxQty: string;
+};
+
+type InlineEditing =
+  | { mode: "create"; orderCode: string }
+  | { mode: "edit"; orderCode: string; receiptId: number };
+
+const EMPTY_FORM: InlineForm = { receivedAt: "", receiptQty: "", note: "", boxQty: "1" };
+
+function formatQty(value: number | null | undefined, unit: string | null | undefined) {
+  const qty = (value ?? 0).toLocaleString();
+  return unit ? `${qty} ${unit}` : qty;
+}
+
+/** 숫자·소수점만 남기고 소수점은 하나, 소수 둘째 자리까지만 (DB decimal(12,2)) */
+function sanitizeQty(text: string) {
+  const cleaned = text.replace(/[^0-9.]/g, "");
+  const dotIndex = cleaned.indexOf(".");
+  if (dotIndex === -1) return cleaned;
+  const intPart = cleaned.slice(0, dotIndex);
+  const decimalPart = cleaned.slice(dotIndex + 1).replace(/\./g, "").slice(0, 2);
+  return `${intPart}.${decimalPart}`;
+}
+
+/** 쉼표 없는 수량 문자열에 천 단위 쉼표를 붙인다 (입력 중인 소수점·소수부는 그대로) */
+function formatQtyInput(raw: string) {
+  if (raw === "") return "";
+  const [intPart, decimalPart] = raw.split(".");
+  const intText = intPart === "" ? "" : Number(intPart).toLocaleString("ko-KR");
+  return decimalPart === undefined ? intText : `${intText || "0"}.${decimalPart}`;
+}
+
+type QtyInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "onChange"> & {
+  /** 쉼표 없는 수량 문자열 (비어 있을 수 있음) */
+  value: string;
+  onValueChange: (value: string) => void;
+};
+
+/** 입력 중에도 천 단위 쉼표를 표시하는 수량 입력칸 (소수 둘째 자리까지). 값은 쉼표 없이 전달 */
+function QtyInput({ value, onValueChange, ...inputProps }: QtyInputProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const charsBeforeCaretRef = useRef<number | null>(null);
+
+  // 쉼표가 추가·삭제되어도 커서가 같은 숫자 뒤에 머물도록 복원
+  useLayoutEffect(() => {
+    const input = inputRef.current;
+    const charsBeforeCaret = charsBeforeCaretRef.current;
+    if (!input || charsBeforeCaret === null) return;
+    charsBeforeCaretRef.current = null;
+
+    let caret = 0;
+    let seen = 0;
+    while (caret < input.value.length && seen < charsBeforeCaret) {
+      if (/[0-9.]/.test(input.value[caret])) seen++;
+      caret++;
+    }
+    input.setSelectionRange(caret, caret);
+  });
+
+  return (
+    <input
+      {...inputProps}
+      ref={inputRef}
+      type="text"
+      inputMode="decimal"
+      value={formatQtyInput(value)}
+      onChange={(e) => {
+        const caret = e.target.selectionStart ?? e.target.value.length;
+        const next = sanitizeQty(e.target.value);
+        charsBeforeCaretRef.current = sanitizeQty(e.target.value.slice(0, caret)).length;
+        onValueChange(next);
+      }}
+    />
+  );
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
+  return message || fallback;
+}
+
+/** 입고 1건의 박스 수 (라벨 매수). 값이 없으면 1장 */
+function getBoxCount(receipt: SeedGoodsReceiptResponse) {
+  return receipt.boxQty && receipt.boxQty > 0 ? receipt.boxQty : 1;
 }
 
 export function SeedInboundManagePage() {
-  const [receipts, setReceipts] = useState<SeedGoodsReceiptResponse[]>([]);
-  const [itemOptions, setItemOptions] = useState<ItemOptionResponse[]>([]);
-  const [totalElements, setTotalElements] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-
+  const [summaries, setSummaries] = useState<SeedGoodsReceiptOrderSummaryResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchFilters, setSearchFilters] = useState({ orderCode: "", status: "" });
   const [refreshKey, setRefreshKey] = useState(0);
-  const [page, setPage] = useState(0);
 
-  const [searchFilters, setSearchFilters] = useState({
-    itemCode: "",
-    receivedAtFrom: "",
-    receivedAtTo: "",
-    reportProgress: "",
-  });
+  const [expandedOrderCodes, setExpandedOrderCodes] = useState<string[]>([]);
+  const [receiptsByOrder, setReceiptsByOrder] = useState<Record<string, SeedGoodsReceiptResponse[]>>({});
+  const [loadingOrderCodes, setLoadingOrderCodes] = useState<string[]>([]);
 
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [editing, setEditing] = useState<InlineEditing | null>(null);
+  const [form, setForm] = useState<InlineForm>(EMPTY_FORM);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const noteInputRef = useRef<HTMLInputElement>(null);
 
-  const sortParams = useMemo(() => {
-    return sorting.map((sort) => `${sort.id},${sort.desc ? "desc" : "asc"}`);
-  }, [sorting]);
-
-  const handleSortingChange = (newSorting: SortingState) => {
-    setSorting(newSorting);
-    setPage(0);
-    setEditingReceiptId(null);
-    setIsCreatingNewRow(false);
-  };
-
-  const [editingReceiptId, setEditingReceiptId] = useState<number | null>(null);
-  const [isCreatingNewRow, setIsCreatingNewRow] = useState(false);
-
-  // 체크박스 선택된 행 ID 관리 (receiptId 기준)
   const [selectedReceiptIds, setSelectedReceiptIds] = useState<number[]>([]);
-  // QR 라벨 인쇄 모달 오픈 여부
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
+  const [isMarkingPrinted, setIsMarkingPrinted] = useState(false);
 
-  // 신고처리 모달 대상 (null이면 닫힘)
-  const [reportModalReceipt, setReportModalReceipt] = useState<SeedGoodsReceiptResponse | null>(null);
-
-  const editFormRef = useRef<{
-    itemCode?: string;
-    receiptQty?: number;
-    defectQty?: number;
-    goodQty?: number;
-    receivedAt?: string;
-  }>({
-    itemCode: "",
-    receiptQty: 0,
-    defectQty: 0,
-    goodQty: 0,
-    receivedAt: "",
-  });
-
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isDeletingId, setIsDeletingId] = useState<number | null>(null);
-
-  const [isGoodQtyManual, setIsGoodQtyManual] = useState(false);
-  const goodQtyInputRef = useRef<HTMLInputElement>(null);
-
-  const recalcGoodQty = () => {
-    if (isGoodQtyManual) return;
-    const receiptQty = Number(editFormRef.current.receiptQty) || 0;
-    const defectQty = Number(editFormRef.current.defectQty) || 0;
-    const nextGoodQty = Math.max(receiptQty - defectQty, 0);
-    editFormRef.current.goodQty = nextGoodQty;
-
-    if (goodQtyInputRef.current) {
-      goodQtyInputRef.current.value = String(nextGoodQty);
-    }
-  };
-
-  const handleManualGoodQtyChange = (value: number) => {
-    editFormRef.current.goodQty = value;
-    setIsGoodQtyManual(true);
-  };
-
-  const handleResetGoodQtyToAuto = () => {
-    setIsGoodQtyManual(false);
-    const receiptQty = Number(editFormRef.current.receiptQty) || 0;
-    const defectQty = Number(editFormRef.current.defectQty) || 0;
-    const nextGoodQty = Math.max(receiptQty - defectQty, 0);
-    editFormRef.current.goodQty = nextGoodQty;
-
-    if (goodQtyInputRef.current) {
-      goodQtyInputRef.current.value = String(nextGoodQty);
-    }
-  };
-
-  const itemCodeRef = useRef<HTMLSelectElement>(null);
-  const receivedAtStartRef = useRef<HTMLInputElement>(null);
-  const receivedAtEndRef = useRef<HTMLInputElement>(null);
-  const reportProgressRef = useRef<HTMLSelectElement>(null);
-
-  const fetchItemOptions = useCallback(async () => {
-    try {
-      const res = await ItemApi.getOptions({ productType: 0, category: [0] });
-      setItemOptions(res.data ?? []);
-    } catch (error) {
-      console.error("씨드 품목 옵션 조회 실패:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchItemOptions();
-  }, [fetchItemOptions]);
+  const orderCodeRef = useRef<HTMLInputElement>(null);
+  const statusRef = useRef<HTMLSelectElement>(null);
 
   const searchFields: SearchField[] = useMemo(
     () => [
       {
-        type: "select",
-        label: "품목명",
-        ref: itemCodeRef,
-        name: "itemCode",
-        options: [
-          { label: "전체", value: "" },
-          ...itemOptions.map((opt) => ({
-            label: `${opt.itemNm} (${opt.itemCode ?? "-"})`,
-            value: opt.itemCode,
-          })),
-        ],
-      },
-      {
-        type: "date",
-        label: "입고일자",
-        startRef: receivedAtStartRef,
-        endRef: receivedAtEndRef,
-        name: "receivedAt",
+        type: "input",
+        label: "수주코드",
+        ref: orderCodeRef,
+        name: "orderCode",
+        placeholder: "수주코드 검색 (예: SO-0002)",
       },
       {
         type: "select",
-        label: "진행상태",
-        ref: reportProgressRef,
-        name: "reportProgress",
-        options: [
-          { label: "전체", value: "" },
-          { label: "미신고", value: "0" },
-          { label: "부분신고", value: "1" },
-          { label: "신고완료", value: "2" },
-        ],
+        label: "상태",
+        ref: statusRef,
+        name: "status",
+        options: [{ label: "전체", value: "" }, ...STATUS_OPTIONS.map((s) => ({ label: s, value: s }))],
       },
     ],
-    [itemOptions],
+    [],
   );
 
-  const loadReceipts = useCallback(async () => {
-    if (searchFilters.reportProgress === "__INVALID__") {
-      setReceipts([]);
-      setTotalElements(0);
-      setTotalPages(0);
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const params: Record<string, any> = {
-        page,
-        size: 10,
-      };
-      if (searchFilters.itemCode) params.itemCode = searchFilters.itemCode;
-      if (searchFilters.receivedAtFrom) params.receivedAtFrom = searchFilters.receivedAtFrom;
-      if (searchFilters.receivedAtTo) params.receivedAtTo = searchFilters.receivedAtTo;
-      if (searchFilters.reportProgress !== "") {
-        params.reportProgress = Number(searchFilters.reportProgress);
-      }
-
-      if (sortParams.length > 0) {
-        params.sort = sortParams;
-      }
-
-      const response = await SeedGoodsReceiptApi.getList(params);
-      const pageData = response.data;
-
-      setReceipts(pageData?.content ?? []);
-      setTotalElements(pageData?.totalElements ?? 0);
-      setTotalPages(pageData?.totalPages ?? 0);
-    } catch (error) {
-      console.error("씨드 입고 목록 조회 실패:", error);
-      window.alert("데이터를 불러오는 중 오류가 발생했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [page, searchFilters, sortParams, refreshKey]);
-
+  // refreshKey: 등록·수정·삭제·인쇄 후 재조회 트리거
   useEffect(() => {
-    loadReceipts();
-  }, [loadReceipts]);
+    let ignore = false;
+    const params: { orderCode?: string; status?: string } = {};
+    if (searchFilters.orderCode) params.orderCode = searchFilters.orderCode;
+    if (searchFilters.status) params.status = searchFilters.status;
+
+    SeedGoodsReceiptApi.getOrderSummary(params)
+      .then((response) => {
+        if (!ignore) setSummaries(response.data ?? []);
+      })
+      .catch((error) => {
+        if (ignore) return;
+        console.error("수주별 원료 입고 현황 조회 실패:", error);
+        window.alert(getErrorMessage(error, "데이터를 불러오는 중 오류가 발생했습니다."));
+      })
+      .finally(() => {
+        if (!ignore) setIsLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [searchFilters, refreshKey]);
+
+  const loadOrderReceipts = useCallback(async (orderCode: string) => {
+    setLoadingOrderCodes((prev) => (prev.includes(orderCode) ? prev : [...prev, orderCode]));
+    try {
+      const response = await SeedGoodsReceiptApi.getList({ orderCode, page: 0, size: RECEIPT_FETCH_SIZE });
+      // 서버 orderCode 검색이 부분 일치일 수 있어 해당 수주 건만 남긴다
+      const content = (response.data?.content ?? []).filter((r) => r.orderCode === orderCode);
+      setReceiptsByOrder((prev) => ({ ...prev, [orderCode]: content }));
+    } catch (error) {
+      console.error("입고 내역 조회 실패:", error);
+      window.alert(getErrorMessage(error, "입고 내역을 불러오는 중 오류가 발생했습니다."));
+    } finally {
+      setLoadingOrderCodes((prev) => prev.filter((code) => code !== orderCode));
+    }
+  }, []);
+
+  /** 저장·삭제·인쇄 후: 집계와 해당 수주 입고 내역을 다시 조회 */
+  const refreshOrders = (orderCodes: string[]) => {
+    setRefreshKey((prev) => prev + 1);
+    Array.from(new Set(orderCodes)).forEach((code) => {
+      void loadOrderReceipts(code);
+    });
+  };
+
+  const resetViewState = () => {
+    setIsLoading(true);
+    setExpandedOrderCodes([]);
+    setReceiptsByOrder({});
+    setEditing(null);
+    setSelectedReceiptIds([]);
+  };
 
   const handleSearch = () => {
-    setPage(0);
-
-    const itemCode = itemCodeRef.current?.value.trim() || "";
-
-    const reportProgress = reportProgressRef.current?.value.trim() || "";
-
     setSearchFilters({
-      itemCode,
-      receivedAtFrom: receivedAtStartRef.current?.value || "",
-      receivedAtTo: receivedAtEndRef.current?.value || "",
-      reportProgress,
+      orderCode: orderCodeRef.current?.value.trim() || "",
+      status: statusRef.current?.value || "",
     });
-
-    setEditingReceiptId(null);
-    setIsCreatingNewRow(false);
-    setSelectedReceiptIds([]);
+    resetViewState();
   };
 
   const handleReset = () => {
-    if (itemCodeRef.current) itemCodeRef.current.value = "";
-    if (receivedAtStartRef.current) receivedAtStartRef.current.value = "";
-    if (receivedAtEndRef.current) receivedAtEndRef.current.value = "";
-    if (reportProgressRef.current) reportProgressRef.current.value = "";
+    if (orderCodeRef.current) orderCodeRef.current.value = "";
+    if (statusRef.current) statusRef.current.value = "";
+    setSearchFilters({ orderCode: "", status: "" });
+    resetViewState();
+  };
 
-    setPage(0);
-    setSearchFilters({
-      itemCode: "",
-      receivedAtFrom: "",
-      receivedAtTo: "",
-      reportProgress: "",
+  const handleToggleOrder = (orderCode: string) => {
+    if (expandedOrderCodes.includes(orderCode)) {
+      const isEditingHere = editing?.orderCode === orderCode;
+      // 저장 중에는 입력 행이 사라지지 않도록 접지 않는다
+      if (isEditingHere && isSaving) return;
+      // 접힌 수주 안에 입력 행이 숨어 다른 수주 버튼이 잠긴 채 남지 않도록 편집을 취소
+      if (isEditingHere) {
+        setEditing(null);
+        setForm(EMPTY_FORM);
+      }
+      setExpandedOrderCodes((prev) => prev.filter((code) => code !== orderCode));
+      return;
+    }
+    setExpandedOrderCodes((prev) => [...prev, orderCode]);
+    if (!receiptsByOrder[orderCode]) void loadOrderReceipts(orderCode);
+  };
+
+  const handleStartCreate = (orderCode: string) => {
+    if (editing || isSaving) return;
+    setForm(EMPTY_FORM);
+    setEditing({ mode: "create", orderCode });
+  };
+
+  const handleStartEdit = (receipt: SeedGoodsReceiptResponse) => {
+    if (editing || isSaving || !receipt.orderCode) return;
+    setForm({
+      receivedAt: receipt.receivedAt ? receipt.receivedAt.slice(0, 16) : "",
+      receiptQty: String(receipt.receiptQty ?? ""),
+      note: receipt.note ?? "",
+      boxQty: String(receipt.boxQty ?? 1),
     });
-    setSorting([]);
-    setEditingReceiptId(null);
-    setIsCreatingNewRow(false);
-    setSelectedReceiptIds([]);
+    setEditing({ mode: "edit", orderCode: receipt.orderCode, receiptId: receipt.receiptId });
   };
 
-  const handlePageChange = (newPage: number) => {
-    setEditingReceiptId(null);
-    setIsCreatingNewRow(false);
-    setSelectedReceiptIds([]);
-    setPage(newPage);
+  const handleCancelEditing = () => {
+    if (isSaving) return;
+    setEditing(null);
+    setForm(EMPTY_FORM);
   };
 
-  const handleStartCreate = () => {
-    if (isCreatingNewRow) return;
-    setEditingReceiptId(null);
-    editFormRef.current = {
-      itemCode: "",
-      receiptQty: 0,
-      defectQty: 0,
-      goodQty: 0,
-      receivedAt: "",
-    };
-    setIsGoodQtyManual(false);
-    setIsCreatingNewRow(true);
+  /** 저장 후 누적 입고수량이 계약 원료수량을 넘으면 확인. false 면 저장 중단 */
+  const confirmOverReceipt = (summary: SeedGoodsReceiptOrderSummaryResponse, receiptQty: number) => {
+    if (summary.orderQty == null || !editing) return true;
+
+    const previousQty =
+      editing.mode === "edit"
+        ? (receiptsByOrder[editing.orderCode] ?? []).find((r) => r.receiptId === editing.receiptId)?.receiptQty ?? 0
+        : 0;
+    const nextReceivedQty = (summary.receivedQty ?? 0) - previousQty + receiptQty;
+    const overQty = nextReceivedQty - summary.orderQty;
+    if (overQty <= 0) return true;
+
+    const overText = formatQty(overQty, summary.unit);
+    if (form.note.trim()) {
+      return window.confirm(
+        `저장하면 누적 입고수량이 계약 원료수량보다 ${overText} 많아집니다.\n그대로 저장하시겠습니까?`,
+      );
+    }
+
+    const proceed = window.confirm(
+      `저장하면 누적 입고수량이 계약 원료수량보다 ${overText} 많아집니다.\n` +
+        "비고에 초과 사유를 입력하지 않았습니다. 비고 없이 저장하시겠습니까?\n\n" +
+        "[취소]를 누르면 비고 입력칸으로 이동합니다.",
+    );
+    if (!proceed) noteInputRef.current?.focus();
+    return proceed;
   };
 
-  const handleCancelCreate = () => {
-    setIsCreatingNewRow(false);
-  };
+  const handleSaveInline = async (summary: SeedGoodsReceiptOrderSummaryResponse) => {
+    if (!editing || isSaving) return;
 
-  const validateQuantities = () => {
-    const receiptQty = Number(editFormRef.current.receiptQty) || 0;
-    const defectQty = Number(editFormRef.current.defectQty) || 0;
-    const goodQty = Number(editFormRef.current.goodQty) || 0;
-
-    if (receiptQty <= 0) {
+    if (!form.receivedAt) {
+      window.alert("입고일시를 입력해주세요.");
+      return;
+    }
+    const receiptQty = Number(form.receiptQty);
+    if (form.receiptQty.trim() === "" || !Number.isFinite(receiptQty) || receiptQty <= 0) {
       window.alert("입고수량은 0보다 커야 합니다.");
-      return false;
-    }
-    if (defectQty < 0) {
-      window.alert("불량수량은 0 이상이어야 합니다.");
-      return false;
-    }
-    if (defectQty > receiptQty) {
-      window.alert("불량수량은 입고수량을 초과할 수 없습니다.");
-      return false;
-    }
-    if (goodQty + defectQty > receiptQty) {
-      window.alert("양품수량과 불량수량의 합이 입고수량을 초과할 수 없습니다.");
-      return false;
-    }
-    if (goodQty <= 0) {
-      window.alert("양품수량이 0입니다. 입고수량과 불량수량을 확인해주세요.");
-      return false;
-    }
-    return true;
-  };
-
-  const handleSaveCreate = async () => {
-    if (isUpdating) return;
-
-    const itemCode = editFormRef.current.itemCode?.trim();
-    if (!itemCode) {
-      window.alert("품목을 선택해주세요.");
       return;
     }
-
-    if (!editFormRef.current.receivedAt) {
-      window.alert("입고일자를 입력해주세요.");
+    const boxQty = Number(form.boxQty);
+    if (!Number.isInteger(boxQty) || boxQty < 1) {
+      window.alert("박스수는 1 이상의 정수로 입력해주세요.");
       return;
     }
+    if (!confirmOverReceipt(summary, receiptQty)) return;
 
-    if (!validateQuantities()) return;
-
-    setIsUpdating(true);
-    try {
-      const payload: SeedGoodsReceiptCreateRequest = {
-        itemCode,
-        receiptQty: Number(editFormRef.current.receiptQty) || 0,
-        defectQty: Number(editFormRef.current.defectQty) || 0,
-        goodQty: Number(editFormRef.current.goodQty) || 0,
-        receivedAt: editFormRef.current.receivedAt,
-      };
-
-      const response = await SeedGoodsReceiptApi.create(payload);
-      window.alert(response.message || "등록되었습니다.");
-      setIsCreatingNewRow(false);
-
-      if (itemCodeRef.current) itemCodeRef.current.value = "";
-      if (reportProgressRef.current) reportProgressRef.current.value = "";
-      setPage(0);
-      setSearchFilters({ itemCode: "", receivedAtFrom: "", receivedAtTo: "", reportProgress: "" });
-      setSorting([]);
-      setRefreshKey((prev) => prev + 1);
-    } catch (err) {
-      console.error("등록 실패:", err);
-      const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
-      window.alert(errorMessage || "등록에 실패했습니다.");
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleStartEdit = (row: SeedGoodsReceiptResponse) => {
-    setIsCreatingNewRow(false);
-    editFormRef.current = {
-      itemCode: row.itemCode ?? "",
-      receiptQty: row.receiptQty ?? 0,
-      defectQty: row.defectQty ?? 0,
-      goodQty: row.goodQty ?? 0,
-      receivedAt: row.receivedAt ?? "",
+    const payload = {
+      orderCode: editing.orderCode,
+      receiptQty,
+      boxQty,
+      receivedAt: form.receivedAt,
+      note: form.note.trim(),
     };
-    const initialAutoGoodQty = Math.max((row.receiptQty ?? 0) - (row.defectQty ?? 0), 0);
-    setIsGoodQtyManual((row.goodQty ?? 0) !== initialAutoGoodQty);
-    setEditingReceiptId(row.receiptId);
-  };
 
-  const handleCancelEdit = () => {
-    setEditingReceiptId(null);
-    editFormRef.current = { itemCode: "", receiptQty: 0, defectQty: 0, goodQty: 0, receivedAt: "" };
-    setIsGoodQtyManual(false);
-  };
-
-  const handleSaveEdit = async (receiptId: number) => {
-    if (isUpdating) return;
-
-    const itemCode = editFormRef.current.itemCode?.trim();
-    if (!itemCode) {
-      window.alert("품목을 선택해주세요.");
-      return;
-    }
-
-    if (!editFormRef.current.receivedAt) {
-      window.alert("입고일자를 입력해주세요.");
-      return;
-    }
-
-    if (!validateQuantities()) return;
-
-    setIsUpdating(true);
+    setIsSaving(true);
     try {
-      const updatePayload: SeedGoodsReceiptUpdateRequest = {
-        itemCode: editFormRef.current.itemCode?.trim() ?? "",
-        receiptQty: Number(editFormRef.current.receiptQty) || 0,
-        defectQty: Number(editFormRef.current.defectQty) || 0,
-        goodQty: Number(editFormRef.current.goodQty) || 0,
-        receivedAt: editFormRef.current.receivedAt ?? "",
-      };
-
-      const response = await SeedGoodsReceiptApi.update(receiptId, updatePayload);
-      window.alert(response.message || "수정되었습니다.");
-      setEditingReceiptId(null);
-      setRefreshKey((prev) => prev + 1);
-    } catch (err) {
-      console.error("수정 실패:", err);
-      const errorMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
-      window.alert(errorMessage || "수정에 실패했습니다.");
+      const response =
+        editing.mode === "create"
+          ? await SeedGoodsReceiptApi.create(payload)
+          : await SeedGoodsReceiptApi.update(editing.receiptId, payload);
+      window.alert(response.message || (editing.mode === "create" ? "등록되었습니다." : "수정되었습니다."));
+      setEditing(null);
+      setForm(EMPTY_FORM);
+      refreshOrders([editing.orderCode]);
+    } catch (error) {
+      console.error(editing.mode === "create" ? "등록 실패:" : "수정 실패:", error);
+      window.alert(getErrorMessage(error, editing.mode === "create" ? "등록에 실패했습니다." : "수정에 실패했습니다."));
     } finally {
-      setIsUpdating(false);
+      setIsSaving(false);
     }
   };
 
-  const handleDeleteReceipt = async (row: SeedGoodsReceiptResponse) => {
-    if (isDeletingId) return;
+  const handleDelete = async (receipt: SeedGoodsReceiptResponse) => {
+    if (deletingId !== null || editing || !receipt.orderCode) return;
 
-    const confirmed = window.confirm(`[${row.itemNm}] 입고 항목을 삭제하시겠습니까?`);
+    const confirmed = window.confirm(
+      `[${receipt.orderCode}] ${receipt.receivedAt ? formatDateTime(receipt.receivedAt) : "-"} · ` +
+        `${formatQty(receipt.receiptQty, receipt.unit)} 입고를 삭제하시겠습니까?`,
+    );
     if (!confirmed) return;
 
-    setIsDeletingId(row.receiptId);
+    setDeletingId(receipt.receiptId);
     try {
-      await SeedGoodsReceiptApi.delete(row.receiptId);
-      window.alert("삭제되었습니다.");
-      setRefreshKey((prev) => prev + 1);
+      const response = await SeedGoodsReceiptApi.delete(receipt.receiptId);
+      window.alert(response.message || "삭제되었습니다.");
+      setSelectedReceiptIds((prev) => prev.filter((id) => id !== receipt.receiptId));
+      refreshOrders([receipt.orderCode]);
     } catch (error) {
       console.error("삭제 실패:", error);
-      const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
-      window.alert(message || "삭제에 실패했습니다.");
+      window.alert(getErrorMessage(error, "삭제에 실패했습니다."));
     } finally {
-      setIsDeletingId(null);
+      setDeletingId(null);
     }
   };
 
-  const handleOpenReportModal = (row: SeedGoodsReceiptResponse) => {
-    if (editingReceiptId !== null || isCreatingNewRow) return;
-    setReportModalReceipt(row);
+  const toggleReceiptSelection = (receiptId: number) => {
+    setSelectedReceiptIds((prev) =>
+      prev.includes(receiptId) ? prev.filter((id) => id !== receiptId) : [...prev, receiptId],
+    );
   };
 
-  const handleCloseReportModal = () => {
-    setReportModalReceipt(null);
+  const toggleOrderSelection = (orderCode: string, checked: boolean) => {
+    const ids = (receiptsByOrder[orderCode] ?? []).map((r) => r.receiptId);
+    setSelectedReceiptIds((prev) =>
+      checked ? Array.from(new Set([...prev, ...ids])) : prev.filter((id) => !ids.includes(id)),
+    );
   };
 
-  const handleReportChanged = () => {
-    setRefreshKey((prev) => prev + 1);
-  };
+  const allReceipts = useMemo(() => Object.values(receiptsByOrder).flat(), [receiptsByOrder]);
+
+  const selectedReceipts = useMemo(
+    () => allReceipts.filter((r) => selectedReceiptIds.includes(r.receiptId)),
+    [allReceipts, selectedReceiptIds],
+  );
+
+  const selectedLabelCount = selectedReceipts.reduce((sum, r) => sum + getBoxCount(r), 0);
+
+  // 박스 수만큼 같은 바코드 라벨을 n/N 표기로 나눠 만든다
+  const labelItems: QrLabelItem[] = useMemo(
+    () =>
+      selectedReceipts.flatMap((r) => {
+        const boxCount = getBoxCount(r);
+        const receivedAtText = r.receivedAt ? formatDateTime(r.receivedAt) : "-";
+        return Array.from({ length: boxCount }, (_, i) => ({
+          id: `${r.receiptId}-${i + 1}`,
+          qrValue: r.barcode || String(r.receiptId),
+          title: `${r.orderCode ?? "-"} · ${i + 1}/${boxCount} · ${receivedAtText}`,
+          name: r.itemNm || "",
+          code: r.itemCode,
+          qty: r.receiptQty,
+          qtyLabel: "입고수량",
+          unit: r.unit || "",
+        }));
+      }),
+    [selectedReceipts],
+  );
 
   const handleOpenLabelModal = () => {
-    if (selectedReceiptIds.length === 0) {
-      window.alert("인쇄할 항목을 최소 1개 이상 선택해주세요.");
+    if (selectedReceipts.length === 0) {
+      window.alert("인쇄할 입고 건을 먼저 선택해주세요.");
       return;
     }
     setIsLabelModalOpen(true);
   };
 
-  const columns: ColumnDef<SeedGoodsReceiptResponse>[] = useMemo(
-    () => [
-      {
-        id: "select",
-        header: () => (
-          <input
-            type="checkbox"
-            className="checkbox"
-            onChange={(e) => {
-              if (e.target.checked) {
-                setSelectedReceiptIds(receipts.map((r) => r.receiptId));
-              } else {
-                setSelectedReceiptIds([]);
-              }
-            }}
-            checked={selectedReceiptIds.length === receipts.length && receipts.length > 0}
-            style={{ cursor: "pointer", width: "16px", height: "16px" }}
-          />
-        ),
-        cell: ({ row }) => {
-          const isNewRow = row.original.receiptId === -999999;
-          if (isNewRow) return null;
+  const handlePrinted = async () => {
+    const targets = selectedReceipts;
+    if (targets.length === 0) return;
+    setIsMarkingPrinted(true);
+    try {
+      await SeedGoodsReceiptApi.markPrinted(targets.map((r) => r.receiptId));
+      setIsLabelModalOpen(false);
+      setSelectedReceiptIds([]);
+      refreshOrders(targets.map((r) => r.orderCode).filter((code): code is string => !!code));
+    } catch (error) {
+      console.error("라벨 인쇄 완료 표시 실패:", error);
+      window.alert(getErrorMessage(error, "라벨 인쇄 완료 표시에 실패했습니다."));
+    } finally {
+      setIsMarkingPrinted(false);
+    }
+  };
 
-          return (
-            <input
-              type="checkbox"
-              className="checkbox"
-              checked={selectedReceiptIds.includes(row.original.receiptId)}
-              onChange={() => {
-                setSelectedReceiptIds((prev) =>
-                  prev.includes(row.original.receiptId)
-                    ? prev.filter((id) => id !== row.original.receiptId)
-                    : [...prev, row.original.receiptId],
-                );
-              }}
-              style={{ cursor: "pointer", width: "16px", height: "16px" }}
-            />
-          );
-        },
-        meta: { width: "50px" },
-      },
-      {
-        accessorKey: "itemCode",
-        header: "품목",
-        meta: { width: "200px" },
-        cell: ({ row }) => {
-          const isNewRow = row.original.receiptId === -999999;
-          const isEditing = row.original.receiptId === editingReceiptId;
-
-          if (isNewRow || isEditing) {
-            const currentVal = editFormRef.current.itemCode ?? "";
-            const existsInOptions = itemOptions.some((opt) => opt.itemCode === currentVal);
-
-            return (
-              <select
-                className="tableInput"
-                defaultValue={currentVal}
-                onChange={(e) => {
-                  editFormRef.current.itemCode = e.target.value;
-                }}
-              >
-                <option value="" disabled>
-                  품목 선택
-                </option>
-                {!existsInOptions && currentVal && (
-                  <option value={currentVal} style={{ color: "#9ca3af" }}>
-                    {currentVal} · {row.original.itemNm || "기존 품목"}
-                  </option>
-                )}
-                {itemOptions.map((opt) => (
-                  <option key={opt.itemCode} value={opt.itemCode}>
-                    {opt.itemNm ?? "-"} ({opt.itemCode})
-                  </option>
-                ))}
-              </select>
-            );
-          }
-
-          return (
-            <div className="itemCell">
-              <span className="itemCell__name">{row.original.itemNm || "-"}</span>
-              <span className="itemCell__code">{row.original.itemCode}</span>
-            </div>
-          );
-        },
-      },
-      {
-        accessorKey: "receiptQty",
-        header: "입고수량",
-        meta: { width: "120px" },
-        cell: ({ row }) => {
-          const isNewRow = row.original.receiptId === -999999;
-          const isEditing = row.original.receiptId === editingReceiptId;
-
-          if (isNewRow || isEditing) {
-            return (
-              <input
-                className="tableInput"
-                type="number"
-                min="0"
-                placeholder="수량 입력"
-                defaultValue={editFormRef.current.receiptQty || ""}
-                onChange={(e) => {
-                  editFormRef.current.receiptQty = e.target.value === "" ? 0 : Number(e.target.value);
-                  recalcGoodQty();
-                }}
-              />
-            );
-          }
-          const qtyVal = (row.original.receiptQty ?? 0).toLocaleString();
-          const unitVal = row.original.unit ? ` ${row.original.unit}` : "";
-          return `${qtyVal}${unitVal}`;
-        },
-      },
-      {
-        accessorKey: "defectQty",
-        header: "불량수량",
-        meta: { width: "120px" },
-        cell: ({ row }) => {
-          const isNewRow = row.original.receiptId === -999999;
-          const isEditing = row.original.receiptId === editingReceiptId;
-
-          if (isNewRow || isEditing) {
-            return (
-              <input
-                className="tableInput"
-                type="number"
-                min="0"
-                placeholder="수량 입력"
-                defaultValue={editFormRef.current.defectQty || ""}
-                onChange={(e) => {
-                  editFormRef.current.defectQty = e.target.value === "" ? 0 : Number(e.target.value);
-                  recalcGoodQty();
-                }}
-              />
-            );
-          }
-          const qtyVal = (row.original.defectQty ?? 0).toLocaleString();
-          const unitVal = row.original.unit ? ` ${row.original.unit}` : "";
-          return `${qtyVal}${unitVal}`;
-        },
-      },
-      {
-        accessorKey: "goodQty",
-        header: "양품수량",
-        meta: { width: "170px" },
-        cell: ({ row }) => {
-          const isNewRow = row.original.receiptId === -999999;
-          const isEditing = row.original.receiptId === editingReceiptId;
-
-          if (isNewRow || isEditing) {
-            return (
-              <div className="goodQtyCell">
-                <input
-                  ref={goodQtyInputRef}
-                  className="tableInput"
-                  type="number"
-                  min="0"
-                  defaultValue={editFormRef.current.goodQty || 0}
-                  onChange={(e) => {
-                    const val = e.target.value === "" ? 0 : Number(e.target.value);
-                    handleManualGoodQtyChange(val);
-                  }}
-                />
-                {isGoodQtyManual && (
-                  <button
-                    type="button"
-                    className="goodQtyAutoBtn"
-                    onClick={handleResetGoodQtyToAuto}
-                    title="입고수량 - 불량수량으로 다시 자동 계산합니다."
-                  >
-                    자동계산
-                  </button>
-                )}
-              </div>
-            );
-          }
-          const qtyVal = (row.original.goodQty ?? 0).toLocaleString();
-          const unitVal = row.original.unit ? ` ${row.original.unit}` : "";
-          return `${qtyVal}${unitVal}`;
-        },
-      },
-      {
-        accessorKey: "receivedAt",
-        header: "입고일자",
-        meta: { width: "195px" },
-        cell: ({ row }) => {
-          const isNewRow = row.original.receiptId === -999999;
-          const isEditing = row.original.receiptId === editingReceiptId;
-
-          if (isNewRow || isEditing) {
-            return (
-              <input
-                className="tableInput"
-                type="datetime-local"
-                defaultValue={editFormRef.current.receivedAt ? editFormRef.current.receivedAt.slice(0, 16) : ""}
-                onChange={(e) => {
-                  editFormRef.current.receivedAt = e.target.value;
-                }}
-              />
-            );
-          }
-          return row.original.receivedAt ? formatDateTime(row.original.receivedAt) : "-";
-        },
-      },
-      {
-        accessorKey: "reportStatus",
-        header: "진행상태",
-        enableSorting: false,
-        meta: { width: "250px" },
-        cell: ({ row }) => {
-          const isNewRow = row.original.receiptId === -999999;
-          if (isNewRow) return null;
-
-          const goodQty = row.original.goodQty ?? 0;
-          const remainingQty = row.original.remainingQty ?? goodQty;
-          const returnedQty = Math.max(goodQty - remainingQty, 0);
-          const meta = REPORT_STATUS_META[row.original.reportStatus] ?? DEFAULT_STATUS_META;
-          const percent = goodQty > 0 ? Math.min((returnedQty / goodQty) * 100, 100) : 0;
-          const unitVal = row.original.unit ? ` ${row.original.unit}` : "";
-
-          return (
-            <div className="reportStatusCell">
-              <div className="reportStatusCell__head">
-                <span className={meta.badgeClass}>
-                  <span className="statusBadge__dot" />
-                  {meta.label}
-                </span>
-                <span className="reportStatusCell__count">
-                  <strong>{returnedQty.toLocaleString()}</strong> / {goodQty.toLocaleString()}
-                  {unitVal}
-                </span>
-              </div>
-              <div
-                className="seedProgressBar"
-                role="progressbar"
-                aria-label="신고 진행률"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(percent)}
-              >
-                <div className={`seedProgressFill ${meta.barClass}`} style={{ width: `${percent}%` }} />
-              </div>
-            </div>
-          );
-        },
-      },
-      {
-        id: "actions",
-        header: "관리",
-        meta: { width: "180px" },
-        cell: ({ row }) => {
-          const isNewRow = row.original.receiptId === -999999;
-          const isEditing = row.original.receiptId === editingReceiptId;
-          const isDeleting = isDeletingId === row.original.receiptId;
-
-          if (isNewRow || isEditing) {
-            return (
-              <div className="rowActions">
-                <button
-                  type="button"
-                  className="miniButton primary compact"
-                  disabled={isUpdating}
-                  onClick={() => (isNewRow ? handleSaveCreate() : handleSaveEdit(row.original.receiptId))}
-                >
-                  {isUpdating ? "저장 중" : "저장"}
-                </button>
-                <button
-                  type="button"
-                  className="miniButton danger"
-                  disabled={isUpdating}
-                  onClick={isNewRow ? handleCancelCreate : handleCancelEdit}
-                >
-                  취소
-                </button>
-              </div>
-            );
-          }
-
-          const actionLabel = getActionLabel(row.original.reportStatus);
-          const disableRow = editingReceiptId !== null || isCreatingNewRow || isDeleting;
-
-          return (
-            <div className="rowActions">
-              <button
-                type="button"
-                className="miniButton primary"
-                disabled={disableRow}
-                onClick={() => handleOpenReportModal(row.original)}
-              >
-                {actionLabel}
-              </button>
-              <button
-                type="button"
-                className="miniButton"
-                disabled={disableRow}
-                onClick={() => handleStartEdit(row.original)}
-              >
-                수정
-              </button>
-              <button
-                type="button"
-                className="miniButton danger"
-                disabled={disableRow}
-                onClick={() => handleDeleteReceipt(row.original)}
-              >
-                {isDeleting ? "삭제 중" : "삭제"}
-              </button>
-            </div>
-          );
-        },
-      },
-    ],
-    [
-      editingReceiptId,
-      isCreatingNewRow,
-      isUpdating,
-      isDeletingId,
-      itemOptions,
-      isGoodQtyManual,
-      selectedReceiptIds,
-      receipts,
-    ],
+  const renderInlineInputs = (summary: SeedGoodsReceiptOrderSummaryResponse, labelCell: ReactNode) => (
+    <>
+      <td>
+        <input
+          className="tableInput"
+          type="datetime-local"
+          aria-label="입고일시"
+          value={form.receivedAt}
+          onChange={(e) => setForm((prev) => ({ ...prev, receivedAt: e.target.value }))}
+        />
+      </td>
+      <td>
+        <QtyInput
+          className="tableInput seedInboundQtyInput"
+          aria-label="입고수량"
+          placeholder={summary.unit ?? "수량"}
+          value={form.receiptQty}
+          onValueChange={(value) => setForm((prev) => ({ ...prev, receiptQty: value }))}
+        />
+      </td>
+      <td>
+        <input
+          ref={noteInputRef}
+          className="tableInput"
+          type="text"
+          maxLength={255}
+          aria-label="비고"
+          placeholder="메모 (선택)"
+          value={form.note}
+          onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
+        />
+      </td>
+      <td>
+        <input
+          className="tableInput seedInboundBoxInput"
+          type="number"
+          min="1"
+          step="1"
+          aria-label="박스수"
+          value={form.boxQty}
+          onChange={(e) => setForm((prev) => ({ ...prev, boxQty: e.target.value }))}
+        />
+      </td>
+      <td>{labelCell}</td>
+      <td>
+        <div className="rowActions">
+          <button
+            type="button"
+            className="miniButton primary compact"
+            disabled={isSaving}
+            onClick={() => handleSaveInline(summary)}
+          >
+            {isSaving ? "저장 중" : "저장"}
+          </button>
+          <button type="button" className="miniButton danger" disabled={isSaving} onClick={handleCancelEditing}>
+            취소
+          </button>
+        </div>
+      </td>
+    </>
   );
 
-  const displayReceipts = useMemo(() => {
-    if (isCreatingNewRow) {
-      const dummyNewRow: SeedGoodsReceiptResponse = {
-        receiptId: -999999,
-        itemCode: "",
-        itemNm: "",
-        unit: "",
-        barcode: "",
-        receiptQty: 0,
-        defectQty: 0,
-        goodQty: 0,
-        returnedQty: 0,
-        remainingQty: 0,
-        reportStatus: "",
-        receivedAt: "",
-        createdAt: "",
-        updatedAt: "",
-      };
-      return [dummyNewRow, ...receipts];
-    }
-    return receipts;
-  }, [isCreatingNewRow, receipts]);
+  const renderLabelBadge = (printed: boolean) => (
+    <Badge tone={printed ? "good" : "muted"}>{printed ? "인쇄완료" : "미인쇄"}</Badge>
+  );
 
-  // QR 라벨용 데이터
-  const selectedLabelItems: QrLabelItem[] = useMemo(() => {
-    return receipts
-      .filter((r) => selectedReceiptIds.includes(r.receiptId))
-      .map((r) => ({
-        id: String(r.receiptId),
-        qrValue: r.barcode || String(r.receiptId),
-        title: `씨드 입고 (${r.barcode})`,
-        name: r.itemNm || "",
-        code: r.itemCode,
-        qty: r.goodQty || r.receiptQty,
-        qtyLabel: "양품수량",
-        unit: r.unit || "",
-      }));
-  }, [receipts, selectedReceiptIds]);
+  const renderOrderDetail = (summary: SeedGoodsReceiptOrderSummaryResponse) => {
+    const { orderCode } = summary;
+    const receipts = receiptsByOrder[orderCode] ?? [];
+    const isOrderLoading = loadingOrderCodes.includes(orderCode);
+    const isCreatingHere = editing?.mode === "create" && editing.orderCode === orderCode;
+    const allSelected = receipts.length > 0 && receipts.every((r) => selectedReceiptIds.includes(r.receiptId));
+
+    return (
+      <div className="seedInboundDetail">
+        <div className="seedInboundDetail__head">
+          <span className="seedInboundDetail__title">{orderCode} 입고 내역</span>
+          <button
+            type="button"
+            className="miniButton primary"
+            disabled={editing !== null || isSaving}
+            onClick={() => handleStartCreate(orderCode)}
+          >
+            + 입고 추가
+          </button>
+        </div>
+        <table className="seedInboundDetail__table">
+          <thead>
+            <tr>
+              <th className="seedInboundCheckCol">
+                <input
+                  type="checkbox"
+                  className="checkbox"
+                  aria-label={`${orderCode} 입고 전체 선택`}
+                  checked={allSelected}
+                  disabled={receipts.length === 0}
+                  onChange={(e) => toggleOrderSelection(orderCode, e.target.checked)}
+                />
+              </th>
+              <th>입고일시</th>
+              <th>입고수량</th>
+              <th>비고</th>
+              <th>박스수</th>
+              <th>라벨</th>
+              <th>관리</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isOrderLoading && receipts.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="seedInboundDetail__empty">
+                  불러오는 중...
+                </td>
+              </tr>
+            ) : (
+              <>
+                {receipts.length === 0 && !isCreatingHere && (
+                  <tr>
+                    <td colSpan={7} className="seedInboundDetail__empty">
+                      아직 등록된 입고가 없습니다. "입고 추가"를 눌러 등록하세요.
+                    </td>
+                  </tr>
+                )}
+                {receipts.map((r) => {
+                  const isEditingRow = editing?.mode === "edit" && editing.receiptId === r.receiptId;
+                  if (isEditingRow) {
+                    return (
+                      <tr key={r.receiptId}>
+                        <td className="seedInboundCheckCol" />
+                        {renderInlineInputs(summary, renderLabelBadge(r.labelPrinted))}
+                      </tr>
+                    );
+                  }
+                  const isDeleting = deletingId === r.receiptId;
+                  const disableRow = editing !== null || deletingId !== null;
+                  return (
+                    <tr key={r.receiptId}>
+                      <td className="seedInboundCheckCol">
+                        <input
+                          type="checkbox"
+                          className="checkbox"
+                          aria-label={`입고 ${r.receiptId} 선택`}
+                          checked={selectedReceiptIds.includes(r.receiptId)}
+                          onChange={() => toggleReceiptSelection(r.receiptId)}
+                        />
+                      </td>
+                      <td>{r.receivedAt ? formatDateTime(r.receivedAt) : "-"}</td>
+                      <td>{formatQty(r.receiptQty, r.unit)}</td>
+                      <td className="seedInboundNoteCell">{r.note || "-"}</td>
+                      <td>{getBoxCount(r)}박스</td>
+                      <td>{renderLabelBadge(r.labelPrinted)}</td>
+                      <td>
+                        <div className="rowActions">
+                          <button
+                            type="button"
+                            className="miniButton"
+                            disabled={disableRow}
+                            onClick={() => handleStartEdit(r)}
+                          >
+                            수정
+                          </button>
+                          <button
+                            type="button"
+                            className="miniButton danger"
+                            disabled={disableRow}
+                            onClick={() => handleDelete(r)}
+                          >
+                            {isDeleting ? "삭제 중" : "삭제"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {isCreatingHere && (
+                  <tr>
+                    <td className="seedInboundCheckCol" />
+                    {renderInlineInputs(summary, renderLabelBadge(false))}
+                  </tr>
+                )}
+              </>
+            )}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const renderProgress = (summary: SeedGoodsReceiptOrderSummaryResponse) => {
+    const orderQty = summary.orderQty ?? 0;
+    const receivedQty = summary.receivedQty ?? 0;
+    const percent = orderQty > 0 ? (receivedQty / orderQty) * 100 : 0;
+    const isOver = orderQty > 0 && receivedQty > orderQty;
+    const remainingQty = Math.max(orderQty - receivedQty, 0);
+
+    return (
+      <div className="seedInboundProgress">
+        <div
+          className="seedInboundProgress__track"
+          role="progressbar"
+          aria-label={`${summary.orderCode} 입고 진행률`}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(Math.min(percent, 100))}
+        >
+          <div
+            className={`seedInboundProgress__fill${isOver ? " seedInboundProgress__fill--over" : ""}`}
+            style={{ width: `${Math.min(percent, 100)}%` }}
+          />
+        </div>
+        <span className="seedInboundProgress__text">
+          {Math.round(percent)}%{isOver ? "" : ` · 잔여 ${formatQty(remainingQty, summary.unit)}`}
+        </span>
+      </div>
+    );
+  };
+
+  const renderStatusBadge = (summary: SeedGoodsReceiptOrderSummaryResponse) => {
+    const diff = (summary.receivedQty ?? 0) - (summary.orderQty ?? 0);
+    let text = summary.status;
+    if (summary.status === "미만입고") text = `미만입고 -${formatQty(Math.abs(diff), summary.unit)}`;
+    if (summary.status === "초과입고") text = `초과입고 +${formatQty(Math.abs(diff), summary.unit)}`;
+    return <Badge tone={STATUS_TONE[summary.status] ?? "muted"}>{text}</Badge>;
+  };
 
   return (
     <section className="screenStack">
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
       <Panel
-        title="씨드 입고관리 목록"
+        title="수주별 원료 입고 현황"
         action={
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <div className="seedInboundPanelActions">
             <button type="button" className="ghostButton" onClick={handleOpenLabelModal}>
-              선택 라벨 인쇄 ({selectedReceiptIds.length}건)
+              선택 라벨 인쇄 ({selectedReceipts.length}건 · 라벨 {selectedLabelCount}장)
             </button>
-            <button type="button" className="primaryButton" onClick={handleStartCreate}>
-              등록
-            </button>
+            {selectedReceipts.length > 0 && (
+              <button type="button" className="ghostButton" onClick={() => setSelectedReceiptIds([])}>
+                일괄취소
+              </button>
+            )}
           </div>
         }
       >
         <div className="relative min-h-[300px]">
-          {isLoading ? (
+          {isLoading && summaries.length === 0 ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <Spinner />
             </div>
           ) : (
-            <>
-              <CusTable
-                data={displayReceipts}
-                columns={columns}
-                sorting={sorting}
-                onSortingChange={handleSortingChange}
-                noDataMessage="조회된 데이터가 없습니다."
-              />
-              <CusPagination
-                page={page}
-                totalPages={totalPages}
-                totalCount={totalElements}
-                onPageChange={handlePageChange}
-              />
-            </>
+            <div className="tableWrap">
+              <table className="seedInboundOrderTable">
+                <thead>
+                  <tr>
+                    <th className="seedInboundChevronCol" aria-label="펼침" />
+                    <th>수주코드</th>
+                    <th>계약 원료수량</th>
+                    <th>누적 입고수량</th>
+                    <th>진행률</th>
+                    <th>상태</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summaries.length === 0 ? (
+                    <tr>
+                      <td colSpan={6}>조회된 데이터가 없습니다.</td>
+                    </tr>
+                  ) : (
+                    summaries.map((summary) => {
+                      const isOpen = expandedOrderCodes.includes(summary.orderCode);
+                      const isClosed = summary.status === CLOSED_STATUS;
+                      const isOver = summary.status === "초과입고";
+                      return (
+                        <Fragment key={summary.orderCode}>
+                          <tr
+                            className={`seedInboundOrderRow${isOpen ? " is-open" : ""}${isClosed ? " is-closed" : ""}`}
+                            aria-expanded={isOpen}
+                            onClick={() => handleToggleOrder(summary.orderCode)}
+                          >
+                            <td className="seedInboundChevronCol">
+                              <span className="seedInboundChevron" aria-hidden>
+                                ▶
+                              </span>
+                            </td>
+                            <td>
+                              <div className="itemCell">
+                                <span className="itemCell__name">{summary.orderCode}</span>
+                                <span className="itemCell__code">{summary.bpNm || "-"}</span>
+                              </div>
+                            </td>
+                            <td>{summary.orderQty == null ? "-" : formatQty(summary.orderQty, summary.unit)}</td>
+                            <td className={isOver ? "seedInboundOverText" : undefined}>
+                              {formatQty(summary.receivedQty, summary.unit)}
+                            </td>
+                            <td>{renderProgress(summary)}</td>
+                            <td>{renderStatusBadge(summary)}</td>
+                          </tr>
+                          {isOpen && (
+                            <tr className={`seedInboundDetailRow${isClosed ? " is-closed" : ""}`}>
+                              <td colSpan={6}>{renderOrderDetail(summary)}</td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </Panel>
 
-      {reportModalReceipt && (
-        <ReportModal receipt={reportModalReceipt} onClose={handleCloseReportModal} onChanged={handleReportChanged} />
-      )}
-
-      {/* QR 전용 라벨 모달 */}
       <QrLabelPrintModal
         isOpen={isLabelModalOpen}
         onClose={() => setIsLabelModalOpen(false)}
-        items={selectedLabelItems}
+        items={labelItems}
+        modalTitle={`라벨 인쇄 미리보기 (${selectedReceipts.length}건 · 라벨 ${labelItems.length}장)`}
+        onPrinted={handlePrinted}
+        isBusy={isMarkingPrinted}
       />
     </section>
   );

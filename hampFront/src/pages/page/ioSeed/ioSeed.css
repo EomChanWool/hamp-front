@@ -1233,3 +1233,159 @@
   border-color: var(--border);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
 }
+/* ==========================================================================
+   씨드입고관리 - 수주별 원료 입고 현황 (아코디언)
+   ========================================================================== */
+
+.seedInboundPanelActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.seedInboundOrderRow {
+  cursor: pointer;
+}
+
+.seedInboundOrderRow:hover {
+  background: var(--bg-subtle, #f8fafc);
+}
+
+.seedInboundOrderRow.is-closed {
+  opacity: 0.55;
+}
+
+.seedInboundOrderRow.is-closed:hover,
+.seedInboundOrderRow.is-closed.is-open {
+  opacity: 0.85;
+}
+
+.seedInboundOrderTable th.seedInboundChevronCol,
+.seedInboundOrderTable td.seedInboundChevronCol {
+  width: 36px;
+  min-width: 36px;
+  padding-right: 0;
+}
+
+.seedInboundChevron {
+  display: inline-block;
+  font-size: 10px;
+  color: #94a3b8;
+  transition: transform 0.15s ease;
+}
+
+.seedInboundOrderRow.is-open .seedInboundChevron {
+  transform: rotate(90deg);
+}
+
+.seedInboundOverText {
+  color: #b3372f;
+  font-weight: 600;
+}
+
+.seedInboundProgress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 200px;
+}
+
+.seedInboundProgress__track {
+  flex: 1;
+  min-width: 80px;
+  height: 8px;
+  border-radius: 99px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.seedInboundProgress__fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--primary, #57d3a1);
+}
+
+.seedInboundProgress__fill--over {
+  background: #f87171;
+}
+
+.seedInboundProgress__text {
+  font-size: 12.5px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.seedInboundDetailRow > td {
+  padding: 0 12px 14px 48px;
+  background: var(--bg-subtle, #f8fafc);
+}
+
+.seedInboundDetailRow.is-closed .seedInboundDetail {
+  opacity: 0.85;
+}
+
+.seedInboundDetail {
+  padding-top: 12px;
+}
+
+.seedInboundDetail__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.seedInboundDetail__title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.seedInboundDetail__table {
+  min-width: 0;
+  background: var(--bg-card, #fff);
+}
+
+.seedInboundDetail__table th,
+.seedInboundDetail__table td {
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.seedInboundDetail__table th {
+  height: 38px;
+}
+
+.seedInboundDetail__table .seedInboundCheckCol {
+  width: 40px;
+  min-width: 40px;
+}
+
+.seedInboundDetail__empty {
+  text-align: center;
+  color: #94a3b8;
+}
+
+.seedInboundNoteCell {
+  white-space: normal;
+  max-width: 280px;
+}
+
+.seedInboundQtyInput {
+  width: 110px;
+}
+
+.seedInboundBoxInput {
+  width: 70px;
+}
+
+[data-theme="dark"] .seedInboundProgress__track {
+  background: rgba(148, 163, 184, 0.2);
+}
+
+[data-theme="dark"] .seedInboundOverText {
+  color: #ef8a8a;
+}
+
+[data-theme="dark"] .seedInboundProgress__text {
+  color: #94a3b8;
+}
