@@ -7,7 +7,7 @@ import { BusinessPartnerApi } from "@/api/sales/BusinessPartner";
 import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
 import Spinner from "@/components/common/Spinner";
 import { AmountInput } from "@/components/common/AmountInput";
-import { formatDateTime } from "@/utils/common";
+import { formatDateTime, parseDecimalInput, sanitizeDecimalInput } from "@/utils/common";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
 import { type SelectOption } from "@/pages/layout/DetailSelect";
 import { SalesOrderAllocationSection } from "@/components/common/SalesOrderAllocationSection";
@@ -134,6 +134,32 @@ export function SalesOrderDetailPage() {
             value ? `${Number(value).toLocaleString("ko-KR")}${form.unit ? ` ${form.unit}` : ""}` : "-",
         },
         {
+          label: "오차범위",
+          key: "toleranceRate",
+          editable: true,
+          renderEditor: (value, onChange, disabled) => (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <input
+                type="text"
+                inputMode="decimal"
+                className="tableInput"
+                style={{ textAlign: "right" }}
+                placeholder="0 ~ 100"
+                value={value ?? ""}
+                disabled={disabled}
+                onChange={(e) => {
+                  const next = sanitizeDecimalInput(e.target.value);
+                  // 서버 허용 범위(0~100)를 넘는 입력은 받지 않는다
+                  if ((parseDecimalInput(next) ?? 0) > 100) return;
+                  onChange(next);
+                }}
+              />
+              <span style={{ whiteSpace: "nowrap" }}>%</span>
+            </div>
+          ),
+          renderValue: (value) => (value ? `${value}%` : "-"),
+        },
+        {
           label: "가공비",
           key: "orderAmount",
           editable: true,
@@ -191,6 +217,7 @@ export function SalesOrderDetailPage() {
           unit: data.unit ?? "",
           orderQty: data.orderQty != null ? String(data.orderQty) : "",
           orderAmount: data.orderAmount != null ? String(data.orderAmount) : "",
+          toleranceRate: data.toleranceRate != null ? String(data.toleranceRate) : "",
           createdAt: formatDateTime(data.createdAt),
           lines: data.lines || [],
         });
@@ -225,6 +252,7 @@ export function SalesOrderDetailPage() {
         unit: order.unit ?? "",
         orderQty: order.orderQty != null ? String(order.orderQty) : "",
         orderAmount: order.orderAmount != null ? String(order.orderAmount) : "",
+        toleranceRate: order.toleranceRate != null ? String(order.toleranceRate) : "",
         createdAt: formatDateTime(order.createdAt),
         lines: order.lines || [],
       });
@@ -257,6 +285,7 @@ export function SalesOrderDetailPage() {
         itemCode: RAW_ITEM_CODE,
         orderQty: form.orderQty ? Number(form.orderQty) : null,
         orderAmount: form.orderAmount ? Number(form.orderAmount) : null,
+        toleranceRate: parseDecimalInput(form.toleranceRate ?? ""),
         // 기존 라인은 같은 품목의 salesOrderLineId를 이어받아 갱신한다
         lines: buildAllocationLines(percents, order.lines || []),
       };

@@ -10,6 +10,7 @@ import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
 import { AmountInput } from "@/components/common/AmountInput";
 import { SelectBox, type SelectBoxOption } from "@/components/common/SelectBox";
 import { SalesOrderAllocationSection } from "@/components/common/SalesOrderAllocationSection";
+import { parseDecimalInput, sanitizeDecimalInput } from "@/utils/common";
 import {
   DEFAULT_OIL_PERCENT,
   DEFAULT_POWDER_PERCENT,
@@ -38,6 +39,8 @@ export function SalesOrderCreatePage() {
     orderQty: null,
     orderAmount: null,
   });
+  // 오차범위는 "5." 같은 입력 중간 값을 유지해야 해서 문자열로 들고, 등록 시 숫자로 바꾼다
+  const [toleranceInput, setToleranceInput] = useState("");
   const [percents, setPercents] = useState<AllocationPercents>({
     oilPercent: DEFAULT_OIL_PERCENT,
     powderPercent: DEFAULT_POWDER_PERCENT,
@@ -114,6 +117,7 @@ export function SalesOrderCreatePage() {
     const payload: SalesOrderCreateRequest = {
       ...form,
       itemCode: form.itemCode || null,
+      toleranceRate: parseDecimalInput(toleranceInput),
       // 시뮬레이션 응답을 기다리지 않고 현재 입력된 비율로 보낸다 (그룹별 합은 항상 100)
       lines: buildAllocationLines(percents),
     };
@@ -141,6 +145,8 @@ export function SalesOrderCreatePage() {
     ? `${selectedRawItem.itemNm ?? selectedRawItem.itemCode} (${selectedRawItem.itemCode})`
     : RAW_ITEM_CODE;
 
+  const toleranceRate = parseDecimalInput(toleranceInput);
+
   const requiredDone = [form.bpCode, form.orderQty, form.orderAmount].filter(
     (v) => v !== "" && v != null
   ).length;
@@ -158,6 +164,10 @@ export function SalesOrderCreatePage() {
         form.orderQty != null
           ? `${form.orderQty.toLocaleString("ko-KR")}${rawUnit ? ` ${rawUnit}` : ""}`
           : "",
+    },
+    {
+      label: "오차범위",
+      value: toleranceRate != null ? `${toleranceRate}%` : "",
     },
     {
       label: "가공비",
@@ -248,7 +258,7 @@ export function SalesOrderCreatePage() {
               </div>
 
               <div className="formGrid">
-                <div className="formField col6">
+                <div className="formField col3">
                   <label className="formLabel" htmlFor="order-item">투입원료</label>
                   {/* 생산 배분 시뮬레이션이 헴프 원물 기준으로 고정돼 있어 선택 없이 고정 표시 */}
                   <input
@@ -282,6 +292,28 @@ export function SalesOrderCreatePage() {
                       }}
                     />
                     {rawUnit && <span className="formInputSuffix">{rawUnit}</span>}
+                  </div>
+                </div>
+
+                <div className="formField col3">
+                  <label className="formLabel" htmlFor="order-tolerance">오차범위</label>
+                  <div className="formInputWrap">
+                    <input
+                      id="order-tolerance"
+                      type="text"
+                      inputMode="decimal"
+                      className="formInput hasSuffix"
+                      placeholder="0 ~ 100"
+                      value={toleranceInput}
+                      disabled={isSubmitting}
+                      onChange={(e) => {
+                        const next = sanitizeDecimalInput(e.target.value);
+                        // 서버 허용 범위(0~100)를 넘는 입력은 받지 않는다
+                        if ((parseDecimalInput(next) ?? 0) > 100) return;
+                        setToleranceInput(next);
+                      }}
+                    />
+                    <span className="formInputSuffix">%</span>
                   </div>
                 </div>
 
