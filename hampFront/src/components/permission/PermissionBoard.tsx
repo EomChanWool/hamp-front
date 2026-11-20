@@ -373,7 +373,15 @@ export function PermissionBoard() {
             await AuthGroupApi.update(groupDetail.authId, updatePayload);
             showToast("success", "권한 설정이 저장되었습니다.");
 
-            setGroupDetail((prev) => (prev ? { ...prev, authDesc: editedDesc } : prev));
+            const menuNmById = new Map(allMenus.map((m) => [m.menuId, m.menuNm]));
+            const savedMenuPermissions = menuPermissions.map((p) => ({
+                ...p,
+                menuNm: menuNmById.get(p.menuId) ?? "",
+            }));
+
+            setGroupDetail((prev) =>
+                prev ? { ...prev, authDesc: editedDesc, menuPermissions: savedMenuPermissions } : prev
+            );
             commitPerms();
             setIsEditing(false);
         } catch (error) {
