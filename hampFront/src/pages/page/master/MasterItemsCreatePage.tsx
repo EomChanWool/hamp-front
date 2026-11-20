@@ -33,6 +33,9 @@ type SummaryRow = {
   value: string;
 };
 
+// 단계별 자재 한 건의 타입 (RoutingStep 에서 추출)
+type StepMaterial = RoutingStep["materials"][number];
+
 const SOLE_PRODUCTION_OPTIONS: SelectBoxOption[] = [
   { value: "0", label: SOLE_PRODUCTION_LABEL[0] },
   { value: "1", label: SOLE_PRODUCTION_LABEL[1] },
@@ -148,7 +151,48 @@ export function MasterItemsCreatePage() {
     }
   }, [routings.length, selectedIndex]);
 
+  const syncSelfMaterials = (key: "itemCode" | "itemNm" | "unit", value: string) => {
+    const fromCode = form.itemCode.trim();
+    const nextValue = value.trim();
+
+    let changed = false;
+
+    const mapMaterial = (m: StepMaterial): StepMaterial => {
+      if (m.itemCode !== fromCode) return m; // 자기 품목이 아니면 그대로
+      const next: StepMaterial = {
+        ...m,
+        itemCode: key === "itemCode" ? nextValue : m.itemCode,
+        // 품목명을 비운 경우엔 자재 표시명이 공백이 되지 않도록 기존 값 유지
+        itemNm: key === "itemNm" ? nextValue || m.itemNm : m.itemNm,
+        unit: key === "unit" ? nextValue : m.unit,
+      };
+      if (next.itemCode !== m.itemCode || next.itemNm !== m.itemNm || next.unit !== m.unit) {
+        changed = true;
+      }
+      return next;
+    };
+
+    const mapSteps = (steps: RoutingStep[]): RoutingStep[] =>
+      steps.map((step) => ({ ...step, materials: step.materials.map(mapMaterial) }));
+
+    // 1) 현재 화면의 라우팅 (변경이 있을 때만 한 번에 교체)
+    if (routings.length > 0) {
+      const nextRoutings = mapSteps(routings);
+      if (changed) restoreRoutings(nextRoutings);
+    }
+
+    // 2) 원료로 바꿔서 임시 보관 중인 라우팅도 동일하게 갱신 (복원 시 이전 코드가 되살아나는 것 방지)
+    if (removedRoutingsRef.current) {
+      removedRoutingsRef.current = mapSteps(removedRoutingsRef.current);
+    }
+  };
+
   const handleChange = (key: string, value: string) => {
+    // 품목코드/품목명/단위 변경 시 자기 품목 자재 동기화
+    if (key === "itemCode" || key === "itemNm" || key === "unit") {
+      syncSelfMaterials(key, value);
+    }
+
     // 품목구분 변경 시 라우팅 처리
     if (key === "category") {
       const prevCategory = form.category;
@@ -169,6 +213,7 @@ export function MasterItemsCreatePage() {
         clearRoutings(); // 단계와 자재가 한 객체라 한 번에 초기화됨
       } else if (prevCategory === "0" && removedRoutingsRef.current && routings.length === 0) {
         // 원료 → 반제품/완제품: 보관해 둔 라우팅 복원 (rowKey/자재/수율 그대로)
+        // 보관 중에도 syncSelfMaterials 가 ref 를 갱신하므로 복원된 자기 품목 자재는 최신 코드/이름/단위
         restoreRoutings(removedRoutingsRef.current);
         removedRoutingsRef.current = null;
       }
