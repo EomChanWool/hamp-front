@@ -18,6 +18,8 @@ export interface SalesOrderCreateRequest {
     orderQty?: number | null;
     /** 가공비 */
     orderAmount?: number | null;
+    /** 투입원료 수량 오차범위(%) */
+    toleranceRate?: number | null;
     /** 산출 라인 목록 */
     lines?: SalesOrderLineRequest[];
 }
@@ -38,6 +40,8 @@ export interface SalesOrderUpdateRequest {
     orderQty?: number | null;
     /** 가공비 */
     orderAmount?: number | null;
+    /** 투입원료 수량 오차범위(%) */
+    toleranceRate?: number | null;
     /** 산출 라인 목록 */
     lines?: SalesOrderLineRequest[];
 }
@@ -74,10 +78,16 @@ export interface SalesOrderDetailResponse {
     itemNm: string | null;
     /** 투입원료 단위 */
     unit: string | null;
-    /** 투입원료 수량 */
+    /** 투입원료 수량 (계약) */
     orderQty: number | null;
+    /** 투입원료 누적 입고수량 (실제) */
+    receivedQty: number | null;
+    /** 실제 누적 입고수량을 전처리(탈각) 수율로 환산한 탈피씨드 가능량 */
+    receivedSemiSeedQty: number | null;
     /** 가공비 */
     orderAmount: number | null;
+    /** 투입원료 수량 오차범위(%) */
+    toleranceRate: number | null;
     createdAt: string;
     updatedAt: string;
     /** 산출 라인 목록 */
@@ -97,8 +107,9 @@ export interface SalesOrderLineRequest {
      * 배분 그룹 키 (최대 20자)
      * - 같은 투입 품목을 기준으로 나뉘는 분기를 묶는 키
      * - 예: 원물 분기는 'RAW', 부산물 재투입 분기는 'PARK'
+     * - 서버는 string 으로 받으므로 string 도 허용 (SalesOrderAllocationGroup 권장)
      */
-    allocationGroup?: string | null;
+    allocationGroup?: SalesOrderAllocationGroup | string | null;
     /**
      * allocationGroup 내 배분 비율(%) (0~100)
      * - 같은 그룹 라인들의 합이 100이어야 함
@@ -139,6 +150,99 @@ export interface SalesOrderLineResponse {
     productionStatus: string;
     createdAt: string;
     updatedAt: string;
+}
+
+// ── 작업지시 지시수량 미리보기 타입 ───────────────────────────────────────────
+//
+// GET /sales-orders/{orderCode}/instruct-qty-preview
+//
+// 투입량 계산 방식
+//  - 방식① 원료 비율 유지   (ratioKept*)       : 입고량이 달라져도 배분 비율을 유지하고 투입량을 환산
+//  - 방식② 목표 산출량 유지 (targetYieldKept*) : 목표 산출량을 맞추도록 투입량을 환산
+//  - 방식③ 직접입력                            : 프론트가 outputYieldPercent 등 수율 값으로 직접 계산
+//
+// 계산은 항상 "실제 누적 입고수량" 기준이다. (계약 수량 기준 아님)
+
+/**
+ * 지시수량 미리보기 라인 (RAW/PARK 그룹 공통)
+ * - "수율 확정 라인만, 그 외엔 null" 로 표기된 필드는 수율이 불확실한 분기에서 null
+ */
+export interface InstructQtyPreviewLineResponse {
+    /** 수주 라인 ID */
+    salesOrderLineId: number;
+    /** 품목 코드 */
+    itemCode: string;
+    /** 품목명 */
+    itemNm: string;
+    /** 방식① 원료 비율 유지 - 투입량 */
+    ratioKeptQty: number;
+    /** 방식① 원료 비율 유지 - 예상 산출량 (수율 확정 라인만, 그 외엔 null) */
+    ratioKeptOutputQty: number | null;
+    /** 방식② 목표 산출량 유지 - 투입량 */
+    targetYieldKeptQty: number;
+    /** 방식② 목표 산출량 유지 - 예상 산출량 (수율 확정 라인만, 그 외엔 null) */
+    targetYieldKeptOutputQty: number | null;
+    /**
+     * 투입량 대비 산출량 비율(%) - 수율 확정 라인만, 그 외엔 null
+     * - 직접입력 시 프론트 계산: 예상 산출량 = 투입량 × outputYieldPercent ÷ 100
+     */
+    outputYieldPercent: number | null;
+    /**
+     * 투입량 대비 부산물(헴프박) 발생 비율(%) - 헴프오일 라인만, 그 외엔 null
+     * - 직접입력 시 프론트 계산: 건조 전 헴프박 발생량 = 오일 투입량 × byproductYieldPercent ÷ 100
+     * - 건조까지 거치려면 park.dryYieldPercent 를 한 번 더 곱한다
+     */
+    byproductYieldPercent: number | null;
+}
+
+/** 지시수량 미리보기 - RAW 그룹 (원물 → 오일/씨드) */
+export interface InstructQtyPreviewRawGroupResponse {
+    /** 실제 누적 입고수량 */
+    receivedQty: number;
+    /**
+     * 실제 누적 입고수량을 전처리(탈각) 수율로 환산한 탈피씨드 가능량
+     * - 투입원료가 HEMP_SEED 가 아니거나 입고가 없으면 null
+     */
+    receivedSemiSeedQty: number | null;
+    /** 수주에 설정된 투입원료 수량 오차범위(%) - 미설정이면 null */
+    toleranceRate: number | null;
+    /**
+     * 실제 누적 입고수량이 오차범위 안인지
+     * - true  : 계량 오차 수준의 차이 → 투입량 계산 방식(①②③) 선택 UI를 숨기고 ①을 그대로 사용
+     * - 계산 자체는 오차범위와 무관하게 항상 실제 입고량 기준이므로,
+     *   ratioKeptQty/targetYieldKeptQty 가 계약값과 같다는 보장은 없음 (UI 노출 판단용 플래그)
+     * - toleranceRate 미설정이면 항상 false
+     */
+    withinTolerance: boolean;
+    /** RAW 그룹 라인 목록 (헴프오일/헴프씨드) */
+    lines: InstructQtyPreviewLineResponse[];
+}
+
+/** 지시수량 미리보기 - PARK 그룹 (헴프박 → 파우더/농축) */
+export interface InstructQtyPreviewParkGroupResponse {
+    /** 방식① 원료 비율 유지 - 예상 헴프박 수량 (건조 전, 오일 부산물) */
+    ratioKeptByproductQty: number;
+    /** 방식① 원료 비율 유지 - 건조 후 수량 (= 이 방식에서 파우더/농축에 실제 배분 가능한 풀) */
+    ratioKeptDryQty: number;
+    /** 방식② 목표 산출량 유지 - 예상 헴프박 수량 (건조 전, 오일 부산물) */
+    targetYieldKeptByproductQty: number;
+    /** 방식② 목표 산출량 유지 - 건조 후 수량 (= 이 방식에서 파우더/농축에 실제 배분 가능한 풀) */
+    targetYieldKeptDryQty: number;
+    /**
+     * 헴프박 → 건조헴프박 수율(%)
+     * - 직접입력 시 프론트 계산: 건조 후 수량 = 헴프박 발생량 × dryYieldPercent ÷ 100
+     */
+    dryYieldPercent: number;
+    /** PARK 그룹 라인 목록 (단백질파우더/헴프박농축액) */
+    lines: InstructQtyPreviewLineResponse[];
+}
+
+/** 작업지시 지시수량 미리보기 응답 */
+export interface InstructQtyPreviewResponse {
+    /** RAW 그룹 (원물 → 오일/씨드) 정보 */
+    raw: InstructQtyPreviewRawGroupResponse;
+    /** PARK 그룹 (헴프박 → 파우더/농축) 정보 */
+    park: InstructQtyPreviewParkGroupResponse;
 }
 
 // ── 수주현황 / 실적현황 타입 ──────────────────────────────────────────────────
@@ -235,7 +339,7 @@ export interface SalesOrderSimulationCapacity {
 }
 
 /** 시뮬레이션 분기별 배분 결과 (수율 불확실 분기는 qty가 항상 null) */
-interface SalesOrderSimulationAllocationBase {
+export interface SalesOrderSimulationAllocationBase {
     percent: number;
     itemCode: string;
     itemNm: string;
@@ -297,6 +401,9 @@ export type ApiResponseSalesOrderResponse = ApiResponse<SalesOrderResponse>;
 /** 수주 상세 조회 API 최종 응답 타입 */
 export type ApiResponseSalesOrderDetailResponse = ApiResponse<SalesOrderDetailResponse>;
 
+/** 작업지시 지시수량 미리보기 API 최종 응답 타입 */
+export type ApiResponseInstructQtyPreviewResponse = ApiResponse<InstructQtyPreviewResponse>;
+
 /** 수주 목록 페이징 데이터 타입 */
 export type PageSalesOrderResponse = PageResponse<SalesOrderResponse>;
 
@@ -341,6 +448,20 @@ export const SalesOrderApi = {
     /** 수주 단건 상세 조회 (산출 라인의 배분/생산/출고 정보 포함) */
     getDetail: async (orderCode: string): Promise<ApiResponseSalesOrderDetailResponse> => {
         const res = await apiClient.get(`/sales-orders/${orderCode}`);
+        return res.data;
+    },
+
+    /**
+     * 작업지시 지시수량 미리보기
+     * - GET /sales-orders/{orderCode}/instruct-qty-preview
+     * - 방식① 원료 비율 유지 / 방식② 목표 산출량 유지 기준의 투입량·예상 산출량을
+     *   실제 누적 입고수량 기준으로 계산해서 반환 (RAW/PARK 그룹별)
+     * - raw.withinTolerance 가 true 면 방식 선택 UI 없이 ① 을 그대로 사용
+     */
+    getInstructQtyPreview: async (orderCode: string): Promise<ApiResponseInstructQtyPreviewResponse> => {
+        const res = await apiClient.get<ApiResponseInstructQtyPreviewResponse>(
+            `/sales-orders/${orderCode}/instruct-qty-preview`,
+        );
         return res.data;
     },
 
