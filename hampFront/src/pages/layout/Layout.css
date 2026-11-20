@@ -2175,6 +2175,26 @@
   color: var(--text-muted, #9aa3b0);
 }
 
+.formHint {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-body, #5b6472);
+  background: color-mix(in srgb, var(--primary, #0052cc) 6%, var(--bg-card, #ffffff));
+  border: 1px solid color-mix(in srgb, var(--primary, #0052cc) 18%, transparent);
+  border-radius: 10px;
+}
+
+.formHintTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-heading, #14181f);
+}
+
 /* ---------- 필드 그리드 (6칸) ---------- */
 .formGrid {
   display: grid;

@@ -295,6 +295,12 @@ export function SystemUsersCreatePage() {
               </dl>
             </section>
 
+            <p className="formHint" role="note">
+              <strong className="formHintTitle">초기 비밀번호 안내</strong>
+              등록 화면에서는 비밀번호를 입력하지 않습니다. 초기 비밀번호는 '0000'으로 설정되며,
+              첫 로그인 시 새로운 비밀번호로 변경해야 합니다.
+            </p>
+
             <div className="formActions">
               <button type="submit" className="primaryButton" disabled={isSubmitting}>
                 {isSubmitting ? "등록 중..." : "등록"}
