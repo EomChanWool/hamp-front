@@ -2948,3 +2948,118 @@
 [data-theme="dark"] .woc-readonly {
   background: rgba(255, 255, 255, 0.04);
 }
+
+/* ==========================================================================
+   작업지시 등록 - 투입량 계산 방식(①②③) 추가분
+   ========================================================================== */
+
+/* 패널 헤더: 설명 문구가 길어서 줄바꿈 허용 */
+.woc-panel__head { flex-wrap: wrap; gap: 8px; }
+.woc-panel__desc { margin: 4px 0 0; font-size: 12.5px; color: var(--woc-muted-2); line-height: 1.6; }
+
+/* ───────── 수주 정보 카드: 실제 입고 카드가 추가돼 5개 ───────── */
+.woc-infocards {
+  grid-template-columns: minmax(200px, 1.3fr) minmax(170px, 1.1fr) repeat(3, minmax(0, 1fr));
+}
+.woc-infocard.is-received { background: var(--woc-error-soft); border-color: var(--woc-error-line); }
+.woc-infocard.is-received .woc-infocard__icon { color: #fff; background: var(--woc-error); }
+.woc-infocard.is-received .woc-infocard__label { color: var(--woc-error-dark); }
+.woc-infocard.is-received .woc-infocard__value {
+  display: flex; align-items: baseline; gap: 4px;
+  font-size: 24px; line-height: 1.1; letter-spacing: -0.02em;
+  color: var(--woc-error-dark); font-variant-numeric: tabular-nums;
+}
+.woc-infocard.is-received .woc-infocard__value em { margin: 0; font-size: 14px; font-weight: 600; color: inherit; }
+.woc-infocard__subtag { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 700; color: var(--woc-error-dark); }
+
+/* 기존 반응형 규칙이 4열 기준이라 5카드에 맞게 재정의 (순서 유지: 1280 → 640 → 460) */
+@container woc (max-width: 1280px) {
+  .woc-infocards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .woc-infocard.is-raw { grid-column: 1 / -1; }
+}
+@container woc (max-width: 640px) {
+  .woc-infocards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container woc (max-width: 460px) {
+  .woc-infocards { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ───────── 태그: 시스템 계산값 / 직접 입력 ───────── */
+.woc-tag.system { color: var(--woc-primary-dark); background: #eff4ff; }
+.woc-tag.direct { color: var(--woc-amber-dark); background: #fef3c7; }
+
+/* ───────── 그룹 상단 투입 현황 배너 ───────── */
+.woc-groupBanner {
+  list-style: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 12px 16px; padding: 14px 16px; margin-bottom: 18px;
+  border-radius: 10px; background: var(--woc-bg-soft); border: 1px solid var(--woc-border);
+}
+.woc-groupBanner__title { font-size: 12.5px; font-weight: 700; color: var(--woc-muted); }
+.woc-groupBanner__stats { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.woc-groupBanner__stat { display: flex; flex-direction: column; gap: 2px; }
+.woc-groupBanner__label { font-size: 11px; font-weight: 600; color: var(--woc-muted-2); white-space: nowrap; }
+.woc-groupBanner__value { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; color: var(--woc-text); font-variant-numeric: tabular-nums; }
+.woc-groupBanner__value em { margin-left: 2px; font-size: 12px; font-weight: 600; color: inherit; }
+.woc-groupBanner__stat.is-highlight .woc-groupBanner__value { color: var(--woc-primary-dark); }
+.woc-groupBanner.is-park .woc-groupBanner__stat.is-highlight .woc-groupBanner__value { color: var(--woc-amber-dark); }
+.woc-groupBanner__arrow { color: var(--woc-muted-2); font-size: 16px; }
+/* 배너 바로 아래 첫 라인은 구분선/위 여백 제거 */
+.woc-groupBanner + .woc-line { border-top: none; padding-top: 0; }
+
+/* ───────── 투입량 계산 방식 패널 ───────── */
+.wocm-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@container woc (max-width: 760px) { .wocm-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.wocm-card {
+  display: flex; flex-direction: column; gap: 8px; padding: 16px;
+  background: var(--woc-bg-soft); border: 2px solid var(--woc-border); border-radius: 10px; cursor: pointer;
+}
+.wocm-card:focus-visible { outline: 2px solid var(--woc-primary); outline-offset: 2px; }
+.wocm-card[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+.wocm-card .head { display: flex; align-items: center; gap: 8px; }
+.wocm-card .radio { position: relative; flex: 0 0 16px; width: 16px; height: 16px; border: 2px solid var(--woc-muted-2); border-radius: 50%; }
+.wocm-card .radio::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: transparent; }
+.wocm-card .name { font-size: 13.5px; font-weight: 700; color: var(--woc-text); }
+.wocm-card .desc { font-size: 12px; line-height: 1.6; color: var(--woc-muted); }
+.wocm-card .delta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+.wocm-card .delta span {
+  padding: 3px 8px; font-size: 11.5px; font-weight: 700;
+  background: var(--woc-surface); border: 1px solid var(--woc-border); border-radius: 7px;
+}
+.wocm-card .delta span.flat { color: var(--woc-green-dark); }
+.wocm-card .delta span.down { color: var(--woc-error-dark); }
+.wocm-card.selected { background: #eff4ff; border-color: var(--woc-primary); }
+.wocm-card.selected .radio { border-color: var(--woc-primary); }
+.wocm-card.selected .radio::after { background: var(--woc-primary); }
+.wocm-capNote { margin: 2px 0 0; font-size: 11px; line-height: 1.6; color: var(--woc-muted-2); }
+
+/* 비교표 */
+.wocm-tableWrap { margin-top: 16px; overflow-x: auto; }
+table.wocm-cmp { width: 100%; min-width: 520px; border-collapse: collapse; font-size: 12.5px; }
+table.wocm-cmp th { padding: 9px 10px; text-align: left; font-size: 11.5px; font-weight: 600; color: var(--woc-muted); border-bottom: 1px solid var(--woc-border); white-space: nowrap; }
+table.wocm-cmp td { padding: 11px 10px; vertical-align: top; border-bottom: 1px solid var(--woc-border); }
+table.wocm-cmp tr:last-child td { border-bottom: none; }
+table.wocm-cmp td.item { font-weight: 700; color: var(--woc-text); }
+table.wocm-cmp td.item .code { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 500; color: var(--woc-muted-2); }
+/* 선택된 방식 열 강조 (TSX 루트의 data-method="a|b|c") */
+.woc[data-method="a"] table.wocm-cmp th.hA, .woc[data-method="a"] table.wocm-cmp td.colA { background: #eff4ff; }
+.woc[data-method="b"] table.wocm-cmp th.hB, .woc[data-method="b"] table.wocm-cmp td.colB { background: var(--woc-amber-soft); }
+.wocm-qty { font-weight: 700; color: var(--woc-text); font-variant-numeric: tabular-nums; }
+.wocm-out { display: block; margin-top: 2px; font-size: 11px; color: var(--woc-muted); }
+.wocm-delta { display: block; margin-top: 3px; font-size: 10.5px; font-weight: 700; }
+.wocm-delta.down { color: var(--woc-error-dark); }
+.wocm-delta.flat { color: var(--woc-green-dark); }
+.wocm-note {
+  display: flex; gap: 10px; margin-top: 14px; padding: 12px 14px;
+  font-size: 11.5px; line-height: 1.7; color: var(--woc-muted);
+  background: var(--woc-bg-soft); border: 1px solid var(--woc-border); border-radius: 10px;
+}
+.wocm-note b { color: var(--woc-text); }
+
+/* ───────── 다크 모드 ───────── */
+[data-theme="dark"] .woc-tag.system { background: rgba(59, 130, 246, 0.18); }
+[data-theme="dark"] .woc-tag.direct { background: rgba(245, 158, 11, 0.16); }
+[data-theme="dark"] .woc-infocard.is-received { background: rgba(248, 113, 113, 0.1); border-color: rgba(248, 113, 113, 0.35); }
+[data-theme="dark"] .wocm-card.selected { background: rgba(59, 130, 246, 0.14); }
+[data-theme="dark"] .woc[data-method="a"] table.wocm-cmp th.hA,
+[data-theme="dark"] .woc[data-method="a"] table.wocm-cmp td.colA { background: rgba(59, 130, 246, 0.14); }
