@@ -1125,48 +1125,48 @@ export function FoodWorkOrderCreatePage() {
                   <Fragment key={groupKey}>
                     {/* 그룹 상단 투입 현황 배너 (미리보기가 있을 때만) */}
                     {groupKey === "RAW" && preview && rawPool != null && (
-                                              <li className="woc-groupBanner">
-                          <span className="woc-groupBanner__title">RAW 그룹 투입 현황 (원물 → 탈피씨드)</span>
-                          <div className="woc-groupBanner__stats">
-                            <div className="woc-groupBanner__stat">
-                              <span className="woc-groupBanner__label">실제 누적 입고수량</span>
-                              <strong className="woc-groupBanner__value">
-                                {fmt(preview.raw.receivedQty)}
-                                <em>kg</em>
-                              </strong>
-                            </div>
-                            <span className="woc-groupBanner__arrow">→</span>
-                            <div className="woc-groupBanner__stat is-highlight">
-                              <span className="woc-groupBanner__label">전처리(탈각) 후 탈피씨드</span>
-                              <strong className="woc-groupBanner__value">
-                                {fmt(rawPool)}
-                                <em>kg</em>
-                              </strong>
-                            </div>
+                      <li className="woc-groupBanner">
+                        <span className="woc-groupBanner__title">RAW 그룹 투입 현황 (원물 → 탈피씨드)</span>
+                        <div className="woc-groupBanner__stats">
+                          <div className="woc-groupBanner__stat">
+                            <span className="woc-groupBanner__label">실제 누적 입고수량</span>
+                            <strong className="woc-groupBanner__value">
+                              {fmt(preview.raw.receivedQty)}
+                              <em>kg</em>
+                            </strong>
                           </div>
-                        </li>
+                          <span className="woc-groupBanner__arrow">→</span>
+                          <div className="woc-groupBanner__stat is-highlight">
+                            <span className="woc-groupBanner__label">전처리(탈각) 후 탈피씨드</span>
+                            <strong className="woc-groupBanner__value">
+                              {fmt(rawPool)}
+                              <em>kg</em>
+                            </strong>
+                          </div>
+                        </div>
+                      </li>
                     )}
                     {groupKey === "PARK" && parkInfo && (
-                                              <li className="woc-groupBanner is-park">
-                          <span className="woc-groupBanner__title">PARK 그룹 투입 현황 (헴프박 → 건조헴프박)</span>
-                          <div className="woc-groupBanner__stats">
-                            <div className="woc-groupBanner__stat">
-                              <span className="woc-groupBanner__label">예상 헴프박 수량(오일 부산물)</span>
-                              <strong className="woc-groupBanner__value">
-                                {fmt(parkInfo.byproduct)}
-                                <em>kg</em>
-                              </strong>
-                            </div>
-                            <span className="woc-groupBanner__arrow">→</span>
-                            <div className="woc-groupBanner__stat is-highlight">
-                              <span className="woc-groupBanner__label">건조 후 수량</span>
-                              <strong className="woc-groupBanner__value">
-                                {fmt(parkInfo.dry)}
-                                <em>kg</em>
-                              </strong>
-                            </div>
+                      <li className="woc-groupBanner is-park">
+                        <span className="woc-groupBanner__title">PARK 그룹 투입 현황 (헴프박 → 건조헴프박)</span>
+                        <div className="woc-groupBanner__stats">
+                          <div className="woc-groupBanner__stat">
+                            <span className="woc-groupBanner__label">예상 헴프박 수량(오일 부산물)</span>
+                            <strong className="woc-groupBanner__value">
+                              {fmt(parkInfo.byproduct)}
+                              <em>kg</em>
+                            </strong>
                           </div>
-                        </li>
+                          <span className="woc-groupBanner__arrow">→</span>
+                          <div className="woc-groupBanner__stat is-highlight">
+                            <span className="woc-groupBanner__label">건조 후 수량</span>
+                            <strong className="woc-groupBanner__value">
+                              {fmt(parkInfo.dry)}
+                              <em>kg</em>
+                            </strong>
+                          </div>
+                        </div>
+                      </li>
                     )}
                     {groupLines.map(renderLine)}
                   </Fragment>
@@ -1181,44 +1181,67 @@ export function FoodWorkOrderCreatePage() {
           <div className="woc-usage">
             <h2 className="woc-usage__title">투입원료 사용량</h2>
 
-            {groupUsages.length === 0 ? (
-              <p className="woc-usage__empty">수주를 선택하면 배분 그룹별 투입량이 표시됩니다.</p>
-            ) : (
-              <div>
-                {groupUsages.map((group) => {
-                  const over = group.pool != null && group.total > group.pool + EPS;
-                  const pct = group.pool ? Math.min(100, (group.total / group.pool) * 100) : 0;
-                  return (
-                    <div key={group.key} className="woc-usage__group">
-                      <div className="woc-usage__groupHead">
-                        <span>{group.label} 투입</span>
-                        <span>라인 {group.lineCount}개</span>
+            {groupUsages.map((group) => {
+              const over = group.pool != null && group.total > group.pool + EPS;
+              const pct = group.pool ? Math.min(100, (group.total / group.pool) * 100) : 0;
+              const isPark = group.key === "PARK";
+              const groupLines = lines.filter((l) => l.allocationGroup === group.key);
+
+              return (
+                <div key={group.key} className="woc-usage__group">
+                  <div className="woc-usage__groupHead">
+                    <span>{isPark ? "헴프박 공급/배분" : `${group.label} 투입`}</span>
+                    <span>라인 {group.lineCount}개</span>
+                  </div>
+
+                  <p className="woc-usage__figure">
+                    <strong>{fmt(group.total)}</strong>
+                    <span>
+                      {group.pool != null ? ` / ${fmt(group.pool)}` : ""} {group.unit.toLowerCase()}
+                    </span>
+                  </p>
+
+                  {group.pool != null && (
+                    <>
+                      <div className="woc-meter">
+                        <span style={{ width: `${pct}%` }} />
                       </div>
-                      <p className="woc-usage__figure">
-                        <strong>{fmt(group.total)}</strong>
-                        <span>
-                          {group.pool != null ? ` / ${fmt(group.pool)}` : ""} {group.unit.toLowerCase()}
-                        </span>
+                      <p className="woc-usage__status" style={over ? { color: "var(--woc-error-dark)" } : undefined}>
+                        {over
+                          ? "사용 가능량을 초과했습니다"
+                          : group.total >= group.pool - EPS
+                            ? "전량이 라인에 배정됐습니다"
+                            : `${fmt(round3(group.pool - group.total))}${group.unit.toLowerCase()} 남음`}
                       </p>
-                      {group.pool != null && (
-                        <>
-                          <div className="woc-meter">
-                            <span style={{ width: `${pct}%` }} />
-                          </div>
-                          <p className="woc-usage__status" style={over ? { color: "var(--woc-error-dark)" } : undefined}>
-                            {over
-                              ? "사용 가능량을 초과했습니다"
-                              : group.total >= group.pool - EPS
-                                ? "전량이 라인에 배정됐습니다"
-                                : `${fmt(round3(group.pool - group.total))}${group.unit.toLowerCase()} 남음`}
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    </>
+                  )}
+
+                  {/* 라인별 투입량 + 그룹 내 비율 (목업의 usage__list) */}
+                  <ul className="woc-usage__list">
+                    {isPark && parkInfo && (
+                      <li>
+                        <span>공급(오일 부산물)</span>
+                        <span>{fmt(parkInfo.byproduct)}kg</span>
+                      </li>
+                    )}
+                    {groupLines.map((line) => {
+                      const q = qtyOf(line);
+                      const share = group.total > 0 ? round3((q / group.total) * 100) : 0;
+                      return (
+                        <li key={line.salesOrderLineId}>
+                          <span>
+                            {line.itemNm} 투입{isPark ? "" : "(탈피씨드)"}
+                          </span>
+                          <span>
+                            {fmt(q)}{line.inputUnit.toLowerCase()} ({fmt(share)}%)
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
 
             {/* ③ 직접입력 풀 초과 오류 (저장 시도 후 표시) */}
             {showError(directError) && <p className="woc-field__error">{directError}</p>}
