@@ -1,21 +1,18 @@
 /* ==========================================================
    원물 투입 시뮬레이션 (HempInputSimulationPage)
    - 접두사 hsim- 로 기존 Food.css 등과 충돌 방지
-   - 색상 의미: 초록=확정/원료 흐름, 앰버 점선=수율 불확실
+   - 색상 규칙은 "헴프 생산 품목 구조" PDF 기준
+     원료=회색 / 반제품=파랑 / 완제품=초록 / 부산물(재투입)=앰버
+     / 부산물(폐기성)=분홍 점선 / 수율 불확실=앰버 점선 테두리 + ⚠
    ========================================================== */
 
 .hsim {
   --hsim-primary: #3b6e5e;
-  --hsim-primary-dark: #275436;
   --hsim-amber: #d9a441;
   --hsim-amber-dark: #7a5a12;
-  --hsim-amber-bg: #fdf6e8;
-  --hsim-green-bg: #eef5ef;
-  --hsim-green-soft: #dcefe1;
   --hsim-error: #b3261e;
   --hsim-error-bg: #fbeae8;
   --hsim-error-line: #f1c2bd;
-  --hsim-bg: #f7f7f4;
   --hsim-surface: #ffffff;
   --hsim-surface-muted: #fbfbf9;
   --hsim-border: #e6e5df;
@@ -24,10 +21,27 @@
   --hsim-text-sub: #6b6b66;
   --hsim-muted: #8a8a84;
   --hsim-faint: #a3a29b;
+  --hsim-line: #b9b8b0;
+
+  /* 노드 색상 (bg / border / text) */
+  --hsim-raw-bg: #efede6;
+  --hsim-raw-line: #d9d6ca;
+  --hsim-raw-text: #3a3a35;
+  --hsim-semi-bg: #e6eef9;
+  --hsim-semi-line: #bcd0ea;
+  --hsim-semi-text: #1d4a80;
+  --hsim-product-bg: #e0f1e5;
+  --hsim-product-line: #aad5b7;
+  --hsim-product-text: #1e5733;
+  --hsim-byproduct-bg: #fcf1d6;
+  --hsim-byproduct-line: #e5c97c;
+  --hsim-byproduct-text: #7a5a12;
+  --hsim-discard-bg: #f9e4e2;
+  --hsim-discard-line: #e4b5b0;
+  --hsim-discard-text: #8a3a33;
 
   box-sizing: border-box;
-  max-width: 1280px;
-  margin: 0 auto;
+  width: 100%;
   padding: 32px 0 64px;
   color: var(--hsim-text);
 }
@@ -36,6 +50,18 @@
 .hsim *::before,
 .hsim *::after {
   box-sizing: border-box;
+}
+
+.hsim-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ---------- 헤더 ---------- */
@@ -62,41 +88,57 @@
 /* ---------- 레이아웃 ---------- */
 .hsim-layout {
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
   align-items: start;
 }
 
-.hsim-results {
+.hsim-layout.has-result {
+  grid-template-columns: minmax(0, 1fr) 400px;
+}
+
+.hsim-main {
   display: flex;
   flex-direction: column;
   gap: 20px;
   min-width: 0;
 }
 
-/* ---------- 좌측 입력 패널 ---------- */
-.hsim-panel {
-  position: sticky;
-  top: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+/* ---------- 카드 공통 ---------- */
+.hsim-card {
   padding: 24px;
   background: var(--hsim-surface);
   border: 1px solid var(--hsim-border);
   border-radius: 14px;
 }
 
-.hsim-panel-title {
-  margin: 0 0 4px;
-  font-size: 16px;
-  font-weight: 700;
+.hsim-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 18px;
 }
 
-.hsim-panel-desc {
+.hsim-card-head h2 {
   margin: 0;
-  font-size: 13px;
-  color: var(--hsim-muted);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.hsim-meta {
+  font-size: 12px;
+  color: var(--hsim-faint);
+}
+
+/* ---------- 입력 ---------- */
+.hsim-input-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 16px;
+  align-items: end;
 }
 
 .hsim-field {
@@ -151,13 +193,21 @@
   outline: none;
 }
 
+.hsim-input-row:has(input[aria-invalid='true']) {
+  background: var(--hsim-error-bg);
+  border-color: var(--hsim-error);
+}
+
 .hsim-input-row input[aria-invalid='true'] {
   color: var(--hsim-error);
 }
 
-.hsim-input-row:has(input[aria-invalid='true']) {
-  border-color: var(--hsim-error);
-  background: var(--hsim-error-bg);
+.hsim-input-row.is-readonly {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--hsim-text-sub);
+  background: #f3f2ec;
+  border-style: dashed;
 }
 
 .hsim-unit {
@@ -175,13 +225,9 @@
   color: var(--hsim-text-sub);
 }
 
-.hsim-divider {
-  height: 1px;
-  background: #ecebe5;
-}
-
 .hsim-error {
   padding: 10px 12px;
+  margin-top: 16px;
   font-size: 13px;
   line-height: 1.5;
   color: #8c2a21;
@@ -191,13 +237,13 @@
 }
 
 .hsim-btn {
-  width: 100%;
-  height: 48px;
-  padding: 0 18px;
+  height: 46px;
+  padding: 0 24px;
   font: inherit;
   font-size: 15px;
   font-weight: 700;
   color: #fff;
+  white-space: nowrap;
   cursor: pointer;
   background: var(--hsim-primary);
   border: none;
@@ -215,21 +261,18 @@
 }
 
 .hsim-btn.is-sm {
-  width: auto;
-  height: 46px;
   font-size: 14px;
 }
 
 .hsim-foot {
-  margin: 0;
+  margin: 14px 0 0;
   font-size: 12px;
+  line-height: 1.5;
   color: var(--hsim-faint);
-  text-align: center;
 }
 
 .hsim-foot.is-left {
-  margin-top: 16px;
-  text-align: left;
+  margin-top: 20px;
 }
 
 /* ---------- 빈 상태 ---------- */
@@ -253,42 +296,91 @@
   line-height: 1.6;
 }
 
-/* ---------- 카드 공통 ---------- */
-.hsim-card {
-  padding: 24px;
-  background: var(--hsim-surface);
-  border: 1px solid var(--hsim-border);
-  border-radius: 14px;
+/* ---------- 범례 ---------- */
+.hsim-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
 }
 
-.hsim-card.is-uncertain {
+.hsim-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--hsim-text-sub);
+}
+
+.hsim-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+}
+
+.hsim-swatch.is-raw {
+  background: var(--hsim-raw-bg);
+  border-color: var(--hsim-raw-line);
+}
+
+.hsim-swatch.is-semi {
+  background: var(--hsim-semi-bg);
+  border-color: var(--hsim-semi-line);
+}
+
+.hsim-swatch.is-product {
+  background: var(--hsim-product-bg);
+  border-color: var(--hsim-product-line);
+}
+
+.hsim-swatch.is-byproduct {
+  background: var(--hsim-byproduct-bg);
+  border-color: var(--hsim-byproduct-line);
+}
+
+.hsim-swatch.is-discard {
+  background: var(--hsim-discard-bg);
+  border: 1px dashed var(--hsim-discard-line);
+}
+
+.hsim-swatch.is-uncertain {
+  background: #fff;
   border: 2px dashed var(--hsim-amber);
 }
 
-.hsim-card.is-sub {
-  border: 1px dashed #cfcbbe;
+/* ---------- 단계(STEP) ---------- */
+.hsim-stage {
+  padding-top: 24px;
+  margin-top: 24px;
+  border-top: 1px solid #ecebe5;
 }
 
-.hsim-card-head {
+.hsim-flow-card .hsim-card-head + .hsim-stage {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: none;
+}
+
+.hsim-stage-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: 4px 12px;
   margin-bottom: 16px;
 }
 
-.hsim-card-head.is-block {
-  display: block;
-}
-
-.hsim-card-head h3 {
+.hsim-stage-head h3 {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
-  line-height: 1.4;
 }
 
 .hsim-step {
@@ -298,163 +390,257 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--hsim-primary);
-  background: var(--hsim-green-bg);
+  background: #eef5ef;
   border-radius: 999px;
 }
 
-.hsim-meta {
-  flex-shrink: 0;
-  font-size: 12px;
-  color: var(--hsim-faint);
-}
-
 .hsim-sub-desc {
-  margin: 8px 0 0;
+  margin: -4px 0 16px;
   font-size: 13px;
   line-height: 1.6;
   color: var(--hsim-muted);
 }
 
-/* ---------- 수치 ---------- */
-.hsim-flow {
+/* ---------- 흐름: 가로 행 ---------- */
+.hsim-flow-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hsim-flow-row > .hsim-node {
+  flex: 1 1 0;
+}
+
+.hsim-flow-row > .hsim-outputs {
+  flex: 1 1 0;
+}
+
+/* ---------- 노드 ---------- */
+.hsim-node {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+
+.hsim-node.is-raw {
+  color: var(--hsim-raw-text);
+  background: var(--hsim-raw-bg);
+  border-color: var(--hsim-raw-line);
+}
+
+.hsim-node.is-semi {
+  color: var(--hsim-semi-text);
+  background: var(--hsim-semi-bg);
+  border-color: var(--hsim-semi-line);
+}
+
+.hsim-node.is-product {
+  color: var(--hsim-product-text);
+  background: var(--hsim-product-bg);
+  border-color: var(--hsim-product-line);
+}
+
+.hsim-node.is-byproduct {
+  color: var(--hsim-byproduct-text);
+  background: var(--hsim-byproduct-bg);
+  border-color: var(--hsim-byproduct-line);
+}
+
+.hsim-node.is-discard {
+  color: var(--hsim-discard-text);
+  background: var(--hsim-discard-bg);
+  border: 1px dashed var(--hsim-discard-line);
+}
+
+.hsim-node.is-uncertain {
+  border: 2px dashed var(--hsim-amber);
+}
+
+.hsim-node-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 20px;
+  justify-content: space-between;
+  gap: 4px 8px;
+  margin-bottom: 4px;
 }
 
-.hsim-flow.is-compact {
-  gap: 16px;
-  padding-bottom: 16px;
-  margin-bottom: 16px;
-  border-bottom: 1px solid #f0efe9;
+.hsim-node-name {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
-.hsim-arrow {
-  flex-shrink: 0;
-  color: #c9c8c0;
+.hsim-node-tag {
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
 }
 
-.hsim-stat-label {
-  margin-bottom: 2px;
-  font-size: 12px;
-  color: var(--hsim-muted);
-}
-
-.hsim-stat-value {
-  font-size: 24px;
+.hsim-node-qty {
+  font-size: 20px;
   font-weight: 700;
   line-height: 1.3;
+  font-variant-numeric: tabular-nums;
 }
 
-.hsim-stat-value.is-sm {
-  font-size: 18px;
-}
-
-.hsim-stat-value.is-primary {
-  color: var(--hsim-primary);
+.hsim-node-qty.is-unknown {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--hsim-amber-dark);
 }
 
 .hsim-u {
   font-size: 13px;
   font-weight: 500;
-  color: var(--hsim-muted);
-}
-
-.hsim-card-foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  padding-top: 16px;
-  margin-top: 16px;
-  border-top: 1px solid #f0efe9;
-}
-
-.hsim-card-foot .hsim-stat-label {
-  margin: 0;
-}
-
-.hsim-chip {
-  display: inline-block;
-  padding: 6px 12px;
-  font-size: 13px;
-  color: #4a4a44;
-  background: #f2f1ea;
-  border-radius: 999px;
-}
-
-/* ---------- STEP 2 배분 라인 ---------- */
-.hsim-alloc {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
-}
-
-.hsim-input-qty {
-  margin-bottom: 14px;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.hsim-box {
-  padding: 14px;
-  margin-bottom: 10px;
-  border-radius: 10px;
-}
-
-.hsim-box.is-oil {
-  color: var(--hsim-primary-dark);
-  background: var(--hsim-green-bg);
-}
-
-.hsim-box.is-powder {
-  color: var(--hsim-primary-dark);
-  background: var(--hsim-green-soft);
-}
-
-.hsim-box.is-seed {
-  color: var(--hsim-amber-dark);
-  background: var(--hsim-amber-bg);
-}
-
-.hsim-box-label {
-  margin-bottom: 2px;
-  font-size: 12px;
-}
-
-.hsim-box-value {
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1.3;
-}
-
-.hsim-box-value.is-md {
-  font-size: 20px;
-}
-
-.hsim-box-value.is-text {
-  font-size: 18px;
-}
-
-.hsim-box-value .hsim-u {
-  color: inherit;
   opacity: 0.7;
 }
 
-.hsim-badge {
-  display: inline-block;
-  margin-bottom: 10px;
-  padding: 5px 10px;
+/* 한 노드에서 갈라져 나오는 산출물 묶음 */
+.hsim-outputs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.hsim-outputs.is-row {
+  flex-direction: row;
+}
+
+.hsim-outputs.is-row > .hsim-node {
+  flex: 1 1 0;
+}
+
+/* ---------- 연결선 ---------- */
+.hsim-link {
+  display: flex;
+  flex: 0 1 120px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 88px;
+}
+
+.hsim-link-label {
   font-size: 12px;
-  color: var(--hsim-amber-dark);
-  background: #fbefd1;
-  border: 1px solid var(--hsim-amber);
-  border-radius: 999px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--hsim-text-sub);
+  text-align: center;
+}
+
+.hsim-link-line {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 0;
+  border-top: 2px solid var(--hsim-line);
+}
+
+.hsim-link.is-dashed .hsim-link-line {
+  border-top-style: dashed;
+}
+
+.hsim-link-line::after {
+  position: absolute;
+  top: -5px;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  content: '';
+  border-top: 2px solid var(--hsim-line);
+  border-right: 2px solid var(--hsim-line);
+  transform: rotate(45deg);
+}
+
+/* ---------- 배분 라인(2열) ---------- */
+.hsim-lanes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 4px;
+}
+
+.hsim-flow-row + .hsim-lanes {
+  margin-top: 20px;
+}
+
+.hsim-lane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 18px;
+  background: var(--hsim-surface-muted);
+  border: 1px solid var(--hsim-border);
+  border-radius: 12px;
+}
+
+.hsim-lane.is-uncertain {
+  border: 2px dashed var(--hsim-amber);
+}
+
+.hsim-lane-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.hsim-lane-head h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* 라인 안에서는 연결선이 세로 */
+.hsim-lane .hsim-link {
+  flex: none;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 10px;
+  min-width: 0;
+  height: 44px;
+  padding-left: 22px;
+}
+
+.hsim-lane .hsim-link-label {
+  align-self: center;
+  text-align: left;
+}
+
+.hsim-lane .hsim-link-line {
+  order: -1;
+  width: 0;
+  height: 100%;
+  border-top: none;
+  border-left: 2px solid var(--hsim-line);
+}
+
+.hsim-lane .hsim-link.is-dashed .hsim-link-line {
+  border-left-style: dashed;
+}
+
+.hsim-lane .hsim-link-line::after {
+  top: auto;
+  right: auto;
+  bottom: 0;
+  left: -5px;
+  border-top: none;
+  border-right: 2px solid var(--hsim-line);
+  border-bottom: 2px solid var(--hsim-line);
 }
 
 .hsim-note {
-  margin: 0;
+  margin: 14px 0 0;
   font-size: 12px;
   line-height: 1.6;
 }
@@ -467,11 +653,11 @@
   color: var(--hsim-amber-dark);
 }
 
-/* ---------- STEP 3 헴프박 ---------- */
+/* ---------- STEP 3 입력 ---------- */
 .hsim-park-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  gap: 20px;
+  gap: 16px;
   align-items: start;
   margin-bottom: 20px;
 }
@@ -480,60 +666,120 @@
   margin-top: 25px;
 }
 
-.hsim-park-result {
-  margin-top: 4px;
-}
-
-.hsim-park-lines {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
-}
-
-.hsim-line {
-  padding: 16px;
-  background: var(--hsim-surface-muted);
+/* ---------- 결과 요약 (sticky) ---------- */
+.hsim-summary {
+  position: sticky;
+  top: 24px;
+  padding: 24px;
+  background: var(--hsim-surface);
   border: 1px solid var(--hsim-border);
-  border-radius: 10px;
+  border-radius: 14px;
 }
 
-.hsim-line.is-uncertain {
-  border: 2px dashed var(--hsim-amber);
+.hsim-summary .hsim-card-head {
+  margin-bottom: 8px;
 }
 
-.hsim-line-head {
+.hsim-sum-group {
+  padding: 16px 0;
+  border-top: 1px solid #ecebe5;
+}
+
+.hsim-sum-group:first-of-type {
+  border-top: none;
+}
+
+.hsim-sum-title {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
-  margin-bottom: 10px;
+  margin: 0 0 8px;
   font-size: 13px;
+  font-weight: 700;
+  color: var(--hsim-text-sub);
 }
 
-.hsim-line-head span {
-  font-size: 11px;
+.hsim-sum-title::before {
+  width: 10px;
+  height: 10px;
+  content: '';
+  background: var(--hsim-raw-bg);
+  border: 1px solid var(--hsim-raw-line);
+  border-radius: 3px;
+}
+
+.hsim-sum-title.is-product::before {
+  background: var(--hsim-product-bg);
+  border-color: var(--hsim-product-line);
+}
+
+.hsim-sum-title.is-byproduct::before {
+  background: var(--hsim-byproduct-bg);
+  border-color: var(--hsim-byproduct-line);
+}
+
+.hsim-sum-list {
+  margin: 0;
+}
+
+.hsim-sum-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+}
+
+.hsim-sum-label {
+  margin: 0;
+  font-size: 13px;
+  color: var(--hsim-text-sub);
+}
+
+.hsim-sum-value {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.hsim-sum-value.is-unknown {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--hsim-amber-dark);
+}
+
+.hsim-sum-value.is-pending {
+  font-size: 13px;
+  font-weight: 500;
   color: var(--hsim-faint);
 }
 
-.hsim-line-qty {
-  margin-bottom: 10px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.hsim-line .hsim-box {
-  padding: 10px 12px;
-  margin-bottom: 0;
+.hsim-sum-foot {
+  padding-top: 14px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--hsim-faint);
+  border-top: 1px solid #ecebe5;
 }
 
 /* ---------- 반응형 ---------- */
 @media (max-width: 1100px) {
-  .hsim-layout {
+  .hsim-layout.has-result {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .hsim-panel {
+  /* 요약을 흐름도 위로 올려 결과를 먼저 보여줌 */
+  .hsim-summary {
     position: static;
+    order: -1;
+  }
+
+  .hsim-main {
+    order: 0;
   }
 }
 
@@ -546,34 +792,86 @@
     font-size: 22px;
   }
 
-  .hsim-alloc,
-  .hsim-park-lines {
+  .hsim-input-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hsim-btn {
+    width: 100%;
+  }
+
+  .hsim-flow-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  /* 가로 흐름을 세로로 전환 */
+  .hsim-flow-row > .hsim-link {
+    flex: none;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 10px;
+    height: 44px;
+    padding-left: 22px;
+  }
+
+  .hsim-flow-row > .hsim-link .hsim-link-label {
+    align-self: center;
+    text-align: left;
+  }
+
+  .hsim-flow-row > .hsim-link .hsim-link-line {
+    order: -1;
+    width: 0;
+    height: 100%;
+    border-top: none;
+    border-left: 2px solid var(--hsim-line);
+  }
+
+  .hsim-flow-row > .hsim-link.is-dashed .hsim-link-line {
+    border-left-style: dashed;
+  }
+
+  .hsim-flow-row > .hsim-link .hsim-link-line::after {
+    top: auto;
+    right: auto;
+    bottom: 0;
+    left: -5px;
+    border-top: none;
+    border-right: 2px solid var(--hsim-line);
+    border-bottom: 2px solid var(--hsim-line);
+  }
+
+  .hsim-lanes {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .hsim-park-form {
     grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
   }
 
   .hsim-park-form .hsim-btn {
-    width: 100%;
     margin-top: 0;
   }
 }
 
 @media (max-width: 480px) {
-  .hsim-panel,
-  .hsim-card {
+  .hsim-card,
+  .hsim-summary {
     padding: 18px;
   }
 
-  .hsim-card-head {
-    flex-direction: column;
-    gap: 4px;
+  .hsim-lane {
+    padding: 14px;
   }
 
-  .hsim-stat-value {
-    font-size: 20px;
+  .hsim-outputs.is-row {
+    flex-direction: column;
+  }
+
+  .hsim-node-qty {
+    font-size: 18px;
   }
 }
