@@ -2259,6 +2259,14 @@
   box-shadow: 0 0 0 3px var(--ctl-focus-ring);
 }
 
+.formPage .formInput[aria-invalid="true"] {
+  border-color: var(--dl-danger, #c0293d);
+}
+
+.formPage .formInput[aria-invalid="true"]:focus-visible {
+  box-shadow: 0 0 0 3px rgba(192, 41, 61, 0.2);
+}
+
 .formPage .formInput:disabled,
 .selectBox .selectBoxTrigger:disabled {
   color: var(--text-muted, #9aa3b0);

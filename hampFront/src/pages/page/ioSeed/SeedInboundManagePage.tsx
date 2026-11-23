@@ -2,17 +2,16 @@ import {
   Fragment,
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
-  type InputHTMLAttributes,
   type ReactNode,
 } from "react";
 import axios from "axios";
 import { Panel } from "@components/card/Panel";
 import { SearchBand, type SearchField } from "@components/search/SearchBand";
 import { Badge } from "@/components/common/Badge";
+import { NumberInput } from "@/components/common/NumberInput";
 import Spinner from "@/components/common/Spinner";
 import { QrLabelPrintModal, type QrLabelItem } from "@/components/modal/QrLabelPrintModal";
 import { formatDateTime } from "@/utils/common";
@@ -59,67 +58,8 @@ function formatQty(value: number | null | undefined, unit: string | null | undef
   return unit ? `${qty} ${unit}` : qty;
 }
 
-/** 숫자·소수점만 남기고 소수점은 하나, 소수 둘째 자리까지만 (DB decimal(12,2)) */
-function sanitizeQty(text: string) {
-  const cleaned = text.replace(/[^0-9.]/g, "");
-  const dotIndex = cleaned.indexOf(".");
-  if (dotIndex === -1) return cleaned;
-  const intPart = cleaned.slice(0, dotIndex);
-  const decimalPart = cleaned.slice(dotIndex + 1).replace(/\./g, "").slice(0, 2);
-  return `${intPart}.${decimalPart}`;
-}
-
-/** 쉼표 없는 수량 문자열에 천 단위 쉼표를 붙인다 (입력 중인 소수점·소수부는 그대로) */
-function formatQtyInput(raw: string) {
-  if (raw === "") return "";
-  const [intPart, decimalPart] = raw.split(".");
-  const intText = intPart === "" ? "" : Number(intPart).toLocaleString("ko-KR");
-  return decimalPart === undefined ? intText : `${intText || "0"}.${decimalPart}`;
-}
-
-type QtyInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "onChange"> & {
-  /** 쉼표 없는 수량 문자열 (비어 있을 수 있음) */
-  value: string;
-  onValueChange: (value: string) => void;
-};
-
-/** 입력 중에도 천 단위 쉼표를 표시하는 수량 입력칸 (소수 둘째 자리까지). 값은 쉼표 없이 전달 */
-function QtyInput({ value, onValueChange, ...inputProps }: QtyInputProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const charsBeforeCaretRef = useRef<number | null>(null);
-
-  // 쉼표가 추가·삭제되어도 커서가 같은 숫자 뒤에 머물도록 복원
-  useLayoutEffect(() => {
-    const input = inputRef.current;
-    const charsBeforeCaret = charsBeforeCaretRef.current;
-    if (!input || charsBeforeCaret === null) return;
-    charsBeforeCaretRef.current = null;
-
-    let caret = 0;
-    let seen = 0;
-    while (caret < input.value.length && seen < charsBeforeCaret) {
-      if (/[0-9.]/.test(input.value[caret])) seen++;
-      caret++;
-    }
-    input.setSelectionRange(caret, caret);
-  });
-
-  return (
-    <input
-      {...inputProps}
-      ref={inputRef}
-      type="text"
-      inputMode="decimal"
-      value={formatQtyInput(value)}
-      onChange={(e) => {
-        const caret = e.target.selectionStart ?? e.target.value.length;
-        const next = sanitizeQty(e.target.value);
-        charsBeforeCaretRef.current = sanitizeQty(e.target.value.slice(0, caret)).length;
-        onValueChange(next);
-      }}
-    />
-  );
-}
+// 폼은 문자열로 들고 있어 숫자 입력칸에 넘길 때만 바꾼다 (빈 값이면 null)
+const toNumberOrNull = (value: string) => (value === "" ? null : Number(value));
 
 function getErrorMessage(error: unknown, fallback: string) {
   const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
@@ -460,12 +400,14 @@ export function SeedInboundManagePage() {
         />
       </td>
       <td>
-        <QtyInput
+        <NumberInput
           className="tableInput seedInboundQtyInput"
           aria-label="입고수량"
           placeholder={summary.unit ?? "수량"}
-          value={form.receiptQty}
-          onValueChange={(value) => setForm((prev) => ({ ...prev, receiptQty: value }))}
+          // DB decimal(12,2)
+          decimalScale={2}
+          value={toNumberOrNull(form.receiptQty)}
+          onValueChange={(value) => setForm((prev) => ({ ...prev, receiptQty: value == null ? "" : String(value) }))}
         />
       </td>
       <td>
@@ -481,14 +423,11 @@ export function SeedInboundManagePage() {
         />
       </td>
       <td>
-        <input
+        <NumberInput
           className="tableInput seedInboundBoxInput"
-          type="number"
-          min="1"
-          step="1"
           aria-label="박스수"
-          value={form.boxQty}
-          onChange={(e) => setForm((prev) => ({ ...prev, boxQty: e.target.value }))}
+          value={toNumberOrNull(form.boxQty)}
+          onValueChange={(value) => setForm((prev) => ({ ...prev, boxQty: value == null ? "" : String(value) }))}
         />
       </td>
       <td>{labelCell}</td>
