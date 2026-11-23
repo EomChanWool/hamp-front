@@ -44,8 +44,15 @@ const GROUP_LABEL: Record<string, string> = {
   PARK: "헴프박(PARK)",
 };
 
-/** 소수점 부동소수점 오차 방지용 반올림 (수량 계산용) */
+/** 소수점 부동소수점 오차 방지용 반올림 (수량 계산용 - 소수 3자리) */
 const round3 = (n: number) => Math.round(n * 1000) / 1000;
+
+/**
+ * 소수 1자리 반올림 - ③ 직접입력 수량 / 헴프박 계산용
+ * - 서버(미리보기)가 단계마다 소수 1자리로 반올림해서 내려주므로 프론트도 똑같이 맞춘다
+ * - EPSILON 보정: 282.75 같은 값이 부동소수점 때문에 282.7 로 내려가는 것을 막는다
+ */
+const round1 = (n: number) => Math.round((n + Number.EPSILON) * 10) / 10;
 
 /** 수량 표시 (소수 1자리 고정) */
 const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -319,6 +326,7 @@ export function FoodWorkOrderCreatePage() {
   /**
    * ③ 직접입력 값 (salesOrderLineId → 입력 문자열)
    * - 숫자가 아니라 문자열로 들고 있어야 타이핑 중에 커서가 튀지 않는다
+   * - 자동 계산해서 채우는 값은 항상 소수 1자리 (round1)
    */
   const [direct, setDirect] = useState<Record<number, string>>({});
 
@@ -333,7 +341,7 @@ export function FoodWorkOrderCreatePage() {
   const isDirect = effMethod === "C";
 
   /** RAW 그룹에서 쓸 수 있는 탈피씨드 총량 (= 실제 입고 × 탈각 수율). 없으면 ③ 선택 불가 */
-  const rawPool = preview?.raw.receivedSemiSeedQty ?? null;
+  const rawPool = preview?.raw.receivedSemiSeedQty != null ? round1(preview.raw.receivedSemiSeedQty) : null;
 
   /** 헴프박 부산물이 나오는 라인 (= 헴프오일) - byproductYieldPercent 가 내려오는 RAW 라인 */
   const oilLine = useMemo(
@@ -341,15 +349,21 @@ export function FoodWorkOrderCreatePage() {
     [lines],
   );
 
-  /** 오일 투입량(탈피씨드) → 헴프박 발생량 / 건조 후 공급량 (③ 직접입력용 프론트 계산) */
+  /**
+   * 오일 투입량(탈피씨드) → 헴프박 발생량 / 건조 후 공급량 (③ 직접입력용 프론트 계산)
+   * - 서버와 똑같이 단계마다 소수 1자리로 반올림한다
+   *   (예: 390 × 72.5% = 282.75 → 282.8, 282.8 × 95% = 268.66 → 268.7)
+   *   → ③ 으로 들어와도 ② 와 같은 풀이 나오고, 풀이 소수 3자리로 지저분해지지 않는다
+   */
   const calcParkFromOil = (oilQty: number) => {
     const bp = oilLine?.preview?.byproductYieldPercent;
     const dry = preview?.park.dryYieldPercent;
     if (bp == null || dry == null) return null;
-    const byproduct = round3((oilQty * bp) / 100); // 건조 전 헴프박 발생량
-    return { byproduct, dry: round3((byproduct * dry) / 100) }; // 건조 후 = PARK 그룹 투입 가능 풀
+    const byproduct = round1((oilQty * bp) / 100); // 건조 전 헴프박 발생량
+    return { byproduct, dry: round1((byproduct * dry) / 100) }; // 건조 후 = PARK 그룹 투입 가능 풀
   };
 
+  /** 오일 투입량이 바뀌면 PARK 라인들을 기존 비율 그대로 새 풀로 다시 나눈다 (전부 소수 1자리) */
   const redistributePark = (next: Record<number, string>) => {
     if (!oilLine) return;
     const newPark = calcParkFromOil(toNum(next[oilLine.salesOrderLineId]));
@@ -363,8 +377,9 @@ export function FoodWorkOrderCreatePage() {
         curTotal > 0
           ? toNum(next[l.salesOrderLineId]) / curTotal
           : (l.allocationPercent ?? 100 / parkLines.length) / 100;
-      const v = i === parkLines.length - 1 ? round3(newPark.dry - assigned) : round3(newPark.dry * share);
-      assigned += v;
+      // 마지막 라인이 나머지를 가져가서 합계가 풀과 정확히 같아진다
+      const v = i === parkLines.length - 1 ? round1(newPark.dry - assigned) : round1(newPark.dry * share);
+      assigned = round1(assigned + v);
       next[l.salesOrderLineId] = String(Math.max(0, v));
     });
   };
@@ -381,7 +396,7 @@ export function FoodWorkOrderCreatePage() {
   /** 그룹별 총량(풀) - RAW=탈피씨드 가능량, PARK=건조헴프박 공급량 */
   const poolOf = (group: string): number | null => {
     if (group === "RAW") return rawPool;
-    if (group === "PARK") return parkInfo?.dry ?? null;
+    if (group === "PARK") return parkInfo?.dry != null ? round1(parkInfo.dry) : null;
     return null;
   };
 
@@ -398,7 +413,7 @@ export function FoodWorkOrderCreatePage() {
     const p = line.preview;
     if (!p) return line.planQty;
     if (p.outputYieldPercent == null) return null;
-    if (effMethod === "C") return round3((qtyOf(line) * p.outputYieldPercent) / 100); // ③ 은 프론트에서 직접 계산
+    if (effMethod === "C") return round1((qtyOf(line) * p.outputYieldPercent) / 100); // ③ 은 프론트에서 직접 계산 (서버처럼 1자리)
     return effMethod === "B" ? p.targetYieldKeptOutputQty : p.ratioKeptOutputQty;
   };
 
@@ -583,6 +598,7 @@ export function FoodWorkOrderCreatePage() {
    * 투입량 계산 방식 선택
    * - ③ 으로 넘어갈 때는 지금 화면에 보이는 값(현재 방식 ①/②의 투입량)으로 시작해서 자유롭게 고치게 한다
    * - PARK 라인은 프론트 계산 풀(③ 기준)에 맞춰 다시 나눠, 진입 직후 합계와 풀이 어긋나지 않게 한다
+   * - 진입 값은 소수 1자리로 맞춘다
    */
   const handleSelectMethod = (next: Method) => {
     if (next === method) return;
@@ -590,7 +606,7 @@ export function FoodWorkOrderCreatePage() {
       if (rawPool == null) return; // 탈피씨드 가능량을 모르면 직접입력 불가
       const init: Record<number, string> = {};
       lines.forEach((l) => {
-        init[l.salesOrderLineId] = String(round3(qtyOf(l)));
+        init[l.salesOrderLineId] = String(round1(qtyOf(l)));
       });
       redistributePark(init);
       setDirect(init);
@@ -600,27 +616,31 @@ export function FoodWorkOrderCreatePage() {
 
   /**
    * ③ 직접입력 변경
-   * - 그룹 총량(풀)을 넘지 않도록 자르고, 그룹이 2라인이면 남은 수량을 나머지 라인에 자동 배정한다
+   * - 소수 1자리까지만 입력받고, 그룹 총량(풀)을 넘지 않도록 자른다
+   * - 그룹이 2라인이면 남은 수량을 나머지 라인에 자동 배정한다 (소수 1자리)
    * - RAW(오일)가 바뀌면 헴프박 공급량(= PARK 풀)이 바뀌므로, PARK 라인들은 기존 배분 비율을 유지한 채 새 풀로 다시 나눈다
    */
   const handleDirectChange = (lineId: number, text: string) => {
     const target = lines.find((l) => l.salesOrderLineId === lineId);
     if (!target) return;
 
+    // 소수 2자리 이상은 1자리까지만 남긴다 (예: "12.34" → "12.3")
+    const clean = text.replace(/^(\d*\.\d)\d+$/, "$1");
+
     const next: Record<number, string> = { ...direct };
     const groupLines = lines.filter((l) => l.allocationGroup === target.allocationGroup);
 
     const pool = poolOf(target.allocationGroup);
-    let value = toNum(text);
+    let value = round1(toNum(clean));
     if (pool != null && value > pool) value = pool; // 풀 초과 입력은 풀로 자른다
 
     // 사용자가 타이핑 중인 칸은 입력 문자열을 최대한 그대로 유지 (자른 경우만 값으로 교체)
-    next[lineId] = pool != null && toNum(text) > pool ? String(pool) : text;
+    next[lineId] = pool != null && toNum(clean) > pool ? String(pool) : clean;
 
     // 그룹이 정확히 2라인이면 남은 수량을 다른 한쪽에 자동으로 넣는다
     if (pool != null && groupLines.length === 2) {
       const other = groupLines.find((l) => l.salesOrderLineId !== lineId)!;
-      next[other.salesOrderLineId] = String(round3(pool - value));
+      next[other.salesOrderLineId] = String(Math.max(0, round1(pool - value)));
     }
 
     // 오일 투입량이 바뀌면 PARK 풀이 바뀌므로 PARK 라인을 새 풀로 재배분
@@ -690,6 +710,10 @@ export function FoodWorkOrderCreatePage() {
   const receivedQty = orderDetail?.receivedQty ?? preview?.raw.receivedQty ?? null;
   const contractQty = orderDetail?.orderQty ?? null;
   const receivedDiff = receivedQty != null && contractQty != null ? round3(receivedQty - contractQty) : 0;
+
+  // 오차범위 이내(또는 계약과 동일)면 정상 입고 → 초록색
+  // 미리보기가 없으면 계약과 정확히 같을 때만 정상으로 본다
+  const receivedOk = preview ? preview.raw.withinTolerance : receivedDiff === 0;
 
   /** RAW 그룹 라인 (방식 카드 / 비교표에 사용) */
   const rawLines = lines.filter((l) => l.allocationGroup === "RAW" && l.preview);
@@ -916,7 +940,7 @@ export function FoodWorkOrderCreatePage() {
 
                 {/* 실제 누적 입고 - 계약과 다르면 미만/초과 입고 표시 */}
                 {receivedQty != null && (
-                  <li className="woc-infocard is-received">
+                   <li className={`woc-infocard is-received${receivedOk ? " is-ok" : ""}`}>
                     <span className="woc-infocard__icon" aria-hidden="true">
                       <InboxArrowDownIcon />
                     </span>
