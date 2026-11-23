@@ -108,12 +108,12 @@ import { DeliveryStatusPage } from '@pages/page/sales/DeliveryStatusPage'
 import { SalesOrderPage } from '@pages/page/sales/SalesOrderPage'
 import { SalesOrderCreatePage } from '@pages/page/sales/SalesOrderCreatePage'
 import { SalesOrderDetailPage } from '@pages/page/sales/SalesOrderDetailPage'
-
 import { OrderStatusPage } from '@pages/page/sales/OrderStatusPage'
 import { OrderPerformancePage } from '@pages/page/sales/OrderPerformancePage'
 import { SalesBusinessPartnerPage } from '@/pages/page/sales/SalesBusinessPartnerPage'
 import { SalesBusinessPartnerCreatePage } from '@/pages/page/sales/SalesBusinessPartnerCreatePage'
 import { SalesBusinessPartnerDetailPage } from '@/pages/page/sales/SalesBusinessPartnerDetailPage'
+import HempInputSimulationPage from '@/pages/page/sales/HempInputSimulationPage';
 
 // 태블릿 전용 페이지
 import { WorkTabletGuard } from '@/pages/work/WorkTabletGuard'
@@ -259,6 +259,7 @@ export const menuRoutes: MenuRouteGroup[] = [
       { path: 'order-status', name: '수주현황', element: <OrderStatusPage /> },
       { path: 'delivery-status', name: '납품현황', element: <DeliveryStatusPage /> },
       { path: 'order-performance', name: '수주실적현황', element: <OrderPerformancePage /> },
+      { path: 'input-simulation', name: '원물 투입 시뮬레이션', element: <HempInputSimulationPage /> },
     ],
   },
   {
