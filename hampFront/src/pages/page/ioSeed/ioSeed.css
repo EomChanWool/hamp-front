@@ -1378,6 +1378,11 @@
   width: 70px;
 }
 
+.seedInboundQtyInput[aria-invalid="true"],
+.seedInboundBoxInput[aria-invalid="true"] {
+  border-color: var(--dl-danger, #c0293d);
+}
+
 [data-theme="dark"] .seedInboundProgress__track {
   background: rgba(148, 163, 184, 0.2);
 }
