@@ -1147,6 +1147,17 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--dl-accent) 18%, transparent);
 }
 
+/* 검증 실패 칸: 호버·포커스 때도 빨간 표시 유지 */
+.detailCard .tableInput[aria-invalid="true"],
+.detailCard .tableInput[aria-invalid="true"]:hover:not(:disabled):not(:focus) {
+  border-color: var(--dl-danger, #c0293d);
+}
+
+.detailCard .tableInput[aria-invalid="true"]:focus-visible {
+  border-color: var(--dl-danger, #c0293d);
+  box-shadow: 0 0 0 3px rgba(192, 41, 61, 0.2);
+}
+
 .detailCard .tableInput:disabled {
   background: var(--dl-bg);
   color: var(--dl-ink-faint);
@@ -2259,11 +2270,14 @@
   box-shadow: 0 0 0 3px var(--ctl-focus-ring);
 }
 
-.formPage .formInput[aria-invalid="true"] {
+.formPage .formInput[aria-invalid="true"],
+.selectBox .selectBoxTrigger[aria-invalid="true"] {
   border-color: var(--dl-danger, #c0293d);
 }
 
-.formPage .formInput[aria-invalid="true"]:focus-visible {
+.formPage .formInput[aria-invalid="true"]:focus-visible,
+.selectBox .selectBoxTrigger[aria-invalid="true"]:focus-visible,
+.selectBox .selectBoxTrigger[aria-invalid="true"][aria-expanded="true"] {
   box-shadow: 0 0 0 3px rgba(192, 41, 61, 0.2);
 }
 

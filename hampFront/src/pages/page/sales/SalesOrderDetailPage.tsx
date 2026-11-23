@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { SalesOrderApi } from "@/api/sales/SalesOrder";
@@ -7,7 +7,7 @@ import { BusinessPartnerApi } from "@/api/sales/BusinessPartner";
 import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
 import Spinner from "@/components/common/Spinner";
 import { NumberInput } from "@/components/common/NumberInput";
-import { formatDateTime, parseDecimalInput } from "@/utils/common";
+import { focusField, formatDateTime, parseDecimalInput } from "@/utils/common";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
 import { type SelectOption } from "@/pages/layout/DetailSelect";
 import { SalesOrderAllocationSection } from "@/components/common/SalesOrderAllocationSection";
@@ -40,6 +40,10 @@ export function SalesOrderDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  // 저장을 한 번 눌러 필수값 검증에 걸린 뒤부터 비어 있는 필수 칸을 빨갛게 표시 (수정을 새로 시작하면 초기화)
+  const [showRequiredErrors, setShowRequiredErrors] = useState(false);
+  const qtyInputRef = useRef<HTMLInputElement>(null);
+  const amountInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<Record<string, any>>({});
   const [percents, setPercents] = useState<AllocationPercents>({
@@ -121,11 +125,13 @@ export function SalesOrderDetailPage() {
           required: true,
           renderEditor: (value, onChange, disabled, inputId) => (
             <NumberInput
+              ref={qtyInputRef}
               id={inputId}
               className="tableInput"
               style={{ textAlign: "right" }}
               wrapClassName="soNumberEdit"
               suffix={<span>{form.unit}</span>}
+              aria-invalid={(showRequiredErrors && !value) || undefined}
               value={toNumberOrNull(value)}
               disabled={disabled}
               onValueChange={(qty) => onChange(qty == null ? "" : String(qty))}
@@ -164,11 +170,13 @@ export function SalesOrderDetailPage() {
           required: true,
           renderEditor: (value, onChange, disabled, inputId) => (
             <NumberInput
+              ref={amountInputRef}
               id={inputId}
               className="tableInput"
               style={{ textAlign: "right" }}
               wrapClassName="soNumberEdit"
               suffix={<span>원</span>}
+              aria-invalid={(showRequiredErrors && !value) || undefined}
               value={toNumberOrNull(value)}
               disabled={disabled}
               onValueChange={(amount) => onChange(amount == null ? "" : String(amount))}
@@ -259,17 +267,17 @@ export function SalesOrderDetailPage() {
 
   const startEditing = () => {
     if (order) setPercents(readAllocationPercents(order.lines || []));
+    setShowRequiredErrors(false);
     setIsEditing(true);
   };
 
   const handleSave = async () => {
     if (!order || isUpdating) return;
-    if (!form.orderQty) {
-      alert("투입수량을 입력해주세요.");
-      return;
-    }
-    if (!form.orderAmount) {
-      alert("가공비를 입력해주세요.");
+    // 비어 있는 첫 필수 칸을 안내하고 그 칸으로 이동
+    if (!form.orderQty || !form.orderAmount) {
+      setShowRequiredErrors(true);
+      alert(!form.orderQty ? "투입수량을 입력해주세요." : "가공비를 입력해주세요.");
+      focusField(!form.orderQty ? qtyInputRef.current : amountInputRef.current);
       return;
     }
 
