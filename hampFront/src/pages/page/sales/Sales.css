@@ -883,3 +883,18 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- 상세 화면 숫자 입력칸 (입력칸 + 단위) ---------- */
+.soNumberEdit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.soNumberEdit > span {
+  white-space: nowrap;
+}
+
+.soNumberEdit .tableInput[aria-invalid="true"] {
+  border-color: var(--dl-danger, #c0293d);
+}

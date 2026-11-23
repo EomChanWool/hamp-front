@@ -6,8 +6,8 @@ import type { SalesOrderDetailResponse, SalesOrderUpdateRequest } from "@/api/sa
 import { BusinessPartnerApi } from "@/api/sales/BusinessPartner";
 import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
 import Spinner from "@/components/common/Spinner";
-import { AmountInput } from "@/components/common/AmountInput";
-import { formatDateTime, parseDecimalInput, sanitizeDecimalInput } from "@/utils/common";
+import { NumberInput } from "@/components/common/NumberInput";
+import { formatDateTime, parseDecimalInput } from "@/utils/common";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
 import { type SelectOption } from "@/pages/layout/DetailSelect";
 import { SalesOrderAllocationSection } from "@/components/common/SalesOrderAllocationSection";
@@ -21,6 +21,9 @@ import {
   readAllocationPercents,
   type AllocationPercents,
 } from "@/utils/salesOrderAllocation";
+
+// 폼은 문자열로 들고 있어 숫자 입력칸에 넘길 때만 바꾼다 (빈 값이면 null)
+const toNumberOrNull = (value: string | null | undefined) => (value == null || value === "" ? null : Number(value));
 
 const ALLOCATION_GROUP_LABEL: Record<string, string> = {
   RAW: "원물(RAW)",
@@ -116,19 +119,17 @@ export function SalesOrderDetailPage() {
           key: "orderQty",
           editable: true,
           required: true,
-          renderEditor: (value, onChange, disabled) => (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <input
-                type="text"
-                inputMode="numeric"
-                className="tableInput"
-                style={{ textAlign: "right" }}
-                value={value ?? ""}
-                disabled={disabled}
-                onChange={(e) => onChange(e.target.value.replace(/[^0-9]/g, ""))}
-              />
-              <span style={{ whiteSpace: "nowrap" }}>{form.unit}</span>
-            </div>
+          renderEditor: (value, onChange, disabled, inputId) => (
+            <NumberInput
+              id={inputId}
+              className="tableInput"
+              style={{ textAlign: "right" }}
+              wrapClassName="soNumberEdit"
+              suffix={<span>{form.unit}</span>}
+              value={toNumberOrNull(value)}
+              disabled={disabled}
+              onValueChange={(qty) => onChange(qty == null ? "" : String(qty))}
+            />
           ),
           renderValue: (value) =>
             value ? `${Number(value).toLocaleString("ko-KR")}${form.unit ? ` ${form.unit}` : ""}` : "-",
@@ -137,25 +138,22 @@ export function SalesOrderDetailPage() {
           label: "오차범위",
           key: "toleranceRate",
           editable: true,
-          renderEditor: (value, onChange, disabled) => (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <input
-                type="text"
-                inputMode="decimal"
-                className="tableInput"
-                style={{ textAlign: "right" }}
-                placeholder="0 ~ 100"
-                value={value ?? ""}
-                disabled={disabled}
-                onChange={(e) => {
-                  const next = sanitizeDecimalInput(e.target.value);
-                  // 서버 허용 범위(0~100)를 넘는 입력은 받지 않는다
-                  if ((parseDecimalInput(next) ?? 0) > 100) return;
-                  onChange(next);
-                }}
-              />
-              <span style={{ whiteSpace: "nowrap" }}>%</span>
-            </div>
+          renderEditor: (value, onChange, disabled, inputId) => (
+            <NumberInput
+              id={inputId}
+              className="tableInput"
+              style={{ textAlign: "right" }}
+              wrapClassName="soNumberEdit"
+              suffix={<span>%</span>}
+              placeholder="0 ~ 100"
+              // 서버 허용 범위(0~100), DB decimal(12,2)
+              decimalScale={2}
+              max={100}
+              thousandSeparator={false}
+              value={toNumberOrNull(value)}
+              disabled={disabled}
+              onValueChange={(rate) => onChange(rate == null ? "" : String(rate))}
+            />
           ),
           renderValue: (value) => (value ? `${value}%` : "-"),
         },
@@ -164,17 +162,17 @@ export function SalesOrderDetailPage() {
           key: "orderAmount",
           editable: true,
           required: true,
-          renderEditor: (value, onChange, disabled) => (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <AmountInput
-                className="tableInput"
-                style={{ textAlign: "right" }}
-                value={value ? Number(value) : null}
-                disabled={disabled}
-                onValueChange={(amount) => onChange(String(amount))}
-              />
-              <span style={{ whiteSpace: "nowrap" }}>원</span>
-            </div>
+          renderEditor: (value, onChange, disabled, inputId) => (
+            <NumberInput
+              id={inputId}
+              className="tableInput"
+              style={{ textAlign: "right" }}
+              wrapClassName="soNumberEdit"
+              suffix={<span>원</span>}
+              value={toNumberOrNull(value)}
+              disabled={disabled}
+              onValueChange={(amount) => onChange(amount == null ? "" : String(amount))}
+            />
           ),
           renderValue: (value) => (value ? `${Number(value).toLocaleString("ko-KR")} 원` : "-"),
         },

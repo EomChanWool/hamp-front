@@ -7,10 +7,9 @@ import {
 } from "@/api/sales/SalesOrder";
 import { BusinessPartnerApi } from "@/api/sales/BusinessPartner";
 import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
-import { AmountInput } from "@/components/common/AmountInput";
+import { NumberInput } from "@/components/common/NumberInput";
 import { SelectBox, type SelectBoxOption } from "@/components/common/SelectBox";
 import { SalesOrderAllocationSection } from "@/components/common/SalesOrderAllocationSection";
-import { parseDecimalInput, sanitizeDecimalInput } from "@/utils/common";
 import {
   DEFAULT_OIL_PERCENT,
   DEFAULT_POWDER_PERCENT,
@@ -39,8 +38,8 @@ export function SalesOrderCreatePage() {
     orderQty: null,
     orderAmount: null,
   });
-  // 오차범위는 "5." 같은 입력 중간 값을 유지해야 해서 문자열로 들고, 등록 시 숫자로 바꾼다
-  const [toleranceInput, setToleranceInput] = useState("");
+  // 오차범위는 선택 입력 (비우면 null)
+  const [toleranceRate, setToleranceRate] = useState<number | null>(null);
   const [percents, setPercents] = useState<AllocationPercents>({
     oilPercent: DEFAULT_OIL_PERCENT,
     powderPercent: DEFAULT_POWDER_PERCENT,
@@ -117,7 +116,7 @@ export function SalesOrderCreatePage() {
     const payload: SalesOrderCreateRequest = {
       ...form,
       itemCode: form.itemCode || null,
-      toleranceRate: parseDecimalInput(toleranceInput),
+      toleranceRate,
       // 시뮬레이션 응답을 기다리지 않고 현재 입력된 비율로 보낸다 (그룹별 합은 항상 100)
       lines: buildAllocationLines(percents),
     };
@@ -144,8 +143,6 @@ export function SalesOrderCreatePage() {
   const rawItemLabel = selectedRawItem
     ? `${selectedRawItem.itemNm ?? selectedRawItem.itemCode} (${selectedRawItem.itemCode})`
     : RAW_ITEM_CODE;
-
-  const toleranceRate = parseDecimalInput(toleranceInput);
 
   const requiredDone = [form.bpCode, form.orderQty, form.orderAmount].filter(
     (v) => v !== "" && v != null
@@ -274,63 +271,53 @@ export function SalesOrderCreatePage() {
                   <label className="formLabel" htmlFor="order-qty">
                     투입수량 <span className="required" aria-hidden="true">*</span>
                   </label>
-                  <div className="formInputWrap">
-                    <input
-                      ref={qtyInputRef}
-                      id="order-qty"
-                      type="text"
-                      inputMode="numeric"
-                      className="formInput hasSuffix"
-                      placeholder="0"
-                      value={form.orderQty ?? ""}
-                      disabled={isSubmitting}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9]/g, "");
-                        const qty = val === "" ? null : Number(val);
-                        handleChange("orderQty", qty);
-                        if (qty != null && qty > 0) qtyAlertShownRef.current = false;
-                      }}
-                    />
-                    {rawUnit && <span className="formInputSuffix">{rawUnit}</span>}
-                  </div>
+                  <NumberInput
+                    ref={qtyInputRef}
+                    id="order-qty"
+                    className="formInput hasSuffix"
+                    wrapClassName="formInputWrap"
+                    suffix={rawUnit ? <span className="formInputSuffix">{rawUnit}</span> : undefined}
+                    placeholder="0"
+                    value={form.orderQty}
+                    disabled={isSubmitting}
+                    onValueChange={(qty) => {
+                      handleChange("orderQty", qty);
+                      if (qty != null && qty > 0) qtyAlertShownRef.current = false;
+                    }}
+                  />
                 </div>
 
                 <div className="formField col3">
                   <label className="formLabel" htmlFor="order-tolerance">오차범위</label>
-                  <div className="formInputWrap">
-                    <input
-                      id="order-tolerance"
-                      type="text"
-                      inputMode="decimal"
-                      className="formInput hasSuffix"
-                      placeholder="0 ~ 100"
-                      value={toleranceInput}
-                      disabled={isSubmitting}
-                      onChange={(e) => {
-                        const next = sanitizeDecimalInput(e.target.value);
-                        // 서버 허용 범위(0~100)를 넘는 입력은 받지 않는다
-                        if ((parseDecimalInput(next) ?? 0) > 100) return;
-                        setToleranceInput(next);
-                      }}
-                    />
-                    <span className="formInputSuffix">%</span>
-                  </div>
+                  <NumberInput
+                    id="order-tolerance"
+                    className="formInput hasSuffix"
+                    wrapClassName="formInputWrap"
+                    suffix={<span className="formInputSuffix">%</span>}
+                    placeholder="0 ~ 100"
+                    // 서버 허용 범위(0~100), DB decimal(12,2)
+                    decimalScale={2}
+                    max={100}
+                    thousandSeparator={false}
+                    value={toleranceRate}
+                    disabled={isSubmitting}
+                    onValueChange={setToleranceRate}
+                  />
                 </div>
 
                 <div className="formField col3">
                   <label className="formLabel" htmlFor="order-amount">
                     가공비 <span className="required" aria-hidden="true">*</span>
                   </label>
-                  <div className="formInputWrap">
-                    <AmountInput
-                      id="order-amount"
-                      className="formInput hasSuffix"
-                      value={form.orderAmount}
-                      disabled={isSubmitting}
-                      onValueChange={(amount) => handleChange("orderAmount", amount)}
-                    />
-                    <span className="formInputSuffix">원</span>
-                  </div>
+                  <NumberInput
+                    id="order-amount"
+                    className="formInput hasSuffix"
+                    wrapClassName="formInputWrap"
+                    suffix={<span className="formInputSuffix">원</span>}
+                    value={form.orderAmount}
+                    disabled={isSubmitting}
+                    onValueChange={(amount) => handleChange("orderAmount", amount)}
+                  />
                 </div>
               </div>
             </section>
