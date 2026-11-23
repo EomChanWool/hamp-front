@@ -452,13 +452,15 @@ export function FoodWorkOrderCreatePage() {
   /** ③ 직접입력에서 풀(총량)을 넘긴 그룹이 있으면 저장을 막는다 */
   const directError = useMemo(() => {
     if (!isDirect) return "";
+    const negative = lines.some((l) => parseFloat(direct[l.salesOrderLineId] ?? "") < 0);
+    if (negative) return "투입량은 0 이상이어야 합니다.";
     for (const g of groupUsages) {
       if (g.pool != null && isOverPool(g.total, g.pool)) {
         return `${g.label} 투입량 합계(${fmt(g.total)})가 사용 가능량(${fmt(g.pool)})을 초과했습니다.`;
       }
     }
     return "";
-  }, [isDirect, groupUsages]);
+  }, [isDirect, groupUsages, direct, lines]);
 
   const managerOptions = useMemo<SelectOption[]>(
     () => userOptions.map((user) => ({ value: user.userId, label: `${user.userNm} (${user.userId})` })),
@@ -624,8 +626,10 @@ export function FoodWorkOrderCreatePage() {
     const target = lines.find((l) => l.salesOrderLineId === lineId);
     if (!target) return;
 
-    // 소수 2자리 이상은 1자리까지만 남긴다 (예: "12.34" → "12.3")
-    const clean = text.replace(/^(\d*\.\d)\d+$/, "$1");
+    // 숫자와 소수점만 허용 (음수 기호, e 등 제거) + 소수 1자리까지만
+    const clean = text
+      .replace(/[^\d.]/g, "")          // '-', 'e', '+' 등 제거
+      .replace(/^(\d*\.\d)\d+$/, "$1"); // 소수 2자리 이상은 1자리로
 
     const next: Record<number, string> = { ...direct };
     const groupLines = lines.filter((l) => l.allocationGroup === target.allocationGroup);
@@ -803,9 +807,12 @@ export function FoodWorkOrderCreatePage() {
                 disabled={!editable || isSubmitting}
                 // 풀을 초과한 그룹의 입력칸에만 빨간 표시
                 aria-invalid={editable && overGroups.has(line.allocationGroup)}
+                onKeyDown={(e) => {
+                  if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault();
+                }}
                 onChange={(e) => handleDirectChange(id, e.target.value)}
               />
-              <span>{line.inputUnit.toLowerCase()}</span>
+              < span > {line.inputUnit.toLowerCase()}</span>
             </div>
             <p className="woc-field__hint">
               {line.allocationGroup === "PARK" ? "건조헴프박" : "탈피씨드"} 투입 기준 (그룹 내 비율 {fmt(percent)}%)
@@ -838,7 +845,7 @@ export function FoodWorkOrderCreatePage() {
             </p>
           </div>
         </div>
-      </li>
+      </li >
     );
   };
 
@@ -940,7 +947,7 @@ export function FoodWorkOrderCreatePage() {
 
                 {/* 실제 누적 입고 - 계약과 다르면 미만/초과 입고 표시 */}
                 {receivedQty != null && (
-                   <li className={`woc-infocard is-received${receivedOk ? " is-ok" : ""}`}>
+                  <li className={`woc-infocard is-received${receivedOk ? " is-ok" : ""}`}>
                     <span className="woc-infocard__icon" aria-hidden="true">
                       <InboxArrowDownIcon />
                     </span>
