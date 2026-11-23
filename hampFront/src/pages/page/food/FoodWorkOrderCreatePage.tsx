@@ -44,8 +44,15 @@ const GROUP_LABEL: Record<string, string> = {
   PARK: "헴프박(PARK)",
 };
 
-/** 소수점 부동소수점 오차 방지용 반올림 (수량 계산용) */
+/** 소수점 부동소수점 오차 방지용 반올림 (수량 계산용 - 소수 3자리) */
 const round3 = (n: number) => Math.round(n * 1000) / 1000;
+
+/**
+ * 소수 1자리 반올림 - ③ 직접입력 수량 / 헴프박 계산용
+ * - 서버(미리보기)가 단계마다 소수 1자리로 반올림해서 내려주므로 프론트도 똑같이 맞춘다
+ * - EPSILON 보정: 282.75 같은 값이 부동소수점 때문에 282.7 로 내려가는 것을 막는다
+ */
+const round1 = (n: number) => Math.round((n + Number.EPSILON) * 10) / 10;
 
 /** 수량 표시 (소수 1자리 고정) */
 const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -59,8 +66,14 @@ const toNum = (s?: string) => {
   return Number.isNaN(n) || n < 0 ? 0 : n;
 };
 
-/** 풀 초과 판정 시 허용하는 부동소수점 오차 */
-const EPS = 0.001;
+/** 풀(총량) 비교 시 허용하는 오차 */
+const EPS = 0.1;
+
+/** 그룹 합계가 풀을 (오차 이상) 초과했는지 */
+const isOverPool = (total: number, pool: number) => round3(total - pool) > EPS;
+
+/** 그룹 합계가 풀을 (오차 범위 안에서) 전부 사용했는지 */
+const isFullyUsed = (total: number, pool: number) => round3(pool - total) <= EPS;
 
 /* ───────────── 타입 ───────────── */
 
@@ -313,6 +326,7 @@ export function FoodWorkOrderCreatePage() {
   /**
    * ③ 직접입력 값 (salesOrderLineId → 입력 문자열)
    * - 숫자가 아니라 문자열로 들고 있어야 타이핑 중에 커서가 튀지 않는다
+   * - 자동 계산해서 채우는 값은 항상 소수 1자리 (round1)
    */
   const [direct, setDirect] = useState<Record<number, string>>({});
 
@@ -327,7 +341,7 @@ export function FoodWorkOrderCreatePage() {
   const isDirect = effMethod === "C";
 
   /** RAW 그룹에서 쓸 수 있는 탈피씨드 총량 (= 실제 입고 × 탈각 수율). 없으면 ③ 선택 불가 */
-  const rawPool = preview?.raw.receivedSemiSeedQty ?? null;
+  const rawPool = preview?.raw.receivedSemiSeedQty != null ? round1(preview.raw.receivedSemiSeedQty) : null;
 
   /** 헴프박 부산물이 나오는 라인 (= 헴프오일) - byproductYieldPercent 가 내려오는 RAW 라인 */
   const oilLine = useMemo(
@@ -335,13 +349,39 @@ export function FoodWorkOrderCreatePage() {
     [lines],
   );
 
-  /** 오일 투입량(탈피씨드) → 헴프박 발생량 / 건조 후 공급량 (③ 직접입력용 프론트 계산) */
+  /**
+   * 오일 투입량(탈피씨드) → 헴프박 발생량 / 건조 후 공급량 (③ 직접입력용 프론트 계산)
+   * - 서버와 똑같이 단계마다 소수 1자리로 반올림한다
+   *   (예: 390 × 72.5% = 282.75 → 282.8, 282.8 × 95% = 268.66 → 268.7)
+   *   → ③ 으로 들어와도 ② 와 같은 풀이 나오고, 풀이 소수 3자리로 지저분해지지 않는다
+   */
   const calcParkFromOil = (oilQty: number) => {
     const bp = oilLine?.preview?.byproductYieldPercent;
     const dry = preview?.park.dryYieldPercent;
     if (bp == null || dry == null) return null;
-    const byproduct = round3((oilQty * bp) / 100); // 건조 전 헴프박 발생량
-    return { byproduct, dry: round3((byproduct * dry) / 100) }; // 건조 후 = PARK 그룹 투입 가능 풀
+    const byproduct = round1((oilQty * bp) / 100); // 건조 전 헴프박 발생량
+    return { byproduct, dry: round1((byproduct * dry) / 100) }; // 건조 후 = PARK 그룹 투입 가능 풀
+  };
+
+  /** 오일 투입량이 바뀌면 PARK 라인들을 기존 비율 그대로 새 풀로 다시 나눈다 (전부 소수 1자리) */
+  const redistributePark = (next: Record<number, string>) => {
+    if (!oilLine) return;
+    const newPark = calcParkFromOil(toNum(next[oilLine.salesOrderLineId]));
+    const parkLines = lines.filter((l) => l.allocationGroup === "PARK");
+    if (!newPark || parkLines.length === 0) return;
+
+    const curTotal = parkLines.reduce((s, l) => s + toNum(next[l.salesOrderLineId]), 0);
+    let assigned = 0;
+    parkLines.forEach((l, i) => {
+      const share =
+        curTotal > 0
+          ? toNum(next[l.salesOrderLineId]) / curTotal
+          : (l.allocationPercent ?? 100 / parkLines.length) / 100;
+      // 마지막 라인이 나머지를 가져가서 합계가 풀과 정확히 같아진다
+      const v = i === parkLines.length - 1 ? round1(newPark.dry - assigned) : round1(newPark.dry * share);
+      assigned = round1(assigned + v);
+      next[l.salesOrderLineId] = String(Math.max(0, v));
+    });
   };
 
   /** 방식별 헴프박 발생량(건조 전)/공급량(건조 후) - PARK 그룹 풀 */
@@ -356,7 +396,7 @@ export function FoodWorkOrderCreatePage() {
   /** 그룹별 총량(풀) - RAW=탈피씨드 가능량, PARK=건조헴프박 공급량 */
   const poolOf = (group: string): number | null => {
     if (group === "RAW") return rawPool;
-    if (group === "PARK") return parkInfo?.dry ?? null;
+    if (group === "PARK") return parkInfo?.dry != null ? round1(parkInfo.dry) : null;
     return null;
   };
 
@@ -373,7 +413,7 @@ export function FoodWorkOrderCreatePage() {
     const p = line.preview;
     if (!p) return line.planQty;
     if (p.outputYieldPercent == null) return null;
-    if (effMethod === "C") return round3((qtyOf(line) * p.outputYieldPercent) / 100); // ③ 은 프론트에서 직접 계산
+    if (effMethod === "C") return round1((qtyOf(line) * p.outputYieldPercent) / 100); // ③ 은 프론트에서 직접 계산 (서버처럼 1자리)
     return effMethod === "B" ? p.targetYieldKeptOutputQty : p.ratioKeptOutputQty;
   };
 
@@ -396,6 +436,12 @@ export function FoodWorkOrderCreatePage() {
     return Array.from(map.values()).map((g) => ({ ...g, total: round3(g.total) }));
   }, [lines, effMethod, direct, preview, parkInfo]);
 
+  /** 풀(총량)을 초과한 그룹 키 집합 - 빨간 표시는 이 그룹에만 건다 */
+  const overGroups = useMemo(
+    () => new Set(groupUsages.filter((g) => g.pool != null && isOverPool(g.total, g.pool)).map((g) => g.key)),
+    [groupUsages],
+  );
+
   /** 그룹 순서를 유지한 채 라인을 그룹별로 묶는다 (그룹 배너 표시용) */
   const lineGroups = useMemo(() => {
     const map = new Map<string, WorkOrderLine[]>();
@@ -407,7 +453,7 @@ export function FoodWorkOrderCreatePage() {
   const directError = useMemo(() => {
     if (!isDirect) return "";
     for (const g of groupUsages) {
-      if (g.pool != null && g.total > g.pool + EPS) {
+      if (g.pool != null && isOverPool(g.total, g.pool)) {
         return `${g.label} 투입량 합계(${fmt(g.total)})가 사용 가능량(${fmt(g.pool)})을 초과했습니다.`;
       }
     }
@@ -548,15 +594,21 @@ export function FoodWorkOrderCreatePage() {
     }
   };
 
-  /** 투입량 계산 방식 선택 - ③ 으로 넘어갈 때는 ① 값으로 시작해서 자유롭게 고치게 한다 */
+  /**
+   * 투입량 계산 방식 선택
+   * - ③ 으로 넘어갈 때는 지금 화면에 보이는 값(현재 방식 ①/②의 투입량)으로 시작해서 자유롭게 고치게 한다
+   * - PARK 라인은 프론트 계산 풀(③ 기준)에 맞춰 다시 나눠, 진입 직후 합계와 풀이 어긋나지 않게 한다
+   * - 진입 값은 소수 1자리로 맞춘다
+   */
   const handleSelectMethod = (next: Method) => {
     if (next === method) return;
     if (next === "C") {
       if (rawPool == null) return; // 탈피씨드 가능량을 모르면 직접입력 불가
       const init: Record<number, string> = {};
       lines.forEach((l) => {
-        init[l.salesOrderLineId] = String(round3(l.preview?.ratioKeptQty ?? l.contractInputQty));
+        init[l.salesOrderLineId] = String(round1(qtyOf(l)));
       });
+      redistributePark(init);
       setDirect(init);
     }
     setMethod(next);
@@ -564,48 +616,35 @@ export function FoodWorkOrderCreatePage() {
 
   /**
    * ③ 직접입력 변경
-   * - 그룹 총량(풀)을 넘지 않도록 자르고, 그룹이 2라인이면 남은 수량을 나머지 라인에 자동 배정한다
+   * - 소수 1자리까지만 입력받고, 그룹 총량(풀)을 넘지 않도록 자른다
+   * - 그룹이 2라인이면 남은 수량을 나머지 라인에 자동 배정한다 (소수 1자리)
    * - RAW(오일)가 바뀌면 헴프박 공급량(= PARK 풀)이 바뀌므로, PARK 라인들은 기존 배분 비율을 유지한 채 새 풀로 다시 나눈다
    */
   const handleDirectChange = (lineId: number, text: string) => {
     const target = lines.find((l) => l.salesOrderLineId === lineId);
     if (!target) return;
 
+    // 소수 2자리 이상은 1자리까지만 남긴다 (예: "12.34" → "12.3")
+    const clean = text.replace(/^(\d*\.\d)\d+$/, "$1");
+
     const next: Record<number, string> = { ...direct };
     const groupLines = lines.filter((l) => l.allocationGroup === target.allocationGroup);
 
     const pool = poolOf(target.allocationGroup);
-    let value = toNum(text);
+    let value = round1(toNum(clean));
     if (pool != null && value > pool) value = pool; // 풀 초과 입력은 풀로 자른다
 
     // 사용자가 타이핑 중인 칸은 입력 문자열을 최대한 그대로 유지 (자른 경우만 값으로 교체)
-    next[lineId] = pool != null && toNum(text) > pool ? String(pool) : text;
+    next[lineId] = pool != null && toNum(clean) > pool ? String(pool) : clean;
 
     // 그룹이 정확히 2라인이면 남은 수량을 다른 한쪽에 자동으로 넣는다
     if (pool != null && groupLines.length === 2) {
       const other = groupLines.find((l) => l.salesOrderLineId !== lineId)!;
-      next[other.salesOrderLineId] = String(round3(pool - value));
+      next[other.salesOrderLineId] = String(Math.max(0, round1(pool - value)));
     }
 
     // 오일 투입량이 바뀌면 PARK 풀이 바뀌므로 PARK 라인을 새 풀로 재배분
-    if (target.allocationGroup === "RAW" && oilLine) {
-      const newPark = calcParkFromOil(toNum(next[oilLine.salesOrderLineId]));
-      const parkLines = lines.filter((l) => l.allocationGroup === "PARK");
-      if (newPark && parkLines.length > 0) {
-        const curTotal = parkLines.reduce((s, l) => s + toNum(next[l.salesOrderLineId]), 0);
-        let assigned = 0;
-        parkLines.forEach((l, i) => {
-          // 기존 배분 비율 유지(입력이 전부 0이면 수주 배분 비율을 기본으로 사용)
-          const share =
-            curTotal > 0
-              ? toNum(next[l.salesOrderLineId]) / curTotal
-              : (l.allocationPercent ?? 100 / parkLines.length) / 100;
-          const v = i === parkLines.length - 1 ? round3(newPark.dry - assigned) : round3(newPark.dry * share);
-          assigned += v;
-          next[l.salesOrderLineId] = String(Math.max(0, v));
-        });
-      }
-    }
+    if (target.allocationGroup === "RAW") redistributePark(next);
 
     setDirect(next);
   };
@@ -672,6 +711,10 @@ export function FoodWorkOrderCreatePage() {
   const contractQty = orderDetail?.orderQty ?? null;
   const receivedDiff = receivedQty != null && contractQty != null ? round3(receivedQty - contractQty) : 0;
 
+  // 오차범위 이내(또는 계약과 동일)면 정상 입고 → 초록색
+  // 미리보기가 없으면 계약과 정확히 같을 때만 정상으로 본다
+  const receivedOk = preview ? preview.raw.withinTolerance : receivedDiff === 0;
+
   /** RAW 그룹 라인 (방식 카드 / 비교표에 사용) */
   const rawLines = lines.filter((l) => l.allocationGroup === "RAW" && l.preview);
 
@@ -711,7 +754,9 @@ export function FoodWorkOrderCreatePage() {
     rawPool == null
       ? "입고된 원료가 없거나 탈피씨드로 환산할 수 없어 직접 입력을 사용할 수 없습니다."
       : isDirect && rawGroup
-        ? `탈피씨드 풀 ${fmt(rawPool)}kg 중 ${fmt(rawGroup.total)}kg 사용 · ${fmt(round3(rawPool - rawGroup.total))}kg 남음`
+        ? isFullyUsed(rawGroup.total, rawPool)
+          ? `탈피씨드 풀 ${fmt(rawPool)}kg 전량 사용`
+          : `탈피씨드 풀 ${fmt(rawPool)}kg 중 ${fmt(rawGroup.total)}kg 사용 · ${fmt(round3(rawPool - rawGroup.total))}kg 남음`
         : `탈피씨드 풀 ${fmt(rawPool)}kg 안에서 자유롭게 배분`;
 
   /** 라인 하나 렌더 */
@@ -756,7 +801,8 @@ export function FoodWorkOrderCreatePage() {
                 // 직접 입력 중에는 입력 문자열 그대로, 아니면 계산된 값을 표시
                 value={editable ? (direct[id] ?? "") : qty.toFixed(1)}
                 disabled={!editable || isSubmitting}
-                aria-invalid={editable && !!directError}
+                // 풀을 초과한 그룹의 입력칸에만 빨간 표시
+                aria-invalid={editable && overGroups.has(line.allocationGroup)}
                 onChange={(e) => handleDirectChange(id, e.target.value)}
               />
               <span>{line.inputUnit.toLowerCase()}</span>
@@ -894,7 +940,7 @@ export function FoodWorkOrderCreatePage() {
 
                 {/* 실제 누적 입고 - 계약과 다르면 미만/초과 입고 표시 */}
                 {receivedQty != null && (
-                  <li className="woc-infocard is-received">
+                   <li className={`woc-infocard is-received${receivedOk ? " is-ok" : ""}`}>
                     <span className="woc-infocard__icon" aria-hidden="true">
                       <InboxArrowDownIcon />
                     </span>
@@ -1007,7 +1053,7 @@ export function FoodWorkOrderCreatePage() {
                   <div className="delta">{renderDeltaChips("B")}</div>
                 </div>
 
-                {/* ③ 직접 입력 - 수율은 서버가 내려준 값(outputYieldPercent 등)으로 프론트에서 계산 */}
+                {/* ③ 직접 입력 - 수율은 서버가 내려준 값으로 프론트에서 계산 */}
                 <div
                   className={`wocm-card c${method === "C" ? " selected" : ""}`}
                   role="radio"
@@ -1125,48 +1171,48 @@ export function FoodWorkOrderCreatePage() {
                   <Fragment key={groupKey}>
                     {/* 그룹 상단 투입 현황 배너 (미리보기가 있을 때만) */}
                     {groupKey === "RAW" && preview && rawPool != null && (
-                                              <li className="woc-groupBanner">
-                          <span className="woc-groupBanner__title">RAW 그룹 투입 현황 (원물 → 탈피씨드)</span>
-                          <div className="woc-groupBanner__stats">
-                            <div className="woc-groupBanner__stat">
-                              <span className="woc-groupBanner__label">실제 누적 입고수량</span>
-                              <strong className="woc-groupBanner__value">
-                                {fmt(preview.raw.receivedQty)}
-                                <em>kg</em>
-                              </strong>
-                            </div>
-                            <span className="woc-groupBanner__arrow">→</span>
-                            <div className="woc-groupBanner__stat is-highlight">
-                              <span className="woc-groupBanner__label">전처리(탈각) 후 탈피씨드</span>
-                              <strong className="woc-groupBanner__value">
-                                {fmt(rawPool)}
-                                <em>kg</em>
-                              </strong>
-                            </div>
+                      <li className="woc-groupBanner">
+                        <span className="woc-groupBanner__title">RAW 그룹 투입 현황 (원물 → 탈피씨드)</span>
+                        <div className="woc-groupBanner__stats">
+                          <div className="woc-groupBanner__stat">
+                            <span className="woc-groupBanner__label">실제 누적 입고수량</span>
+                            <strong className="woc-groupBanner__value">
+                              {fmt(preview.raw.receivedQty)}
+                              <em>kg</em>
+                            </strong>
                           </div>
-                        </li>
+                          <span className="woc-groupBanner__arrow">→</span>
+                          <div className="woc-groupBanner__stat is-highlight">
+                            <span className="woc-groupBanner__label">전처리(탈각) 후 탈피씨드</span>
+                            <strong className="woc-groupBanner__value">
+                              {fmt(rawPool)}
+                              <em>kg</em>
+                            </strong>
+                          </div>
+                        </div>
+                      </li>
                     )}
                     {groupKey === "PARK" && parkInfo && (
-                                              <li className="woc-groupBanner is-park">
-                          <span className="woc-groupBanner__title">PARK 그룹 투입 현황 (헴프박 → 건조헴프박)</span>
-                          <div className="woc-groupBanner__stats">
-                            <div className="woc-groupBanner__stat">
-                              <span className="woc-groupBanner__label">예상 헴프박 수량(오일 부산물)</span>
-                              <strong className="woc-groupBanner__value">
-                                {fmt(parkInfo.byproduct)}
-                                <em>kg</em>
-                              </strong>
-                            </div>
-                            <span className="woc-groupBanner__arrow">→</span>
-                            <div className="woc-groupBanner__stat is-highlight">
-                              <span className="woc-groupBanner__label">건조 후 수량</span>
-                              <strong className="woc-groupBanner__value">
-                                {fmt(parkInfo.dry)}
-                                <em>kg</em>
-                              </strong>
-                            </div>
+                      <li className="woc-groupBanner is-park">
+                        <span className="woc-groupBanner__title">PARK 그룹 투입 현황 (헴프박 → 건조헴프박)</span>
+                        <div className="woc-groupBanner__stats">
+                          <div className="woc-groupBanner__stat">
+                            <span className="woc-groupBanner__label">예상 헴프박 수량(오일 부산물)</span>
+                            <strong className="woc-groupBanner__value">
+                              {fmt(parkInfo.byproduct)}
+                              <em>kg</em>
+                            </strong>
                           </div>
-                        </li>
+                          <span className="woc-groupBanner__arrow">→</span>
+                          <div className="woc-groupBanner__stat is-highlight">
+                            <span className="woc-groupBanner__label">건조 후 수량</span>
+                            <strong className="woc-groupBanner__value">
+                              {fmt(parkInfo.dry)}
+                              <em>kg</em>
+                            </strong>
+                          </div>
+                        </div>
+                      </li>
                     )}
                     {groupLines.map(renderLine)}
                   </Fragment>
@@ -1181,44 +1227,68 @@ export function FoodWorkOrderCreatePage() {
           <div className="woc-usage">
             <h2 className="woc-usage__title">투입원료 사용량</h2>
 
-            {groupUsages.length === 0 ? (
-              <p className="woc-usage__empty">수주를 선택하면 배분 그룹별 투입량이 표시됩니다.</p>
-            ) : (
-              <div>
-                {groupUsages.map((group) => {
-                  const over = group.pool != null && group.total > group.pool + EPS;
-                  const pct = group.pool ? Math.min(100, (group.total / group.pool) * 100) : 0;
-                  return (
-                    <div key={group.key} className="woc-usage__group">
-                      <div className="woc-usage__groupHead">
-                        <span>{group.label} 투입</span>
-                        <span>라인 {group.lineCount}개</span>
+            {groupUsages.map((group) => {
+              const over = group.pool != null && isOverPool(group.total, group.pool);
+              const full = group.pool != null && isFullyUsed(group.total, group.pool);
+              const pct = group.pool ? (full ? 100 : Math.min(100, (group.total / group.pool) * 100)) : 0;
+              const isPark = group.key === "PARK";
+              const groupLines = lines.filter((l) => l.allocationGroup === group.key);
+
+              return (
+                <div key={group.key} className="woc-usage__group">
+                  <div className="woc-usage__groupHead">
+                    <span>{isPark ? "헴프박 공급/배분" : `${group.label} 투입`}</span>
+                    <span>라인 {group.lineCount}개</span>
+                  </div>
+
+                  <p className="woc-usage__figure">
+                    <strong>{fmt(group.total)}</strong>
+                    <span>
+                      {group.pool != null ? ` / ${fmt(group.pool)}` : ""} {group.unit.toLowerCase()}
+                    </span>
+                  </p>
+
+                  {group.pool != null && (
+                    <>
+                      <div className="woc-meter">
+                        <span style={{ width: `${pct}%` }} />
                       </div>
-                      <p className="woc-usage__figure">
-                        <strong>{fmt(group.total)}</strong>
-                        <span>
-                          {group.pool != null ? ` / ${fmt(group.pool)}` : ""} {group.unit.toLowerCase()}
-                        </span>
+                      <p className="woc-usage__status" style={over ? { color: "var(--woc-error-dark)" } : undefined}>
+                        {over
+                          ? "사용 가능량을 초과했습니다"
+                          : full
+                            ? "전량이 라인에 배정됐습니다"
+                            : `${fmt(round3(group.pool - group.total))}${group.unit.toLowerCase()} 남음`}
                       </p>
-                      {group.pool != null && (
-                        <>
-                          <div className="woc-meter">
-                            <span style={{ width: `${pct}%` }} />
-                          </div>
-                          <p className="woc-usage__status" style={over ? { color: "var(--woc-error-dark)" } : undefined}>
-                            {over
-                              ? "사용 가능량을 초과했습니다"
-                              : group.total >= group.pool - EPS
-                                ? "전량이 라인에 배정됐습니다"
-                                : `${fmt(round3(group.pool - group.total))}${group.unit.toLowerCase()} 남음`}
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    </>
+                  )}
+
+                  {/* 라인별 투입량 + 그룹 내 비율 */}
+                  <ul className="woc-usage__list">
+                    {isPark && parkInfo && (
+                      <li>
+                        <span>공급(오일 부산물)</span>
+                        <span>{fmt(parkInfo.byproduct)}kg</span>
+                      </li>
+                    )}
+                    {groupLines.map((line) => {
+                      const q = qtyOf(line);
+                      const share = group.total > 0 ? round3((q / group.total) * 100) : 0;
+                      return (
+                        <li key={line.salesOrderLineId}>
+                          <span>
+                            {line.itemNm} 투입{isPark ? "" : "(탈피씨드)"}
+                          </span>
+                          <span>
+                            {fmt(q)}{line.inputUnit.toLowerCase()} ({fmt(share)}%)
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
 
             {/* ③ 직접입력 풀 초과 오류 (저장 시도 후 표시) */}
             {showError(directError) && <p className="woc-field__error">{directError}</p>}
