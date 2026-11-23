@@ -146,7 +146,7 @@ const InfoCard = ({ icon, label, qty, variant, subtag }: InfoCardProps) => {
   );
 };
 
-/** 그룹 상단 투입 현황 배너 */
+/** STEP 박스 헤더 (STEP 배지 + 제목 + 수치 칩) */
 interface BannerStat {
   label: string;
   qty: number;
@@ -155,9 +155,23 @@ interface BannerStat {
   arrow?: boolean;
 }
 
-const GroupBanner = ({ title, stats, park }: { title: string; stats: BannerStat[]; park?: boolean }) => (
-  <li className={cx("woc-groupBanner", park && "is-park")}>
-    <span className="woc-groupBanner__title">{title}</span>
+interface GroupBannerProps {
+  /** 제목 요소 id — STEP 박스의 aria-labelledby 와 연결 */
+  id: string;
+  step: string;
+  title: string;
+  stats: BannerStat[];
+  park?: boolean;
+}
+
+const GroupBanner = ({ id, step, title, stats, park }: GroupBannerProps) => (
+  <div className={cx("woc-groupBanner", park && "is-park")}>
+    <div className="wsim-bannerHead">
+      <span className="wsim-bannerStep">{step}</span>
+      <h3 id={id} className="woc-groupBanner__title">
+        {title}
+      </h3>
+    </div>
     <div className="woc-groupBanner__stats">
       {stats.map((s) => (
         <Fragment key={s.label}>
@@ -176,7 +190,7 @@ const GroupBanner = ({ title, stats, park }: { title: string; stats: BannerStat[
         </Fragment>
       ))}
     </div>
-  </li>
+  </div>
 );
 
 /** 공정 스테퍼 (woc-stepper 재사용) */
@@ -452,12 +466,7 @@ const HempInputSimulationPage = () => {
 
             {result && (
               <ul className="woc-infocards">
-                <InfoCard
-                  variant="is-raw"
-                  icon={<CubeIcon />}
-                  label="원물(헴프 씨드) 투입"
-                  qty={result.raw}
-                />
+                <InfoCard variant="is-raw" icon={<CubeIcon />} label="원물(헴프 씨드) 투입" qty={result.raw} />
                 <InfoCard icon={<Square3Stack3DIcon />} label="탈피씨드" qty={result.semiSeedTotal} />
                 <InfoCard icon={<TrashIcon />} label="껍질 (폐기성)" qty={result.hull} />
                 <InfoCard
@@ -472,8 +481,8 @@ const HempInputSimulationPage = () => {
             )}
           </section>
 
-          {/* ── 공정별 예상 산출 ── */}
-          <section className="woc-panel" aria-labelledby="wsimFlowTitle">
+          {/* ── 공정별 예상 산출 (바깥 카드 테두리 없이 제목만, STEP 박스가 카드 역할) ── */}
+          <section className="woc-panel wsim-flowPanel" aria-labelledby="wsimFlowTitle">
             <div className="woc-panel__head">
               <h2 id="wsimFlowTitle" className="woc-panel__title">
                 공정별 예상 산출
@@ -484,200 +493,224 @@ const HempInputSimulationPage = () => {
             {!result ? (
               <p className="woc-empty">원물 무게와 배분 비율을 입력하고 계산하기를 눌러보세요.</p>
             ) : (
-              <ul className="woc-lines">
-                {/* STEP 1 전처리 */}
-                <GroupBanner
-                  title="STEP 1 전처리 (원물 → 탈피씨드)"
-                  stats={[
-                    { label: "원물 투입량", qty: result.raw },
-                    { label: "탈각(탈피·선별) 후 탈피씨드", qty: result.semiSeedTotal, highlight: true, arrow: true },
-                    { label: "껍질 (폐기성 부산물)", qty: result.hull },
-                  ]}
-                />
+              <div className="wsim-steps">
+                {/* STEP 1 전처리 — 라인 없이 헤더만 */}
+                <section className="wsim-step" aria-labelledby="wsimStep1Title">
+                  <GroupBanner
+                    id="wsimStep1Title"
+                    step="STEP 1"
+                    title="전처리 (원물 → 탈피씨드)"
+                    stats={[
+                      { label: "원물 투입량", qty: result.raw },
+                      {
+                        label: "탈각(탈피·선별) 후 탈피씨드",
+                        qty: result.semiSeedTotal,
+                        highlight: true,
+                        arrow: true,
+                      },
+                      { label: "껍질 (폐기성 부산물)", qty: result.hull },
+                    ]}
+                  />
+                </section>
 
                 {/* STEP 2 탈피씨드 배분 */}
-                <GroupBanner
-                  title="STEP 2 탈피씨드 배분 (헴프오일 / 헴프씨드 포장)"
-                  stats={[
-                    { label: "탈피씨드", qty: result.semiSeedTotal },
-                    { label: `헴프오일 라인 ${fmtPct(result.oilPercent)}%`, qty: result.oilSemiSeed, highlight: true, arrow: true },
-                    { label: `헴프씨드(포장) 라인 ${fmtPct(result.seedPercent)}%`, qty: result.seedSemiSeed },
-                  ]}
-                />
+                <section className="wsim-step" aria-labelledby="wsimStep2Title">
+                  <GroupBanner
+                    id="wsimStep2Title"
+                    step="STEP 2"
+                    title="탈피씨드 배분 (헴프오일 / 헴프씨드 포장)"
+                    stats={[
+                      { label: "탈피씨드", qty: result.semiSeedTotal },
+                      {
+                        label: `헴프오일 라인 ${fmtPct(result.oilPercent)}%`,
+                        qty: result.oilSemiSeed,
+                        highlight: true,
+                        arrow: true,
+                      },
+                      { label: `헴프씨드(포장) 라인 ${fmtPct(result.seedPercent)}%`, qty: result.seedSemiSeed },
+                    ]}
+                  />
 
-                <SimLine
-                  name="헴프오일 라인"
-                  tags={[
-                    { text: `배분 ${fmtPct(result.oilPercent)}%`, cls: "raw" },
-                    { text: "수율 확정", cls: "fixed" },
-                  ]}
-                  inLabel="탈피씨드 투입량"
-                  inQty={result.oilSemiSeed}
-                  inTag="투입 기준"
-                  outQty={result.oilMinQty}
-                  outTag="최소 산출량"
-                  parkBadge={result.parkMinQty}
-                  hint={`착유 수율 ${yieldPct(YIELD.OIL)}% 기준 최소 산출량 (참고용 추정치)`}
-                  warn="최소 산출량입니다. 헴프씨드(포장) 라인에서 규격 미달로 탈락한 분량이 이 라인에 투입되면 실제 오일 산출량은 이보다 더 많아질 수 있습니다."
-                  steps={[
-                    { name: "탈피씨드", sub: `${fmt(result.oilSemiSeed)}kg` },
-                    { name: "착유", sub: `${yieldPct(YIELD.OIL)}% / ${yieldPct(YIELD.PARK)}%` },
-                    { name: "헴프오일", sub: `최소 ${fmt(result.oilMinQty)}kg`, kind: "output" },
-                    { name: "헴프박", sub: `최소 ${fmt(result.parkMinQty)}kg`, kind: "byproduct" },
-                  ]}
-                  stepNote="착유 한 번에 헴프오일과 부산물 헴프박이 함께 나옵니다."
-                />
+                  <ul className="woc-lines wsim-stepBody">
+                    <SimLine
+                      name="헴프오일 라인"
+                      tags={[
+                        { text: `배분 ${fmtPct(result.oilPercent)}%`, cls: "raw" },
+                        { text: "수율 확정", cls: "fixed" },
+                      ]}
+                      inLabel="탈피씨드 투입량"
+                      inQty={result.oilSemiSeed}
+                      inTag="투입 기준"
+                      outQty={result.oilMinQty}
+                      outTag="최소 산출량"
+                      parkBadge={result.parkMinQty}
+                      hint={`착유 수율 ${yieldPct(YIELD.OIL)}% 기준 최소 산출량 (참고용 추정치)`}
+                      warn="최소 산출량입니다. 헴프씨드(포장) 라인에서 규격 미달로 탈락한 분량이 이 라인에 투입되면 실제 오일 산출량은 이보다 더 많아질 수 있습니다."
+                      steps={[
+                        { name: "탈피씨드", sub: `${fmt(result.oilSemiSeed)}kg` },
+                        { name: "착유", sub: `${yieldPct(YIELD.OIL)}% / ${yieldPct(YIELD.PARK)}%` },
+                        { name: "헴프오일", sub: `최소 ${fmt(result.oilMinQty)}kg`, kind: "output" },
+                        { name: "헴프박", sub: `최소 ${fmt(result.parkMinQty)}kg`, kind: "byproduct" },
+                      ]}
+                      stepNote="착유 한 번에 헴프오일과 부산물 헴프박이 함께 나옵니다."
+                    />
 
-                <SimLine
-                  name="헴프씨드(포장) 라인"
-                  uncertain
-                  tags={[
-                    { text: `배분 ${fmtPct(result.seedPercent)}%`, cls: "raw" },
-                    { text: "수율 불확실", cls: "direct" },
-                  ]}
-                  inLabel="탈피씨드 투입량 (상한)"
-                  inQty={result.seedSemiSeed}
-                  inTag="상한"
-                  outQty={null}
-                  outTag="수율 미확정"
-                  hint="수율은 원료 상태에 따라 달라져 참고용으로도 제시하지 않습니다."
-                  warn="규격 미달로 판정된 불합격분은 폐기되지 않고 헴프오일 라인의 원료로 전환 투입됩니다."
-                  steps={[
-                    { name: "탈피씨드", sub: `${fmt(result.seedSemiSeed)}kg` },
-                    { name: "선별·포장" },
-                    { name: "헴프씨드(포장)", sub: "미정", kind: "output", uncertain: true },
-                  ]}
-                />
+                    <SimLine
+                      name="헴프씨드(포장) 라인"
+                      uncertain
+                      tags={[
+                        { text: `배분 ${fmtPct(result.seedPercent)}%`, cls: "raw" },
+                        { text: "수율 불확실", cls: "direct" },
+                      ]}
+                      inLabel="탈피씨드 투입량 (상한)"
+                      inQty={result.seedSemiSeed}
+                      inTag="상한"
+                      outQty={null}
+                      outTag="수율 미확정"
+                      hint="수율은 원료 상태에 따라 달라져 참고용으로도 제시하지 않습니다."
+                      warn="규격 미달로 판정된 불합격분은 폐기되지 않고 헴프오일 라인의 원료로 전환 투입됩니다."
+                      steps={[
+                        { name: "탈피씨드", sub: `${fmt(result.seedSemiSeed)}kg` },
+                        { name: "선별·포장" },
+                        { name: "헴프씨드(포장)", sub: "미정", kind: "output", uncertain: true },
+                      ]}
+                    />
+                  </ul>
+                </section>
 
                 {/* STEP 3 헴프박 재투입 */}
                 {hasPark && (
-                  <>
+                  <section className="wsim-step" aria-labelledby="wsimStep3Title">
                     <GroupBanner
                       park
-                      title="STEP 3 부산물 재투입 (헴프박 → 헴프박건조)"
+                      id="wsimStep3Title"
+                      step="STEP 3"
+                      title="부산물 재투입 (헴프박 → 헴프박건조)"
                       stats={[
                         { label: "예상 헴프박 수량(오일 부산물, 최소)", qty: result.parkMinQty },
                         { label: "건조 후 수량 (수율 100% 가정)", qty: parkDryAssumed, highlight: true, arrow: true },
                       ]}
                     />
 
-                    <li className="wsim-parkBox">
-                      <p className="woc-field__hint wsim-parkDesc">
-                        헴프오일 라인의 헴프박 최소 {fmt(result.parkMinQty)}kg을 기본 투입량으로 가져왔습니다. 필요하면
-                        직접 수정해도 됩니다.
-                      </p>
+                    <ul className="woc-lines wsim-stepBody">
+                      <li className="wsim-parkBox">
+                        <p className="woc-field__hint wsim-parkDesc">
+                          헴프오일 라인의 헴프박 최소 {fmt(result.parkMinQty)}kg을 기본 투입량으로 가져왔습니다.
+                          필요하면 직접 수정해도 됩니다.
+                        </p>
 
-                      <form id="wsimParkForm" onSubmit={handleParkCalculate} noValidate>
-                        <div className="woc-grid3">
-                          <div className="woc-field">
-                            <label htmlFor="wsimParkWeight">헴프박 투입량</label>
-                            <div className="woc-unitInput">
-                              <input
-                                id="wsimParkWeight"
-                                type="number"
-                                step="0.1"
-                                min="0"
-                                inputMode="decimal"
-                                className="woc-input"
-                                value={parkWeight}
-                                aria-invalid={!!parkError}
-                                onKeyDown={blockSign}
-                                onChange={(e) => setParkWeight(e.target.value)}
-                              />
-                              <span>kg</span>
+                        <form id="wsimParkForm" onSubmit={handleParkCalculate} noValidate>
+                          <div className="woc-grid3">
+                            <div className="woc-field">
+                              <label htmlFor="wsimParkWeight">헴프박 투입량</label>
+                              <div className="woc-unitInput">
+                                <input
+                                  id="wsimParkWeight"
+                                  type="number"
+                                  step="0.1"
+                                  min="0"
+                                  inputMode="decimal"
+                                  className="woc-input"
+                                  value={parkWeight}
+                                  aria-invalid={!!parkError}
+                                  onKeyDown={blockSign}
+                                  onChange={(e) => setParkWeight(e.target.value)}
+                                />
+                                <span>kg</span>
+                              </div>
+                              {parkError && <p className="woc-field__error">{parkError}</p>}
                             </div>
-                            {parkError && <p className="woc-field__error">{parkError}</p>}
-                          </div>
 
-                          <div className="woc-field">
-                            <label htmlFor="wsimPowderPercent">건조 후 분말 배분 비율</label>
-                            <div className="woc-unitInput">
-                              <input
-                                id="wsimPowderPercent"
-                                type="number"
-                                step="1"
-                                min="0"
-                                max="100"
-                                inputMode="decimal"
-                                className="woc-input"
-                                value={powderPercent}
-                                aria-invalid={!!powderError}
-                                onKeyDown={blockSign}
-                                onChange={(e) => setPowderPercent(e.target.value)}
-                              />
-                              <span>%</span>
+                            <div className="woc-field">
+                              <label htmlFor="wsimPowderPercent">건조 후 분말 배분 비율</label>
+                              <div className="woc-unitInput">
+                                <input
+                                  id="wsimPowderPercent"
+                                  type="number"
+                                  step="1"
+                                  min="0"
+                                  max="100"
+                                  inputMode="decimal"
+                                  className="woc-input"
+                                  value={powderPercent}
+                                  aria-invalid={!!powderError}
+                                  onKeyDown={blockSign}
+                                  onChange={(e) => setPowderPercent(e.target.value)}
+                                />
+                                <span>%</span>
+                              </div>
+                              {powderError && <p className="woc-field__error">{powderError}</p>}
                             </div>
-                            {powderError && <p className="woc-field__error">{powderError}</p>}
-                          </div>
 
-                          <div className="woc-field">
-                            <span className="woc-field__label">헴프박농축 배분</span>
-                            <div className="woc-readonly">
-                              <span>{remainLabel(powderPercent)}</span>
-                              <span className="woc-readonly__tag">자동 계산</span>
+                            <div className="woc-field">
+                              <span className="woc-field__label">헴프박농축 배분</span>
+                              <div className="woc-readonly">
+                                <span>{remainLabel(powderPercent)}</span>
+                                <span className="woc-readonly__tag">자동 계산</span>
+                              </div>
+                            </div>
+
+                            <div className="wsim-parkActions">
+                              <button type="submit" className="woc-btn primary">
+                                재투입 계산
+                              </button>
                             </div>
                           </div>
-                        </div>
+                        </form>
+                      </li>
 
-                        <div className="wsim-parkActions">
-                          <button type="submit" className="woc-btn primary">
-                            재투입 계산
-                          </button>
-                        </div>
-                      </form>
-                    </li>
+                      {parkResult && (
+                        <>
+                          <SimLine
+                            name="헴프박분말 라인"
+                            tags={[
+                              { text: `배분 ${fmtPct(parkResult.powderPercent)}%`, cls: "raw" },
+                              { text: `분쇄 수율 ${yieldPct(YIELD.POWDER)}%`, cls: "fixed" },
+                            ]}
+                            inLabel="건조헴프박 투입량"
+                            inQty={parkResult.powderDry}
+                            inTag="가정치 기준"
+                            outQty={parkResult.powderQty}
+                            outTag="참고용"
+                            hint="건조 수율을 100%로 가정한 값이라 실제와 다를 수 있습니다."
+                            steps={[
+                              { name: "헴프박건조", sub: `${fmt(parkResult.powderDry)}kg`, uncertain: true },
+                              { name: "분쇄", sub: `${yieldPct(YIELD.POWDER)}%` },
+                              { name: "헴프박분말", sub: `${fmt(parkResult.powderQty)}kg`, kind: "output" },
+                            ]}
+                          />
 
-                    {parkResult && (
-                      <>
-                        <SimLine
-                          name="헴프박분말 라인"
-                          tags={[
-                            { text: `배분 ${fmtPct(parkResult.powderPercent)}%`, cls: "raw" },
-                            { text: `분쇄 수율 ${yieldPct(YIELD.POWDER)}%`, cls: "fixed" },
-                          ]}
-                          inLabel="건조헴프박 투입량"
-                          inQty={parkResult.powderDry}
-                          inTag="가정치 기준"
-                          outQty={parkResult.powderQty}
-                          outTag="참고용"
-                          hint="건조 수율을 100%로 가정한 값이라 실제와 다를 수 있습니다."
-                          steps={[
-                            { name: "헴프박건조", sub: `${fmt(parkResult.powderDry)}kg`, uncertain: true },
-                            { name: "분쇄", sub: `${yieldPct(YIELD.POWDER)}%` },
-                            { name: "헴프박분말", sub: `${fmt(parkResult.powderQty)}kg`, kind: "output" },
-                          ]}
-                        />
+                          <SimLine
+                            name="헴프박농축 라인"
+                            uncertain
+                            tags={[
+                              { text: `배분 ${fmtPct(parkResult.concPercent)}%`, cls: "raw" },
+                              { text: "수율 불확실", cls: "direct" },
+                            ]}
+                            inLabel="건조헴프박 투입량 (상한)"
+                            inQty={parkResult.concDry}
+                            inTag="상한"
+                            outQty={null}
+                            outTag="수율 미확정"
+                            hint="농축 공정은 수율이 확정돼 있지 않아 산출량을 사전에 알 수 없습니다."
+                            steps={[
+                              { name: "헴프박건조", sub: `${fmt(parkResult.concDry)}kg`, uncertain: true },
+                              { name: "농축" },
+                              { name: "헴프박농축", sub: "미정", kind: "output", uncertain: true },
+                            ]}
+                          />
 
-                        <SimLine
-                          name="헴프박농축 라인"
-                          uncertain
-                          tags={[
-                            { text: `배분 ${fmtPct(parkResult.concPercent)}%`, cls: "raw" },
-                            { text: "수율 불확실", cls: "direct" },
-                          ]}
-                          inLabel="건조헴프박 투입량 (상한)"
-                          inQty={parkResult.concDry}
-                          inTag="상한"
-                          outQty={null}
-                          outTag="수율 미확정"
-                          hint="농축 공정은 수율이 확정돼 있지 않아 산출량을 사전에 알 수 없습니다."
-                          steps={[
-                            { name: "헴프박건조", sub: `${fmt(parkResult.concDry)}kg`, uncertain: true },
-                            { name: "농축" },
-                            { name: "헴프박농축", sub: "미정", kind: "output", uncertain: true },
-                          ]}
-                        />
-
-                        <li>
-                          <p className="woc-chain__state">
-                            건조·농축 공정 모두 수율이 확정돼 있지 않아 참고용 추정치입니다.
-                          </p>
-                        </li>
-                      </>
-                    )}
-                  </>
+                          <li>
+                            <p className="woc-chain__state">
+                              건조·농축 공정 모두 수율이 확정돼 있지 않아 참고용 추정치입니다.
+                            </p>
+                          </li>
+                        </>
+                      )}
+                    </ul>
+                  </section>
                 )}
-              </ul>
+              </div>
             )}
           </section>
         </div>
@@ -784,7 +817,8 @@ const HempInputSimulationPage = () => {
                 </div>
 
                 <p className="woc-usage__msg muted">
-                  헴프오일은 불합격분이 재투입되면 최소값보다 늘어날 수 있고, 건조 수율은 가정치({yieldPct(YIELD.DRY_ASSUMED)}
+                  헴프오일은 불합격분이 재투입되면 최소값보다 늘어날 수 있고, 건조 수율은 가정치(
+                  {yieldPct(YIELD.DRY_ASSUMED)}
                   %)입니다.
                 </p>
               </>
