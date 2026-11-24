@@ -1506,7 +1506,7 @@ export function FoodWorkOrderCreatePage() {
               return (
                 <div key={group.key} className="woc-usage__group">
                   <div className="woc-usage__groupHead">
-                    <span>{isPark ? "헴프박 공급/배분" : `${group.label} 투입`}</span>
+                    <span>{isPark ? "건조 헴프박 공급/배분" : `${group.label} 투입`}</span>
                     <span>라인 {group.lineCount}개</span>
                   </div>
 
@@ -1536,7 +1536,7 @@ export function FoodWorkOrderCreatePage() {
                   <ul className="woc-usage__list">
                     {isPark && parkInfo && (
                       <li>
-                        <span>공급(오일 부산물)</span>
+                        <span>공급(헴프박)</span>
                         <span>{fmtQty(parkInfo.byproduct, "kg")}</span>
                       </li>
                     )}
@@ -1546,7 +1546,7 @@ export function FoodWorkOrderCreatePage() {
                       return (
                         <li key={line.salesOrderLineId}>
                           <span>
-                            {line.itemNm} 투입{isPark ? "" : "(탈피씨드)"}
+                            {line.itemNm}
                           </span>
                           <span>
                             {fmtQty(q, line.inputUnit)} ({fmt(share)}%)
