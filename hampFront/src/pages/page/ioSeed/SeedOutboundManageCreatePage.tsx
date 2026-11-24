@@ -3,26 +3,28 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { type ColumnDef } from "@tanstack/react-table";
 import { CusTable } from "@/components/table/CusTable";
+import { SelectBox, type SelectBoxOption } from "@/components/common/SelectBox";
+import { focusField } from "@/utils/common";
 import { SalesOrderApi, type SalesOrderOptionResponse } from "@/api/sales/SalesOrder";
 import { ShipmentOrderApi, type ShipmentOrderCreateRequest, type ShipmentSalesOrderResponse } from "@/api/ShipmentOrder";
 import { UserApi, type UserOptionResponse } from "@/api/User";
+import "@/pages/layout/Layout.css";
 import "@/pages/page/food/Food.css";
 import "@/pages/page/ioSeed/ioSeed.css";
 
 type ShipmentLine = ShipmentSalesOrderResponse["lines"][number];
 
+// 담당자 · 수주 · 출고일자
+const REQUIRED_TOTAL = 3;
+
 /** 잔여수량 = 주문수량 - 기출고수량 */
 const getRemainingQty = (line: ShipmentLine) =>
     Math.max(0, Number(line.orderQty ?? 0) - Number(line.shippedQty ?? 0));
 
-
 /** 숫자를 천 단위 쉼표로 표시 */
 const formatQty = (value: number | string | null | undefined) => {
     const num = Number(value ?? 0);
-
-    return Number.isFinite(num)
-        ? num.toLocaleString("ko-KR")
-        : "0";
+    return Number.isFinite(num) ? num.toLocaleString("ko-KR") : "0";
 };
 
 /** 출고 가능한 라인인지 (출고가능수량 > 0) */
@@ -55,17 +57,19 @@ export function SeedOutboundManageCreatePage() {
     const [isLoadingSalesOrder, setIsLoadingSalesOrder] = useState(false);
     const [salesOrderError, setSalesOrderError] = useState("");
 
-    /**
-     * 선택된 라인과 이번 출고수량을 한 곳에서 관리
-     * - key 존재 = 체크된 라인
-     * - value = 입력 중인 출고수량(문자열)
-     */
+    // 체크된 라인 / 이번 출고수량(문자열)
     const [checkedLines, setCheckedLines] = useState<Record<number, boolean>>({});
     const [qtyMap, setQtyMap] = useState<Record<number, string>>({});
 
+    // 등록을 한 번 눌러 필수값 검증에 걸린 뒤부터 비어 있는 필수 칸을 빨갛게 표시
+    const [showRequiredErrors, setShowRequiredErrors] = useState(false);
+
+    const managerSelectRef = useRef<HTMLButtonElement>(null);
+    const orderSelectRef = useRef<HTMLButtonElement>(null);
+    const shipDateRef = useRef<HTMLInputElement>(null);
+
     const qtyMapRef = useRef(qtyMap);
     const checkedLinesRef = useRef(checkedLines);
-
     qtyMapRef.current = qtyMap;
     checkedLinesRef.current = checkedLines;
 
@@ -89,9 +93,38 @@ export function SeedOutboundManageCreatePage() {
         fetchOptions();
     }, [fetchOptions]);
 
-    const handleChange = (key: string, value: string) => {
+    // SelectBox용 옵션 (이름 + 코드 2줄 표기)
+    const managerSelectOptions = useMemo<SelectBoxOption[]>(
+        () =>
+            userOptions.map((user) => ({
+                value: user.userId,
+                label: user.userNm ?? user.userId,
+                description: user.userId,
+            })),
+        [userOptions]
+    );
+
+    const orderSelectOptions = useMemo<SelectBoxOption[]>(
+        () =>
+            salesOrderOptions.map((order) => ({
+                value: order.orderCode,
+                label: order.bpNm ?? order.orderCode,
+                description: order.orderCode,
+            })),
+        [salesOrderOptions]
+    );
+
+    const handleChange = (key: keyof typeof form, value: string) => {
         setForm((prev) => ({ ...prev, [key]: value }));
     };
+
+    const missingRequired = {
+        managerId: !form.managerId,
+        orderCode: !form.orderCode,
+        shipDate: !form.shipDate,
+    };
+    const isInvalid = (key: keyof typeof missingRequired) =>
+        (showRequiredErrors && missingRequired[key]) || undefined;
 
     const handleSalesOrderChange = async (orderCode: string) => {
         handleChange("orderCode", orderCode);
@@ -120,25 +153,16 @@ export function SeedOutboundManageCreatePage() {
         }
     };
 
-
     const lines: ShipmentLine[] = selectedSalesOrder?.lines ?? [];
 
-    const shippableLines = useMemo(
-        () => lines.filter(isShippable),
-        [lines]
-    );
+    const shippableLines = useMemo(() => lines.filter(isShippable), [lines]);
 
     const hasUnfinishedProduction = lines.some((line) => {
         const status = String(line.productionStatus ?? "").trim();
-
         return status === "생산중" || status === "일부생산";
     });
-
     const hasShippableLines = lines.some(isShippable);
-
-    const hasUnavailableLines = lines.some(
-        (line) => !isShippable(line)
-    );
+    const hasUnavailableLines = lines.some((line) => !isShippable(line));
 
     const noticeType =
         lines.length === 0
@@ -155,35 +179,27 @@ export function SeedOutboundManageCreatePage() {
 
     const allChecked =
         shippableLines.length > 0 &&
-        shippableLines.every(
-            (line) => checkedLines[line.salesOrderLineId]
-        );
+        shippableLines.every((line) => checkedLines[line.salesOrderLineId]);
 
     const allCheckedRef = useRef(allChecked);
     allCheckedRef.current = allChecked;
 
     // 체크박스 토글 (체크 시 출고가능수량을 기본값으로 채움)
+    // updater 안에서 다른 setState를 부르지 않도록 ref 값으로 먼저 계산
     const toggleLine = (line: ShipmentLine) => {
         if (!isShippable(line)) return;
 
         const lineId = line.salesOrderLineId;
+        const checked = !checkedLinesRef.current[lineId];
 
-        setCheckedLines((prev) => {
-            const checked = !prev[lineId];
+        setCheckedLines((prev) => ({ ...prev, [lineId]: checked }));
 
-            // 체크할 때만 기본 수량 설정
-            if (checked) {
-                setQtyMap((qtyPrev) => ({
-                    ...qtyPrev,
-                    [lineId]: qtyPrev[lineId] ?? String(line.availableQty),
-                }));
-            }
-
-            return {
+        if (checked) {
+            setQtyMap((prev) => ({
                 ...prev,
-                [lineId]: checked,
-            };
-        });
+                [lineId]: prev[lineId] || String(line.availableQty),
+            }));
+        }
     };
 
     const toggleAll = () => {
@@ -193,21 +209,14 @@ export function SeedOutboundManageCreatePage() {
         }
 
         setCheckedLines(
-            Object.fromEntries(
-                shippableLines.map((line) => [
-                    line.salesOrderLineId,
-                    true,
-                ])
-            )
+            Object.fromEntries(shippableLines.map((line) => [line.salesOrderLineId, true]))
         );
 
         setQtyMap((prev) => {
             const next = { ...prev };
-
             shippableLines.forEach((line) => {
-                next[line.salesOrderLineId] ??= String(line.availableQty);
+                next[line.salesOrderLineId] ||= String(line.availableQty);
             });
-
             return next;
         });
     };
@@ -265,12 +274,8 @@ export function SeedOutboundManageCreatePage() {
                 enableSorting: false,
                 cell: ({ row }) => (
                     <div className="seed-out-qty-unit">
-                        <span className="seed-out-qty-value">
-                            {formatQty(row.original.orderQty)}
-                        </span>
-                        <span className="seed-out-qty-unit-label">
-                            {row.original.unit ?? ""}
-                        </span>
+                        <span className="seed-out-qty-value">{formatQty(row.original.orderQty)}</span>
+                        <span className="seed-out-qty-unit-label">{row.original.unit ?? ""}</span>
                     </div>
                 ),
             },
@@ -280,12 +285,8 @@ export function SeedOutboundManageCreatePage() {
                 enableSorting: false,
                 cell: ({ row }) => (
                     <div className="seed-out-qty-unit">
-                        <span className="seed-out-qty-value">
-                            {formatQty(row.original.shippedQty)}
-                        </span>
-                        <span className="seed-out-qty-unit-label">
-                            {row.original.unit ?? ""}
-                        </span>
+                        <span className="seed-out-qty-value">{formatQty(row.original.shippedQty)}</span>
+                        <span className="seed-out-qty-unit-label">{row.original.unit ?? ""}</span>
                     </div>
                 ),
             },
@@ -298,9 +299,7 @@ export function SeedOutboundManageCreatePage() {
                         <strong className="seedOutRemain seed-out-qty-value">
                             {formatQty(getRemainingQty(row.original))}
                         </strong>
-                        <span className="seed-out-qty-unit-label">
-                            {row.original.unit ?? ""}
-                        </span>
+                        <span className="seed-out-qty-unit-label">{row.original.unit ?? ""}</span>
                     </div>
                 ),
             },
@@ -319,12 +318,8 @@ export function SeedOutboundManageCreatePage() {
                 enableSorting: false,
                 cell: ({ row }) => (
                     <div className="seed-out-qty-unit">
-                        <span className="seed-out-qty-value">
-                            {formatQty(row.original.availableQty)}
-                        </span>
-                        <span className="seed-out-qty-unit-label">
-                            {row.original.unit ?? ""}
-                        </span>
+                        <span className="seed-out-qty-value">{formatQty(row.original.availableQty)}</span>
+                        <span className="seed-out-qty-unit-label">{row.original.unit ?? ""}</span>
                     </div>
                 ),
             },
@@ -332,7 +327,7 @@ export function SeedOutboundManageCreatePage() {
                 id: "shipQty",
                 header: "이번 출고수량",
                 enableSorting: false,
-                meta: { width: "170px" },
+                meta: { width: "190px" },
                 cell: ({ row }) => {
                     const line = row.original;
                     const currentQty = qtyMapRef.current[line.salesOrderLineId];
@@ -345,7 +340,7 @@ export function SeedOutboundManageCreatePage() {
                                 max={line.availableQty}
                                 step={1}
                                 placeholder="-"
-                                className="tableInput seedOutQtyInput seed-out-qty-input"
+                                className="formInput seedOutQtyInput"
                                 value={currentQty ?? ""}
                                 disabled={isSubmitting || !isShippable(line)}
                                 onChange={(e) => {
@@ -353,32 +348,38 @@ export function SeedOutboundManageCreatePage() {
                                     const lineId = line.salesOrderLineId;
 
                                     handleQtyChange(lineId, value);
-
-                                    setCheckedLines((prev) => ({
-                                        ...prev,
-                                        [lineId]: value !== "",
-                                    }));
+                                    setCheckedLines((prev) => ({ ...prev, [lineId]: value !== "" }));
                                 }}
                             />
-                            <span className="seed-out-qty-unit-label">
-                                {line.unit ?? ""}
-                            </span>
+                            <span className="seed-out-qty-unit-label">{line.unit ?? ""}</span>
                         </div>
                     );
                 },
-            }
+            },
         ],
-
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [isSubmitting, shippableLines]
     );
 
     const validateForm = (): boolean => {
-        if (!form.managerId) {
-            alert("담당자를 선택해주세요.");
+        // 비어 있는 첫 필수 칸을 안내하고 그 칸으로 이동
+        const firstMissing = (
+            [
+                { missing: missingRequired.managerId, ref: managerSelectRef, message: "담당자를 선택해주세요." },
+                { missing: missingRequired.orderCode, ref: orderSelectRef, message: "수주를 선택해주세요." },
+                { missing: missingRequired.shipDate, ref: shipDateRef, message: "출고일자를 입력해주세요." },
+            ] as const
+        ).find((field) => field.missing);
+
+        if (firstMissing) {
+            setShowRequiredErrors(true);
+            alert(firstMissing.message);
+            focusField(firstMissing.ref.current);
             return false;
         }
-        if (!form.orderCode || !selectedSalesOrder) {
-            alert("수주를 선택해주세요.");
+
+        if (!selectedSalesOrder) {
+            alert("수주 정보를 불러오지 못했습니다. 수주를 다시 선택해주세요.");
             return false;
         }
         if (selectedCount === 0) {
@@ -390,24 +391,18 @@ export function SeedOutboundManageCreatePage() {
             if (!checkedLines[line.salesOrderLineId]) continue;
 
             const raw = qtyMap[line.salesOrderLineId];
-            const qty = raw === undefined || raw.trim() === ""
-                ? NaN
-                : Number(raw);
+            const qty = raw === undefined || raw.trim() === "" ? NaN : Number(raw);
 
             if (!Number.isFinite(qty) || qty <= 0) {
                 alert(`[${line.itemNm}] 출고수량은 0보다 큰 숫자를 입력해주세요.`);
                 return false;
             }
-
             if (!Number.isInteger(qty)) {
                 alert(`[${line.itemNm}] 출고수량은 정수로 입력해주세요.`);
                 return false;
             }
-
             if (qty > Number(line.availableQty)) {
-                alert(
-                    `[${line.itemNm}] 출고수량은 출고가능수량(${line.availableQty})을 초과할 수 없습니다.`
-                );
+                alert(`[${line.itemNm}] 출고수량은 출고가능수량(${line.availableQty})을 초과할 수 없습니다.`);
                 return false;
             }
         }
@@ -440,7 +435,6 @@ export function SeedOutboundManageCreatePage() {
 
         try {
             await ShipmentOrderApi.create(payload);
-
             alert("출고지시서가 성공적으로 등록되었습니다.");
             navigate("/io/seed-outbound-manage");
         } catch (error) {
@@ -451,194 +445,222 @@ export function SeedOutboundManageCreatePage() {
             setIsSubmitting(false);
         }
     };
+
+    // ---- 요약 패널용 파생 값 ----
     const shipmentCount = Number(selectedSalesOrder?.shipmentOrderCount ?? 0);
+    const selectedManager = userOptions.find((user) => user.userId === form.managerId);
+
+    const requiredDone = [form.managerId, form.orderCode, form.shipDate].filter(Boolean).length;
+
+    const totalShipQty = lines.reduce(
+        (sum, line) =>
+            checkedLines[line.salesOrderLineId]
+                ? sum + (Number(qtyMap[line.salesOrderLineId]) || 0)
+                : sum,
+        0
+    );
+
+    const summaryRows: { label: string; value: string }[] = [
+        { label: "수주", value: selectedSalesOrder?.orderCode ?? "" },
+        { label: "거래처", value: selectedSalesOrder?.bpNm ?? "" },
+        { label: "납기일", value: selectedSalesOrder?.dueDate ?? "" },
+        { label: "담당자", value: selectedManager ? (selectedManager.userNm ?? selectedManager.userId) : "" },
+        { label: "출고일자", value: form.shipDate },
+        {
+            label: "등록 건수",
+            value: selectedSalesOrder ? (shipmentCount > 0 ? `${shipmentCount}건` : "없음") : "",
+        },
+        { label: "선택 품목", value: selectedCount > 0 ? `${selectedCount}개` : "" },
+        { label: "총 출고량", value: totalShipQty > 0 ? formatQty(totalShipQty) : "" },
+    ];
 
     return (
         <section className="screenStack">
-            <form onSubmit={handleSubmit} className="screenStack">
-                {/* 1. 기본정보 카드 */}
-                <div className="createCard">
-                    <div className="createHeader">
-                        <h1 className="createTitle">출고지시서 등록</h1>
-                        <span className="createMeta">
-                            <span className="required">* 표시는 필수 입력 항목입니다</span>
-                        </span>
-                    </div>
-
-                    <div className="createBody">
-                        <div className="createGrid3Cols">
-                            <div className="createField">
-                                <label className="requiredLabel">
-                                    담당자 <span className="required">*</span>
-                                </label>
-                                <select
-                                    className="tableInput"
-                                    value={form.managerId}
-                                    disabled={isSubmitting}
-                                    onChange={(e) => handleChange("managerId", e.target.value)}
-                                >
-                                    <option value="" disabled>담당자를 선택하세요</option>
-                                    {userOptions.map((user) => (
-                                        <option key={user.userId} value={user.userId}>
-                                            {user.userNm} ({user.userId})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="createField">
-                                <label className="requiredLabel">
-                                    수주 <span className="required">*</span>
-                                </label>
-                                <select
-                                    className="tableInput"
-                                    value={form.orderCode}
-                                    disabled={isSubmitting}
-                                    onChange={(e) => handleSalesOrderChange(e.target.value)}
-                                >
-                                    <option value="" disabled>수주를 선택하세요</option>
-                                    {salesOrderOptions.map((order) => (
-                                        <option key={order.orderCode} value={order.orderCode}>
-                                            {order.bpNm} · {order.orderCode}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="createField">
-                                <label className="requiredLabel">
-                                    출고일자 <span className="required">*</span>
-                                </label>
-                                <input
-                                    type="date"
-                                    className="tableInput"
-                                    value={form.shipDate}
-                                    onChange={(e) => handleChange("shipDate", e.target.value)}
-                                    disabled={isSubmitting}
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        {isLoadingSalesOrder && (
-                            <p className="seedOutStateText">수주 정보를 불러오는 중입니다...</p>
-                        )}
-                        {salesOrderError && (
-                            <p className="seedOutStateText seedOutStateText--error">{salesOrderError}</p>
-                        )}
-                    </div>
+            <form className="formPage" onSubmit={handleSubmit}>
+                <div className="formPageHead">
+                    <h1 className="formPageTitle">출고지시서 등록</h1>
+                    <span className="formPageMeta">
+                        <span className="required" aria-hidden="true">*</span> 표시는 필수 입력 항목입니다
+                    </span>
                 </div>
 
-                {/* 2. 수주 요약 카드 */}
-                {selectedSalesOrder && (
-                    <div className="createCard">
-                        <div className="seedOutSummary">
-                            <div className="seedOutSummaryMain">
-                                <h2 className="seedOutSummaryTitle">
-                                    {selectedSalesOrder.bpNm}
-                                    <span className="seedOutSummaryCode"> · {selectedSalesOrder.orderCode}</span>
-                                </h2>
-                                <span className="seedOutSummaryDue">납기일 {selectedSalesOrder.dueDate}</span>
-                            </div>
-
-                            <span className={`seedOutPill ${shipmentCount > 0 ? "seedOutPill--has" : ""}`}>
-                                {shipmentCount > 0
-                                    ? `등록된 출고지시서 ${shipmentCount}건`
-                                    : "등록된 출고지시서 없음"}
-                            </span>
-                        </div>
-                    </div>
-                )}
-
-                {/* 2-1. 생산 및 출고 안내 */}
-                {selectedSalesOrder && noticeType !== "none" && (
-                    <div className="seedOutNotice" role="status">
-                        <span className="seedOutNoticeIcon" aria-hidden="true">
-                            !
-                        </span>
-
-                        <div className="seedOutNoticeContent">
-                            {noticeType === "production" && (
-                                <>
-                                    <strong>아직 생산이 끝나지 않은 품목이 있습니다.</strong>
-                                    <p>
-                                        전체 공정이 끝날 때까지 기다렸다가 한 번에 출고하거나,
-                                        일정 차질 등의 사유로{" "}
-                                        <strong>준비된 품목만 먼저 출고</strong>할 수 있습니다.
-                                        출고지시서는 등록할 때마다 별도로 생성됩니다(= 송장 1건).
-                                    </p>
-                                </>
-                            )}
-
-                            {noticeType === "unavailable" && (
-                                <>
-                                    <strong>현재 출고 가능한 품목이 없습니다.</strong>
-                                    <p>
-                                        생산 현황과 출고 가능 수량을 확인해 주세요.
-                                    </p>
-                                </>
-                            )}
-
-                            {noticeType === "partial" && (
-                                <>
-                                    <strong>일부 품목만 출고할 수 있습니다.</strong>
-                                    <p>
-                                        출고 가능한 품목과 수량을 확인한 후
-                                        출고지시서를 등록해 주세요.
-                                    </p>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* 3. 수주라인 카드 */}
-                {selectedSalesOrder && (
-                    <div className="createCard">
-                        <div className="seedOutLinesBody">
-                            <h2 className="seedOutLinesTitle">수주라인</h2>
-
-                            <div className="seedOutTable">
-                                <CusTable
-                                    data={lines}
-                                    columns={columns}
-                                    getRowId={(line) => String(line.salesOrderLineId)}
-                                    noDataMessage="출고 가능한 수주라인이 없습니다."
-                                />
-                            </div>
-
-                            <div className="seedOutLinesFooter">
-                                <span className="seedOutSelectedCount">
-                                    {selectedCount}개 품목 선택됨
-                                </span>
-
-                                <div className="seedOutFooterActions">
-                                    <button
-                                        type="button"
-                                        className="ghostButton"
-                                        onClick={handleCancel}
-                                        disabled={isSubmitting}
-                                    >
-                                        목록
-                                    </button>
-
-                                    <button
-                                        type="submit"
-                                        className="primaryButton"
-                                        disabled={isSubmitting || selectedCount === 0}
-                                    >
-                                        {isSubmitting ? "등록 중..." : "출고지시서 등록"}
-                                    </button>
+                <div className="formLayout">
+                    {/* ===== 좌측: 입력 섹션 카드 ===== */}
+                    <div className="formMain">
+                        {/* 1. 기본정보 */}
+                        <section className="formCard" aria-labelledby="out-sec-basic">
+                            <div className="formCardHead">
+                                <div>
+                                    <h2 className="formCardTitle" id="out-sec-basic">기본정보</h2>
+                                    <p className="formCardDesc">담당자와 출고할 수주, 출고일자를 선택합니다.</p>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                )}
 
-                {/* 하단: 수주 선택 전 목록 버튼 */}
-                {!selectedSalesOrder && (
-                    <div className="seedOutLinesFooter seedOutLinesFooter--listOnly">
-                        <div className="seedOutFooterActions">
+                            <div className="formGrid">
+                                <div className="formField col2">
+                                    <label className="formLabel" htmlFor="out-manager">
+                                        담당자 <span className="required" aria-hidden="true">*</span>
+                                    </label>
+                                    <SelectBox
+                                        ref={managerSelectRef}
+                                        id="out-manager"
+                                        value={form.managerId}
+                                        options={managerSelectOptions}
+                                        placeholder="담당자를 선택해주세요"
+                                        searchPlaceholder="이름 또는 아이디 검색"
+                                        searchable
+                                        disabled={isSubmitting}
+                                        invalid={isInvalid("managerId")}
+                                        onChange={(v) => handleChange("managerId", v)}
+                                    />
+                                </div>
+
+                                <div className="formField col2">
+                                    <label className="formLabel" htmlFor="out-order">
+                                        수주 <span className="required" aria-hidden="true">*</span>
+                                    </label>
+                                    <SelectBox
+                                        ref={orderSelectRef}
+                                        id="out-order"
+                                        value={form.orderCode}
+                                        options={orderSelectOptions}
+                                        placeholder="수주를 선택해주세요"
+                                        searchPlaceholder="거래처명 또는 수주번호 검색"
+                                        searchable
+                                        disabled={isSubmitting}
+                                        invalid={isInvalid("orderCode")}
+                                        onChange={handleSalesOrderChange}
+                                    />
+                                </div>
+
+                                <div className="formField col2">
+                                    <label className="formLabel" htmlFor="out-ship-date">
+                                        출고일자 <span className="required" aria-hidden="true">*</span>
+                                    </label>
+                                    <input
+                                        ref={shipDateRef}
+                                        id="out-ship-date"
+                                        type="date"
+                                        className="formInput"
+                                        value={form.shipDate}
+                                        aria-invalid={isInvalid("shipDate")}
+                                        disabled={isSubmitting}
+                                        onChange={(e) => handleChange("shipDate", e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            {isLoadingSalesOrder && (
+                                <p className="formStateText">수주 정보를 불러오는 중입니다...</p>
+                            )}
+                            {salesOrderError && (
+                                <p className="formStateText formStateText--error" role="alert">
+                                    {salesOrderError}
+                                </p>
+                            )}
+                        </section>
+
+                        {/* 2. 생산 및 출고 안내 */}
+                        {selectedSalesOrder && noticeType !== "none" && (
+                            <div className="formHint formHint--warn" role="status">
+                                {noticeType === "production" && (
+                                    <>
+                                        <strong className="formHintTitle">아직 생산이 끝나지 않은 품목이 있습니다.</strong>
+                                        <span>
+                                            전체 공정이 끝날 때까지 기다렸다가 한 번에 출고하거나, 일정 차질 등의 사유로{" "}
+                                            <strong>준비된 품목만 먼저 출고</strong>할 수 있습니다.
+                                            출고지시서는 등록할 때마다 별도로 생성됩니다(= 송장 1건).
+                                        </span>
+                                    </>
+                                )}
+                                {noticeType === "unavailable" && (
+                                    <>
+                                        <strong className="formHintTitle">현재 출고 가능한 품목이 없습니다.</strong>
+                                        <span>생산 현황과 출고 가능 수량을 확인해 주세요.</span>
+                                    </>
+                                )}
+                                {noticeType === "partial" && (
+                                    <>
+                                        <strong className="formHintTitle">일부 품목만 출고할 수 있습니다.</strong>
+                                        <span>출고 가능한 품목과 수량을 확인한 후 출고지시서를 등록해 주세요.</span>
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        {/* 3. 수주라인 */}
+                        <section className="formCard" aria-labelledby="out-sec-lines">
+                            <div className="formCardHead">
+                                <div>
+                                    <h2 className="formCardTitle" id="out-sec-lines">수주라인</h2>
+                                    <p className="formCardDesc">출고할 품목을 선택하고 이번 출고수량을 입력합니다.</p>
+                                </div>
+                                {selectedSalesOrder && (
+                                    <span className="formCardMeta">{selectedCount}개 품목 선택됨</span>
+                                )}
+                            </div>
+
+                            {selectedSalesOrder ? (
+                                <div className="seedOutTable">
+                                    <CusTable
+                                        data={lines}
+                                        columns={columns}
+                                        getRowId={(line) => String(line.salesOrderLineId)}
+                                        noDataMessage="출고 가능한 수주라인이 없습니다."
+                                    />
+                                </div>
+                            ) : (
+                                <div className="formEmpty">
+                                    <span className="formEmptyTitle">수주를 선택해주세요</span>
+                                    <p className="formEmptyDesc">수주를 선택하면 수주라인이 여기에 표시됩니다.</p>
+                                </div>
+                            )}
+                        </section>
+                    </div>
+
+                    {/* ===== 우측: 요약 + 액션 ===== */}
+                    <aside className="formCard formAside" aria-label="출고지시 요약">
+                        <h2 className="formCardTitle">출고지시 요약</h2>
+
+                        <div className="formProgress">
+                            <div className="formProgressText">
+                                <span>필수 입력</span>
+                                <strong>
+                                    {requiredDone}/{REQUIRED_TOTAL}
+                                </strong>
+                            </div>
+                            <div
+                                className="formProgressBar"
+                                role="progressbar"
+                                aria-label="필수 입력 진행률"
+                                aria-valuemin={0}
+                                aria-valuemax={REQUIRED_TOTAL}
+                                aria-valuenow={requiredDone}
+                            >
+                                <div
+                                    className="formProgressFill"
+                                    style={{ width: `${(requiredDone / REQUIRED_TOTAL) * 100}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        <dl className="formSummaryList">
+                            {summaryRows.map((row) => (
+                                <div className="formSummaryRow" key={row.label}>
+                                    <dt>{row.label}</dt>
+                                    <dd className={row.value ? undefined : "isEmpty"}>{row.value || "미입력"}</dd>
+                                </div>
+                            ))}
+                        </dl>
+
+                        <div className="formActions">
+                            <button
+                                type="submit"
+                                className="primaryButton"
+                                disabled={isSubmitting || selectedCount === 0}
+                            >
+                                {isSubmitting ? "등록 중..." : "출고지시서 등록"}
+                            </button>
                             <button
                                 type="button"
                                 className="ghostButton"
@@ -648,8 +670,8 @@ export function SeedOutboundManageCreatePage() {
                                 목록
                             </button>
                         </div>
-                    </div>
-                )}
+                    </aside>
+                </div>
             </form>
         </section>
     );

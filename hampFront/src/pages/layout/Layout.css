@@ -2496,6 +2496,39 @@
   height: 44px;
 }
 
+/* 로딩/에러 문구 */
+.formStateText {
+  margin: 16px 0 0;
+  font-size: 13px;
+  color: var(--text-muted, #9aa3b0);
+}
+
+.formStateText--error {
+  color: var(--ctl-danger);
+}
+
+/* formHint 경고 톤 */
+.formHint--warn {
+  background: color-mix(in srgb, #b45309 7%, var(--bg-card, #ffffff));
+  border-color: color-mix(in srgb, #b45309 25%, transparent);
+}
+
+.formHint--warn .formHintTitle {
+  color: #b45309;
+}
+
+[data-theme="dark"] .formHint--warn .formHintTitle {
+  color: #fbbf24;
+}
+
+/* 테이블 안 출고수량 input (폼 키트 44px를 행 높이에 맞게 축소) */
+.formPage .seedOutQtyInput {
+  width: 120px;
+  height: 36px;
+  padding: 0 10px;
+  text-align: right;
+}
+
 /* ================================================================
    SelectBox (공용 커스텀 드롭다운)
 ================================================================ */
