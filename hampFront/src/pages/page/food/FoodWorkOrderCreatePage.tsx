@@ -1,6 +1,6 @@
 import {
-  Fragment, useEffect, useMemo, useRef, useState,
-  type KeyboardEvent as ReactKeyboardEvent, type SyntheticEvent,
+  Fragment, useCallback, useEffect, useMemo, useRef, useState,
+  type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent, type SyntheticEvent,
 } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -19,8 +19,23 @@ import {
   BuildingOffice2Icon,
   CalendarDaysIcon,
   CubeIcon,
+  ExclamationTriangleIcon,
   InboxArrowDownIcon,
+  LockClosedIcon,
 } from "@heroicons/react/24/outline";
+import {
+  EPS,
+  calcDirectOutput,
+  calcParkFromOil,
+  isFullyUsed,
+  isOverPool,
+  round1,
+  round3,
+  sanitizeDecimal,
+  splitByRatio,
+  toNum,
+  type ParkInfo,
+} from "@/utils/workOrderCalc";
 
 // toISOString()은 UTC 기준이라 한국 시간 00:00~09:00 사이에는 전날 날짜가 나와 로컬 기준으로 만든다
 const todayStr = () => {
@@ -44,36 +59,26 @@ const GROUP_LABEL: Record<string, string> = {
   PARK: "헴프박(PARK)",
 };
 
-/** 소수점 부동소수점 오차 방지용 반올림 (수량 계산용 - 소수 3자리) */
-const round3 = (n: number) => Math.round(n * 1000) / 1000;
-
-/**
- * 소수 1자리 반올림 - ③ 직접입력 수량 / 헴프박 계산용
- * - 서버(미리보기)가 단계마다 소수 1자리로 반올림해서 내려주므로 프론트도 똑같이 맞춘다
- * - EPSILON 보정: 282.75 같은 값이 부동소수점 때문에 282.7 로 내려가는 것을 막는다
- */
-const round1 = (n: number) => Math.round((n + Number.EPSILON) * 10) / 10;
-
 /** 수량 표시 (소수 1자리 고정) */
 const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 /** 증감 표시 (+12.0 / -12.0) */
 const fmtSigned = (n: number) => `${n > 0 ? "+" : ""}${fmt(n)}`;
 
-/** 직접입력 문자열 → 숫자 (빈 값/음수/NaN 은 0) */
-const toNum = (s?: string) => {
-  const n = parseFloat(s ?? "");
-  return Number.isNaN(n) || n < 0 ? 0 : n;
+/** 단위 표기 통일
+ *  - 규칙: 리터는 대문자 L, 나머지는 소문자 (kg, g ...)
+ */
+const unitText = (u?: string | null) => {
+  const s = (u ?? "").trim();
+  return s.toUpperCase() === "L" ? "L" : s.toLowerCase();
 };
 
-/** 풀(총량) 비교 시 허용하는 오차 */
-const EPS = 0.1;
+/** 수량 + 단위 (숫자와 단위 사이 한 칸 띄움) */
+const fmtQty = (n: number, u?: string | null) => `${fmt(n)} ${unitText(u)}`;
 
-/** 그룹 합계가 풀을 (오차 이상) 초과했는지 */
-const isOverPool = (total: number, pool: number) => round3(total - pool) > EPS;
-
-/** 그룹 합계가 풀을 (오차 범위 안에서) 전부 사용했는지 */
-const isFullyUsed = (total: number, pool: number) => round3(pool - total) <= EPS;
+/** 계약 대비 증감 톤: 변동없음 / 증가 / 감소 (증가를 에러색으로 칠하지 않는다) */
+type DeltaTone = "flat" | "up" | "down";
+const deltaTone = (diff: number): DeltaTone => (Math.abs(diff) < 0.05 ? "flat" : diff < 0 ? "down" : "up");
 
 /* ───────────── 타입 ───────────── */
 
@@ -84,6 +89,26 @@ const isFullyUsed = (total: number, pool: number) => round3(pool - total) <= EPS
  * - C: ③ 직접 입력           (프론트가 수율로 직접 계산)
  */
 type Method = "A" | "B" | "C";
+const METHOD_ORDER: Method[] = ["A", "B", "C"];
+
+/** [정리] 카드 3개가 거의 같은 JSX 를 복붙하고 있어 설정 배열 + map 으로 줄였다 */
+const METHOD_CARDS: { id: Method; name: string; desc: string }[] = [
+  {
+    id: "A",
+    name: "① 원료 비율 유지",
+    desc: "계약 때 정한 배분비율을 실제 입고량에 그대로 적용합니다. 라인들이 같이 비례해서 줄어(늘어)듭니다.",
+  },
+  {
+    id: "B",
+    name: "② 오일 목표 산출량 유지",
+    desc: "수율이 확정된 라인(헴프오일)의 목표 산출량을 계약값 그대로 지키고, 남는 원료만 수율이 불확실한 라인(헴프씨드)이 떠안습니다.",
+  },
+  {
+    id: "C",
+    name: "③ 직접 입력",
+    desc: "실제 입고량 기준 탈피씨드 전량 안에서 라인에 자유롭게 나눠줍니다. 아래 작업지시 라인에서 한쪽 투입량을 고치면 남은 수량이 다른 한쪽에 자동으로 들어갑니다. 오일 투입량에 따라 달라지는 헴프박 공급량 안에서 PARK 라인도 똑같이 나눌 수 있습니다.",
+  },
+];
 
 /** 작업지시 라인 (수주 단건 조회의 산출 라인 + 지시수량 미리보기 라인) */
 interface WorkOrderLine {
@@ -109,6 +134,12 @@ interface GroupUsage {
   lineCount: number;
 }
 
+/** alert() 대신 쓰는 토스트 */
+interface ToastState {
+  kind: "success" | "error";
+  message: string;
+}
+
 /* ───────────── 커스텀 셀렉트 (div 기반, WAI-ARIA select-only combobox 패턴) ───────────── */
 
 interface SelectOption {
@@ -123,45 +154,76 @@ interface CustomSelectProps {
   value: string;
   options: SelectOption[];
   placeholder: string;
+  /** true 면 목록 상단에 검색창이 생긴다 (label + description 에서 부분 일치) */
+  searchable?: boolean;
   disabled?: boolean;
   invalid?: boolean;
   onChange: (value: string) => void;
 }
 
-function CustomSelect({ id, labelId, value, options, placeholder, disabled, invalid, onChange }: CustomSelectProps) {
+function CustomSelect({
+  id, labelId, value, options, placeholder, searchable, disabled, invalid, onChange,
+}: CustomSelectProps) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const keyNavRef = useRef(false); // 키보드로 이동할 때만 활성 옵션으로 스크롤 (마우스 hover 시 튀는 것 방지)
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [query, setQuery] = useState("");
 
   const listId = `${id}-list`;
-  const selectedIndex = options.findIndex((o) => o.value === value);
-  const selected = selectedIndex >= 0 ? options[selectedIndex] : null;
+
+  // 검색어로 걸러낸 옵션 (검색 모드가 아니면 전체)
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!searchable || !q) return options;
+    return options.filter((o) => `${o.label} ${o.description ?? ""}`.toLowerCase().includes(q));
+  }, [options, query, searchable]);
+
+  const selected = options.find((o) => o.value === value) ?? null; // 트리거 표시용 (검색과 무관하게 전체에서 찾는다)
+  const selectedIndex = visible.findIndex((o) => o.value === value);
+
+  const closeList = (returnFocus = false) => {
+    setOpen(false);
+    setQuery("");
+    if (returnFocus) triggerRef.current?.focus();
+  };
 
   const openList = () => {
     if (disabled) return;
     keyNavRef.current = true;
-    setActiveIndex(selectedIndex >= 0 ? selectedIndex : options.length > 0 ? 0 : -1);
+    const idx = options.findIndex((o) => o.value === value);
+    setActiveIndex(idx >= 0 ? idx : options.length > 0 ? 0 : -1);
+    setQuery("");
     setOpen(true);
   };
 
   const selectOption = (index: number) => {
-    const option = options[index];
+    const option = visible[index];
     if (!option) return;
     onChange(option.value);
-    setOpen(false);
+    closeList(true);
   };
 
   // 바깥 클릭 시 닫기
   useEffect(() => {
     if (!open) return;
     const handleOutside = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+      if (!rootRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
     };
     document.addEventListener("mousedown", handleOutside);
     return () => document.removeEventListener("mousedown", handleOutside);
   }, [open]);
+
+  // 검색 모드: 열리면 검색창으로 포커스
+  useEffect(() => {
+    if (open && searchable) searchRef.current?.focus();
+  }, [open, searchable]);
 
   // 활성 옵션이 목록 안에 보이도록 스크롤
   useEffect(() => {
@@ -175,9 +237,16 @@ function CustomSelect({ id, labelId, value, options, placeholder, disabled, inva
     setActiveIndex(next);
   };
 
+  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    moveActive(0); // 검색 결과가 바뀌면 첫 항목을 활성화
+  };
+
+  // 키 입력은 트리거/검색창 어느 쪽에서 발생해도 루트에서 한 번에 처리한다
   const handleKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     if (disabled) return;
-    const last = options.length - 1;
+    const inSearch = e.target === searchRef.current;
+    const last = visible.length - 1;
 
     if (!open) {
       if (["ArrowDown", "ArrowUp", "Enter", " "].includes(e.key)) {
@@ -197,42 +266,51 @@ function CustomSelect({ id, labelId, value, options, placeholder, disabled, inva
         moveActive(Math.max(0, activeIndex - 1));
         break;
       case "Home":
+        if (inSearch) break; // 검색창에서는 커서 이동에 쓴다
         e.preventDefault();
         moveActive(0);
         break;
       case "End":
+        if (inSearch) break;
         e.preventDefault();
         moveActive(last);
         break;
       case "Enter":
+        e.preventDefault();
+        selectOption(activeIndex);
+        break;
       case " ":
+        if (inSearch) break; // 검색어에 공백 입력 허용
         e.preventDefault();
         selectOption(activeIndex);
         break;
       case "Escape":
         e.preventDefault();
-        setOpen(false);
+        closeList(true);
         break;
       case "Tab":
-        setOpen(false);
+        closeList();
         break;
       default:
-        // 첫 글자로 옵션 찾기
-        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        // 검색 모드가 아닐 때만: 첫 글자로 옵션 찾기
+        if (!searchable && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
           const key = e.key.toLowerCase();
           const start = activeIndex + 1;
-          const found = options
-            .map((_, i) => (i + start) % options.length)
-            .find((i) => options[i].label.toLowerCase().startsWith(key));
+          const found = visible
+            .map((_, i) => (i + start) % visible.length)
+            .find((i) => visible[i].label.toLowerCase().startsWith(key));
           if (found !== undefined) moveActive(found);
         }
     }
   };
 
+  const activeDescendant = open && visible[activeIndex] ? `${id}-opt-${activeIndex}` : undefined;
+
   return (
-    <div className="woc-select" ref={rootRef}>
+    <div className="woc-select" ref={rootRef} onKeyDown={handleKeyDown}>
       <div
         id={id}
+        ref={triggerRef}
         role="combobox"
         tabIndex={disabled ? -1 : 0}
         className={`woc-input woc-select__trigger${open ? " is-open" : ""}`}
@@ -240,11 +318,10 @@ function CustomSelect({ id, labelId, value, options, placeholder, disabled, inva
         aria-expanded={open}
         aria-controls={listId}
         aria-labelledby={labelId}
-        aria-activedescendant={open && options[activeIndex] ? `${id}-opt-${activeIndex}` : undefined}
+        aria-activedescendant={searchable ? undefined : activeDescendant}
         aria-invalid={invalid}
         aria-disabled={disabled}
-        onClick={() => (open ? setOpen(false) : openList())}
-        onKeyDown={handleKeyDown}
+        onClick={() => (open ? closeList() : openList())}
       >
         <span className={`woc-select__value${selected ? "" : " is-placeholder"}`}>
           {selected ? selected.label : placeholder}
@@ -266,29 +343,49 @@ function CustomSelect({ id, labelId, value, options, placeholder, disabled, inva
       </div>
 
       {open && (
-        <div ref={listRef} id={listId} role="listbox" aria-labelledby={labelId} className="woc-select__list">
-          {options.length === 0 ? (
-            <div role="presentation" className="woc-select__empty">
-              선택 가능한 항목이 없습니다
+        <div ref={listRef} className="woc-select__list">
+          {searchable && (
+            <div className="woc-select__search">
+              <input
+                ref={searchRef}
+                type="text"
+                role="searchbox"
+                className="woc-select__searchInput"
+                placeholder="검색 (수주코드, 거래처)"
+                aria-label={`${placeholder} 검색`}
+                aria-controls={listId}
+                aria-activedescendant={activeDescendant}
+                autoComplete="off"
+                value={query}
+                onChange={handleSearchChange}
+              />
             </div>
-          ) : (
-            options.map((option, i) => (
-              <div
-                key={option.value}
-                id={`${id}-opt-${i}`}
-                role="option"
-                aria-selected={i === selectedIndex}
-                data-active={i === activeIndex}
-                className={`woc-select__option${i === activeIndex ? " is-active" : ""}${i === selectedIndex ? " is-selected" : ""}`}
-                onMouseDown={(e) => e.preventDefault()} // 트리거의 포커스 유지
-                onMouseEnter={() => setActiveIndex(i)}
-                onClick={() => selectOption(i)}
-              >
-                <span className="woc-select__label">{option.label}</span>
-                {option.description && <span className="woc-select__desc">{option.description}</span>}
-              </div>
-            ))
           )}
+
+          <div id={listId} role="listbox" aria-labelledby={labelId} className="woc-select__listbox">
+            {visible.length === 0 ? (
+              <div role="presentation" className="woc-select__empty">
+                {options.length === 0 ? "선택 가능한 항목이 없습니다" : "검색 결과가 없습니다"}
+              </div>
+            ) : (
+              visible.map((option, i) => (
+                <div
+                  key={option.value}
+                  id={`${id}-opt-${i}`}
+                  role="option"
+                  aria-selected={i === selectedIndex}
+                  data-active={i === activeIndex}
+                  className={`woc-select__option${i === activeIndex ? " is-active" : ""}${i === selectedIndex ? " is-selected" : ""}`}
+                  onMouseDown={(e) => e.preventDefault()} // 트리거/검색창의 포커스 유지
+                  onMouseEnter={() => setActiveIndex(i)}
+                  onClick={() => selectOption(i)}
+                >
+                  <span className="woc-select__label">{option.label}</span>
+                  {option.description && <span className="woc-select__desc">{option.description}</span>}
+                </div>
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -300,11 +397,19 @@ function CustomSelect({ id, labelId, value, options, placeholder, disabled, inva
 export function FoodWorkOrderCreatePage() {
   const navigate = useNavigate();
   const rootRef = useRef<HTMLElement>(null);
+  const reasonRef = useRef<HTMLParagraphElement>(null); // 저장 불가 사유 (포커스 이동 대상)
   const orderReqRef = useRef(0); // 수주 조회 요청 식별자 - 수주를 바꾸면 이전 응답은 무시한다
+  const methodRefs = useRef<Partial<Record<Method, HTMLDivElement | null>>>({}); // 방향키 이동 시 포커스 대상
+  const parkRatioRef = useRef<Record<number, number>>({}); // ③ 진입/직접수정 시점의 PARK 라인 비율
+  const toastTimerRef = useRef<number | undefined>(undefined);
+  const navTimerRef = useRef<number | undefined>(undefined);
+  const leaveDialogRef = useRef<HTMLDialogElement>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitAttempt, setSubmitAttempt] = useState(0);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const [leaveOpen, setLeaveOpen] = useState(false);
 
   const [userOptions, setUserOptions] = useState<UserOptionResponse[]>([]);
   const [orderOptionList, setOrderOptionList] = useState<SalesOrderOptionResponse[]>([]);
@@ -330,6 +435,23 @@ export function FoodWorkOrderCreatePage() {
    */
   const [direct, setDirect] = useState<Record<number, string>>({});
 
+  /* ───── 토스트 ───── */
+
+  const showToast = (kind: ToastState["kind"], message: string, ms = 4000) => {
+    window.clearTimeout(toastTimerRef.current);
+    setToast({ kind, message });
+    toastTimerRef.current = window.setTimeout(() => setToast(null), ms);
+  };
+
+  // 언마운트 시 타이머 정리
+  useEffect(
+    () => () => {
+      window.clearTimeout(toastTimerRef.current);
+      window.clearTimeout(navTimerRef.current);
+    },
+    [],
+  );
+
   /* ───── 파생값: 방식 / 풀 / 헴프박 공급량 ───── */
 
   /**
@@ -350,48 +472,53 @@ export function FoodWorkOrderCreatePage() {
   );
 
   /**
-   * 오일 투입량(탈피씨드) → 헴프박 발생량 / 건조 후 공급량 (③ 직접입력용 프론트 계산)
-   * - 서버와 똑같이 단계마다 소수 1자리로 반올림한다
-   *   (예: 390 × 72.5% = 282.75 → 282.8, 282.8 × 95% = 268.66 → 268.7)
-   *   → ③ 으로 들어와도 ② 와 같은 풀이 나오고, 풀이 소수 3자리로 지저분해지지 않는다
+   * 오일 투입량 → 헴프박 발생량 / 건조 후 공급량
    */
-  const calcParkFromOil = (oilQty: number) => {
-    const bp = oilLine?.preview?.byproductYieldPercent;
-    const dry = preview?.park.dryYieldPercent;
-    if (bp == null || dry == null) return null;
-    const byproduct = round1((oilQty * bp) / 100); // 건조 전 헴프박 발생량
-    return { byproduct, dry: round1((byproduct * dry) / 100) }; // 건조 후 = PARK 그룹 투입 가능 풀
+  const calcPark = useCallback(
+    (oilQty: number): ParkInfo | null => calcParkFromOil(oilQty, oilLine?.preview, preview?.park),
+    [oilLine, preview],
+  );
+
+  /**
+   * PARK 라인 비율을 ref 에 고정한다.
+   * - ③ 진입 시점 / PARK 라인을 직접 고친 시점의 비율을 기억해두고 그 비율로만 나눈다.
+   */
+  const captureParkRatio = (values: Record<number, string>) => {
+    const parkLines = lines.filter((l) => l.allocationGroup === "PARK");
+    if (parkLines.length === 0) return;
+    const total = parkLines.reduce((s, l) => s + toNum(values[l.salesOrderLineId]), 0);
+    const ratio: Record<number, number> = {};
+    parkLines.forEach((l) => {
+      ratio[l.salesOrderLineId] =
+        total > 0
+          ? toNum(values[l.salesOrderLineId]) / total
+          : (l.allocationPercent ?? 100 / parkLines.length) / 100; // 전부 0 이면 계약 배분 비율로 대체
+    });
+    parkRatioRef.current = ratio;
   };
 
-  /** 오일 투입량이 바뀌면 PARK 라인들을 기존 비율 그대로 새 풀로 다시 나눈다 (전부 소수 1자리) */
+  /** 오일 투입량이 바뀌면 PARK 라인들을 고정해둔 비율 그대로 새 풀로 다시 나눈다 (전부 소수 1자리) */
   const redistributePark = (next: Record<number, string>) => {
     if (!oilLine) return;
-    const newPark = calcParkFromOil(toNum(next[oilLine.salesOrderLineId]));
+    const newPark = calcPark(toNum(next[oilLine.salesOrderLineId]));
     const parkLines = lines.filter((l) => l.allocationGroup === "PARK");
     if (!newPark || parkLines.length === 0) return;
 
-    const curTotal = parkLines.reduce((s, l) => s + toNum(next[l.salesOrderLineId]), 0);
-    let assigned = 0;
+    const shares = parkLines.map((l) => parkRatioRef.current[l.salesOrderLineId] ?? 0);
+    const values = splitByRatio(newPark.dry, shares); // 마지막 라인이 나머지를 가져가서 합계 = 풀
     parkLines.forEach((l, i) => {
-      const share =
-        curTotal > 0
-          ? toNum(next[l.salesOrderLineId]) / curTotal
-          : (l.allocationPercent ?? 100 / parkLines.length) / 100;
-      // 마지막 라인이 나머지를 가져가서 합계가 풀과 정확히 같아진다
-      const v = i === parkLines.length - 1 ? round1(newPark.dry - assigned) : round1(newPark.dry * share);
-      assigned = round1(assigned + v);
-      next[l.salesOrderLineId] = String(Math.max(0, v));
+      next[l.salesOrderLineId] = String(values[i]);
     });
   };
 
   /** 방식별 헴프박 발생량(건조 전)/공급량(건조 후) - PARK 그룹 풀 */
-  const parkInfo = useMemo(() => {
+  const parkInfo = useMemo<ParkInfo | null>(() => {
     if (!preview) return null;
     const p = preview.park;
     if (effMethod === "A") return { byproduct: p.ratioKeptByproductQty, dry: p.ratioKeptDryQty };
     if (effMethod === "B") return { byproduct: p.targetYieldKeptByproductQty, dry: p.targetYieldKeptDryQty };
-    return calcParkFromOil(oilLine ? toNum(direct[oilLine.salesOrderLineId]) : 0);
-  }, [preview, effMethod, direct, oilLine]);
+    return calcPark(oilLine ? toNum(direct[oilLine.salesOrderLineId]) : 0);
+  }, [preview, effMethod, direct, oilLine, calcPark]);
 
   /** 그룹별 총량(풀) - RAW=탈피씨드 가능량, PARK=건조헴프박 공급량 */
   const poolOf = (group: string): number | null => {
@@ -400,25 +527,64 @@ export function FoodWorkOrderCreatePage() {
     return null;
   };
 
-  /** 라인의 현재 지시수량(= 투입량) - 선택한 방식에 따라 달라진다 */
-  const qtyOf = (line: WorkOrderLine): number => {
+  /** ①/② 방식에서 서버가 내려준 라인 투입량 (보정 전 원본) */
+  const serverQtyOf = (line: WorkOrderLine): number => {
     const p = line.preview;
     if (!p) return line.contractInputQty; // 미리보기가 없으면 계약 배분량 그대로
-    if (effMethod === "C") return toNum(direct[line.salesOrderLineId]);
     return effMethod === "B" ? p.targetYieldKeptQty : p.ratioKeptQty;
   };
 
-  /** 라인의 예상 산출량 - 수율 미확정 라인은 null */
+  /**
+   * ①/② 방식의 합계 보정
+   * - 서버는 라인별 투입량과 풀(건조헴프박 등)을 각각 반올림해서 계산하기 때문에
+   *   라인 합계가 풀과 0.1 어긋날 수 있다 (예: 150.4 + 118.2 = 268.6 / 풀 268.7).
+   * - 차이가 오차(EPS) 이내면 서버 값을 비율로 삼아 풀에 정확히 맞춰 다시 나눈다.
+   *   (③ 과 같은 splitByRatio 를 쓰므로 합계 = 풀, 마지막 라인이 나머지를 가져간다)
+   * - 차이가 크면 서버 값이 의도된 값(예: ② 에서 입고가 모자란 경우)이므로 건드리지 않는다.
+   */
+  const alignedQtyMap = (() => {
+    const map = new Map<number, number>();
+    if (effMethod === "C") return map;
+
+    const byGroup = new Map<string, WorkOrderLine[]>();
+    lines.forEach((l) => byGroup.set(l.allocationGroup, [...(byGroup.get(l.allocationGroup) ?? []), l]));
+
+    byGroup.forEach((groupLines, key) => {
+      const pool = poolOf(key);
+      if (pool == null || groupLines.some((l) => !l.preview)) return;
+
+      const server = groupLines.map(serverQtyOf);
+      const gap = round3(pool - round3(server.reduce((s, v) => s + v, 0)));
+      if (gap === 0 || Math.abs(gap) > EPS) return;
+
+      const aligned = splitByRatio(pool, server);
+      groupLines.forEach((l, i) => map.set(l.salesOrderLineId, aligned[i]));
+    });
+    return map;
+  })();
+
+  /** 라인의 현재 지시수량(= 투입량) - 선택한 방식에 따라 달라진다 */
+  const qtyOf = (line: WorkOrderLine): number => {
+    if (!line.preview) return line.contractInputQty;
+    if (effMethod === "C") return toNum(direct[line.salesOrderLineId]);
+    return alignedQtyMap.get(line.salesOrderLineId) ?? serverQtyOf(line);
+  };
+
+  /**
+   * 라인의 예상 산출량 - 수율 미확정 라인은 null
+   * ③ 과 보정된 ①/② 는 서버 값과 같은 투입량이면 서버 산출량을, 다르면 수율로 계산한다 (calcDirectOutput)
+   */
   const outputOf = (line: WorkOrderLine): number | null => {
     const p = line.preview;
     if (!p) return line.planQty;
+    if (effMethod === "C") return calcDirectOutput(p, qtyOf(line));
     if (p.outputYieldPercent == null) return null;
-    if (effMethod === "C") return round1((qtyOf(line) * p.outputYieldPercent) / 100); // ③ 은 프론트에서 직접 계산 (서버처럼 1자리)
+    if (qtyOf(line) !== serverQtyOf(line)) return calcDirectOutput(p, qtyOf(line)); // 합계 보정으로 값이 바뀐 라인
     return effMethod === "B" ? p.targetYieldKeptOutputQty : p.ratioKeptOutputQty;
   };
 
-  /** 그룹별 투입량 합계 (우측 요약 + 배너) */
-  const groupUsages = useMemo<GroupUsage[]>(() => {
+  /** 그룹별 투입량 합계 / 초과 그룹 / ③ 오류 문구 */
+  const groupUsages: GroupUsage[] = (() => {
     const map = new Map<string, GroupUsage>();
     lines.forEach((line) => {
       const cur = map.get(line.allocationGroup) ?? {
@@ -434,12 +600,11 @@ export function FoodWorkOrderCreatePage() {
       map.set(line.allocationGroup, cur);
     });
     return Array.from(map.values()).map((g) => ({ ...g, total: round3(g.total) }));
-  }, [lines, effMethod, direct, preview, parkInfo]);
+  })();
 
   /** 풀(총량)을 초과한 그룹 키 집합 - 빨간 표시는 이 그룹에만 건다 */
-  const overGroups = useMemo(
-    () => new Set(groupUsages.filter((g) => g.pool != null && isOverPool(g.total, g.pool)).map((g) => g.key)),
-    [groupUsages],
+  const overGroups = new Set(
+    groupUsages.filter((g) => g.pool != null && isOverPool(g.total, g.pool)).map((g) => g.key),
   );
 
   /** 그룹 순서를 유지한 채 라인을 그룹별로 묶는다 (그룹 배너 표시용) */
@@ -450,29 +615,31 @@ export function FoodWorkOrderCreatePage() {
   }, [lines]);
 
   /** ③ 직접입력에서 풀(총량)을 넘긴 그룹이 있으면 저장을 막는다 */
-  const directError = useMemo(() => {
+  const directError = (() => {
     if (!isDirect) return "";
-    const negative = lines.some((l) => parseFloat(direct[l.salesOrderLineId] ?? "") < 0);
-    if (negative) return "투입량은 0 이상이어야 합니다.";
-    for (const g of groupUsages) {
-      if (g.pool != null && isOverPool(g.total, g.pool)) {
-        return `${g.label} 투입량 합계(${fmt(g.total)})가 사용 가능량(${fmt(g.pool)})을 초과했습니다.`;
-      }
-    }
-    return "";
-  }, [isDirect, groupUsages, direct, lines]);
+    const over = groupUsages.find((g) => g.pool != null && isOverPool(g.total, g.pool));
+    return over ? `${over.label} 투입량 합계(${fmt(over.total)})가 사용 가능량(${fmt(over.pool!)})을 초과했습니다.` : "";
+  })();
 
   const managerOptions = useMemo<SelectOption[]>(
     () => userOptions.map((user) => ({ value: user.userId, label: `${user.userNm} (${user.userId})` })),
     [userOptions],
   );
 
+  /**
+   * 수주 옵션에 납기일을 설명으로 붙인다.
+   * - 옵션 응답에 dueDate 가 있을 때만 표시된다 (없으면 설명 없이 기존처럼 동작)
+   */
   const orderOptions = useMemo<SelectOption[]>(
     () =>
-      orderOptionList.map((order) => ({
-        value: order.orderCode,
-        label: `${order.orderCode} · ${order.bpNm}`,
-      })),
+      orderOptionList.map((order) => {
+        const due = (order as { dueDate?: string }).dueDate;
+        return {
+          value: order.orderCode,
+          label: `${order.orderCode} · ${order.bpNm}`,
+          description: due ? `납기 ${due}` : undefined,
+        };
+      }),
     [orderOptionList],
   );
 
@@ -508,15 +675,43 @@ export function FoodWorkOrderCreatePage() {
     fetchOrderOptions();
   }, []);
 
-  // 검증 실패 후 첫 번째 오류 입력칸으로 포커스 이동
+  /**
+   * 검증 실패 후 첫 번째 오류 입력칸으로 포커스 이동
+   * 오류 입력칸이 없는 경우(라인 없음, 풀 초과 등)에는 사유 문구로 포커스를 보낸다
+   */
   const focusFirstInvalid = () => {
-    rootRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+    const el = rootRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
+    (el ?? reasonRef.current)?.focus();
   };
 
   useEffect(() => {
     if (submitAttempt === 0) return;
     focusFirstInvalid();
   }, [submitAttempt]);
+
+  /* ───── 이탈 방지 ───── */
+
+  // 수주나 담당자를 건드렸으면 "작성 중"으로 본다 (작업일자는 기본값이 있어 제외)
+  const isDirty = form.orderCode !== "" || form.managerId !== "";
+
+  // 새로고침/탭 닫기 시 브라우저 기본 확인창 (저장 중/성공 후에는 끈다)
+  useEffect(() => {
+    if (!isDirty || isSubmitting) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty, isSubmitting]);
+
+  // <dialog> 열기/닫기 동기화 (Esc 로 닫히면 onClose 에서 state 를 되돌린다)
+  useEffect(() => {
+    const dialog = leaveDialogRef.current;
+    if (!dialog) return;
+    if (leaveOpen && !dialog.open) dialog.showModal();
+    if (!leaveOpen && dialog.open) dialog.close();
+  }, [leaveOpen]);
 
   /* ───── 핸들러 ───── */
 
@@ -535,6 +730,7 @@ export function FoodWorkOrderCreatePage() {
     setLines([]);
     setMethod("A");
     setDirect({});
+    parkRatioRef.current = {};
     setSubmitted(false);
 
     if (!orderCode) return;
@@ -589,7 +785,7 @@ export function FoodWorkOrderCreatePage() {
       if (reqId !== orderReqRef.current) return;
       console.error("수주 단건 조회 실패:", error);
       const errorMessage = axios.isAxiosError(error) ? error.response?.data?.message : null;
-      alert(errorMessage || "수주 정보를 불러오는 중 오류가 발생했습니다.");
+      showToast("error", errorMessage || "수주 정보를 불러오는 중 오류가 발생했습니다.");
       setForm((prev) => ({ ...prev, orderCode: "" }));
     } finally {
       if (reqId === orderReqRef.current) setIsOrderLoading(false);
@@ -599,7 +795,6 @@ export function FoodWorkOrderCreatePage() {
   /**
    * 투입량 계산 방식 선택
    * - ③ 으로 넘어갈 때는 지금 화면에 보이는 값(현재 방식 ①/②의 투입량)으로 시작해서 자유롭게 고치게 한다
-   * - PARK 라인은 프론트 계산 풀(③ 기준)에 맞춰 다시 나눠, 진입 직후 합계와 풀이 어긋나지 않게 한다
    * - 진입 값은 소수 1자리로 맞춘다
    */
   const handleSelectMethod = (next: Method) => {
@@ -610,51 +805,80 @@ export function FoodWorkOrderCreatePage() {
       lines.forEach((l) => {
         init[l.salesOrderLineId] = String(round1(qtyOf(l)));
       });
-      redistributePark(init);
+      captureParkRatio(init);
       setDirect(init);
     }
     setMethod(next);
   };
 
   /**
+   * 방식 카드 키보드 조작 (WAI-ARIA radiogroup)
+   * - 방향키: 다음/이전 라디오로 이동 + 선택 (비활성 ③ 은 건너뜀)
+   * - Enter/Space: 현재 카드 선택
+   */
+  const handleMethodKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>, current: Method) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleSelectMethod(current);
+      return;
+    }
+    const dir = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+    if (dir === 0) return;
+    e.preventDefault();
+
+    const enabled = METHOD_ORDER.filter((m) => !(m === "C" && rawPool == null));
+    const idx = enabled.indexOf(current);
+    const nextMethod = enabled[(idx + dir + enabled.length) % enabled.length];
+    handleSelectMethod(nextMethod);
+    methodRefs.current[nextMethod]?.focus();
+  };
+
+  /**
    * ③ 직접입력 변경
    * - 소수 1자리까지만 입력받고, 그룹 총량(풀)을 넘지 않도록 자른다
    * - 그룹이 2라인이면 남은 수량을 나머지 라인에 자동 배정한다 (소수 1자리)
-   * - RAW(오일)가 바뀌면 헴프박 공급량(= PARK 풀)이 바뀌므로, PARK 라인들은 기존 배분 비율을 유지한 채 새 풀로 다시 나눈다
+   * - RAW(오일)가 바뀌면 헴프박 공급량(= PARK 풀)이 바뀌므로, PARK 라인들은 고정해둔 비율로 새 풀을 다시 나눈다
    */
   const handleDirectChange = (lineId: number, text: string) => {
     const target = lines.find((l) => l.salesOrderLineId === lineId);
     if (!target) return;
 
-    // 숫자와 소수점만 허용 (음수 기호, e 등 제거) + 소수 1자리까지만
-    const clean = text
-      .replace(/[^\d.]/g, "")          // '-', 'e', '+' 등 제거
-      .replace(/^(\d*\.\d)\d+$/, "$1"); // 소수 2자리 이상은 1자리로
+    const clean = sanitizeDecimal(text); // 점 중복 / 음수 / e 표기 제거 + 소수 1자리
 
     const next: Record<number, string> = { ...direct };
     const groupLines = lines.filter((l) => l.allocationGroup === target.allocationGroup);
 
     const pool = poolOf(target.allocationGroup);
-    let value = round1(toNum(clean));
-    if (pool != null && value > pool) value = pool; // 풀 초과 입력은 풀로 자른다
+    const value = round1(toNum(clean));
 
-    // 사용자가 타이핑 중인 칸은 입력 문자열을 최대한 그대로 유지 (자른 경우만 값으로 교체)
+    // 사용자가 타이핑 중인 칸은 입력 문자열을 최대한 그대로 유지 (풀 초과로 자른 경우만 값으로 교체)
     next[lineId] = pool != null && toNum(clean) > pool ? String(pool) : clean;
+    const applied = pool != null && value > pool ? pool : value;
 
     // 그룹이 정확히 2라인이면 남은 수량을 다른 한쪽에 자동으로 넣는다
     if (pool != null && groupLines.length === 2) {
       const other = groupLines.find((l) => l.salesOrderLineId !== lineId)!;
-      next[other.salesOrderLineId] = String(Math.max(0, round1(pool - value)));
+      next[other.salesOrderLineId] = String(Math.max(0, round1(pool - applied)));
     }
 
-    // 오일 투입량이 바뀌면 PARK 풀이 바뀌므로 PARK 라인을 새 풀로 재배분
-    if (target.allocationGroup === "RAW") redistributePark(next);
+    if (target.allocationGroup === "RAW") {
+      redistributePark(next); // 오일 투입량이 바뀌면 PARK 풀이 바뀌므로 PARK 라인을 새 풀로 재배분
+    } else if (target.allocationGroup === "PARK") {
+      captureParkRatio(next); // PARK 를 직접 고쳤다면 그 비율을 새 기준으로 삼는다
+    }
 
     setDirect(next);
   };
 
+  /** 입력칸을 벗어날 때 "" / "12." 같은 중간 상태를 정규화 ("" → 0, "12." → 12) */
+  const handleDirectBlur = (lineId: number) => {
+    setDirect((prev) => ({ ...prev, [lineId]: String(round1(toNum(prev[lineId]))) }));
+  };
+
+  /** 작성 중이면 확인 다이얼로그, 아니면 바로 이동 */
   const handleCancel = () => {
-    navigate(-1);
+    if (isDirty) setLeaveOpen(true);
+    else navigate(-1);
   };
 
   /* ───── 검증 (오류 문구는 저장 시도 후부터) ───── */
@@ -665,12 +889,26 @@ export function FoodWorkOrderCreatePage() {
     orderCode: form.orderCode ? "" : "수주를 선택해주세요.",
   };
 
+  const noLines = !!orderDetail && !isOrderLoading && lines.length === 0;
+
   const hasError =
     Object.values(fieldErrors).some(Boolean) ||
     lines.length === 0 || // 배분된 산출 라인이 하나도 없으면 저장할 수 없다
     !!directError; // ③ 직접입력에서 풀 초과
 
   const showError = (msg: string) => (submitted ? msg : "");
+
+  /**
+   * 저장할 수 없는 이유 한 줄
+   * 항상 액션바에 사유를 보여준다 (저장 시도 전·후 모두). 가장 먼저 해결할 것 하나만 보여준다.
+   */
+  const blockReason =
+    fieldErrors.orderCode ||
+    fieldErrors.workDate ||
+    fieldErrors.managerId ||
+    (noLines ? "배분된 산출 라인이 없어 저장할 수 없습니다." : "") ||
+    directError ||
+    "";
 
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
@@ -695,14 +933,13 @@ export function FoodWorkOrderCreatePage() {
     setIsSubmitting(true);
     try {
       await WorkOrderApi.create(payload);
-      alert("작업지시가 성공적으로 등록되었습니다.");
-      navigate("/food/work-orders");
+      showToast("success", "작업지시가 등록되었습니다.", 1500);
+      navTimerRef.current = window.setTimeout(() => navigate("/food/work-orders"), 900);
     } catch (error) {
       console.error("작업지시 등록 실패:", error);
       const errorMessage = axios.isAxiosError(error) ? error.response?.data?.message : null;
-      alert(errorMessage || "작업지시 등록 중 오류가 발생했습니다.");
-    } finally {
-      setIsSubmitting(false);
+      showToast("error", errorMessage || "작업지시 등록 중 오류가 발생했습니다.");
+      setIsSubmitting(false); // 실패했을 때만 다시 활성화
     }
   };
 
@@ -731,26 +968,48 @@ export function FoodWorkOrderCreatePage() {
   /**
    * 계약 대비 증감 - 산출량을 알 수 있으면 산출량 기준(L 등), 모르면 투입량 기준
    * (예: 헴프오일은 산출량 -25.0L, 수율 미확정인 헴프씨드는 투입량 -39.0kg)
+   * ③ 열도 같은 규칙으로 계산할 수 있게 (qty, out) 을 받는 함수로 일반화했다.
    */
-  const methodDelta = (line: WorkOrderLine, m: "A" | "B") => {
-    const out = methodOut(line, m);
+  const calcDelta = (line: WorkOrderLine, qty: number, out: number | null) => {
     if (out != null && line.planQty != null) {
       return { diff: round3(out - line.planQty), unit: line.unit };
     }
-    return { diff: round3(methodQty(line, m) - line.contractInputQty), unit: line.inputUnit };
+    return { diff: round3(qty - line.contractInputQty), unit: line.inputUnit };
   };
+  const methodDelta = (line: WorkOrderLine, m: "A" | "B") => calcDelta(line, methodQty(line, m), methodOut(line, m));
 
   /** 방식 카드 하단 요약 칩 */
   const renderDeltaChips = (m: "A" | "B") =>
     rawLines.map((line) => {
       const { diff, unit } = methodDelta(line, m);
-      const flat = Math.abs(diff) < 0.05;
+      const tone = deltaTone(diff);
       return (
-        <span key={line.salesOrderLineId} className={flat ? "flat" : diff < 0 ? "down" : ""}>
-          {line.itemNm} {flat ? "변동없음" : `${fmtSigned(diff)}${unit}`}
+        <span key={line.salesOrderLineId} className={tone}>
+          {line.itemNm} {tone === "flat" ? "변동없음" : `${fmtSigned(diff)}${unitText(unit)}`}
         </span>
       );
     });
+
+  /** 비교표 셀 하나 (투입량 / 예상 산출 / 계약 대비) */
+  const renderCmpCell = (
+    key: string,
+    cls: string,
+    line: WorkOrderLine,
+    qty: number,
+    out: number | null,
+    delta: { diff: number; unit: string },
+  ) => {
+    const tone = deltaTone(delta.diff);
+    return (
+      <td key={key} className={cls}>
+        <span className="wocm-qty">{fmtQty(qty, line.inputUnit)}</span>
+        <span className="wocm-out">{out != null ? `예상 산출 ${fmtQty(out, line.unit)}` : "예상 산출량 미정"}</span>
+        <span className={`wocm-delta ${tone}`}>
+          {tone === "flat" ? "계약과 동일" : `계약 대비 ${fmtSigned(delta.diff)}${unitText(delta.unit)}`}
+        </span>
+      </td>
+    );
+  };
 
   /** ③ 풀 사용 현황 문구 (카드 ③ 하단) */
   const rawGroup = groupUsages.find((g) => g.key === "RAW");
@@ -759,9 +1018,9 @@ export function FoodWorkOrderCreatePage() {
       ? "입고된 원료가 없거나 탈피씨드로 환산할 수 없어 직접 입력을 사용할 수 없습니다."
       : isDirect && rawGroup
         ? isFullyUsed(rawGroup.total, rawPool)
-          ? `탈피씨드 풀 ${fmt(rawPool)}kg 전량 사용`
-          : `탈피씨드 풀 ${fmt(rawPool)}kg 중 ${fmt(rawGroup.total)}kg 사용 · ${fmt(round3(rawPool - rawGroup.total))}kg 남음`
-        : `탈피씨드 풀 ${fmt(rawPool)}kg 안에서 자유롭게 배분`;
+          ? `탈피씨드 풀 ${fmtQty(rawPool, "kg")} 전량 사용`
+          : `탈피씨드 풀 ${fmtQty(rawPool, "kg")} 중 ${fmtQty(rawGroup.total, "kg")} 사용 · ${fmtQty(round3(rawPool - rawGroup.total), "kg")} 남음`
+        : `탈피씨드 풀 ${fmtQty(rawPool, "kg")} 안에서 자유롭게 배분`;
 
   /** 라인 하나 렌더 */
   const renderLine = (line: WorkOrderLine) => {
@@ -769,11 +1028,10 @@ export function FoodWorkOrderCreatePage() {
     const groupTagCls = line.allocationGroup === "RAW" ? "raw" : line.allocationGroup === "PARK" ? "park" : "";
     const qty = qtyOf(line);
     const out = outputOf(line);
-    const percent = (() => {
-      // 그룹 내 현재 비율 (직접입력이면 사용자가 정한 비율, 아니면 수주 배분 비율과 같아진다)
-      const total = lines.filter((l) => l.allocationGroup === line.allocationGroup).reduce((s, l) => s + qtyOf(l), 0);
-      return total > 0 ? round3((qty / total) * 100) : 0;
-    })();
+
+    // 그룹 내 현재 비율 (직접입력이면 사용자가 정한 비율, 아니면 수주 배분 비율과 같아진다)
+    const groupTotal = groupUsages.find((g) => g.key === line.allocationGroup)?.total ?? 0;
+    const percent = groupTotal > 0 ? round3((qty / groupTotal) * 100) : 0;
 
     // 직접 입력 가능한 라인: ③ 방식 + 그룹 풀을 알 수 있는 RAW/PARK 라인
     const editable = isDirect && poolOf(line.allocationGroup) != null && !!line.preview;
@@ -791,28 +1049,28 @@ export function FoodWorkOrderCreatePage() {
           )}
         </div>
 
-        <div className="woc-line__fields">
+        <div key={effMethod} className="woc-line__fields is-flash">
           {/* 지시수량 = 투입량 기준 */}
           <div className="woc-field">
             <label htmlFor={`wocQty-${id}`}>투입량 (= 지시수량)</label>
             <div className="woc-unitInput">
+              {/* number → text + inputMode="decimal": 입력 중 값("12.") 유실, 휠로 값이 바뀌는 문제 방지 */}
               <input
                 id={`wocQty-${id}`}
-                type="number"
-                step="0.1"
-                min="0"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
                 className="woc-input"
                 // 직접 입력 중에는 입력 문자열 그대로, 아니면 계산된 값을 표시
                 value={editable ? (direct[id] ?? "") : qty.toFixed(1)}
                 disabled={!editable || isSubmitting}
                 // 풀을 초과한 그룹의 입력칸에만 빨간 표시
                 aria-invalid={editable && overGroups.has(line.allocationGroup)}
-                onKeyDown={(e) => {
-                  if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault();
-                }}
+                onFocus={(e) => e.target.select()}
                 onChange={(e) => handleDirectChange(id, e.target.value)}
+                onBlur={() => editable && handleDirectBlur(id)}
               />
-              < span > {line.inputUnit.toLowerCase()}</span>
+              <span>{unitText(line.inputUnit)}</span>
             </div>
             <p className="woc-field__hint">
               {line.allocationGroup === "PARK" ? "건조헴프박" : "탈피씨드"} 투입 기준 (그룹 내 비율 {fmt(percent)}%)
@@ -828,7 +1086,7 @@ export function FoodWorkOrderCreatePage() {
           <div className="woc-field">
             <span className="woc-field__label">예상 산출량</span>
             <div className={`woc-readonly${out == null ? " is-unknown" : ""}`}>
-              <span>{out != null ? `${fmt(out)}${line.unit}` : "미정"}</span>
+              <span>{out != null ? fmtQty(out, line.unit) : "미정"}</span>
               <span className="woc-readonly__tag">{out != null ? "참고용" : "수율 미확정"}</span>
             </div>
             {isOil && parkInfo && (
@@ -845,7 +1103,7 @@ export function FoodWorkOrderCreatePage() {
             </p>
           </div>
         </div>
-      </li >
+      </li>
     );
   };
 
@@ -902,6 +1160,7 @@ export function FoodWorkOrderCreatePage() {
                   value={form.managerId}
                   options={managerOptions}
                   placeholder="담당자 선택"
+                  searchable
                   disabled={isSubmitting}
                   invalid={!!showError(fieldErrors.managerId)}
                   onChange={(v) => handleChange("managerId", v)}
@@ -919,6 +1178,7 @@ export function FoodWorkOrderCreatePage() {
                   value={form.orderCode}
                   options={orderOptions}
                   placeholder="수주를 선택해주세요"
+                  searchable
                   disabled={isBusy}
                   invalid={!!showError(fieldErrors.orderCode)}
                   onChange={handleOrderChange}
@@ -927,10 +1187,21 @@ export function FoodWorkOrderCreatePage() {
               </div>
             </div>
 
-            {isOrderLoading && <p className="woc-chain__state">수주 정보를 불러오는 중입니다...</p>}
+            {/* 로딩 텍스트 한 줄 → 스켈레톤 (카드가 나타날 자리를 미리 잡아 화면이 튀지 않게) */}
+            {isOrderLoading && (
+              <div className="woc-skeleton" role="status" aria-live="polite">
+                <span className="woc-sr">수주 정보를 불러오는 중입니다</span>
+                <div className="woc-skeleton__cards" aria-hidden="true">
+                  {[0, 1, 2, 3].map((i) => (
+                    <span key={i} className="woc-skeleton__bar" />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {orderDetail && (
-              <ul className="woc-infocards">
+              // 카드 수를 data-count 로 넘겨, 2열일 때 마지막 카드가 혼자 남지 않게 CSS 에서 처리한다
+              <ul className="woc-infocards" data-count={receivedQty != null ? 5 : 4}>
                 {/* 계약 원물 */}
                 <li className="woc-infocard is-raw">
                   <span className="woc-infocard__icon" aria-hidden="true">
@@ -1020,70 +1291,48 @@ export function FoodWorkOrderCreatePage() {
                 </div>
               </div>
 
+              {/* 카드 3개를 설정 배열(METHOD_CARDS)로 렌더 + roving tabindex / 방향키 */}
               <div className="wocm-grid" role="radiogroup" aria-label="투입량 계산 방식">
-                {/* ① 원료 비율 유지 */}
-                <div
-                  className={`wocm-card${method === "A" ? " selected" : ""}`}
-                  role="radio"
-                  aria-checked={method === "A"}
-                  tabIndex={0}
-                  onClick={() => handleSelectMethod("A")}
-                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), handleSelectMethod("A"))}
-                >
-                  <div className="head">
-                    <span className="radio" />
-                    <span className="name">① 원료 비율 유지</span>
-                  </div>
-                  <div className="desc">
-                    계약 때 정한 배분비율을 실제 입고량에 그대로 적용합니다. 라인들이 같이 비례해서 줄어(늘어)듭니다.
-                  </div>
-                  <div className="delta">{renderDeltaChips("A")}</div>
-                </div>
-
-                {/* ② 목표 산출량 유지 */}
-                <div
-                  className={`wocm-card${method === "B" ? " selected" : ""}`}
-                  role="radio"
-                  aria-checked={method === "B"}
-                  tabIndex={0}
-                  onClick={() => handleSelectMethod("B")}
-                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), handleSelectMethod("B"))}
-                >
-                  <div className="head">
-                    <span className="radio" />
-                    <span className="name">② 오일 목표 산출량 유지</span>
-                  </div>
-                  <div className="desc">
-                    수율이 확정된 라인(헴프오일)의 목표 산출량을 계약값 그대로 지키고, 남는 원료만 수율이 불확실한
-                    라인(헴프씨드)이 떠안습니다.
-                  </div>
-                  <div className="delta">{renderDeltaChips("B")}</div>
-                </div>
-
-                {/* ③ 직접 입력 - 수율은 서버가 내려준 값으로 프론트에서 계산 */}
-                <div
-                  className={`wocm-card c${method === "C" ? " selected" : ""}`}
-                  role="radio"
-                  aria-checked={method === "C"}
-                  aria-disabled={rawPool == null}
-                  tabIndex={0}
-                  onClick={() => handleSelectMethod("C")}
-                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), handleSelectMethod("C"))}
-                >
-                  <div className="head">
-                    <span className="radio" />
-                    <span className="name">③ 직접 입력</span>
-                  </div>
-                  <div className="desc">
-                    실제 입고량 기준 탈피씨드 전량 안에서 라인에 자유롭게 나눠줍니다. 아래 작업지시 라인에서 한쪽 투입량을
-                    고치면 남은 수량이 다른 한쪽에 자동으로 들어갑니다. 오일 투입량에 따라 달라지는 헴프박 공급량 안에서
-                    PARK 라인도 똑같이 나눌 수 있습니다.
-                  </div>
-                  <p className="wocm-capNote">{poolNote}</p>
-                </div>
+                {METHOD_CARDS.map((card) => {
+                  const selected = method === card.id;
+                  const locked = card.id === "C" && rawPool == null; // 탈피씨드 가능량을 모르면 ③ 선택 불가
+                  return (
+                    <div
+                      key={card.id}
+                      ref={(el) => {
+                        methodRefs.current[card.id] = el;
+                      }}
+                      className={`wocm-card${selected ? " selected" : ""}`}
+                      role="radio"
+                      aria-checked={selected}
+                      aria-disabled={locked}
+                      tabIndex={selected ? 0 : -1} // 선택된 카드만 Tab 정지점 (나머지는 방향키로 이동)
+                      onClick={() => handleSelectMethod(card.id)}
+                      onKeyDown={(e) => handleMethodKeyDown(e, card.id)}
+                    >
+                      <div className="head">
+                        <span className="radio" />
+                        <span className="name">{card.name}</span>
+                      </div>
+                      <div className="desc">{card.desc}</div>
+                      {card.id === "A" && <div className="delta">{renderDeltaChips("A")}</div>}
+                      {card.id === "B" && <div className="delta">{renderDeltaChips("B")}</div>}
+                      {card.id === "C" &&
+                        (locked ? (
+                          // 비활성 사유: 11px 회색 글씨 → 잠금 아이콘 + 경고 박스
+                          <p className="wocm-lockNote">
+                            <LockClosedIcon aria-hidden="true" />
+                            <span>{poolNote}</span>
+                          </p>
+                        ) : (
+                          <p className="wocm-capNote">{poolNote}</p>
+                        ))}
+                    </div>
+                  );
+                })}
               </div>
 
-              {/* 방식 ①② 비교표 (RAW 라인) */}
+              {/* 방식 비교표 (RAW 라인) - ③ 선택 시 "내 입력값" 열이 라이브로 추가된다 */}
               {rawLines.length > 0 && (
                 <div className="wocm-tableWrap">
                   <table className="wocm-cmp">
@@ -1092,6 +1341,7 @@ export function FoodWorkOrderCreatePage() {
                         <th>산출 품목</th>
                         <th className="hA">① 원료 비율 유지</th>
                         <th className="hB">② 오일 목표 산출량 유지</th>
+                        {isDirect && <th className="hC">③ 내 입력값</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -1103,27 +1353,25 @@ export function FoodWorkOrderCreatePage() {
                               {line.itemCode} · {line.preview!.outputYieldPercent != null ? "수율 확정" : "수율 불확실"}
                             </span>
                           </td>
-                          {(["A", "B"] as const).map((m) => {
-                            const out = methodOut(line, m);
-                            const { diff, unit } = methodDelta(line, m);
-                            const flat = Math.abs(diff) < 0.05;
-                            return (
-                              <td key={m} className={m === "A" ? "colA" : "colB"}>
-                                <span className="wocm-qty">
-                                  {fmt(methodQty(line, m))}
-                                  {line.inputUnit.toLowerCase()}
-                                </span>
-                                <span className="wocm-out">
-                                  {out != null ? `예상 산출 ${fmt(out)}${line.unit}` : "예상 산출량 미정"}
-                                </span>
-                                <span className={`wocm-delta ${flat ? "flat" : "down"}`}>
-                                  {flat
-                                    ? "계약과 동일"
-                                    : `계약 대비 ${fmtSigned(diff)}${unit}`}
-                                </span>
-                              </td>
-                            );
-                          })}
+                          {(["A", "B"] as const).map((m) =>
+                            renderCmpCell(
+                              m,
+                              m === "A" ? "colA" : "colB",
+                              line,
+                              methodQty(line, m),
+                              methodOut(line, m),
+                              methodDelta(line, m),
+                            ),
+                          )}
+                          {isDirect &&
+                            renderCmpCell(
+                              "C",
+                              "colC",
+                              line,
+                              qtyOf(line),
+                              outputOf(line),
+                              calcDelta(line, qtyOf(line), outputOf(line)),
+                            )}
                         </tr>
                       ))}
                     </tbody>
@@ -1167,11 +1415,19 @@ export function FoodWorkOrderCreatePage() {
             </div>
 
             {lines.length === 0 ? (
-              <p className="woc-empty">
-                {orderDetail && !isOrderLoading
-                  ? "이 수주에는 배분된 산출 라인이 없습니다. 수주의 배분 그룹/비율을 확인해주세요."
-                  : "수주를 선택하면 산출 품목과 공정이 여기에 표시됩니다."}
-              </p>
+              isOrderLoading ? (
+                // 로딩 중에는 빈 안내 문구 대신 라인 모양의 스켈레톤
+                <div className="woc-skeleton" aria-hidden="true">
+                  <span className="woc-skeleton__bar is-line" />
+                  <span className="woc-skeleton__bar is-line" />
+                </div>
+              ) : (
+                <p className="woc-empty">
+                  {orderDetail
+                    ? "이 수주에는 배분된 산출 라인이 없습니다. 수주의 배분 그룹/비율을 확인해주세요."
+                    : "수주를 선택하면 산출 품목과 공정이 여기에 표시됩니다."}
+                </p>
+              )
             ) : (
               <ul className="woc-lines">
                 {lineGroups.map(([groupKey, groupLines]) => (
@@ -1229,10 +1485,12 @@ export function FoodWorkOrderCreatePage() {
           </section>
         </div>
 
-        {/* ───── 우측: 배분 그룹별 투입량 요약 + 저장 ───── */}
+        {/* ───── 우측: 배분 그룹별 투입량 요약 ───── */}
         <aside className="woc-side" aria-label="투입원료 사용량">
           <div className="woc-usage">
             <h2 className="woc-usage__title">투입원료 사용량</h2>
+
+            {groupUsages.length === 0 && <p className="woc-usage__empty">수주를 선택하면 그룹별 투입량이 표시됩니다.</p>}
 
             {groupUsages.map((group) => {
               const over = group.pool != null && isOverPool(group.total, group.pool);
@@ -1251,7 +1509,7 @@ export function FoodWorkOrderCreatePage() {
                   <p className="woc-usage__figure">
                     <strong>{fmt(group.total)}</strong>
                     <span>
-                      {group.pool != null ? ` / ${fmt(group.pool)}` : ""} {group.unit.toLowerCase()}
+                      {group.pool != null ? ` / ${fmt(group.pool)}` : ""} {unitText(group.unit)}
                     </span>
                   </p>
 
@@ -1265,7 +1523,7 @@ export function FoodWorkOrderCreatePage() {
                           ? "사용 가능량을 초과했습니다"
                           : full
                             ? "전량이 라인에 배정됐습니다"
-                            : `${fmt(round3(group.pool - group.total))}${group.unit.toLowerCase()} 남음`}
+                            : `${fmtQty(round3(group.pool - group.total), group.unit)} 남음`}
                       </p>
                     </>
                   )}
@@ -1275,7 +1533,7 @@ export function FoodWorkOrderCreatePage() {
                     {isPark && parkInfo && (
                       <li>
                         <span>공급(오일 부산물)</span>
-                        <span>{fmt(parkInfo.byproduct)}kg</span>
+                        <span>{fmtQty(parkInfo.byproduct, "kg")}</span>
                       </li>
                     )}
                     {groupLines.map((line) => {
@@ -1287,7 +1545,7 @@ export function FoodWorkOrderCreatePage() {
                             {line.itemNm} 투입{isPark ? "" : "(탈피씨드)"}
                           </span>
                           <span>
-                            {fmt(q)}{line.inputUnit.toLowerCase()} ({fmt(share)}%)
+                            {fmtQty(q, line.inputUnit)} ({fmt(share)}%)
                           </span>
                         </li>
                       );
@@ -1296,21 +1554,73 @@ export function FoodWorkOrderCreatePage() {
                 </div>
               );
             })}
-
-            {/* ③ 직접입력 풀 초과 오류 (저장 시도 후 표시) */}
-            {showError(directError) && <p className="woc-field__error">{directError}</p>}
           </div>
-
-          <div className="woc-actions">
-            <button type="submit" className="woc-btn primary block" disabled={isBusy}>
-              {isSubmitting ? "등록 중..." : "작업지시 저장"}
-            </button>
-            <button type="button" className="woc-btn ghost block" onClick={handleCancel} disabled={isSubmitting}>
-              취소
-            </button>
+          {/*
+            액션바
+            - 넓은 화면: 요약 패널 바로 아래 (우측 sticky 패널과 함께 따라다님)
+            - 좁은 화면(≤1000px): CSS 로 하단 sticky
+          */}
+          <div className="woc-actionBar">
+            <p
+              ref={reasonRef}
+              tabIndex={-1}
+              role="status"
+              aria-live="polite"
+              className={`woc-actionBar__reason${blockReason && submitted ? " is-error" : ""}`}
+            >
+              {submitted ? blockReason : ""}
+            </p>
+            <div className="woc-actionBar__buttons">
+              <button type="button" className="woc-btn ghost" onClick={handleCancel} disabled={isSubmitting}>
+                취소
+              </button>
+              <button type="submit" className="woc-btn primary" disabled={isBusy}>
+                {isSubmitting ? "저장 중..." : "작업지시 저장"}
+              </button>
+            </div>
           </div>
         </aside>
       </form>
-    </section>
+
+      {/* 이탈 확인 다이얼로그 */}
+      <dialog ref={leaveDialogRef} className="woc-dialog" onClose={() => setLeaveOpen(false)} aria-labelledby="wocLeaveTitle">
+        <div className="woc-dialog__body is-center">
+          <div className="woc-dialog__icon" aria-hidden="true">
+            <ExclamationTriangleIcon width={24} height={24} />
+          </div>
+          <h2 id="wocLeaveTitle" className="woc-dialog__title">
+            작성 중인 내용이 사라집니다
+          </h2>
+          <p className="woc-dialog__desc">저장하지 않고 나가면 입력한 내용이 모두 사라집니다. 나가시겠어요?</p>
+          <div className="woc-dialog__actions">
+            <button type="button" className="woc-btn ghost" onClick={() => setLeaveOpen(false)}>
+              계속 작성
+            </button>
+            <button
+              type="button"
+              className="woc-btn danger"
+              onClick={() => {
+                setLeaveOpen(false);
+                navigate(-1);
+              }}
+            >
+              나가기
+            </button>
+          </div>
+        </div>
+      </dialog>
+
+      {/* 토스트 (오류는 role="alert" 로 즉시 읽히게) */}
+      {
+        toast && (
+          <div className={`woc-toast is-${toast.kind}`} role={toast.kind === "error" ? "alert" : "status"}>
+            <span>{toast.message}</span>
+            <button type="button" className="woc-toast__close" aria-label="알림 닫기" onClick={() => setToast(null)}>
+              ×
+            </button>
+          </div>
+        )
+      }
+    </section >
   );
 }
