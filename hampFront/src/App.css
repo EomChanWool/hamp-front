@@ -7,6 +7,9 @@
   --primary: #57d3a1;
   --primary-hover: #43c18f;
   --primary-light: #dff7ec;
+  --perm-solid: #17875f;          /* 버튼, 토스트 배경 */
+  --perm-solid-hover: #146f4d;
+  --perm-accent: #17875f;         /* 텍스트, 포커스 */
   --text-main: #283238;
   --text-sub: #8b959e;
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.06);

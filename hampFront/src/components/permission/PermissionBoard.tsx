@@ -710,13 +710,13 @@ export function PermissionBoard() {
                                                 <button type="button" className="ghostButton" onClick={handleCancelEdit} disabled={isSaving}>
                                                     취소
                                                 </button>
-                                                <button type="button" className="primaryButton" onClick={handleSave} disabled={!isGroupReady || isSaving || !hasAnyChange}>
+                                                <button type="button" className="permissionBoard primaryButton" onClick={handleSave} disabled={!isGroupReady || isSaving || !hasAnyChange}>
                                                     {isSaving ? "저장 중..." : "저장"}
                                                 </button>
                                             </>
                                         ) : (
                                             <>
-                                                <button type="button" className="primaryButton" onClick={handleStartEdit} disabled={!isGroupReady}>
+                                                <button type="button" className="permissionBoard primaryButton" onClick={handleStartEdit} disabled={!isGroupReady}>
                                                     수정
                                                 </button>
                                                 <button
