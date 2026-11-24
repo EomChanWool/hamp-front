@@ -154,6 +154,8 @@ interface CustomSelectProps {
   value: string;
   options: SelectOption[];
   placeholder: string;
+  /** 검색창 placeholder */
+  searchPlaceholder?: string;
   /** true 면 목록 상단에 검색창이 생긴다 (label + description 에서 부분 일치) */
   searchable?: boolean;
   disabled?: boolean;
@@ -162,7 +164,7 @@ interface CustomSelectProps {
 }
 
 function CustomSelect({
-  id, labelId, value, options, placeholder, searchable, disabled, invalid, onChange,
+  id, labelId, value, options, placeholder, searchPlaceholder = "검색", searchable, disabled, invalid, onChange,
 }: CustomSelectProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -351,8 +353,8 @@ function CustomSelect({
                 type="text"
                 role="searchbox"
                 className="woc-select__searchInput"
-                placeholder="검색 (수주코드, 거래처)"
-                aria-label={`${placeholder} 검색`}
+                placeholder={searchPlaceholder}
+                aria-label={`${searchPlaceholder} 검색`}
                 aria-controls={listId}
                 aria-activedescendant={activeDescendant}
                 autoComplete="off"
@@ -1160,6 +1162,7 @@ export function FoodWorkOrderCreatePage() {
                   value={form.managerId}
                   options={managerOptions}
                   placeholder="담당자 선택"
+                  searchPlaceholder="검색 (담당자 이름, 아이디)"
                   searchable
                   disabled={isSubmitting}
                   invalid={!!showError(fieldErrors.managerId)}
@@ -1178,6 +1181,7 @@ export function FoodWorkOrderCreatePage() {
                   value={form.orderCode}
                   options={orderOptions}
                   placeholder="수주를 선택해주세요"
+                  searchPlaceholder="검색 (수주코드, 거래처)"
                   searchable
                   disabled={isBusy}
                   invalid={!!showError(fieldErrors.orderCode)}
