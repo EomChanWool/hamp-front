@@ -536,9 +536,8 @@ export function PermissionBoard() {
                     <div key={menu.menuId} className="permSubNode">
                         <div className="permSubRow">
                             <span
-                                className="permSubLabel"
+                                className={`permSubLabel ${hasChildren ? "clickable" : ""}`}
                                 onClick={() => hasChildren && toggleSubCollapse(menu.menuId)}
-                                style={{ cursor: hasChildren ? "pointer" : "default" }}
                             >
                                 {/* [행 전체 선택] 메뉴명 앞 dot을 누르면 이 행의 조회~승인을 한 번에 켜기/끄기 */}
                                 <PermBulkButton
@@ -606,9 +605,7 @@ export function PermissionBoard() {
                             disabled={isEditing && role.authId !== activeAuthId}
                         >
                             <span>{role.authNm}</span>
-                            <span className="permTabUserCount" style={{ fontSize: "0.85em", opacity: 0.8 }}>
-                                ({role.userCount ?? 0}명)
-                            </span>
+                            <span className="permTabUserCount">({role.userCount ?? 0}명)</span>
                             {role.authId === activeAuthId && hasAnyChange && <span className="permTabDirtyDot" aria-hidden />}
                         </button>
                     ))}
