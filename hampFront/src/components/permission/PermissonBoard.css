@@ -827,13 +827,13 @@
   color: var(--text-heading);
 }
 
-.permissionBoard.primaryButton {
+.primaryButton {
   color: #fff;
   background: var(--perm-solid);
   border: 1px solid transparent;
 }
 
-.permissionBoard.primaryButton:hover:not(:disabled) {
+.primaryButton:hover:not(:disabled) {
   background: var(--perm-solid-hover);
 }
 
