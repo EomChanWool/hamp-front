@@ -154,6 +154,8 @@ interface CustomSelectProps {
   value: string;
   options: SelectOption[];
   placeholder: string;
+  /** 검색창 placeholder */
+  searchPlaceholder?: string;
   /** true 면 목록 상단에 검색창이 생긴다 (label + description 에서 부분 일치) */
   searchable?: boolean;
   disabled?: boolean;
@@ -162,7 +164,7 @@ interface CustomSelectProps {
 }
 
 function CustomSelect({
-  id, labelId, value, options, placeholder, searchable, disabled, invalid, onChange,
+  id, labelId, value, options, placeholder, searchPlaceholder = "검색", searchable, disabled, invalid, onChange,
 }: CustomSelectProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -351,8 +353,8 @@ function CustomSelect({
                 type="text"
                 role="searchbox"
                 className="woc-select__searchInput"
-                placeholder="검색 (수주코드, 거래처)"
-                aria-label={`${placeholder} 검색`}
+                placeholder={searchPlaceholder}
+                aria-label={`${searchPlaceholder} 검색`}
                 aria-controls={listId}
                 aria-activedescendant={activeDescendant}
                 autoComplete="off"
@@ -1160,6 +1162,7 @@ export function FoodWorkOrderCreatePage() {
                   value={form.managerId}
                   options={managerOptions}
                   placeholder="담당자 선택"
+                  searchPlaceholder="검색 (담당자 이름, 아이디)"
                   searchable
                   disabled={isSubmitting}
                   invalid={!!showError(fieldErrors.managerId)}
@@ -1178,6 +1181,7 @@ export function FoodWorkOrderCreatePage() {
                   value={form.orderCode}
                   options={orderOptions}
                   placeholder="수주를 선택해주세요"
+                  searchPlaceholder="검색 (수주코드, 거래처)"
                   searchable
                   disabled={isBusy}
                   invalid={!!showError(fieldErrors.orderCode)}
@@ -1502,7 +1506,7 @@ export function FoodWorkOrderCreatePage() {
               return (
                 <div key={group.key} className="woc-usage__group">
                   <div className="woc-usage__groupHead">
-                    <span>{isPark ? "헴프박 공급/배분" : `${group.label} 투입`}</span>
+                    <span>{isPark ? "건조 헴프박 공급/배분" : `${group.label} 투입`}</span>
                     <span>라인 {group.lineCount}개</span>
                   </div>
 
@@ -1532,7 +1536,7 @@ export function FoodWorkOrderCreatePage() {
                   <ul className="woc-usage__list">
                     {isPark && parkInfo && (
                       <li>
-                        <span>공급(오일 부산물)</span>
+                        <span>공급(헴프박)</span>
                         <span>{fmtQty(parkInfo.byproduct, "kg")}</span>
                       </li>
                     )}
@@ -1542,7 +1546,7 @@ export function FoodWorkOrderCreatePage() {
                       return (
                         <li key={line.salesOrderLineId}>
                           <span>
-                            {line.itemNm} 투입{isPark ? "" : "(탈피씨드)"}
+                            {line.itemNm}
                           </span>
                           <span>
                             {fmtQty(q, line.inputUnit)} ({fmt(share)}%)
