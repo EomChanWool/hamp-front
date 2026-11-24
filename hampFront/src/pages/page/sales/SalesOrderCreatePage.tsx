@@ -8,6 +8,7 @@ import {
 import { BusinessPartnerApi } from "@/api/sales/BusinessPartner";
 import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
 import { NumberInput } from "@/components/common/NumberInput";
+import { focusField } from "@/utils/common";
 import { SelectBox, type SelectBoxOption } from "@/components/common/SelectBox";
 import { SalesOrderAllocationSection } from "@/components/common/SalesOrderAllocationSection";
 import {
@@ -23,6 +24,7 @@ type SalesOrderCreateForm = Omit<SalesOrderCreateRequest, "lines">;
 
 // 거래처 · 투입수량 · 가공비 (투입원료는 헴프 원물 고정)
 const REQUIRED_TOTAL = 3;
+
 
 export function SalesOrderCreatePage() {
   const navigate = useNavigate();
@@ -47,14 +49,17 @@ export function SalesOrderCreatePage() {
   // 투입수량 없이 생산 배분 비율 조작을 마치면 alert 후 투입수량 칸으로 포커스 - 투입수량을 넣기 전까지 한 번만
   // (같은 순간에 조작 종료가 겹쳐도 한 번만 뜨도록 렌더와 무관한 ref로 막는다)
   const qtyInputRef = useRef<HTMLInputElement>(null);
+  const bpSelectRef = useRef<HTMLButtonElement>(null);
+  const amountInputRef = useRef<HTMLInputElement>(null);
   const qtyAlertShownRef = useRef(false);
+  // 등록을 한 번 눌러 필수값 검증에 걸린 뒤부터 비어 있는 필수 칸을 빨갛게 표시
+  const [showRequiredErrors, setShowRequiredErrors] = useState(false);
 
   const handleNeedRawWeight = () => {
     if (qtyAlertShownRef.current) return;
     qtyAlertShownRef.current = true;
     alert("생산 배분을 계산하려면 투입수량을 먼저 입력해주세요.");
-    qtyInputRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
-    qtyInputRef.current?.focus({ preventScroll: true });
+    focusField(qtyInputRef.current);
   };
 
   const [businessPartnerOptions, setBusinessPartnerOptions] = useState<any[]>([]);
@@ -92,6 +97,13 @@ export function SalesOrderCreatePage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const missingRequired = {
+    bpCode: !form.bpCode,
+    orderQty: form.orderQty == null,
+    orderAmount: form.orderAmount == null,
+  };
+  const isInvalid = (key: keyof typeof missingRequired) => (showRequiredErrors && missingRequired[key]) || undefined;
+
   const handleCancel = () => {
     const queryString = searchParams.toString();
     navigate(queryString ? `/sales/sales-order?${queryString}` : "/sales/sales-order");
@@ -100,16 +112,18 @@ export function SalesOrderCreatePage() {
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
 
-    if (!form.bpCode) {
-      alert("거래처를 선택해주세요.");
-      return;
-    }
-    if (form.orderQty == null) {
-      alert("투입수량을 입력해주세요.");
-      return;
-    }
-    if (form.orderAmount == null) {
-      alert("가공비를 입력해주세요.");
+    // 비어 있는 첫 필수 칸을 안내하고 그 칸으로 이동
+    const firstMissing = (
+      [
+        { missing: missingRequired.bpCode, ref: bpSelectRef, message: "거래처를 선택해주세요." },
+        { missing: missingRequired.orderQty, ref: qtyInputRef, message: "투입수량을 입력해주세요." },
+        { missing: missingRequired.orderAmount, ref: amountInputRef, message: "가공비를 입력해주세요." },
+      ] as const
+    ).find((field) => field.missing);
+    if (firstMissing) {
+      setShowRequiredErrors(true);
+      alert(firstMissing.message);
+      focusField(firstMissing.ref.current);
       return;
     }
 
@@ -208,6 +222,7 @@ export function SalesOrderCreatePage() {
                     거래처명 <span className="required" aria-hidden="true">*</span>
                   </label>
                   <SelectBox
+                    ref={bpSelectRef}
                     id="order-bp"
                     value={form.bpCode}
                     options={bpSelectOptions}
@@ -215,6 +230,7 @@ export function SalesOrderCreatePage() {
                     searchPlaceholder="거래처명 또는 코드 검색"
                     searchable
                     disabled={isSubmitting}
+                    invalid={isInvalid("bpCode")}
                     onChange={(v) => handleChange("bpCode", v)}
                   />
                 </div>
@@ -278,6 +294,7 @@ export function SalesOrderCreatePage() {
                     wrapClassName="formInputWrap"
                     suffix={rawUnit ? <span className="formInputSuffix">{rawUnit}</span> : undefined}
                     placeholder="0"
+                    aria-invalid={isInvalid("orderQty")}
                     value={form.orderQty}
                     disabled={isSubmitting}
                     onValueChange={(qty) => {
@@ -310,10 +327,12 @@ export function SalesOrderCreatePage() {
                     가공비 <span className="required" aria-hidden="true">*</span>
                   </label>
                   <NumberInput
+                    ref={amountInputRef}
                     id="order-amount"
                     className="formInput hasSuffix"
                     wrapClassName="formInputWrap"
                     suffix={<span className="formInputSuffix">원</span>}
+                    aria-invalid={isInvalid("orderAmount")}
                     value={form.orderAmount}
                     disabled={isSubmitting}
                     onValueChange={(amount) => handleChange("orderAmount", amount)}

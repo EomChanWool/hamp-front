@@ -894,7 +894,3 @@
 .soNumberEdit > span {
   white-space: nowrap;
 }
-
-.soNumberEdit .tableInput[aria-invalid="true"] {
-  border-color: var(--dl-danger, #c0293d);
-}

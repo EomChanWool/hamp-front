@@ -2,10 +2,12 @@ import {
   useCallback,
   useEffect,
   useId,
+  useImperativeHandle,
   useMemo,
   useRef,
   useState,
   type KeyboardEvent,
+  type Ref,
 } from "react";
 
 export type SelectBoxOption = {
@@ -15,6 +17,8 @@ export type SelectBoxOption = {
 };
 
 type SelectBoxProps = {
+  /** 선택 버튼(트리거)에 연결 (검증 실패 시 포커스 이동 등) */
+  ref?: Ref<HTMLButtonElement>;
   id?: string;
   value: string;
   options: SelectBoxOption[];
@@ -30,9 +34,12 @@ type SelectBoxProps = {
   /** label 연결이 없는 곳(테이블 행 등)에서 접근 가능한 이름 지정 */
   ariaLabel?: string;
   className?: string;
+  /** 검증 실패 표시 (aria-invalid) */
+  invalid?: boolean;
 };
 
 export function SelectBox({
+  ref,
   id,
   value,
   options,
@@ -45,6 +52,7 @@ export function SelectBox({
   emptyText = "검색 결과가 없습니다",
   ariaLabel,
   className,
+  invalid = false,
 }: SelectBoxProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -52,6 +60,7 @@ export function SelectBox({
 
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  useImperativeHandle(ref, () => triggerRef.current as HTMLButtonElement, []);
   const searchRef = useRef<HTMLInputElement>(null);
   const listboxId = useId();
 
@@ -185,6 +194,7 @@ export function SelectBox({
         aria-controls={open ? listboxId : undefined}
         aria-activedescendant={searchable ? undefined : activeOptionId}
         aria-label={ariaLabel}
+        aria-invalid={invalid || undefined}
         disabled={disabled}
         onClick={() => (open ? close(false) : openPanel())}
       >

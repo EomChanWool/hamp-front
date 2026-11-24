@@ -68,3 +68,9 @@ export const parseDecimalInput = (value: string): number | null => {
   const num = Number(value);
   return value === "" || value === "." || Number.isNaN(num) ? null : num;
 };
+
+/** 검증 안내 후 입력칸을 화면 가운데로 옮기고 포커스 */
+export const focusField = (element: HTMLElement | null) => {
+  element?.scrollIntoView({ block: "center", behavior: "smooth" });
+  element?.focus({ preventScroll: true });
+};

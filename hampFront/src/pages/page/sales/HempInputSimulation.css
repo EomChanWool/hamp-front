@@ -235,11 +235,13 @@
 /* 입력 필드 3개 + 버튼을 한 줄로 나열 */
 .wsim .wsim-parkBox .woc-grid3 {
   grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
-  align-items: end;
+  /* 오류 문구로 한 칸이 길어져도 옆 칸이 밀려 내려가지 않게 위쪽 정렬 */
+  align-items: start;
 }
 
+/* 버튼 위에 라벨 높이만큼 빈 줄을 두어 입력칸과 높이를 맞춘다 */
 .wsim .wsim-parkActions {
-  display: flex;
+  align-items: flex-start;
   margin-top: 0;
 }
 
@@ -279,6 +281,11 @@
 @container woc (max-width: 620px) {
   .wsim .wsim-parkBox .woc-grid3 {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* 한 줄 배치에서는 맞출 옆 칸이 없으므로 빈 라벨 줄을 없앤다 */
+  .wsim .wsim-parkActions__spacer {
+    display: none;
   }
 }
 
