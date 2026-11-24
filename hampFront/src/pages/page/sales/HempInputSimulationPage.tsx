@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   ArchiveBoxIcon,
   BeakerIcon,
@@ -7,40 +7,59 @@ import {
   Square3Stack3DIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
+import axios from "axios";
+import {
+  SalesOrderApi,
+  type SalesOrderByproductSimulationResponse,
+  type SalesOrderRawMaterialSimulationResponse,
+} from "@/api/sales/SalesOrder";
+import { NumberInput } from "@/components/common/NumberInput";
+import { PARK_ITEM_CODE } from "@/utils/salesOrderAllocation";
 import "@/pages/page/food/Food.css"; // woc- 공통 스타일 (작업지시 등록과 동일)
 import "./HempInputSimulation.css"; // 이 페이지 전용 추가분 (wsim-)
 
-/* ───────────── 수율 상수 (헴프 생산 품목 구조 기준) — 수율이 바뀌면 여기만 수정 ───────────── */
+/* ───────────── 표시용 수율 (산출량은 서버 시뮬레이션 API가 계산, 여기 값은 문구에만 사용) ───────────── */
 const YIELD = {
-  SEMI: 0.65, // 원물 → 탈피씨드 (탈피·선별)
-  HULL: 0.36, // 원물 → 껍질 (부산물, 폐기성)
   OIL: 0.275, // 탈피씨드 → 헴프오일 (착유)
   PARK: 0.725, // 탈피씨드 → 헴프박 (착유 부산물)
-  DRY_ASSUMED: 1.0, // 헴프박 → 헴프박건조 (수율 불확실, 가정치)
+  DRY_ASSUMED: 0.95, // 헴프박 → 헴프박건조 (수율 불확실, 가정치)
   POWDER: 0.9, // 헴프박건조 → 헴프박분말 (분쇄)
 } as const;
+
+/** 시뮬레이션 응답에서 껍질(탈각 부산물) 품목 코드 */
+const HULL_ITEM_CODE = "HEMP_HULL";
 
 /* ───────────── 타입 ───────────── */
 interface MainResult {
   raw: number;
+  rawUnit: string;
   semiSeedTotal: number;
+  semiUnit: string;
   hull: number;
+  hullUnit: string;
   oilPercent: number;
   seedPercent: number;
   oilSemiSeed: number;
   seedSemiSeed: number;
   oilMinQty: number;
+  oilUnit: string;
   parkMinQty: number;
+  parkUnit: string;
+  /** 헴프박 최소량을 건조했을 때 수량 (헴프박이 없으면 null) */
+  parkDryQty: number | null;
+  parkDryUnit: string;
 }
 
 interface ParkResult {
   park: number;
   dryQty: number;
+  dryUnit: string;
   powderPercent: number;
   concPercent: number;
   powderDry: number;
   concDry: number;
   powderQty: number;
+  powderUnit: string;
 }
 
 /** 공정 스테퍼 한 단계 */
@@ -60,6 +79,12 @@ const round1 = (n: number) => Math.round((n + Number.EPSILON) * 10) / 10;
 /** 수량 표시 (소수 1자리 고정 — 작업지시 등록과 동일) */
 const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
+/** 서버 단위 표시 (KG → kg, L 등은 그대로) */
+const unitLabel = (unit: string) => (unit.toUpperCase() === "KG" ? "kg" : unit);
+
+/** 수량 + 단위 */
+const fmtQty = (n: number, unit: string) => `${fmt(n)}${unitLabel(unit)}`;
+
 /** 퍼센트 표시 (불필요한 .0 제거) */
 const fmtPct = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
 
@@ -69,49 +94,73 @@ const yieldPct = (rate: number) => fmtPct(round1(rate * 100));
 const cx = (...names: Array<string | false | null | undefined>) => names.filter(Boolean).join(" ");
 
 /** 입력한 비율의 나머지(100 - 입력값) 라벨 */
-const remainLabel = (value: string) => {
-  const n = parseFloat(value);
-  return Number.isNaN(n) ? "-%" : `${fmtPct(round1(100 - n))}%`;
+const remainLabel = (value: number | null) => (value == null ? "-%" : `${fmtPct(round1(100 - value))}%`);
+
+const isValidPercent = (n: number | null): n is number => n != null && n >= 0 && n <= 100;
+
+const isValidWeight = (n: number | null): n is number => n != null && n > 0;
+
+/* ───────────── 시뮬레이션 응답 → 화면 값 ───────────── */
+
+/** 확정 수율 구간인데 수량이 비어 있으면 계산 실패로 본다 */
+const requireQty = (qty: number | null, name: string) => {
+  if (qty == null) throw new Error(`${name} 계산 결과가 없습니다.`);
+  return qty;
 };
 
-const isInvalidPercent = (n: number) => Number.isNaN(n) || n < 0 || n > 100;
-
-/** 숫자 입력칸에서 음수/지수 표기 입력 차단 */
-const blockSign = (e: KeyboardEvent<HTMLInputElement>) => {
-  if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault();
-};
-
-/* ───────────── 계산 (화면과 분리된 순수 함수) ───────────── */
-const calcMain = (raw: number, oilPercent: number): MainResult => {
-  const semiSeedTotal = round1(raw * YIELD.SEMI);
-  const oilSemiSeed = round1(semiSeedTotal * (oilPercent / 100));
+const toMainResult = (
+  raw: SalesOrderRawMaterialSimulationResponse,
+  dryPark: SalesOrderByproductSimulationResponse | null,
+): MainResult => {
+  const { semiSeedCapacity: semi, oilCapacity: oil, seedCapacity: seed } = raw;
+  const hull = semi.byproducts.find((b) => b.itemCode === HULL_ITEM_CODE);
+  const park = oil.byproducts.find((b) => b.itemCode === PARK_ITEM_CODE);
 
   return {
-    raw,
-    semiSeedTotal,
-    hull: Math.ceil(raw * YIELD.HULL),
-    oilPercent,
-    seedPercent: round1(100 - oilPercent),
-    oilSemiSeed,
-    seedSemiSeed: round1(semiSeedTotal - oilSemiSeed),
-    oilMinQty: round1(oilSemiSeed * YIELD.OIL),
-    parkMinQty: Math.ceil(oilSemiSeed * YIELD.PARK),
+    raw: raw.rawWeight,
+    rawUnit: raw.rawUnit,
+    semiSeedTotal: requireQty(semi.qty, "탈피씨드"),
+    semiUnit: semi.unit ?? raw.rawUnit,
+    hull: hull?.qty ?? 0,
+    hullUnit: hull?.unit ?? raw.rawUnit,
+    oilPercent: oil.percent,
+    seedPercent: seed.percent,
+    oilSemiSeed: requireQty(oil.semiSeedQty, "헴프오일 라인 투입량"),
+    seedSemiSeed: requireQty(seed.semiSeedQty, "헴프씨드(포장) 라인 투입량"),
+    oilMinQty: requireQty(oil.qty, "헴프오일"),
+    oilUnit: oil.unit,
+    parkMinQty: park?.qty ?? 0,
+    parkUnit: park?.unit ?? raw.rawUnit,
+    parkDryQty: dryPark ? requireQty(dryPark.dryParkCapacity.qty, "헴프박건조") : null,
+    parkDryUnit: dryPark?.dryParkCapacity.unit ?? park?.unit ?? raw.rawUnit,
   };
 };
 
-const calcPark = (park: number, powderPercent: number): ParkResult => {
-  const dryQty = round1(park * YIELD.DRY_ASSUMED);
-  const powderDry = round1(dryQty * (powderPercent / 100));
-
+const toParkResult = (res: SalesOrderByproductSimulationResponse): ParkResult => {
+  const { dryParkCapacity: dry, powderCapacity: powder, concCapacity: conc } = res;
   return {
-    park,
-    dryQty,
-    powderPercent,
-    concPercent: round1(100 - powderPercent),
-    powderDry,
-    concDry: round1(dryQty - powderDry),
-    powderQty: round1(powderDry * YIELD.POWDER),
+    park: res.parkWeight,
+    dryQty: requireQty(dry.qty, "헴프박건조"),
+    dryUnit: dry.unit ?? res.parkUnit,
+    powderPercent: powder.percent,
+    concPercent: conc.percent,
+    powderDry: requireQty(powder.dryParkQty, "헴프박분말 라인 투입량"),
+    concDry: requireQty(conc.dryParkQty, "헴프박농축 라인 투입량"),
+    powderQty: requireQty(powder.qty, "헴프박분말"),
+    powderUnit: powder.unit,
   };
+};
+
+/** 응답 본문이 비어 있으면 실패로 본다 */
+const requireData = <T,>(res: { data?: T | null }): T => {
+  if (res.data == null) throw new Error("시뮬레이션 결과를 받지 못했습니다.");
+  return res.data;
+};
+
+/** 서버 오류 메시지 우선, 없으면 fallback */
+const errorMessage = (error: unknown, fallback: string) => {
+  if (axios.isAxiosError(error)) return error.response?.data?.message || fallback;
+  return error instanceof Error && error.message ? error.message : fallback;
 };
 
 /* ───────────── 표시용 작은 컴포넌트 ───────────── */
@@ -121,12 +170,13 @@ interface InfoCardProps {
   icon: ReactNode;
   label: string;
   qty: number;
+  unit: string;
   /** is-raw / is-received is-ok 등 woc 카드 변형 클래스 */
   variant?: string;
   subtag?: string;
 }
 
-const InfoCard = ({ icon, label, qty, variant, subtag }: InfoCardProps) => {
+const InfoCard = ({ icon, label, qty, unit, variant, subtag }: InfoCardProps) => {
   // 변형 카드(is-*)는 woc 스타일이 <em> 단위를 처리한다
   const Unit = variant ? "em" : "span";
   return (
@@ -138,7 +188,7 @@ const InfoCard = ({ icon, label, qty, variant, subtag }: InfoCardProps) => {
         <span className="woc-infocard__label">{label}</span>
         <strong className={cx("woc-infocard__value", !variant && "is-num")}>
           {fmt(qty)}
-          <Unit className={variant ? undefined : "wsim-unit"}>kg</Unit>
+          <Unit className={variant ? undefined : "wsim-unit"}>{unitLabel(unit)}</Unit>
         </strong>
         {subtag && <span className="woc-infocard__subtag">{subtag}</span>}
       </div>
@@ -150,6 +200,7 @@ const InfoCard = ({ icon, label, qty, variant, subtag }: InfoCardProps) => {
 interface BannerStat {
   label: string;
   qty: number;
+  unit: string;
   highlight?: boolean;
   /** true이면 앞에 → 표시 */
   arrow?: boolean;
@@ -184,7 +235,7 @@ const GroupBanner = ({ id, step, title, stats, park }: GroupBannerProps) => (
             <span className="woc-groupBanner__label">{s.label}</span>
             <strong className="woc-groupBanner__value">
               {fmt(s.qty)}
-              <em>kg</em>
+              <em>{unitLabel(s.unit)}</em>
             </strong>
           </div>
         </Fragment>
@@ -227,12 +278,14 @@ interface SimLineProps {
   uncertain?: boolean;
   inLabel: string;
   inQty: number;
+  inUnit: string;
   inTag: string;
   /** null이면 "미정" */
   outQty: number | null;
+  outUnit?: string;
   outTag: string;
   /** 헴프오일 라인에서만: 함께 발생하는 헴프박 */
-  parkBadge?: number;
+  parkBadge?: { qty: number; unit: string };
   hint: string;
   warn?: string;
   steps: StepDef[];
@@ -254,7 +307,7 @@ const SimLine = (p: SimLineProps) => (
       <div className="woc-field">
         <span className="woc-field__label">{p.inLabel}</span>
         <div className="woc-readonly">
-          <span>{fmt(p.inQty)}kg</span>
+          <span>{fmtQty(p.inQty, p.inUnit)}</span>
           <span className="woc-readonly__tag">{p.inTag}</span>
         </div>
       </div>
@@ -262,13 +315,14 @@ const SimLine = (p: SimLineProps) => (
       <div className="woc-field">
         <span className="woc-field__label">예상 산출량</span>
         <div className={cx("woc-readonly", p.outQty == null && "is-unknown")}>
-          <span>{p.outQty != null ? `${fmt(p.outQty)}kg` : "미정"}</span>
+          <span>{p.outQty != null ? fmtQty(p.outQty, p.outUnit ?? p.inUnit) : "미정"}</span>
           <span className="woc-readonly__tag">{p.outTag}</span>
         </div>
         {p.parkBadge != null && (
           <div>
             <span className="woc-tag park">
-              부산물 헴프박 <strong>{fmt(p.parkBadge)}</strong>kg 발생
+              부산물 헴프박 <strong>{fmt(p.parkBadge.qty)}</strong>
+              {unitLabel(p.parkBadge.unit)} 발생
             </span>
           </div>
         )}
@@ -289,75 +343,110 @@ const SimLine = (p: SimLineProps) => (
 
 /* ───────────── 페이지 ───────────── */
 
-const DEFAULT_RAW = "1000";
-const DEFAULT_OIL_PERCENT = "60";
-const DEFAULT_POWDER_PERCENT = "50";
+const DEFAULT_RAW = 1000;
+const DEFAULT_OIL_PERCENT = 60;
+const DEFAULT_POWDER_PERCENT = 50;
 
 const HempInputSimulationPage = () => {
   const rootRef = useRef<HTMLElement>(null);
 
   // 1단계 입력 (시뮬레이션 돌리는 사람이 직접 입력)
-  const [rawWeight, setRawWeight] = useState<string>(DEFAULT_RAW);
-  const [oilPercent, setOilPercent] = useState<string>(DEFAULT_OIL_PERCENT);
+  const [rawWeight, setRawWeight] = useState<number | null>(DEFAULT_RAW);
+  const [oilPercent, setOilPercent] = useState<number | null>(DEFAULT_OIL_PERCENT);
   const [attempted, setAttempted] = useState(false);
   const [result, setResult] = useState<MainResult | null>(null);
 
   // 헴프박 재투입 입력
-  const [parkWeight, setParkWeight] = useState<string>("0");
-  const [powderPercent, setPowderPercent] = useState<string>(DEFAULT_POWDER_PERCENT);
+  const [parkWeight, setParkWeight] = useState<number | null>(0);
+  const [powderPercent, setPowderPercent] = useState<number | null>(DEFAULT_POWDER_PERCENT);
   const [parkAttempted, setParkAttempted] = useState(false);
   const [parkResult, setParkResult] = useState<ParkResult | null>(null);
 
-  // 검증 실패 시 첫 오류 입력칸으로 포커스 이동하기 위한 카운터
-  const [focusTick, setFocusTick] = useState(0);
+  // 시뮬레이션 API 요청 중 (중복 요청 방지)
+  const [calculating, setCalculating] = useState<"main" | "park" | null>(null);
+  const busy = calculating != null;
+
+  // 검증 실패 시 해당 폼의 첫 오류 입력칸으로 포커스 이동 (매번 새 객체라 같은 폼도 다시 실행됨)
+  const [focusRequest, setFocusRequest] = useState<{ formId: string } | null>(null);
 
   useEffect(() => {
-    if (focusTick === 0) return;
-    rootRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
-  }, [focusTick]);
+    if (!focusRequest) return;
+    rootRef.current
+      ?.querySelector<HTMLElement>(`#${focusRequest.formId} [aria-invalid="true"]`)
+      ?.focus();
+  }, [focusRequest]);
 
   /* ───── 검증 (오류 문구는 계산 시도 후부터) ───── */
-  const rawNum = parseFloat(rawWeight);
-  const oilNum = parseFloat(oilPercent);
-  const rawError = attempted && (!rawNum || rawNum <= 0) ? "원물 무게를 입력해주세요." : "";
-  const oilError = attempted && isInvalidPercent(oilNum) ? "0~100 사이로 입력해주세요." : "";
+  const rawError = attempted && !isValidWeight(rawWeight) ? "원물 무게를 입력해주세요." : "";
+  const oilError = attempted && !isValidPercent(oilPercent) ? "0~100 사이로 입력해주세요." : "";
 
-  const parkNum = parseFloat(parkWeight);
-  const powderNum = parseFloat(powderPercent);
-  const parkError = parkAttempted && (!parkNum || parkNum <= 0) ? "헴프박 투입량을 입력해주세요." : "";
-  const powderError = parkAttempted && isInvalidPercent(powderNum) ? "0~100 사이로 입력해주세요." : "";
+  const parkError = parkAttempted && !isValidWeight(parkWeight) ? "헴프박 투입량을 입력해주세요." : "";
+  const powderError = parkAttempted && !isValidPercent(powderPercent) ? "0~100 사이로 입력해주세요." : "";
 
   /* ───── 핸들러 ───── */
-  const handleCalculate = (e: FormEvent<HTMLFormElement>) => {
+  const handleCalculate = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (busy) return;
     setAttempted(true);
 
-    if (!rawNum || rawNum <= 0 || isInvalidPercent(oilNum)) {
+    if (!isValidWeight(rawWeight) || !isValidPercent(oilPercent)) {
       setResult(null);
-      setFocusTick((n) => n + 1);
+      setFocusRequest({ formId: "wsimMainForm" });
       return;
     }
 
-    const next = calcMain(rawNum, oilNum);
-    setResult(next);
+    setCalculating("main");
+    try {
+      const raw = requireData(await SalesOrderApi.simulateRawMaterial({ rawWeight, oilPercent }));
 
-    // 헴프박 재투입 영역 초기화 (최소 산출량을 기본 투입량으로)
-    setParkWeight(String(next.parkMinQty));
-    setParkResult(null);
-    setParkAttempted(false);
+      // STEP 3 헤더의 건조 후 수량용 (건조량은 분말 비율과 무관해 기본 비율로 요청)
+      const parkQty = raw.oilCapacity.byproducts.find((b) => b.itemCode === PARK_ITEM_CODE)?.qty ?? 0;
+      const dryPark =
+        parkQty > 0
+          ? requireData(
+              await SalesOrderApi.simulateByproduct({
+                parkWeight: parkQty,
+                powderPercent: DEFAULT_POWDER_PERCENT,
+              }),
+            )
+          : null;
+
+      const next = toMainResult(raw, dryPark);
+      setResult(next);
+
+      // 헴프박 재투입 영역 초기화 (최소 산출량을 기본 투입량으로)
+      setParkWeight(next.parkMinQty);
+      setParkResult(null);
+      setParkAttempted(false);
+    } catch (error) {
+      setResult(null);
+      alert(errorMessage(error, "원물 투입 시뮬레이션 계산 중 오류가 발생했습니다."));
+    } finally {
+      setCalculating(null);
+    }
   };
 
-  const handleParkCalculate = (e: FormEvent<HTMLFormElement>) => {
+  const handleParkCalculate = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (busy) return;
     setParkAttempted(true);
 
-    if (!parkNum || parkNum <= 0 || isInvalidPercent(powderNum)) {
+    if (!isValidWeight(parkWeight) || !isValidPercent(powderPercent)) {
       setParkResult(null);
-      setFocusTick((n) => n + 1);
+      setFocusRequest({ formId: "wsimParkForm" });
       return;
     }
 
-    setParkResult(calcPark(parkNum, powderNum));
+    setCalculating("park");
+    try {
+      const res = requireData(await SalesOrderApi.simulateByproduct({ parkWeight, powderPercent }));
+      setParkResult(toParkResult(res));
+    } catch (error) {
+      setParkResult(null);
+      alert(errorMessage(error, "헴프박 재투입 계산 중 오류가 발생했습니다."));
+    } finally {
+      setCalculating(null);
+    }
   };
 
   const handleReset = () => {
@@ -365,14 +454,13 @@ const HempInputSimulationPage = () => {
     setOilPercent(DEFAULT_OIL_PERCENT);
     setAttempted(false);
     setResult(null);
-    setParkWeight("0");
+    setParkWeight(0);
     setPowderPercent(DEFAULT_POWDER_PERCENT);
     setParkAttempted(false);
     setParkResult(null);
   };
 
   const hasPark = !!result && result.parkMinQty > 0;
-  const parkDryAssumed = result ? round1(result.parkMinQty * YIELD.DRY_ASSUMED) : 0;
 
   /* ───── 렌더 ───── */
   return (
@@ -406,21 +494,16 @@ const HempInputSimulationPage = () => {
                   <label htmlFor="wsimRaw">
                     원물(헴프 씨드) 무게 <em>*</em>
                   </label>
-                  <div className="woc-unitInput">
-                    <input
-                      id="wsimRaw"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      inputMode="decimal"
-                      className="woc-input"
-                      value={rawWeight}
-                      aria-invalid={!!rawError}
-                      onKeyDown={blockSign}
-                      onChange={(e) => setRawWeight(e.target.value)}
-                    />
-                    <span>kg</span>
-                  </div>
+                  <NumberInput
+                    id="wsimRaw"
+                    className="woc-input"
+                    wrapClassName="woc-unitInput"
+                    suffix={<span>kg</span>}
+                    decimalScale={1}
+                    value={rawWeight}
+                    aria-invalid={rawError ? true : undefined}
+                    onValueChange={setRawWeight}
+                  />
                   {rawError ? (
                     <p className="woc-field__error">{rawError}</p>
                   ) : (
@@ -430,22 +513,17 @@ const HempInputSimulationPage = () => {
 
                 <div className="woc-field">
                   <label htmlFor="wsimOilPercent">탈피씨드 중 헴프오일 배분 비율</label>
-                  <div className="woc-unitInput">
-                    <input
-                      id="wsimOilPercent"
-                      type="number"
-                      step="1"
-                      min="0"
-                      max="100"
-                      inputMode="decimal"
-                      className="woc-input"
-                      value={oilPercent}
-                      aria-invalid={!!oilError}
-                      onKeyDown={blockSign}
-                      onChange={(e) => setOilPercent(e.target.value)}
-                    />
-                    <span>%</span>
-                  </div>
+                  <NumberInput
+                    id="wsimOilPercent"
+                    className="woc-input"
+                    wrapClassName="woc-unitInput"
+                    suffix={<span>%</span>}
+                    max={100}
+                    thousandSeparator={false}
+                    value={oilPercent}
+                    aria-invalid={oilError ? true : undefined}
+                    onValueChange={setOilPercent}
+                  />
                   {oilError ? (
                     <p className="woc-field__error">{oilError}</p>
                   ) : (
@@ -466,17 +544,34 @@ const HempInputSimulationPage = () => {
 
             {result && (
               <ul className="woc-infocards">
-                <InfoCard variant="is-raw" icon={<CubeIcon />} label="원물(헴프 씨드) 투입" qty={result.raw} />
-                <InfoCard icon={<Square3Stack3DIcon />} label="탈피씨드" qty={result.semiSeedTotal} />
-                <InfoCard icon={<TrashIcon />} label="껍질 (폐기성)" qty={result.hull} />
+                <InfoCard
+                  variant="is-raw"
+                  icon={<CubeIcon />}
+                  label="원물(헴프 씨드) 투입"
+                  qty={result.raw}
+                  unit={result.rawUnit}
+                />
+                <InfoCard
+                  icon={<Square3Stack3DIcon />}
+                  label="탈피씨드"
+                  qty={result.semiSeedTotal}
+                  unit={result.semiUnit}
+                />
+                <InfoCard icon={<TrashIcon />} label="껍질 (폐기성)" qty={result.hull} unit={result.hullUnit} />
                 <InfoCard
                   variant="is-received is-ok"
                   icon={<BeakerIcon />}
                   label="헴프오일 (최소)"
                   qty={result.oilMinQty}
+                  unit={result.oilUnit}
                   subtag="수율 확정 기준"
                 />
-                <InfoCard icon={<ArchiveBoxIcon />} label="헴프박 (최소)" qty={result.parkMinQty} />
+                <InfoCard
+                  icon={<ArchiveBoxIcon />}
+                  label="헴프박 (최소)"
+                  qty={result.parkMinQty}
+                  unit={result.parkUnit}
+                />
               </ul>
             )}
           </section>
@@ -501,14 +596,15 @@ const HempInputSimulationPage = () => {
                     step="STEP 1"
                     title="전처리 (원물 → 탈피씨드)"
                     stats={[
-                      { label: "원물 투입량", qty: result.raw },
+                      { label: "원물 투입량", qty: result.raw, unit: result.rawUnit },
                       {
                         label: "탈각(탈피·선별) 후 탈피씨드",
                         qty: result.semiSeedTotal,
+                        unit: result.semiUnit,
                         highlight: true,
                         arrow: true,
                       },
-                      { label: "껍질 (폐기성 부산물)", qty: result.hull },
+                      { label: "껍질 (폐기성 부산물)", qty: result.hull, unit: result.hullUnit },
                     ]}
                   />
                 </section>
@@ -520,14 +616,19 @@ const HempInputSimulationPage = () => {
                     step="STEP 2"
                     title="탈피씨드 배분 (헴프오일 / 헴프씨드 포장)"
                     stats={[
-                      { label: "탈피씨드", qty: result.semiSeedTotal },
+                      { label: "탈피씨드", qty: result.semiSeedTotal, unit: result.semiUnit },
                       {
                         label: `헴프오일 라인 ${fmtPct(result.oilPercent)}%`,
                         qty: result.oilSemiSeed,
+                        unit: result.semiUnit,
                         highlight: true,
                         arrow: true,
                       },
-                      { label: `헴프씨드(포장) 라인 ${fmtPct(result.seedPercent)}%`, qty: result.seedSemiSeed },
+                      {
+                        label: `헴프씨드(포장) 라인 ${fmtPct(result.seedPercent)}%`,
+                        qty: result.seedSemiSeed,
+                        unit: result.semiUnit,
+                      },
                     ]}
                   />
 
@@ -540,17 +641,23 @@ const HempInputSimulationPage = () => {
                       ]}
                       inLabel="탈피씨드 투입량"
                       inQty={result.oilSemiSeed}
+                      inUnit={result.semiUnit}
                       inTag="투입 기준"
                       outQty={result.oilMinQty}
+                      outUnit={result.oilUnit}
                       outTag="최소 산출량"
-                      parkBadge={result.parkMinQty}
+                      parkBadge={{ qty: result.parkMinQty, unit: result.parkUnit }}
                       hint={`착유 수율 ${yieldPct(YIELD.OIL)}% 기준 최소 산출량 (참고용 추정치)`}
                       warn="최소 산출량입니다. 헴프씨드(포장) 라인에서 규격 미달로 탈락한 분량이 이 라인에 투입되면 실제 오일 산출량은 이보다 더 많아질 수 있습니다."
                       steps={[
-                        { name: "탈피씨드", sub: `${fmt(result.oilSemiSeed)}kg` },
+                        { name: "탈피씨드", sub: fmtQty(result.oilSemiSeed, result.semiUnit) },
                         { name: "착유", sub: `${yieldPct(YIELD.OIL)}% / ${yieldPct(YIELD.PARK)}%` },
-                        { name: "헴프오일", sub: `최소 ${fmt(result.oilMinQty)}kg`, kind: "output" },
-                        { name: "헴프박", sub: `최소 ${fmt(result.parkMinQty)}kg`, kind: "byproduct" },
+                        { name: "헴프오일", sub: `최소 ${fmtQty(result.oilMinQty, result.oilUnit)}`, kind: "output" },
+                        {
+                          name: "헴프박",
+                          sub: `최소 ${fmtQty(result.parkMinQty, result.parkUnit)}`,
+                          kind: "byproduct",
+                        },
                       ]}
                       stepNote="착유 한 번에 헴프오일과 부산물 헴프박이 함께 나옵니다."
                     />
@@ -564,13 +671,14 @@ const HempInputSimulationPage = () => {
                       ]}
                       inLabel="탈피씨드 투입량 (상한)"
                       inQty={result.seedSemiSeed}
+                      inUnit={result.semiUnit}
                       inTag="상한"
                       outQty={null}
                       outTag="수율 미확정"
                       hint="수율은 원료 상태에 따라 달라져 참고용으로도 제시하지 않습니다."
                       warn="규격 미달로 판정된 불합격분은 폐기되지 않고 헴프오일 라인의 원료로 전환 투입됩니다."
                       steps={[
-                        { name: "탈피씨드", sub: `${fmt(result.seedSemiSeed)}kg` },
+                        { name: "탈피씨드", sub: fmtQty(result.seedSemiSeed, result.semiUnit) },
                         { name: "선별·포장" },
                         { name: "헴프씨드(포장)", sub: "미정", kind: "output", uncertain: true },
                       ]}
@@ -587,15 +695,26 @@ const HempInputSimulationPage = () => {
                       step="STEP 3"
                       title="부산물 재투입 (헴프박 → 헴프박건조)"
                       stats={[
-                        { label: "예상 헴프박 수량(오일 부산물, 최소)", qty: result.parkMinQty },
-                        { label: "건조 후 수량 (수율 100% 가정)", qty: parkDryAssumed, highlight: true, arrow: true },
+                        { label: "예상 헴프박 수량(오일 부산물, 최소)", qty: result.parkMinQty, unit: result.parkUnit },
+                        ...(result.parkDryQty != null
+                          ? [
+                              {
+                                label: `건조 후 수량 (수율 ${yieldPct(YIELD.DRY_ASSUMED)}% 가정)`,
+                                qty: result.parkDryQty,
+                                unit: result.parkDryUnit,
+                                highlight: true,
+                                arrow: true,
+                              },
+                            ]
+                          : []),
                       ]}
                     />
 
                     <ul className="woc-lines wsim-stepBody">
                       <li className="wsim-parkBox">
                         <p className="woc-field__hint wsim-parkDesc">
-                          헴프오일 라인의 헴프박 최소 {fmt(result.parkMinQty)}kg을 기본 투입량으로 가져왔습니다.
+                          헴프오일 라인의 헴프박 최소 {fmtQty(result.parkMinQty, result.parkUnit)}을 기본 투입량으로
+                          가져왔습니다.
                           필요하면 직접 수정해도 됩니다.
                         </p>
 
@@ -603,42 +722,32 @@ const HempInputSimulationPage = () => {
                           <div className="woc-grid3">
                             <div className="woc-field">
                               <label htmlFor="wsimParkWeight">헴프박 투입량</label>
-                              <div className="woc-unitInput">
-                                <input
-                                  id="wsimParkWeight"
-                                  type="number"
-                                  step="0.1"
-                                  min="0"
-                                  inputMode="decimal"
-                                  className="woc-input"
-                                  value={parkWeight}
-                                  aria-invalid={!!parkError}
-                                  onKeyDown={blockSign}
-                                  onChange={(e) => setParkWeight(e.target.value)}
-                                />
-                                <span>kg</span>
-                              </div>
+                              <NumberInput
+                                id="wsimParkWeight"
+                                className="woc-input"
+                                wrapClassName="woc-unitInput"
+                                suffix={<span>{unitLabel(result.parkUnit)}</span>}
+                                decimalScale={1}
+                                value={parkWeight}
+                                aria-invalid={parkError ? true : undefined}
+                                onValueChange={setParkWeight}
+                              />
                               {parkError && <p className="woc-field__error">{parkError}</p>}
                             </div>
 
                             <div className="woc-field">
                               <label htmlFor="wsimPowderPercent">건조 후 분말 배분 비율</label>
-                              <div className="woc-unitInput">
-                                <input
-                                  id="wsimPowderPercent"
-                                  type="number"
-                                  step="1"
-                                  min="0"
-                                  max="100"
-                                  inputMode="decimal"
-                                  className="woc-input"
-                                  value={powderPercent}
-                                  aria-invalid={!!powderError}
-                                  onKeyDown={blockSign}
-                                  onChange={(e) => setPowderPercent(e.target.value)}
-                                />
-                                <span>%</span>
-                              </div>
+                              <NumberInput
+                                id="wsimPowderPercent"
+                                className="woc-input"
+                                wrapClassName="woc-unitInput"
+                                suffix={<span>%</span>}
+                                max={100}
+                                thousandSeparator={false}
+                                value={powderPercent}
+                                aria-invalid={powderError ? true : undefined}
+                                onValueChange={setPowderPercent}
+                              />
                               {powderError && <p className="woc-field__error">{powderError}</p>}
                             </div>
 
@@ -650,9 +759,12 @@ const HempInputSimulationPage = () => {
                               </div>
                             </div>
 
-                            <div className="wsim-parkActions">
-                              <button type="submit" className="woc-btn primary">
-                                재투입 계산
+                            <div className="woc-field wsim-parkActions">
+                              <span className="woc-field__label wsim-parkActions__spacer" aria-hidden="true">
+                                &nbsp;
+                              </span>
+                              <button type="submit" className="woc-btn primary" disabled={busy}>
+                                {calculating === "park" ? "계산 중..." : "재투입 계산"}
                               </button>
                             </div>
                           </div>
@@ -669,14 +781,24 @@ const HempInputSimulationPage = () => {
                             ]}
                             inLabel="건조헴프박 투입량"
                             inQty={parkResult.powderDry}
+                            inUnit={parkResult.dryUnit}
                             inTag="가정치 기준"
                             outQty={parkResult.powderQty}
+                            outUnit={parkResult.powderUnit}
                             outTag="참고용"
-                            hint="건조 수율을 100%로 가정한 값이라 실제와 다를 수 있습니다."
+                            hint={`건조 수율을 ${yieldPct(YIELD.DRY_ASSUMED)}%로 가정한 값이라 실제와 다를 수 있습니다.`}
                             steps={[
-                              { name: "헴프박건조", sub: `${fmt(parkResult.powderDry)}kg`, uncertain: true },
+                              {
+                                name: "헴프박건조",
+                                sub: fmtQty(parkResult.powderDry, parkResult.dryUnit),
+                                uncertain: true,
+                              },
                               { name: "분쇄", sub: `${yieldPct(YIELD.POWDER)}%` },
-                              { name: "헴프박분말", sub: `${fmt(parkResult.powderQty)}kg`, kind: "output" },
+                              {
+                                name: "헴프박분말",
+                                sub: fmtQty(parkResult.powderQty, parkResult.powderUnit),
+                                kind: "output",
+                              },
                             ]}
                           />
 
@@ -689,12 +811,17 @@ const HempInputSimulationPage = () => {
                             ]}
                             inLabel="건조헴프박 투입량 (상한)"
                             inQty={parkResult.concDry}
+                            inUnit={parkResult.dryUnit}
                             inTag="상한"
                             outQty={null}
                             outTag="수율 미확정"
                             hint="농축 공정은 수율이 확정돼 있지 않아 산출량을 사전에 알 수 없습니다."
                             steps={[
-                              { name: "헴프박건조", sub: `${fmt(parkResult.concDry)}kg`, uncertain: true },
+                              {
+                                name: "헴프박건조",
+                                sub: fmtQty(parkResult.concDry, parkResult.dryUnit),
+                                uncertain: true,
+                              },
                               { name: "농축" },
                               { name: "헴프박농축", sub: "미정", kind: "output", uncertain: true },
                             ]}
@@ -734,7 +861,10 @@ const HempInputSimulationPage = () => {
                   </div>
                   <p className="woc-usage__figure">
                     <strong>{fmt(result.oilSemiSeed)}</strong>
-                    <span> / {fmt(result.semiSeedTotal)} kg</span>
+                    <span>
+                      {" "}
+                      / {fmt(result.semiSeedTotal)} {unitLabel(result.semiUnit)}
+                    </span>
                   </p>
                   <div className="woc-meter">
                     <span style={{ width: `${Math.min(100, Math.max(0, result.oilPercent))}%` }} />
@@ -746,13 +876,13 @@ const HempInputSimulationPage = () => {
                     <li>
                       <span>헴프오일 라인</span>
                       <span>
-                        {fmt(result.oilSemiSeed)}kg ({fmtPct(result.oilPercent)}%)
+                        {fmtQty(result.oilSemiSeed, result.semiUnit)} ({fmtPct(result.oilPercent)}%)
                       </span>
                     </li>
                     <li>
                       <span>헴프씨드(포장) 라인</span>
                       <span>
-                        {fmt(result.seedSemiSeed)}kg ({fmtPct(result.seedPercent)}%)
+                        {fmtQty(result.seedSemiSeed, result.semiUnit)} ({fmtPct(result.seedPercent)}%)
                       </span>
                     </li>
                   </ul>
@@ -767,7 +897,7 @@ const HempInputSimulationPage = () => {
                   <ul className="woc-usage__list">
                     <li>
                       <span>헴프오일 (최소)</span>
-                      <span>{fmt(result.oilMinQty)}kg</span>
+                      <span>{fmtQty(result.oilMinQty, result.oilUnit)}</span>
                     </li>
                     <li>
                       <span>헴프씨드(포장)</span>
@@ -778,7 +908,7 @@ const HempInputSimulationPage = () => {
                         <li>
                           <span>헴프박분말</span>
                           {parkResult ? (
-                            <span>{fmt(parkResult.powderQty)}kg</span>
+                            <span>{fmtQty(parkResult.powderQty, parkResult.powderUnit)}</span>
                           ) : (
                             <span className="wsim-sumPending">재투입 계산 전</span>
                           )}
@@ -805,12 +935,12 @@ const HempInputSimulationPage = () => {
                   <ul className="woc-usage__list">
                     <li>
                       <span>껍질 (폐기성)</span>
-                      <span>{fmt(result.hull)}kg</span>
+                      <span>{fmtQty(result.hull, result.hullUnit)}</span>
                     </li>
                     {hasPark && (
                       <li>
                         <span>헴프박 (재투입, 최소)</span>
-                        <span>{fmt(result.parkMinQty)}kg</span>
+                        <span>{fmtQty(result.parkMinQty, result.parkUnit)}</span>
                       </li>
                     )}
                   </ul>
@@ -826,10 +956,11 @@ const HempInputSimulationPage = () => {
           </div>
 
           <div className="woc-actions">
-            <button type="submit" form="wsimMainForm" className="woc-btn primary block">
-              계산하기
+            <button type="submit" form="wsimMainForm" className="woc-btn primary block" disabled={busy}>
+              {calculating === "main" ? "계산 중..." : "계산하기"}
             </button>
-            <button type="button" className="woc-btn ghost block" onClick={handleReset}>
+            {/* 요청 중 초기화하면 늦게 온 응답이 초기화한 화면을 다시 채우므로 요청 중에는 막는다 */}
+            <button type="button" className="woc-btn ghost block" onClick={handleReset} disabled={busy}>
               초기화
             </button>
           </div>
