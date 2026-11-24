@@ -1,31 +1,51 @@
 /* ================================
    PERMISSION BOARD
-   컬럼 폭은 --check-col 하나로 통일해서
-   헤더 / 서브행이 항상 픽셀 단위로 정렬되도록 함
+   - 컬럼 폭은 --check-col 하나로 통일 (헤더/행 픽셀 정렬)
+   - 색상은 --perm-* 변수로만 사용 (다크모드는 변수만 교체)
 ================================ */
 
 .permissionBoard {
-  --check-col: 150px;
-  --nav-col: 260px;
-  --radius-lg: 14px;
-  --radius-md: 10px;
+  --check-col: 140px;
+  --nav-col: 250px;
+  --radius-lg: 12px;
+  --radius-md: 8px;
   --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  --perm-solid: #17875f;          /* 버튼, 토스트 배경 */
+  --perm-solid-hover: #146f4d;
+  --perm-accent: #17875f;         /* 텍스트, 포커스 */
+  --perm-accent-soft: rgba(23, 135, 95, 0.1);
+  --perm-danger: #d64545;
+  --perm-danger-soft: #fdf0f0;
+  --perm-danger-line: #f1c9c9;
+  --perm-warn: #a5690a;
+  --perm-warn-soft: #fdf1de;
+  --perm-warn-line: #f0d9ae;
+  --perm-head-bg: #f1f4f8;
+  --perm-row-line: rgba(15, 23, 42, 0.06);
+
+  /* 토글 전용 (iOS 스타일: 원은 항상 흰색) */
+  --perm-toggle-off: #dfe2e8;     /* OFF 트랙 */
+  --perm-toggle-on: #17875f;      /* ON 트랙 */
+  --perm-toggle-mixed: #8cc9b0;   /* 일부만 ON 트랙 */
+  --perm-toggle-knob: #ffffff;
 
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
+  padding: 24px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
 }
 
 .permBoardActions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -33,18 +53,20 @@
 
 .permToast {
   position: absolute;
-  top: -16px;
-  right: 20px;
+  top: -14px;
+  right: 24px;
+  z-index: 5;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  border-radius: 999px;
+  border-radius: var(--radius-md);
   font-size: 13px;
   font-weight: 600;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  line-height: 1.4;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
   animation: permToastIn 0.2s var(--ease);
-  z-index: 5;
 }
 
 .permToast svg {
@@ -54,13 +76,11 @@
 }
 
 .permToast.success {
-  background: #17875f;
-  color: #fff;
+  background: var(--perm-solid);
 }
 
 .permToast.error {
-  background: #d64545;
-  color: #fff;
+  background: var(--perm-danger);
 }
 
 @keyframes permToastIn {
@@ -75,76 +95,98 @@
   }
 }
 
-/* ── 역할 탭 (상단, 가로) ── */
+/* ── 권한그룹 탭 (언더라인형) ── */
 
 .permissionTabsRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .permissionTabsBox {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 4px;
+  width: 100%;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+}
+
+.permissionTabsBox::-webkit-scrollbar {
+  height: 0;
 }
 
 .permissionTabsEmpty {
+  padding: 10px 6px;
   font-size: 13px;
   color: var(--text-muted);
-  padding: 10px 6px;
 }
 
 .permissionTab {
   position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 18px;
+  flex-shrink: 0;
+  padding: 12px 16px;
+  margin-bottom: -1px; /* 컨테이너 하단선과 겹쳐 active 언더라인이 덮도록 */
   font-size: 15px;
   font-weight: 500;
+  line-height: 1.4;
   color: var(--text-muted);
-  cursor: pointer;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 999px;
-  background: #fafafa;
   white-space: nowrap;
-  transition: color 0.15s var(--ease), background 0.15s var(--ease), border-color 0.15s var(--ease);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.15s var(--ease), border-color 0.15s var(--ease);
 }
 
 .permissionTab:hover:not(:disabled) {
-  background: var(--bg-subtle);
-  color: var(--text-body);
+  color: var(--text-heading);
+}
+
+.permissionTab:focus-visible {
+  outline: 2px solid var(--perm-accent);
+  outline-offset: -2px;
+  border-radius: 4px;
 }
 
 .permissionTab:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 .permissionTab.active {
-  background: #17875f;
-  color: #fff;
+  font-weight: 700;
+  color: var(--perm-accent);
+  border-bottom-color: var(--perm-accent);
+}
+
+.permTabUserCount {
+  padding: 1px 7px;
+  font-size: 12px;
   font-weight: 600;
-  border-color: transparent;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  border-radius: 999px;
+}
+
+.permissionTab.active .permTabUserCount {
+  color: var(--perm-accent);
+  background: var(--perm-accent-soft);
 }
 
 .permTabDirtyDot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 999px;
   background: #e0a030;
   flex-shrink: 0;
 }
 
-.permissionTab.active .permTabDirtyDot {
-  background: #fff;
-}
-
-/* ── 권한그룹 설명 (탭 영역과 분리된 하단 별도 행) ── */
+/* ── 권한그룹 설명 ── */
 
 .permissionDescRow {
   display: flex;
@@ -153,53 +195,94 @@
 .permissionDesc {
   flex: 1;
   min-width: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--text-muted);
-  padding: 10px 16px;
   margin: 0;
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-muted);
   background: var(--bg-subtle);
+  border-radius: var(--radius-md);
   word-break: keep-all;
 }
 
 .permissionDescInput {
   flex: 1;
   min-width: 0;
-  min-height: 60px;
-  font-size: 13px;
-  line-height: 1.5;
-  font-family: inherit;
-  color: var(--text-body);
-  padding: 10px 16px;
+  min-height: 64px;
   margin: 0;
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  padding: 12px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-body);
   background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   outline: none;
   resize: vertical;
-  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
 }
 
 .permissionDescInput:focus {
-  border-color: #17875f;
-  background: var(--bg-card);
+  border-color: var(--perm-accent);
+  box-shadow: 0 0 0 3px var(--perm-accent-soft);
 }
 
-/* ── 매트릭스 패널 (대메뉴 탭 + 서브메뉴 상세) ── */
+/* ── 매트릭스 패널 ── */
 
 .permMatrixPanel {
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
+.permMatrixBody {
+  display: flex;
+  min-height: 0;
+}
+
+/* ── 좌측 대메뉴 ── */
+
+.permMenuNav {
+  flex: 0 0 var(--nav-col);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-subtle);
+  border-right: 1px solid var(--border);
+}
+
+.permNavSearchBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 16px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.permNavSearchBox input {
+  width: 100%;
+  height: 40px;
+  padding: 0 34px 0 36px;
+  font-size: 14px;
+  color: var(--text-body);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+
+.permNavSearchBox input:focus {
+  border-color: var(--perm-accent);
+  box-shadow: 0 0 0 3px var(--perm-accent-soft);
+}
+
 .permSearchIcon {
   position: absolute;
-  left: 30px;
+  left: 28px;
   width: 16px;
   height: 16px;
   color: var(--text-muted);
@@ -208,21 +291,26 @@
 
 .permSearchClear {
   position: absolute;
-  right: 8px;
+  right: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 22px;
   height: 22px;
-  border: none;
-  background: none;
+  padding: 0;
   color: var(--text-muted);
-  cursor: pointer;
+  background: none;
+  border: none;
   border-radius: 999px;
+  cursor: pointer;
 }
 
 .permSearchClear:hover {
   background: var(--border);
+}
+
+.permSearchClear:focus-visible {
+  outline: 2px solid var(--perm-accent);
 }
 
 .permSearchClear svg {
@@ -230,145 +318,60 @@
   height: 14px;
 }
 
-.permDirtyBadge {
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-muted);
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border);
-  gap: 4px;
-}
-
-.permDirtyBadge.active {
-  color: #a5690a;
-  background: #fdf1de;
-  border-color: #f0d9ae;
-}
-
-[data-theme="dark"] .permDirtyBadge.active {
-  color: #e0a030;
-  background: rgba(224, 160, 48, 0.12);
-  border-color: rgba(224, 160, 48, 0.3);
-}
-
-/* ── 우측 상세 1단 헤더: 제목 + 뱃지(좌) / 액션 버튼(우) ── */
-
-.permDetailHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-card);
-  flex-wrap: wrap;
-  flex-shrink: 0;
-}
-
-
-.permDetailHeaderLeft {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.permDetailTitle {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-heading);
-  white-space: nowrap;
-}
-
-/* ── 본문: 좌측 대메뉴 탭 + 우측 서브메뉴 상세 ── */
-
-.permMatrixBody {
-  display: flex;
-  min-height: 0;
-}
-
-/* ── 좌측 대메뉴 세로 탭 ── */
-
-.permMenuNav {
-  flex: 0 0 var(--nav-col);
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  border-right: 1px solid var(--border);
-  background: var(--bg-subtle);
-}
-
-/* ── 좌측 검색창 (대메뉴 목록 위, 패널 안으로 이동) ── */
-
-.permNavSearchBox {
-  position: relative;
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  padding: 15px;
-  border-bottom: 1px solid var(--border);
-}
-
-.permNavSearchBox input {
-  width: 100%;
-  height: 44px;
-  padding: 0 34px 0 36px;
-  font-size: 14px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--bg-card);
-  color: var(--text-body);
-  outline: none;
-  transition: border-color 0.15s var(--ease);
-}
-
-.permNavSearchBox input:focus {
-  border-color: #17875f;
-}
-
-/* ── 좌측 대메뉴 목록 스크롤 영역 ── */
-
 .permNavList {
   flex: 1;
   min-height: 0;
+  max-height: min(560px, 60vh);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   padding: 10px;
-  max-height: min(560px, 60vh);
   overflow-y: auto;
 }
 
-
 .permMenuNavItem {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-  padding: 11px 14px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: left;
+  color: var(--text-body);
+  background: transparent;
   border: none;
   border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--text-body);
-  font-size: 15px;
-  text-align: left;
   cursor: pointer;
   transition: background 0.15s var(--ease), color 0.15s var(--ease);
 }
 
 .permMenuNavItem:hover {
-  background: var(--bg-card);
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.permMenuNavItem:focus-visible {
+  outline: 2px solid var(--perm-accent);
+  outline-offset: -2px;
 }
 
 .permMenuNavItem.active {
-  background: var(--bg-card);
-  color: #17875f;
   font-weight: 700;
+  color: var(--perm-accent);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 1px var(--border), 0 1px 2px rgba(16, 24, 40, 0.05);
+}
+
+.permMenuNavItem.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  background: var(--perm-accent);
+  border-radius: 0 3px 3px 0;
 }
 
 .permMenuNavLabel {
@@ -381,40 +384,37 @@
 
 .permMenuNavCount {
   flex-shrink: 0;
+  padding: 1px 7px;
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border);
-  padding: 2px 8px;
+  background: var(--border);
   border-radius: 999px;
 }
 
 .permMenuNavItem.active .permMenuNavCount {
-  background: var(--primary-light);
-  color: #17875f;
-  border-color: transparent;
+  color: var(--perm-accent);
+  background: var(--perm-accent-soft);
 }
 
 .permMenuNavArrow {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
-  color: var(--text-muted);
+  color: var(--perm-accent);
   opacity: 0;
   transition: opacity 0.15s var(--ease);
 }
 
 .permMenuNavItem.active .permMenuNavArrow {
   opacity: 1;
-  color: #17875f;
 }
 
 .permNavEmpty {
-  padding: 20px 12px;
+  padding: 24px 12px;
   font-size: 14px;
-  color: var(--text-muted);
   text-align: center;
+  color: var(--text-muted);
 }
 
 .permNavSkeleton {
@@ -424,7 +424,7 @@
 }
 
 .permNavSkeletonRow {
-  height: 42px;
+  height: 40px;
   border-radius: var(--radius-md);
   background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-subtle) 37%, var(--bg-card) 63%);
   background-size: 400% 100%;
@@ -441,22 +441,17 @@
   }
 }
 
-/* ── 우측 서브메뉴 상세 ── */
+/* ── 우측 상세 ──
+   가로/세로 스크롤은 .permMatrixScroll 한 곳에서만 처리
+   (헤더와 목록의 가로 스크롤 위치가 어긋나지 않게 하기 위함) */
 
 .permMenuDetail {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  /* 가로 스크롤은 더 이상 이 요소가 직접 처리하지 않음.
-     예전엔 여기에 overflow-x:auto를 주고, 그 안의 .permGroupListScroll이
-     세로 스크롤용 overflow-y:auto를 따로 갖고 있었는데, "세로 overflow가
-     auto면 가로 overflow도 자동으로 auto가 된다"는 CSS 규칙 때문에
-     .permGroupListScroll이 자기만의 독립된 가로 스크롤 컨테이너가
-     되어버려 헤더(.permMatrixHeader)와 목록이 서로 다른 스크롤 위치를
-     갖고 어긋나던 문제가 있었음. 지금은 헤더+목록을 하나로 묶은
-     .permMatrixScroll 한 곳에서만 가로/세로 스크롤을 처리함 */
+  background: var(--bg-card);
 }
 
 .permDetailEmpty {
@@ -469,11 +464,61 @@
   color: var(--text-muted);
 }
 
-/* ── 컬럼 헤더 + 하위 메뉴 목록을 함께 담는 단일 스크롤 컨테이너 ──
-   가로 스크롤(체크 컬럼이 넓어서 넘칠 때)과 세로 스크롤(항목이 많을 때)을
-   이 컨테이너 하나가 전담하고, 헤더는 position:sticky로 위쪽에 고정해서
-   기존과 같은 "헤더 고정 + 목록 스크롤" 느낌을 내면서도 가로 스크롤은
-   항상 헤더와 목록이 같이 움직이도록 함 */
+.permDetailHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  gap: 12px;
+  min-height: 72px;
+  padding: 16px 24px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+
+.permDetailHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.permDetailTitle {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--text-heading);
+  white-space: nowrap;
+}
+
+.permDirtyBadge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.permDirtyBadge svg {
+  width: 12px;
+  height: 12px;
+}
+
+.permDirtyBadge.active {
+  color: var(--perm-warn);
+  background: var(--perm-warn-soft);
+  border-color: var(--perm-warn-line);
+}
+
 .permMatrixScroll {
   flex: 1;
   min-height: 0;
@@ -492,44 +537,33 @@
 }
 
 .permMatrixHeader {
-  display: flex;
-  align-items: center;
-  padding: 14px 20px;
-  background: #eceff4;
-  border-bottom: 1px solid var(--border);
-  /* .permMatrixScroll 안에서 내용(라벨+체크컬럼) 폭만큼 그대로 유지되어야
-     세로 스크롤 시에도 정렬이 안 깨짐 */
-  width: fit-content;
-  min-width: 100%;
-  /* 세로로 스크롤해도 항상 위쪽에 붙어있고, 가로로 스크롤할 땐 목록과
-     같이 움직이도록 top만 고정 (left는 고정하지 않음) */
   position: sticky;
   top: 0;
   z-index: 2;
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  min-width: 100%;
+  min-height: 44px;
+  padding: 0 24px;
+  background: var(--perm-head-bg);
+  border-bottom: 1px solid var(--border);
 }
 
 .permMatrixHeaderLabel {
   flex: 1;
   min-width: 160px;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
-  color: var(--text-heading);
+  color: var(--text-muted);
 }
 
-/* 헤더 셀은 더 이상 일괄 토글 버튼을 갖지 않고 라벨 텍스트만 중앙 정렬로 표시 */
 .permCheckCellHeader {
   justify-content: center;
 }
 
-.permCheckCellHeader span {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
 .permGroupListScroll {
-  /* 세로/가로 스크롤은 이제 부모(.permMatrixScroll)가 전담하므로 여기엔 overflow 관련 속성을 두지 않음 */
-  display: contents; /* 자식 요소들의 레이아웃에 영향을 주지 않고 자신을 없는 것처럼 감싸는 속성 */
+  display: contents;
 }
 
 .permEmptyState {
@@ -539,28 +573,28 @@
   color: var(--text-muted);
 }
 
-/* ── 하위 메뉴 트리 (depth 인덴트 가이드) ── */
+/* ── 하위 메뉴 트리 ── */
 
 .permSubChildren {
   display: flex;
   flex-direction: column;
-  /* 헤더와 마찬가지로, 부모가 가로 스크롤될 때 폭이 줄어들지 않고
-     헤더와 같은 최소폭을 유지해야 체크 컬럼이 서로 어긋나지 않음 */
   width: fit-content;
   min-width: 100%;
 }
 
 .permSubChildren .permSubChildren {
-  margin-left: 22px;
-  border-left: 1px dashed var(--border);
+  margin-left: 24px;
+  border-left: 1px solid var(--border);
 }
 
 .permSubRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  padding: 12px 20px;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--perm-row-line);
   transition: background 0.15s var(--ease);
 }
 
@@ -569,20 +603,31 @@
 }
 
 .permSubLabel {
+  flex: 1;
+  min-width: 160px;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 15px;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--text-body);
-  min-width: 160px;
-  flex: 1;
+  cursor: default;
+  user-select: none;
+}
+
+.permSubLabel.clickable {
+  cursor: pointer;
+}
+
+.permSubChildren .permSubChildren .permSubLabel {
+  font-weight: 400;
 }
 
 .permSubToggleIcon {
   width: 14px;
   height: 14px;
-  color: var(--text-muted);
   flex-shrink: 0;
+  color: var(--text-muted);
   transition: transform 0.2s var(--ease);
 }
 
@@ -590,16 +635,7 @@
   transform: rotate(90deg);
 }
 
-.permSubDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--border);
-  flex-shrink: 0;
-  margin: 0 6px;
-}
-
-/* ── 권한 열 그룹 (헤더/서브 공용, --check-col 폭으로 완전 정렬) ── */
+/* ── 권한 열 (헤더/행 공용) ── */
 
 .permCheckGroup {
   display: flex;
@@ -613,44 +649,39 @@
   justify-content: center;
 }
 
-/* ── 권한 토글 스위치 ── */
+/* ── 토글 스위치 (iOS 스타일) ──
+   OFF   : 회색 트랙 + 흰 원 (왼쪽)
+   mixed : 연한 초록 트랙 + 흰 원 (가운데)
+   ON    : 초록 트랙 + 흰 원 (오른쪽)
+   트랙 44×24 / 원 22 / 여백 1 → 이동 거리 20px */
 
 .permToggle {
   position: relative;
   flex-shrink: 0;
-  width: 40px;
-  height: 22px;
+  width: 44px;
+  height: 24px;
   padding: 0;
+  background: var(--perm-toggle-off);
   border: none;
   border-radius: 999px;
-  background: var(--border);
   cursor: pointer;
-  transition: background 0.15s var(--ease), opacity 0.15s var(--ease);
-}
-
-.permToggle:active:not(:disabled) .permToggleKnob {
-  width: 20px;
-}
-
-.permToggle:focus-visible {
-  outline: 2px solid #17875f;
-  outline-offset: 2px;
+  transition: background 0.25s var(--ease), opacity 0.15s var(--ease);
 }
 
 .permToggleKnob {
   position: absolute;
   top: 2px;
-  left: 2px;
-  width: 18px;
-  height: 18px;
+  left: 4px;
+  width: 20px;
+  height: 20px;
+  background: var(--perm-toggle-knob);
   border-radius: 999px;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-  transition: transform 0.15s var(--ease), width 0.1s var(--ease);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.22), 0 0 1px rgba(0, 0, 0, 0.18);
+  transition: transform 0.25s var(--ease), width 0.2s var(--ease);
 }
 
 .permToggle.checked {
-  background: var(--primary, #17875f);
+  background: var(--perm-toggle-on);
 }
 
 .permToggle.checked .permToggleKnob {
@@ -658,190 +689,217 @@
 }
 
 .permToggle.mixed {
-  background: linear-gradient(90deg, var(--primary, #17875f) 50%, var(--border) 50%);
+  background: var(--perm-toggle-mixed);
 }
 
 .permToggle.mixed .permToggleKnob {
   transform: translateX(9px);
 }
 
+/* 누르는 동안 원이 살짝 늘어나는 iOS 동작 */
+.permToggle:active:not(:disabled) .permToggleKnob {
+  width: 24px;
+}
+
+.permToggle.checked:active:not(:disabled) .permToggleKnob {
+  transform: translateX(14px);
+}
+
+.permToggle.mixed:active:not(:disabled) .permToggleKnob {
+  transform: translateX(7px);
+}
+
+.permToggle:focus-visible {
+  outline: 2px solid var(--perm-accent);
+  outline-offset: 2px;
+}
+
+/* 읽기 모드: 켜진 값은 선명하게 유지, 꺼진 값만 연하게 */
 .permToggle:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
+  cursor: default;
 }
 
-/* ── 하단 버튼 ── */
-
-.ghostButton {
-  height: 42px;
-  padding: 0 18px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+.permToggle:disabled:not(.checked):not(.mixed) {
+  opacity: 0.6;
 }
 
-.ghostButton:hover:not(:disabled) {
-  background: var(--bg-subtle);
-  color: var(--text-body);
-}
+/* ── 일괄 선택 (dot + 글자) ── */
 
-.primaryButton {
-  height: 42px;
-  padding: 0 20px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #fff;
-  background: #17875f;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s var(--ease), opacity 0.15s var(--ease);
-}
-
-.primaryButton:hover:not(:disabled) {
-  background: #146f4d;
-}
-
-.ghostButton:disabled,
-.primaryButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-/* 공통: dot + (글자) 버튼 */
 .permBulkBtn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
-  margin: 0;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
   flex-shrink: 0;
+  gap: 6px;
+  margin: 0;
+  padding: 4px 8px;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
   transition: background 0.15s var(--ease), color 0.15s var(--ease);
 }
 
 .permBulkBtn:hover:not(:disabled) {
-  background: rgba(23, 135, 95, 0.1);
+  background: var(--perm-accent-soft);
 }
 
 .permBulkBtn:focus-visible {
-  outline: 2px solid #17875f;
+  outline: 2px solid var(--perm-accent);
   outline-offset: 1px;
 }
 
 .permBulkBtn:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
+  cursor: default;
 }
 
-/* dot 본체: 꺼짐=회색 / 켜짐=초록 / 일부=반반 */
 .permBulkMark {
   width: 10px;
   height: 10px;
-  border-radius: 999px;
-  border: 1.5px solid var(--border);
-  background: transparent;
   flex-shrink: 0;
   box-sizing: border-box;
+  background: transparent;
+  border: 1.5px solid #b4bcc9;
+  border-radius: 999px;
   transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
 }
 
 .permBulkBtn.checked .permBulkMark {
-  background: #17875f;
-  border-color: #17875f;
+  background: var(--perm-accent);
+  border-color: var(--perm-accent);
 }
 
 .permBulkBtn.mixed .permBulkMark {
-  border-color: #17875f;
-  background: linear-gradient(90deg, #17875f 50%, transparent 50%);
+  border-color: var(--perm-accent);
+  background: linear-gradient(90deg, var(--perm-accent) 50%, transparent 50%);
 }
 
-/* 열 헤더 글자 버튼 */
 .permColHead {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-muted);
 }
 
 .permColHead.checked,
 .permColHead.mixed {
-  color: #17875f;
+  color: var(--perm-accent);
 }
 
-/* 행 앞 dot 버튼: 글자 없이 dot만, 클릭 영역은 패딩으로 확보 */
 .permRowDot {
-  padding: 6px;
   margin-right: 2px;
+  padding: 6px;
 }
 
-/* ── 반응형 ──
-   1024 : 태블릿 — nav/check 컬럼 폭 1차 축소
-   860  : 작은 태블릿 — nav/check 컬럼 폭 2차 축소
-   640  : 완전 세로 스택 + 대메뉴를 가로 칩 목록으로 전환
-          (세로 스택 시 --nav-col이 flex-basis(높이)로 잘못 적용되어
-          대메뉴 영역이 과도하게 커지던 문제, 가로 칩 자체가 불필요하게
-          크던 문제 수정)
-*/
+/* ── 버튼 ── */
+
+.ghostButton,
+.primaryButton,
+.dangerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease), border-color 0.15s var(--ease), opacity 0.15s var(--ease);
+}
+
+.ghostButton:focus-visible,
+.primaryButton:focus-visible,
+.dangerButton:focus-visible {
+  outline: 2px solid var(--perm-accent);
+  outline-offset: 2px;
+}
+
+.ghostButton {
+  color: var(--text-body);
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+.ghostButton:hover:not(:disabled) {
+  background: var(--bg-subtle);
+  color: var(--text-heading);
+}
+
+.primaryButton {
+  color: #fff;
+  background: var(--perm-solid);
+  border: 1px solid transparent;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: var(--perm-solid-hover);
+}
+
+.dangerButton {
+  color: var(--perm-danger);
+  background: transparent;
+  border: 1px solid var(--perm-danger-line);
+}
+
+.dangerButton:hover:not(:disabled) {
+  background: var(--perm-danger-soft);
+  border-color: var(--perm-danger);
+}
+
+.ghostButton:disabled,
+.primaryButton:disabled,
+.dangerButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ── 반응형 ── */
 
 @container content (max-width: 1024px) {
   .permissionBoard {
     --nav-col: 220px;
-    --check-col: 120px;
-    padding: 16px;
+    --check-col: 112px;
+    padding: 20px;
+  }
+
+  .permDetailHeader,
+  .permMatrixHeader {
+    padding-left: 16px;
+    padding-right: 16px;
   }
 
   .permSubRow {
-    padding: 10px 16px;
-  }
-
-  .permMatrixHeader {
-    padding: 12px 16px;
+    padding: 0 16px;
   }
 }
 
 @container content (max-width: 860px) {
   .permissionBoard {
     --nav-col: 200px;
-    --check-col: 100px;
+    --check-col: 96px;
   }
 }
 
 @container content (max-width: 640px) {
+  .permissionBoard {
+    --check-col: 84px;
+    padding: 16px;
+  }
+
   .permMatrixBody {
     flex-direction: column;
   }
 
-  /* --nav-col은 원래 '가로 폭'을 위한 값인데, 부모(.permMatrixBody)가
-     세로 스택으로 바뀌면서 .permMenuNav의 flex-basis가 '세로 높이'로
-     해석되어 대메뉴 영역이 200px 안팎의 높이를 통째로 차지해버리는
-     문제가 있었음. flex를 auto로 되돌려 내용물 높이만큼만 차지하게 함 */
+  /* 세로 스택 시 --nav-col이 높이로 해석되지 않도록 flex 초기화 */
   .permMenuNav {
     flex: 0 0 auto;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    max-height: none;
     border-right: none;
     border-bottom: 1px solid var(--border);
   }
 
-   .permNavSearchBox {
+  .permNavSearchBox {
     display: none;
   }
 
@@ -852,29 +910,21 @@
     overflow-y: visible;
   }
 
-  /* 가로로 나열되는 대메뉴 칩을 더 작고 촘촘하게 (기존엔 패딩/폰트가
-     세로 목록용 그대로라 칩 하나하나가 불필요하게 컸음) */
   .permMenuNavItem {
     flex-shrink: 0;
     width: auto;
     padding: 8px 12px;
-    gap: 6px;
     font-size: 13px;
   }
 
-  .permMenuNavLabel {
-    white-space: nowrap;
+  .permMenuNavItem.active::before,
+  .permMenuNavArrow {
+    display: none;
   }
 
   .permMenuNavCount {
     font-size: 11px;
     padding: 1px 6px;
-  }
-
-  /* active가 아닐 때도 opacity:0 상태로 15px 폭을 계속 차지하고 있어서
-     칩이 그만큼 더 커 보였음 — 가로 칩 목록에서는 아예 렌더링하지 않음 */
-  .permMenuNavArrow {
-    display: none;
   }
 
   .permDetailHeader {
@@ -885,91 +935,40 @@
   .permSubLabel {
     min-width: 120px;
   }
-
-  .permissionBoard {
-    --check-col: 90px;
-  }
 }
 
-
-/* ── 다크모드 ── */
+/* ── 다크모드: 변수만 교체 ── */
 
 [data-theme="dark"] .permissionBoard {
-  background: var(--bg-card);
-  border-color: var(--border);
-}
-
-[data-theme="dark"] .permissionTab {
-  background: var(--bg-subtle);
-  border-color: var(--border);
-}
-
-[data-theme="dark"] .permissionTab:hover:not(:disabled) {
-  background: #1e2130;
-  color: var(--text-main);
-}
-
-[data-theme="dark"] .permissionTab.active {
-  background: #17875f;
-  color: #fff;
-}
-
-[data-theme="dark"] .permissionDesc,
-[data-theme="dark"] .permissionDescInput {
-  background: var(--bg-subtle);
-  border-color: var(--border);
-}
-
-[data-theme="dark"] .permissionDescInput:focus {
-  background: #1e2130;
-}
-
-/* [data-theme="dark"] .permMatrixToolbar {
-  background: var(--bg-card);
-} */
-
-[data-theme="dark"] .permSearchBox input {
-  background: var(--bg-subtle);
-}
-
-[data-theme="dark"] .permMenuNav {
-  background: var(--bg-subtle);
-  border-color: var(--border);
+  --perm-accent: #57d3a1;
+  --perm-accent-soft: rgba(87, 211, 161, 0.14);
+  --perm-danger: #f26b6b;
+  --perm-danger-soft: rgba(242, 107, 107, 0.1);
+  --perm-danger-line: rgba(242, 107, 107, 0.35);
+  --perm-warn: #e0a030;
+  --perm-warn-soft: rgba(224, 160, 48, 0.12);
+  --perm-warn-line: rgba(224, 160, 48, 0.3);
+  --perm-head-bg: #1a1d2a;
+  --perm-row-line: rgba(255, 255, 255, 0.06);
+  --perm-toggle-off: #3a3f52;
+  --perm-toggle-on: #2a9d78;
+  --perm-toggle-mixed: #3f7a67;
 }
 
 [data-theme="dark"] .permMenuNavItem:hover {
-  background: #1e2130;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 [data-theme="dark"] .permMenuNavItem.active {
   background: #1e2130;
-  color: #57d3a1;
-  box-shadow: inset 3px 0 0 #57d3a1;
-}
-
-[data-theme="dark"] .permMenuNavIndicator.checked {
-  background: #57d3a1;
-}
-
-[data-theme="dark"] .permMatrixHeader {
-  background: var(--bg-subtle);
-  border-color: var(--border);
 }
 
 [data-theme="dark"] .permSubRow:hover {
   background: #1e2130;
 }
 
-[data-theme="dark"] .permToggle {
-  background: #33384a;
-}
-
-[data-theme="dark"] .permToggle.checked {
-  background: #57d3a1;
-}
-
-[data-theme="dark"] .permToggle.mixed {
-  background: linear-gradient(90deg, #57d3a1 50%, #33384a 50%);
+[data-theme="dark"] .permBulkMark {
+  border-color: #4a5166;
 }
 
 [data-theme="dark"] .permNavSkeletonRow {
@@ -977,25 +976,9 @@
   background-size: 400% 100%;
 }
 
-[data-theme="dark"] .permBulkBtn.checked .permBulkMark {
-  background: #57d3a1;
-  border-color: #57d3a1;
-}
-
-[data-theme="dark"] .permBulkBtn.mixed .permBulkMark {
-  border-color: #57d3a1;
-  background: linear-gradient(90deg, #57d3a1 50%, transparent 50%);
-}
-
-[data-theme="dark"] .permColHead.checked,
-[data-theme="dark"] .permColHead.mixed {
-  color: #57d3a1;
-}
-
-/* ── 모션 최소화 환경 ── */
+/* ── 모션 최소화 ── */
 
 @media (prefers-reduced-motion: reduce) {
-
   .permissionTab,
   .permMenuNavItem,
   .permSubRow,
@@ -1003,6 +986,8 @@
   .permToggleKnob,
   .permSubToggleIcon,
   .permMenuNavArrow,
+  .permBulkBtn,
+  .permBulkMark,
   .permToast,
   .permNavSkeletonRow {
     transition: none;
