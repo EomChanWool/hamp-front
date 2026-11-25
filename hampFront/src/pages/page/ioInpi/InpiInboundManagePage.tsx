@@ -73,10 +73,6 @@ type CountResult = {
   counts: TabCounts | null
 }
 
-function toLabelPrintedFilter(value: string | undefined): LabelPrintedFilter {
-  return value === 'true' || value === 'false' ? value : ''
-}
-
 /** 화면 필터 → GET /fiber-receipts 쿼리 파라미터 (빈 값 제외) */
 function toListParams(filters: Filters, labelPrinted: LabelPrintedFilter): FiberReceiptListParams {
   const params: FiberReceiptListParams = {}
@@ -137,7 +133,6 @@ export function InpiInboundManagePage() {
   const orderCodeRef = useRef<HTMLInputElement>(null)
   const bpCodeRef = useRef<HTMLSelectElement>(null)
   const rawItemCodeRef = useRef<HTMLSelectElement>(null)
-  const labelPrintedRef = useRef<HTMLSelectElement>(null)
   const receivedAtFromRef = useRef<HTMLInputElement>(null)
   const receivedAtToRef = useRef<HTMLInputElement>(null)
 
@@ -326,7 +321,7 @@ export function InpiInboundManagePage() {
       bpCode: bpCodeRef.current?.value ?? '',
       orderCode: orderCodeRef.current?.value.trim() ?? '',
       rawItemCode: rawItemCodeRef.current?.value ?? '',
-      labelPrinted: toLabelPrintedFilter(labelPrintedRef.current?.value),
+      labelPrinted: filters.labelPrinted,
       receivedAtFrom: receivedAtFromRef.current?.value ?? '',
       receivedAtTo: receivedAtToRef.current?.value ?? '',
     })
@@ -363,14 +358,6 @@ export function InpiInboundManagePage() {
         ...itemOptions.map((item) => ({ value: item.itemCode, label: `${item.itemNm} (${item.itemCode})` })),
       ],
       value: filters.rawItemCode,
-    },
-    {
-      type: 'select',
-      label: '라벨 인쇄여부',
-      ref: labelPrintedRef,
-      name: 'labelPrinted',
-      options: LABEL_PRINTED_OPTIONS,
-      value: filters.labelPrinted,
     },
     {
       type: 'date',
