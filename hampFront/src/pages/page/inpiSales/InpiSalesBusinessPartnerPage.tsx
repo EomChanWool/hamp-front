@@ -134,7 +134,7 @@ export function InpiSalesBusinessPartnerPage() {
     };
 
     const handleRowClick = (bpCode: string) => {
-        navigate(`/seed-sales/business-partner/${encodeURIComponent(bpCode)}?${searchParams.toString()}`);
+        navigate(`/inpi-sales/business-partner/${encodeURIComponent(bpCode)}?${searchParams.toString()}`);
     };
 
     const columns: ColumnDef<BusinessPartnerResponse>[] = useMemo(() => [
@@ -155,7 +155,7 @@ export function InpiSalesBusinessPartnerPage() {
             <Panel
                 title="거래처 관리 목록"
                 action="등록"
-                onAction={() => navigate(`/seed-sales/business-partner/create?${searchParams.toString()}`)}
+                onAction={() => navigate(`/inpi-sales/business-partner/create?${searchParams.toString()}`)}
             >
                 <div className="relative min-h-[300px]">
                     {isLoading ? (

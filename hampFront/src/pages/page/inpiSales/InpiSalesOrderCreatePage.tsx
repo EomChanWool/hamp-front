@@ -106,7 +106,7 @@ export function InpiSalesOrderCreatePage() {
 
   const handleCancel = () => {
     const queryString = searchParams.toString();
-    navigate(queryString ? `/seed-sales/sales-order?${queryString}` : "/seed-sales/sales-order");
+    navigate(queryString ? `/inpi-sales/sales-order?${queryString}` : "/inpi-sales/sales-order");
   };
 
   const handleSubmit = async (e: SyntheticEvent) => {
@@ -139,7 +139,7 @@ export function InpiSalesOrderCreatePage() {
     try {
       await SalesOrderApi.create(payload);
       alert("성공적으로 등록되었습니다.");
-      navigate("/seed-sales/sales-order", { replace: true });
+      navigate("/inpi-sales/sales-order", { replace: true });
     } catch (error) {
       console.error("수주 등록 실패:", error);
       const message = axios.isAxiosError(error) ? error.response?.data?.message : null;

@@ -205,7 +205,7 @@ export function InpiSalesOrderPage() {
     const handleRowClick = (orderCode: string) => {
         const queryString = searchParams.toString();
         navigate(
-            `/seed-sales/sales-order/${encodeURIComponent(orderCode)}${queryString ? `?${queryString}` : ""
+            `/inpi-sales/sales-order/${encodeURIComponent(orderCode)}${queryString ? `?${queryString}` : ""
             }`
         );
     };
@@ -255,7 +255,7 @@ export function InpiSalesOrderPage() {
                 onAction={() => {
                     const queryString = searchParams.toString();
                     navigate(
-                        `/seed-sales/sales-order/create${queryString ? `?${queryString}` : ""
+                        `/inpi-sales/sales-order/create${queryString ? `?${queryString}` : ""
                         }`
                     );
                 }}
