@@ -394,6 +394,58 @@ function CustomSelect({
   );
 }
 
+/* ───────────── 그룹 STEP 박스 헤더 ───────────── */
+
+interface BannerStat {
+  label: string;
+  qty: number;
+  unit: string;
+  highlight?: boolean;
+  /** true이면 앞에 → 표시 */
+  arrow?: boolean;
+}
+
+interface GroupBannerProps {
+  /** 제목 요소 id — STEP 박스의 aria-labelledby 와 연결 */
+  id: string;
+  /** 제목 위 배지 (그룹 이름) */
+  badge: string;
+  title: string;
+  stats?: BannerStat[];
+  park?: boolean;
+}
+
+const GroupBanner = ({ id, badge, title, stats = [], park }: GroupBannerProps) => (
+  <div className={`woc-groupBanner${park ? " is-park" : ""}`}>
+    <div className="woc-bannerHead">
+      <span className="woc-bannerStep">{badge}</span>
+      <h3 id={id} className="woc-groupBanner__title">
+        {title}
+      </h3>
+    </div>
+    {stats.length > 0 && (
+      <div className="woc-groupBanner__stats">
+        {stats.map((s) => (
+          <Fragment key={s.label}>
+            {s.arrow && (
+              <span className="woc-groupBanner__arrow" aria-hidden="true">
+                →
+              </span>
+            )}
+            <div className={`woc-groupBanner__stat${s.highlight ? " is-highlight" : ""}`}>
+              <span className="woc-groupBanner__label">{s.label}</span>
+              <strong className="woc-groupBanner__value">
+                {fmt(s.qty)}
+                <em>{unitText(s.unit)}</em>
+              </strong>
+            </div>
+          </Fragment>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
 /* ───────────── 페이지 ───────────── */
 
 export function FoodWorkOrderCreatePage() {
@@ -1024,6 +1076,35 @@ export function FoodWorkOrderCreatePage() {
           : `탈피씨드 풀 ${fmtQty(rawPool, "kg")} 중 ${fmtQty(rawGroup.total, "kg")} 사용 · ${fmtQty(round3(rawPool - rawGroup.total), "kg")} 남음`
         : `탈피씨드 풀 ${fmtQty(rawPool, "kg")} 안에서 자유롭게 배분`;
 
+  /** 그룹별 STEP 박스 헤더 내용 (수치가 없으면 제목만 표시) */
+  const bannerOf = (key: string): { title: string; stats: BannerStat[]; park?: boolean } => {
+    if (key === "RAW") {
+      return {
+        title: "투입 현황 (원물 → 탈피씨드)",
+        stats:
+          preview && rawPool != null
+            ? [
+                { label: "실제 누적 입고수량", qty: preview.raw.receivedQty, unit: "kg" },
+                { label: "전처리(탈각) 후 탈피씨드", qty: rawPool, unit: "kg", highlight: true, arrow: true },
+              ]
+            : [],
+      };
+    }
+    if (key === "PARK") {
+      return {
+        title: "투입 현황 (헴프박 → 건조헴프박)",
+        park: true,
+        stats: parkInfo
+          ? [
+              { label: "예상 헴프박 수량(오일 부산물)", qty: parkInfo.byproduct, unit: "kg" },
+              { label: "건조 후 수량", qty: parkInfo.dry, unit: "kg", highlight: true, arrow: true },
+            ]
+          : [],
+      };
+    }
+    return { title: "투입 현황", stats: [] };
+  };
+
   /** 라인 하나 렌더 */
   const renderLine = (line: WorkOrderLine) => {
     const id = line.salesOrderLineId;
@@ -1409,8 +1490,8 @@ export function FoodWorkOrderCreatePage() {
             </p>
           )}
 
-          {/* ── 작업지시 라인 ── */}
-          <section className="woc-panel" aria-labelledby="wocLineTitle">
+          {/* ── 작업지시 라인 (바깥 카드 테두리 없이 제목만, STEP 박스가 카드 역할) ── */}
+          <section className="woc-panel woc-flowPanel" aria-labelledby="wocLineTitle">
             <div className="woc-panel__head">
               <h2 id="wocLineTitle" className="woc-panel__title">
                 작업지시 라인 <em>*</em>
@@ -1433,58 +1514,24 @@ export function FoodWorkOrderCreatePage() {
                 </p>
               )
             ) : (
-              <ul className="woc-lines">
-                {lineGroups.map(([groupKey, groupLines]) => (
-                  <Fragment key={groupKey}>
-                    {/* 그룹 상단 투입 현황 배너 (미리보기가 있을 때만) */}
-                    {groupKey === "RAW" && preview && rawPool != null && (
-                      <li className="woc-groupBanner">
-                        <span className="woc-groupBanner__title">RAW 그룹 투입 현황 (원물 → 탈피씨드)</span>
-                        <div className="woc-groupBanner__stats">
-                          <div className="woc-groupBanner__stat">
-                            <span className="woc-groupBanner__label">실제 누적 입고수량</span>
-                            <strong className="woc-groupBanner__value">
-                              {fmt(preview.raw.receivedQty)}
-                              <em>kg</em>
-                            </strong>
-                          </div>
-                          <span className="woc-groupBanner__arrow">→</span>
-                          <div className="woc-groupBanner__stat is-highlight">
-                            <span className="woc-groupBanner__label">전처리(탈각) 후 탈피씨드</span>
-                            <strong className="woc-groupBanner__value">
-                              {fmt(rawPool)}
-                              <em>kg</em>
-                            </strong>
-                          </div>
-                        </div>
-                      </li>
-                    )}
-                    {groupKey === "PARK" && parkInfo && (
-                      <li className="woc-groupBanner is-park">
-                        <span className="woc-groupBanner__title">PARK 그룹 투입 현황 (헴프박 → 건조헴프박)</span>
-                        <div className="woc-groupBanner__stats">
-                          <div className="woc-groupBanner__stat">
-                            <span className="woc-groupBanner__label">예상 헴프박 수량(오일 부산물)</span>
-                            <strong className="woc-groupBanner__value">
-                              {fmt(parkInfo.byproduct)}
-                              <em>kg</em>
-                            </strong>
-                          </div>
-                          <span className="woc-groupBanner__arrow">→</span>
-                          <div className="woc-groupBanner__stat is-highlight">
-                            <span className="woc-groupBanner__label">건조 후 수량</span>
-                            <strong className="woc-groupBanner__value">
-                              {fmt(parkInfo.dry)}
-                              <em>kg</em>
-                            </strong>
-                          </div>
-                        </div>
-                      </li>
-                    )}
-                    {groupLines.map(renderLine)}
-                  </Fragment>
-                ))}
-              </ul>
+              <div className="woc-steps">
+                {lineGroups.map(([groupKey, groupLines]) => {
+                  const banner = bannerOf(groupKey);
+                  const titleId = `wocStep-${groupKey}-title`;
+                  return (
+                    <section key={groupKey} className="woc-step" aria-labelledby={titleId}>
+                      <GroupBanner
+                        id={titleId}
+                        badge={`${groupKey} 그룹`}
+                        title={banner.title}
+                        stats={banner.stats}
+                        park={banner.park}
+                      />
+                      <ul className="woc-lines woc-stepBody">{groupLines.map(renderLine)}</ul>
+                    </section>
+                  );
+                })}
+              </div>
             )}
           </section>
         </div>
