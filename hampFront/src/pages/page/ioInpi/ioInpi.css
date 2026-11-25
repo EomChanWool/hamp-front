@@ -111,6 +111,12 @@
   margin-left: auto;
 }
 
+/* 오른쪽 정렬 숫자가 바로 옆 왼쪽 정렬 컬럼(보관 창고)과 붙어 보이지 않도록 여백을 넓힌다 */
+.inpiListBody th:has(.inpiNum),
+.inpiListBody td:has(> .inpiNum) {
+  padding-right: 40px;
+}
+
 .inpiListFooter {
   display: flex;
   align-items: center;
@@ -127,4 +133,102 @@
 .inpiSum b {
   color: var(--text-heading);
   font-variant-numeric: tabular-nums;
+}
+
+/* ── 등록 모달 ── */
+/* 전역 label이 grid라 별표가 다음 줄로 내려가지 않게 한 줄로 둔다 */
+.detailField label.inpiRequired {
+  display: block;
+}
+
+.inpiRequired::after {
+  content: " *";
+  color: #dc2626;
+}
+
+.inpiFormFull {
+  grid-column: 1 / -1;
+}
+
+.inpiOrderStatus {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  border: 1px dashed var(--border);
+  color: var(--text-heading);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.inpiWarnText {
+  color: #b45309;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .inpiWarnText {
+  color: #fbbf24;
+}
+
+.inpiUnitInput {
+  position: relative;
+}
+
+.inpiUnitInput .tableInput {
+  width: 100%;
+  padding-right: 40px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.inpiUnitInput > span {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.inpiPrintedNotice {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fcf3e0;
+  color: #9a6410;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .inpiPrintedNotice {
+  background: rgba(245, 180, 60, 0.15);
+  color: #f5c46b;
+}
+
+.inpiReceiptMeta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+}
+
+.inpiReceiptMeta div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.inpiReceiptMeta dt {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.inpiReceiptMeta dd {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-heading);
+  overflow-wrap: anywhere;
 }

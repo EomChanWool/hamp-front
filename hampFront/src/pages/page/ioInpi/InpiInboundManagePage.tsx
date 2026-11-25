@@ -5,12 +5,14 @@ import { Panel } from '@components/card/Panel'
 import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
+import { QrLabelPrintModal, type QrLabelItem } from '@/components/modal/QrLabelPrintModal'
 import { Badge } from '@/components/common/Badge'
 import Spinner from '@/components/common/Spinner'
 import { formatDateTime } from '@/utils/common'
 import { FiberReceiptApi, type FiberReceiptListParams, type FiberReceiptResponse } from '@/api/ioInpi/FiberReceipt'
 import { BusinessPartnerApi, type BusinessPartnerOptionResponse } from '@/api/sales/BusinessPartner'
 import { ItemApi, type ItemOptionResponse } from '@/api/master/Item'
+import { FiberReceiptFormModal } from '@/pages/page/ioInpi/FiberReceiptFormModal'
 import '@components/table/Custable.css'
 import '@/pages/page/ioInpi/ioInpi.css'
 
@@ -53,6 +55,7 @@ type ListRequest = {
   filters: Filters
   page: number
   sortParams: string[]
+  refreshKey: number
 }
 
 type ListResult = {
@@ -63,8 +66,10 @@ type ListResult = {
   failed: boolean
 }
 
+type CountRequest = Filters & { refreshKey: number }
+
 type CountResult = {
-  request: Filters
+  request: CountRequest
   counts: TabCounts | null
 }
 
@@ -72,7 +77,7 @@ function toLabelPrintedFilter(value: string | undefined): LabelPrintedFilter {
   return value === 'true' || value === 'false' ? value : ''
 }
 
-/** 화면 필터 → GET /fiber-receipts 쿼리 파라미터 (빈 값은 보내지 않음) */
+/** 화면 필터 → GET /fiber-receipts 쿼리 파라미터 (빈 값 제외) */
 function toListParams(filters: Filters, labelPrinted: LabelPrintedFilter): FiberReceiptListParams {
   const params: FiberReceiptListParams = {}
   if (filters.receiptLotCode) params.receiptLotCode = filters.receiptLotCode
@@ -94,21 +99,36 @@ function getErrorMessage(error: unknown, fallback: string) {
   return typeof message === 'string' && message ? message : fallback
 }
 
-const notReady = () => window.alert('준비 중인 기능입니다.')
-
 export function InpiInboundManagePage() {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
   const [page, setPage] = useState(0)
 
-  // 필터·페이지처럼 정렬도 화면 상태로만 관리한다 (주소창에 남기지 않음)
   const [sorting, setSorting] = useState<SortingState>([])
   const sortParams = useMemo(() => sorting.map((sort) => `${sort.id},${sort.desc ? 'desc' : 'asc'}`), [sorting])
+
+  // refreshKey: 등록·수정·삭제 후 재조회 트리거
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [editingReceipt, setEditingReceipt] = useState<FiberReceiptResponse | null>(null)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+  const detailRequestRef = useRef(0)
+  const deletingRef = useRef(false)
+  const mountedRef = useRef(false)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
 
   const [listResult, setListResult] = useState<ListResult | null>(null)
   const [countResult, setCountResult] = useState<CountResult | null>(null)
 
-  // 페이지를 넘겨도 선택이 유지되도록 receiptId 전체 기준으로 관리
-  const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [selectedReceipts, setSelectedReceipts] = useState<FiberReceiptResponse[]>([])
+  const selectedIds = useMemo(() => selectedReceipts.map((receipt) => receipt.receiptId), [selectedReceipts])
+  const [isLabelOpen, setIsLabelOpen] = useState(false)
+  const [isMarkingPrinted, setIsMarkingPrinted] = useState(false)
 
   const [bpOptions, setBpOptions] = useState<BusinessPartnerOptionResponse[]>([])
   const [itemOptions, setItemOptions] = useState<ItemOptionResponse[]>([])
@@ -123,7 +143,6 @@ export function InpiInboundManagePage() {
 
   useEffect(() => {
     let ignore = false
-    // 한쪽 옵션 조회가 실패해도 다른 쪽은 표시되도록 따로 반영
     Promise.allSettled([BusinessPartnerApi.getOptions(), ItemApi.getOptions({ productType: 1, category: [0] })]).then(
       ([bpRes, itemRes]) => {
         if (ignore) return
@@ -141,8 +160,10 @@ export function InpiInboundManagePage() {
     }
   }, [])
 
-  // 응답마다 어떤 요청의 결과인지 같이 들고 있다가, 현재 요청과 다르면 로딩 중으로 본다
-  const listRequest = useMemo(() => ({ filters, page, sortParams }), [filters, page, sortParams])
+  const listRequest = useMemo<ListRequest>(
+    () => ({ filters, page, sortParams, refreshKey }),
+    [filters, page, sortParams, refreshKey],
+  )
 
   useEffect(() => {
     let ignore = false
@@ -154,9 +175,17 @@ export function InpiInboundManagePage() {
     })
       .then((res) => {
         if (ignore) return
+        const content = res.data?.content ?? []
+        // 선택해 둔 입고는 재조회된 최신 값으로 바꿔 라벨에 옛 값이 찍히지 않게 한다
+        const latest = new Map(content.map((row) => [row.receiptId, row]))
+        setSelectedReceipts((prev) =>
+          prev.some((receipt) => latest.has(receipt.receiptId))
+            ? prev.map((receipt) => latest.get(receipt.receiptId) ?? receipt)
+            : prev,
+        )
         setListResult({
           request: listRequest,
-          rows: res.data?.content ?? [],
+          rows: content,
           totalElements: res.data?.totalElements ?? 0,
           totalPages: res.data?.totalPages ?? 0,
           failed: false,
@@ -173,11 +202,11 @@ export function InpiInboundManagePage() {
     }
   }, [listRequest])
 
-  // 탭 건수는 라벨 인쇄여부를 뺀 나머지 검색 조건 기준 (탭을 바꿔도 다시 세지 않음)
+  // 탭 건수는 라벨 인쇄여부를 뺀 검색 조건 기준
   const { labelPrinted: activeTab, receiptLotCode, bpCode, orderCode, rawItemCode, receivedAtFrom, receivedAtTo } = filters
-  const countRequest = useMemo<Filters>(
-    () => ({ receiptLotCode, bpCode, orderCode, rawItemCode, labelPrinted: '', receivedAtFrom, receivedAtTo }),
-    [receiptLotCode, bpCode, orderCode, rawItemCode, receivedAtFrom, receivedAtTo],
+  const countRequest = useMemo<CountRequest>(
+    () => ({ receiptLotCode, bpCode, orderCode, rawItemCode, labelPrinted: '', receivedAtFrom, receivedAtTo, refreshKey }),
+    [receiptLotCode, bpCode, orderCode, rawItemCode, receivedAtFrom, receivedAtTo, refreshKey],
   )
 
   useEffect(() => {
@@ -187,14 +216,13 @@ export function InpiInboundManagePage() {
         (res) => res.data?.totalElements ?? 0,
       )
 
-    // 라벨 인쇄여부는 NOT NULL이라 전체 = 미인쇄 + 인쇄완료
+    // LABEL_PRINTED_YN NOT NULL → 전체 = 미인쇄 + 인쇄완료
     Promise.all([countOf('false'), countOf('true')])
       .then(([notPrinted, printed]) => {
         if (ignore) return
         setCountResult({ request: countRequest, counts: { '': notPrinted + printed, false: notPrinted, true: printed } })
       })
       .catch((error) => {
-        // 건수만 실패하면 알림 없이 '-'로 표시하고 탭에 사유를 툴팁으로 남긴다
         if (ignore) return
         console.error('인피 입고 탭 건수 조회 실패:', error)
         setCountResult({ request: countRequest, counts: null })
@@ -213,6 +241,74 @@ export function InpiInboundManagePage() {
   const tabCounts = countLoaded ? countResult.counts : null
   const countFailed = countLoaded && countResult.counts === null
 
+  const handleCreated = () => {
+    setIsCreateOpen(false)
+    setPage(0)
+    setRefreshKey((key) => key + 1)
+  }
+
+  const handleOpenCreate = () => {
+    detailRequestRef.current += 1
+    setIsCreateOpen(true)
+  }
+
+  const handleEdited = () => {
+    setEditingReceipt(null)
+    setRefreshKey((key) => key + 1)
+  }
+
+  const openDetail = useCallback((receiptId: number) => {
+    if (deletingRef.current) return
+    const requestId = ++detailRequestRef.current
+    FiberReceiptApi.getDetail(receiptId)
+      .then((res) => {
+        if (!mountedRef.current || requestId !== detailRequestRef.current) return
+        setEditingReceipt(res.data)
+      })
+      .catch((error) => {
+        if (!mountedRef.current || requestId !== detailRequestRef.current) return
+        console.error('인피 입고 단건 조회 실패:', error)
+        window.alert(getErrorMessage(error, '입고 정보를 불러오지 못했습니다.'))
+      })
+  }, [])
+
+  /** 확인 후 삭제. 삭제했으면 true */
+  const deleteReceipt = useCallback(
+    async (target: FiberReceiptResponse) => {
+      if (deletingRef.current) return false
+      const unit = target.unit ?? 'kg'
+      const message =
+        `${target.receiptLotCode} 입고 건을 삭제할까요?\n원료 재고에서 ${formatWeight(Number(target.receiptQty ?? 0))} ${unit}이 차감됩니다.` +
+        (target.labelPrinted ? '\n이미 라벨이 인쇄된 입고입니다. 붙어 있는 라벨을 회수해 주세요.' : '')
+      if (!window.confirm(message)) return false
+
+      deletingRef.current = true
+      setDeletingId(target.receiptId)
+      try {
+        const res = await FiberReceiptApi.delete(target.receiptId)
+        window.alert(res.message || '삭제되었습니다.')
+        setSelectedReceipts((prev) => prev.filter((receipt) => receipt.receiptId !== target.receiptId))
+        if (rows.length === 1 && page > 0) setPage(page - 1)
+        setRefreshKey((key) => key + 1)
+        return true
+      } catch (error) {
+        console.error('인피 입고 삭제 실패:', error)
+        window.alert(getErrorMessage(error, '삭제에 실패했습니다.'))
+        return false
+      } finally {
+        deletingRef.current = false
+        setDeletingId(null)
+      }
+    },
+    [rows.length, page],
+  )
+
+  const handleModalDelete = async (target: FiberReceiptResponse) => {
+    const deleted = await deleteReceipt(target)
+    if (deleted) setEditingReceipt(null)
+    return deleted
+  }
+
   const handleSortChange = (next: SortingState) => {
     setSorting(next)
     setPage(0)
@@ -221,7 +317,7 @@ export function InpiInboundManagePage() {
   const applyFilters = (next: Filters) => {
     setFilters(next)
     setPage(0)
-    setSelectedIds([]) // 검색 조건이 바뀌면 선택 초기화
+    setSelectedReceipts([]) // 검색 조건이 바뀌면 선택 초기화
   }
 
   const handleSearch = () => {
@@ -246,7 +342,6 @@ export function InpiInboundManagePage() {
     applyFilters({ ...filters, labelPrinted })
   }
 
-  // 검색 밴드는 적용된 조건을 그대로 보여준다 (탭으로 바꾼 라벨 인쇄여부도 반영)
   const searchFields: SearchField[] = [
     { type: 'input', label: '입고 LOT', ref: receiptLotCodeRef, name: 'receiptLotCode', placeholder: 'FR-20261125', value: filters.receiptLotCode },
     { type: 'input', label: '수주코드', ref: orderCodeRef, name: 'orderCode', placeholder: 'SO-', value: filters.orderCode },
@@ -292,16 +387,21 @@ export function InpiInboundManagePage() {
   const isAllSelectedOnPage = rows.length > 0 && rows.every((row) => selectedIdSet.has(row.receiptId))
   const isSomeSelectedOnPage = !isAllSelectedOnPage && rows.some((row) => selectedIdSet.has(row.receiptId))
 
-  const handleToggleRow = useCallback((receiptId: number) => {
-    setSelectedIds((prev) => (prev.includes(receiptId) ? prev.filter((id) => id !== receiptId) : [...prev, receiptId]))
+  const handleToggleRow = useCallback((target: FiberReceiptResponse) => {
+    setSelectedReceipts((prev) =>
+      prev.some((receipt) => receipt.receiptId === target.receiptId)
+        ? prev.filter((receipt) => receipt.receiptId !== target.receiptId)
+        : [...prev, target],
+    )
   }, [])
 
   const handleToggleAllOnPage = useCallback(
     (checked: boolean) => {
-      const pageIds = rows.map((row) => row.receiptId)
-      setSelectedIds((prev) =>
-        checked ? Array.from(new Set([...prev, ...pageIds])) : prev.filter((id) => !pageIds.includes(id)),
-      )
+      const pageIds = new Set(rows.map((row) => row.receiptId))
+      setSelectedReceipts((prev) => {
+        const rest = prev.filter((receipt) => !pageIds.has(receipt.receiptId))
+        return checked ? [...rest, ...rows] : rest
+      })
     },
     [rows],
   )
@@ -332,7 +432,8 @@ export function InpiInboundManagePage() {
             className="checkbox"
             aria-label={`${row.original.receiptLotCode} 선택`}
             checked={selectedIdSet.has(row.original.receiptId)}
-            onChange={() => handleToggleRow(row.original.receiptId)}
+            onClick={(e) => e.stopPropagation()}
+            onChange={() => handleToggleRow(row.original)}
           />
         ),
       },
@@ -401,32 +502,96 @@ export function InpiInboundManagePage() {
         header: '관리',
         enableSorting: false,
         meta: { width: '150px' },
-        cell: () => (
+        cell: ({ row }) => (
           <div className="rowActions">
-            <button type="button" className="miniButton" onClick={notReady}>
+            <button
+              type="button"
+              className="miniButton"
+              onClick={(e) => {
+                e.stopPropagation()
+                openDetail(row.original.receiptId)
+              }}
+            >
               상세
             </button>
-            <button type="button" className="miniButton danger" onClick={notReady}>
+            <button
+              type="button"
+              className="miniButton danger"
+              disabled={deletingId === row.original.receiptId}
+              onClick={(e) => {
+                e.stopPropagation()
+                void deleteReceipt(row.original)
+              }}
+            >
               삭제
             </button>
           </div>
         ),
       },
     ],
-    [selectedIdSet, isAllSelectedOnPage, isSomeSelectedOnPage, handleToggleRow, handleToggleAllOnPage],
+    [
+      selectedIdSet,
+      isAllSelectedOnPage,
+      isSomeSelectedOnPage,
+      handleToggleRow,
+      handleToggleAllOnPage,
+      openDetail,
+      deleteReceipt,
+      deletingId,
+    ],
   )
+
+  // 입고 1건당 라벨 1장, QR 값은 입고 LOT
+  const labelItems: QrLabelItem[] = useMemo(
+    () =>
+      selectedReceipts.map((receipt) => ({
+        id: String(receipt.receiptId),
+        qrValue: receipt.receiptLotCode,
+        title: [receipt.receiptLotCode, receipt.bpNm ?? receipt.bpCode, receipt.orderCode].filter(Boolean).join(' · '),
+        name: receipt.rawItemNm ?? receipt.rawItemCode,
+        code: receipt.rawItemCode,
+        qty: Number(receipt.receiptQty ?? 0),
+        qtyLabel: '입고중량',
+        unit: receipt.unit ?? 'kg',
+      })),
+    [selectedReceipts],
+  )
+
+  // 인쇄창에서 취소해도 afterprint가 오므로 정상 출력 여부를 한 번 더 확인한다
+  const handlePrinted = async () => {
+    const targetIds = selectedIds
+    if (targetIds.length === 0) return
+    if (!window.confirm(`라벨이 정상 출력됐나요?
+[확인]을 누르면 선택한 ${targetIds.length}건이 인쇄완료로 바뀝니다.`)) return
+
+    setIsMarkingPrinted(true)
+    try {
+      const res = await FiberReceiptApi.markPrinted(targetIds)
+      if (!mountedRef.current) return
+      window.alert(res.message || '라벨 인쇄 완료로 표시했습니다.')
+      setIsLabelOpen(false)
+      setSelectedReceipts([])
+      setRefreshKey((key) => key + 1)
+    } catch (error) {
+      if (!mountedRef.current) return
+      console.error('인피 입고 라벨 인쇄 완료 표시 실패:', error)
+      window.alert(getErrorMessage(error, '라벨 인쇄 완료 표시에 실패했습니다.'))
+    } finally {
+      if (mountedRef.current) setIsMarkingPrinted(false)
+    }
+  }
 
   const panelActions = (
     <div className="inpiPanelActions">
-      <button type="button" className="ghostButton" disabled={selectedIds.length === 0} onClick={notReady}>
+      <button type="button" className="ghostButton" disabled={selectedIds.length === 0} onClick={() => setIsLabelOpen(true)}>
         선택 라벨 인쇄 ({selectedIds.length}건)
       </button>
       {selectedIds.length > 0 && (
-        <button type="button" className="inpiPlainButton" onClick={() => setSelectedIds([])}>
+        <button type="button" className="inpiPlainButton" onClick={() => setSelectedReceipts([])}>
           선택 해제
         </button>
       )}
-      <button type="button" className="primaryButton" onClick={notReady}>
+      <button type="button" className="primaryButton" onClick={handleOpenCreate}>
         등록
       </button>
     </div>
@@ -464,6 +629,7 @@ export function InpiInboundManagePage() {
             columns={columns}
             sorting={sorting}
             onSortingChange={handleSortChange}
+            onRowClick={(row) => openDetail(row.receiptId)}
             noDataMessage={
               isLoading ? '' : listFailed ? '입고 목록을 불러오지 못했습니다.' : '조건에 맞는 입고 건이 없습니다.'
             }
@@ -477,6 +643,36 @@ export function InpiInboundManagePage() {
         </div>
         <CusPagination page={page} totalPages={totalPages} totalCount={totalElements} onPageChange={setPage} />
       </Panel>
+
+      <QrLabelPrintModal
+        isOpen={isLabelOpen}
+        onClose={() => setIsLabelOpen(false)}
+        items={labelItems}
+        modalTitle={`라벨 인쇄 미리보기 (${labelItems.length}건)`}
+        onPrinted={handlePrinted}
+        isBusy={isMarkingPrinted}
+      />
+
+      {isCreateOpen && (
+        <FiberReceiptFormModal
+          bpOptions={bpOptions}
+          itemOptions={itemOptions}
+          onClose={() => setIsCreateOpen(false)}
+          onSaved={handleCreated}
+        />
+      )}
+
+      {editingReceipt && (
+        <FiberReceiptFormModal
+          key={editingReceipt.receiptId}
+          bpOptions={bpOptions}
+          itemOptions={itemOptions}
+          receipt={editingReceipt}
+          onClose={() => setEditingReceipt(null)}
+          onSaved={handleEdited}
+          onDelete={handleModalDelete}
+        />
+      )}
     </section>
   )
 }
