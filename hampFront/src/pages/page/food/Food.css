@@ -1673,6 +1673,7 @@
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+  word-break: keep-all;
 }
 
 .woc-infocard__label {
@@ -2968,7 +2969,7 @@
 
 /* ───────── 수주 정보 카드: 실제 입고 카드가 추가돼 5개 ───────── */
 .woc-infocards {
-  grid-template-columns: minmax(200px, 1.3fr) minmax(170px, 1.1fr) repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(200px, 1.2fr) minmax(170px, 1.1fr) repeat(3, minmax(0, 1fr));
 }
 
 .woc-infocard.is-received {
@@ -3884,5 +3885,183 @@ table.wocm-cmp {
   /* 사이드바 폭을 뺀 .woc 폭이 1000px 이하가 되는 대략의 뷰포트 기준 - 환경에 맞게 조정 */
   .woc-toast {
     bottom: 88px;
+  }
+}
+
+/* ==========================================================================
+   작업지시 등록: 작업지시 라인 = STEP 박스 (시뮬레이션 wsim 과 동일한 구조)
+   - 바깥 패널은 제목만, 그룹(RAW/PARK) 하나 = 보더 박스 하나
+   ========================================================================== */
+
+/* 바깥 카드 테두리/배경 제거 (STEP 박스와 이중 테두리 방지) */
+.woc .woc-flowPanel {
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+.woc .woc-flowPanel .woc-empty {
+  padding: 36px 0;
+  background: var(--woc-surface);
+  border: 1px dashed var(--woc-border-strong);
+  border-radius: 12px;
+}
+
+.woc .woc-steps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+
+/* STEP 박스 */
+.woc .woc-step {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--woc-surface);
+  border: 1px solid var(--woc-border);
+  border-radius: 12px;
+}
+
+/* 헤더 (woc-groupBanner 재디자인): 박스 안의 연한 띠 */
+.woc .woc-step .woc-groupBanner {
+  align-items: center;
+  gap: 12px 24px;
+  padding: 16px 20px;
+  margin: 0;
+  background: var(--woc-bg-soft);
+  border: none;
+  border-radius: 0;
+}
+
+/* STEP 배지 + 제목 묶음 */
+.woc .woc-bannerHead {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.woc .woc-bannerStep {
+  width: fit-content;
+  flex: none;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--woc-primary-dark);
+  background: rgba(37, 99, 235, 0.1);
+  background: color-mix(in srgb, var(--woc-primary) 12%, transparent);
+  border-radius: 999px;
+  font-family: "montserrat", sans-serif;
+}
+
+.woc .woc-groupBanner.is-park .woc-bannerStep {
+  color: var(--woc-amber-dark);
+  background: rgba(217, 119, 6, 0.12);
+  background: color-mix(in srgb, var(--woc-amber) 14%, transparent);
+}
+
+.woc .woc-step .woc-groupBanner__title {
+  flex: 0 1 auto;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: var(--woc-text);
+}
+
+/* 수치 칩: 너비 고정 + 같은 줄에서는 높이 동일 */
+.woc .woc-step .woc-groupBanner__stats {
+  flex: none;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.woc .woc-step .woc-groupBanner__stat {
+  flex: 0 0 200px;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 8px 14px;
+  background: var(--woc-surface);
+  border: 1px solid var(--woc-border);
+  border-radius: 8px;
+}
+
+.woc .woc-step .woc-groupBanner__label {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--woc-muted-2);
+  white-space: normal;
+}
+
+.woc .woc-step .woc-groupBanner__value {
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.woc .woc-step .woc-groupBanner__value em {
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+/* 강조 수치: 파란 틴트 (PARK 는 앰버) — color-mix 미지원 브라우저용 rgba 먼저 */
+.woc .woc-step .woc-groupBanner__stat.is-highlight {
+  background: rgba(37, 99, 235, 0.08);
+  background: color-mix(in srgb, var(--woc-primary) 10%, transparent);
+  border-color: rgba(37, 99, 235, 0.3);
+  border-color: color-mix(in srgb, var(--woc-primary) 35%, transparent);
+}
+
+.woc .woc-groupBanner.is-park .woc-groupBanner__stat.is-highlight {
+  background: rgba(217, 119, 6, 0.1);
+  background: color-mix(in srgb, var(--woc-amber) 12%, transparent);
+  border-color: rgba(217, 119, 6, 0.35);
+  border-color: color-mix(in srgb, var(--woc-amber) 40%, transparent);
+}
+
+/* 화살표: 작은 원형 */
+.woc .woc-step .woc-groupBanner__arrow {
+  display: grid;
+  flex: none;
+  align-self: center;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  font-size: 13px;
+  color: var(--woc-muted-2);
+  background: var(--woc-surface);
+  border: 1px solid var(--woc-border);
+  border-radius: 50%;
+}
+
+/* 헤더 아래 dashed 구분선 + 라인 영역 */
+.woc .woc-stepBody {
+  padding: 20px;
+  border-top: 1px dashed var(--woc-border-strong);
+}
+
+@container woc (max-width: 560px) {
+  .woc .woc-step .woc-groupBanner,
+  .woc .woc-stepBody {
+    padding: 14px;
+  }
+
+  .woc .woc-step .woc-groupBanner__stats {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .woc .woc-step .woc-groupBanner__stat {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .woc .woc-step .woc-groupBanner__arrow {
+    transform: rotate(90deg);
   }
 }
