@@ -15,8 +15,9 @@ import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
 import { type SelectOption } from "@/pages/layout/DetailSelect";
 import {
   FIBER_ALLOCATION_ELEMENT_ID,
-  FiberAllocationMiniBar,
+  FiberAllocationBar,
   FiberSalesOrderAllocationSection,
+  type FiberAllocationSegment,
 } from "@/components/common/FiberSalesOrderAllocationSection";
 import {
   FIBER_PRODUCT_ITEM_CATEGORY,
@@ -254,7 +255,7 @@ export function InpiSalesOrderDetailPage() {
       const [bpRes, rawItemRes, productRes] = await Promise.all([
         BusinessPartnerApi.getOptions(),
         ItemApi.getOptions({ productType: 1, category: FIBER_RAW_ITEM_CATEGORY }),
-          ItemApi.getOptions({ productType: 1, category: FIBER_PRODUCT_ITEM_CATEGORY }),
+        ItemApi.getOptions({ productType: 1, category: FIBER_PRODUCT_ITEM_CATEGORY }),
       ]);
       setBusinessPartnerOptions(bpRes.data ?? []);
       setRawItemOptions(rawItemRes.data ?? []);
@@ -393,6 +394,14 @@ export function InpiSalesOrderDetailPage() {
 
   if (!order) return null;
 
+  // 읽기 모드 배분 막대용 구간: 서버 라인 → 공용 막대 구간 (수정 모드와 같은 모양/글자)
+  const viewSegments: FiberAllocationSegment[] = (order.lines ?? []).map((line, index) => ({
+    key: String(line.fiberSalesOrderLineId ?? `${line.productItemCode}-${index}`),
+    label: line.productItemNm || line.productItemCode || "-",
+    qty: line.allocatedInputQty ?? 0,
+    colorIndex: index,
+  }));
+
   return (
     <section className="screenStack">
       <DetailLayout
@@ -451,7 +460,7 @@ export function InpiSalesOrderDetailPage() {
                 </p>
               </div>
             )}
-            {/* 제품별 원물 배분 편집 (목업의 배분 막대 + 라인 편집) */}
+            {/* 제품별 원물 배분 편집 (배분 막대 + 라인 편집) */}
             <FiberSalesOrderAllocationSection
               variant="detail"
               totalQty={toNumberOrNull(form.requestInputQty)}
@@ -463,11 +472,12 @@ export function InpiSalesOrderDetailPage() {
             />
           </>
         ) : (
-          <div className="detailSection detailSection--full">
+          <div className="detailSection detailSection--full fsoAlloc">
             <h3 className="detailSectionTitle">제품별 원물 배분</h3>
 
+            {/* 수정 모드와 같은 배분 막대(막대 안 제품명 + kg, 합계/상태 문구 포함) */}
             <div className="fsoViewBar">
-              <FiberAllocationMiniBar lines={order.lines} totalQty={order.requestInputQty} />
+              <FiberAllocationBar segments={viewSegments} totalQty={order.requestInputQty} />
             </div>
 
             <div className="tableWrap">

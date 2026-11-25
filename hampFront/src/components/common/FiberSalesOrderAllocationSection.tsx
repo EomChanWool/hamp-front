@@ -1,3 +1,5 @@
+import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { NumberInput } from "@/components/common/NumberInput";
 import { SelectBox, type SelectBoxOption } from "@/components/common/SelectBox";
 import type { ItemOptionResponse } from "@/api/master/Item";
@@ -18,6 +20,90 @@ export const FIBER_ALLOCATION_ELEMENT_ID = "fso-allocation";
 
 /** 구간별 색상 개수 (CSS의 fsoSeg--0 ~ fsoSeg--3 과 맞춘다) */
 const SEGMENT_COLOR_COUNT = 4;
+
+// ── 공용 배분 막대 (수정 모드 / 상세 읽기 모드 공용) ───────────────────────────
+
+/** 배분 막대 한 구간 */
+export interface FiberAllocationSegment {
+  key: string;
+  /** 막대 안에 표시할 제품명 */
+  label: string;
+  /** 배분 원물(kg) */
+  qty: number;
+  /** 색상 번호 (라인 순서 기준, 라인 점 색과 맞춘다) */
+  colorIndex: number;
+}
+
+interface FiberAllocationBarProps {
+  segments: FiberAllocationSegment[];
+  /** 투입원료 총량(kg) - 배분 합계와 비교한다 */
+  totalQty: number | null;
+}
+
+/**
+ * 배분 막대 + 합계/상태 문구
+ * - 수정 모드와 상세 읽기 모드가 같은 컴포넌트를 쓰므로 모양과 막대 안 글자가 항상 같다.
+ */
+export function FiberAllocationBar({ segments, totalQty }: FiberAllocationBarProps) {
+  const total = totalQty ?? 0;
+  const sum = r2(segments.reduce((acc, seg) => acc + (seg.qty ?? 0), 0));
+
+  // ---- 배분 상태 문구 ----
+  let stateClass = "wait";
+  let stateText = "투입원료 수량을 먼저 입력하세요";
+  if (total > 0) {
+    if (sum === r2(total)) {
+      stateClass = "ok";
+      stateText = "배분 완료 · 합계가 투입원료 수량과 같습니다";
+    } else if (sum < total) {
+      stateClass = "wait";
+      stateText = `남은 원물 ${formatKg(r2(total - sum))} ${FIBER_QTY_UNIT}`;
+    } else {
+      stateClass = "bad";
+      stateText = `${formatKg(r2(sum - total))} ${FIBER_QTY_UNIT} 초과 배분`;
+    }
+  }
+
+  // 막대 기준 폭: 초과 배분이어도 막대가 넘치지 않도록 큰 쪽을 기준으로 한다
+  const barBase = Math.max(total, sum) || 1;
+  const isOver = total > 0 && sum > total;
+
+  return (
+    <>
+      {/* 배분 막대 */}
+      <div className={`fsoAllocBar${isOver ? " fsoAllocBar--over" : ""}`} aria-label="원물 배분 막대">
+        {segments.map((seg) => {
+          const qty = seg.qty ?? 0;
+          if (qty <= 0) return null;
+          const text = `${seg.label} ${formatKg(qty)}`;
+          return (
+            <div
+              key={seg.key}
+              className={`fsoAllocSeg fsoSeg--${seg.colorIndex % SEGMENT_COLOR_COUNT}`}
+              style={{ width: `${(qty / barBase) * 100}%` }}
+              title={text} // 구간이 좁아 글자가 잘릴 때 전체 내용 확인용
+            >
+              {text}
+            </div>
+          );
+        })}
+        {total > sum && (
+          <div className="fsoAllocSeg fsoAllocSeg--rest" style={{ width: `${((total - sum) / barBase) * 100}%` }}>
+            미배분 {formatKg(r2(total - sum))}
+          </div>
+        )}
+      </div>
+
+      {/* 합계 / 상태 */}
+      <div className="fsoAllocMeta">
+        <span>
+          배분 <b>{formatKg(sum)}</b> / <b>{formatKg(total)}</b> {FIBER_QTY_UNIT}
+        </span>
+        <span className={`fsoAllocState fsoAllocState--${stateClass}`}>{stateText}</span>
+      </div>
+    </>
+  );
+}
 
 // ── 제품별 원물 배분 편집 섹션 (등록/상세 수정 공용) ───────────────────────────
 
@@ -81,58 +167,21 @@ export function FiberSalesOrderAllocationSection({
     return list;
   };
 
-  // ---- 배분 상태 문구 ----
-  let stateClass = "wait";
-  let stateText = "투입원료 수량을 먼저 입력하세요";
-  if (total > 0) {
-    if (sum === r2(total)) {
-      stateClass = "ok";
-      stateText = "배분 완료 · 합계가 투입원료 수량과 같습니다";
-    } else if (sum < total) {
-      stateClass = "wait";
-      stateText = `남은 원물 ${formatKg(r2(total - sum))} ${FIBER_QTY_UNIT}`;
-    } else {
-      stateClass = "bad";
-      stateText = `${formatKg(r2(sum - total))} ${FIBER_QTY_UNIT} 초과 배분`;
-    }
-  }
-
-  // 막대 기준 폭: 초과 배분이어도 막대가 넘치지 않도록 큰 쪽을 기준으로 한다
-  const barBase = Math.max(total, sum) || 1;
-  const isOver = total > 0 && sum > total;
   const productName = (code: string) =>
     productOptions.find((opt) => opt.itemCode === code)?.itemNm ?? code;
 
+  // 편집 중인 라인 → 공용 배분 막대 구간
+  const segments: FiberAllocationSegment[] = lines.map((line, index) => ({
+    key: line.key,
+    label: line.productItemCode ? productName(line.productItemCode) : "미선택",
+    qty: line.allocatedInputQty ?? 0,
+    colorIndex: index,
+  }));
+
   const body = (
     <>
-      {/* 배분 막대 */}
-      <div className={`fsoAllocBar${isOver ? " fsoAllocBar--over" : ""}`} aria-label="원물 배분 막대">
-        {lines.map((line, index) => {
-          const qty = line.allocatedInputQty ?? 0;
-          if (qty <= 0) return null;
-          return (
-            <div
-              key={line.key}
-              className={`fsoAllocSeg fsoSeg--${index % SEGMENT_COLOR_COUNT}`}
-              style={{ width: `${(qty / barBase) * 100}%` }}
-            >
-              {line.productItemCode ? productName(line.productItemCode) : "미선택"} {formatKg(qty)}
-            </div>
-          );
-        })}
-        {total > sum && (
-          <div className="fsoAllocSeg fsoAllocSeg--rest" style={{ width: `${((total - sum) / barBase) * 100}%` }}>
-            미배분 {formatKg(r2(total - sum))}
-          </div>
-        )}
-      </div>
-
-      <div className="fsoAllocMeta">
-        <span>
-          배분 <b>{formatKg(sum)}</b> / <b>{formatKg(total)}</b> {FIBER_QTY_UNIT}
-        </span>
-        <span className={`fsoAllocState fsoAllocState--${stateClass}`}>{stateText}</span>
-      </div>
+      {/* 배분 막대 + 합계/상태 (상세 읽기 모드와 공용) */}
+      <FiberAllocationBar segments={segments} totalQty={totalQty} />
 
       {/* 배분 라인 목록 */}
       <div className="fsoLineList">
@@ -248,8 +297,7 @@ export function FiberSalesOrderAllocationSection({
   );
 }
 
-
-// ── 목록/상세(읽기) 공용: 제품별 배분 미니 막대 ────────────────────────────────
+// ── 목록용: 제품별 배분 미니 막대 (한 줄 + 마우스 호버 툴팁) ───────────────────
 
 interface FiberAllocationMiniBarProps {
   /** 배분 라인 (목록 응답에 없으면 undefined → "-" 표시) */
@@ -258,13 +306,44 @@ interface FiberAllocationMiniBarProps {
   totalQty: number | null;
 }
 
+/** 툴팁 위치 (화면 기준 좌표) */
+interface TooltipPos {
+  x: number;
+  y: number;
+  /** true 면 막대 아래에 표시 (위쪽 공간이 부족할 때) */
+  below: boolean;
+}
+
 export function FiberAllocationMiniBar({ lines, totalQty }: FiberAllocationMiniBarProps) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [tip, setTip] = useState<TooltipPos | null>(null);
+
   if (!lines || lines.length === 0) return <span>-</span>;
 
   const base = totalQty && totalQty > 0 ? totalQty : lines.reduce((acc, l) => acc + l.allocatedInputQty, 0) || 1;
 
+  // 막대 위(공간이 없으면 아래)에 툴팁을 띄운다.
+  // 테이블 래퍼가 overflow 로 잘라내므로 position: fixed + portal 로 body 에 그린다.
+  const showTip = () => {
+    const rect = wrapRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const below = rect.top < 160;
+    // 좌우로 화면 밖으로 나가지 않도록 중앙 좌표를 보정
+    const x = Math.min(Math.max(rect.left + rect.width / 2, 140), window.innerWidth - 140);
+    setTip({ x, y: below ? rect.bottom + 8 : rect.top - 8, below });
+  };
+  const hideTip = () => setTip(null);
+
   return (
-    <div className="fsoMiniBarWrap">
+    <div
+      ref={wrapRef}
+      className="fsoMiniBarWrap"
+      tabIndex={0} // 키보드 포커스로도 확인 가능
+      onMouseEnter={showTip}
+      onMouseLeave={hideTip}
+      onFocus={showTip}
+      onBlur={hideTip}
+    >
       <div className="fsoMiniBar">
         {lines.map((line, index) => (
           <span
@@ -274,11 +353,29 @@ export function FiberAllocationMiniBar({ lines, totalQty }: FiberAllocationMiniB
           />
         ))}
       </div>
-      <div className="fsoMiniBarText">
-        {lines
-          .map((line) => `${line.productItemNm || line.productItemCode} ${formatKg(line.allocatedInputQty)}`)
-          .join(" · ")}
-      </div>
+      <span className="fsoMiniBarCount">{lines.length}종</span>
+
+      {tip &&
+        createPortal(
+          <div
+            className={`fsoTip${tip.below ? " fsoTip--below" : ""}`}
+            style={{ left: tip.x, top: tip.y }}
+            role="tooltip"
+          >
+            <div className="fsoTipTitle">제품별 원물 배분</div>
+            {lines.map((line, index) => (
+              <div className="fsoTipRow" key={`${line.productItemCode}-${index}`}>
+                <span className={`fsoTipDot fsoSeg--${index % SEGMENT_COLOR_COUNT}`} aria-hidden="true" />
+                <span className="fsoTipName">{line.productItemNm || line.productItemCode}</span>
+                <span className="fsoTipQty">
+                  {formatKg(line.allocatedInputQty)} {FIBER_QTY_UNIT}
+                </span>
+                <span className="fsoTipPct">{calcPercent(line.allocatedInputQty, base)}%</span>
+              </div>
+            ))}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
