@@ -895,13 +895,14 @@
 
 /* ==========================================================================
    섬유 수주관리 전용 스타일
-   - 제품별 원물 배분 섹션 (등록/상세 수정)
-   - 목록/상세(읽기) 미니 막대
+   - 제품별 원물 배분 섹션 (등록/상세 수정/상세 읽기 공용 배분 막대)
+   - 목록 미니 막대 + 호버 툴팁
    ========================================================================== */
 
 /* ---- 구간 색상 / 상태 색상 변수 ---- */
 .fsoAlloc,
-.fsoMiniBarWrap {
+.fsoMiniBarWrap,
+.fsoTip {
   --fso-seg-0: #57d3a1;
   --fso-seg-1: #6b8de3;
   --fso-seg-2: #e7a94b;
@@ -915,7 +916,8 @@
 @media (prefers-color-scheme: dark) {
 
   :root:not([data-theme="light"]) .fsoAlloc,
-  :root:not([data-theme="light"]) .fsoMiniBarWrap {
+  :root:not([data-theme="light"]) .fsoMiniBarWrap,
+  :root:not([data-theme="light"]) .fsoTip {
     --fso-seg-rest: #2e3340;
     --fso-ok: #6ee7b7;
     --fso-bad: #f87171;
@@ -924,14 +926,15 @@
 }
 
 :root[data-theme="dark"] .fsoAlloc,
-:root[data-theme="dark"] .fsoMiniBarWrap {
+:root[data-theme="dark"] .fsoMiniBarWrap,
+:root[data-theme="dark"] .fsoTip {
   --fso-seg-rest: #2e3340;
   --fso-ok: #6ee7b7;
   --fso-bad: #f87171;
   --fso-wait: #f5c46b;
 }
 
-/* 구간 색상 (배분 막대 / 라인 점 / 미니 막대 공용) */
+/* 구간 색상 (배분 막대 / 라인 점 / 미니 막대 / 툴팁 점 공용) */
 .fsoSeg--0 {
   background: var(--fso-seg-0);
 }
@@ -957,7 +960,7 @@
   color: var(--text-muted, #64748b);
 }
 
-/* 배분 막대 */
+/* 배분 막대 (수정 모드 / 상세 읽기 모드 공용) */
 .fsoAllocBar {
   display: flex;
   height: 34px;
@@ -971,7 +974,10 @@
   align-items: center;
   justify-content: center;
   min-width: 0;
+  padding: 0 8px;
+  box-sizing: border-box;
   overflow: hidden;
+  text-overflow: ellipsis; /* 구간이 좁으면 말줄임 (전체 내용은 title 로 확인) */
   white-space: nowrap;
   font-size: 12.5px;
   font-weight: 600;
@@ -1025,7 +1031,7 @@
 }
 
 
-/* ---- 배분 라인 목록 ---- */
+/* ---- 배분 라인 목록 (수정 모드) ---- */
 .fsoLineList {
   display: grid;
   gap: 10px;
@@ -1128,22 +1134,38 @@
 }
 
 
-/* ---- 목록/상세(읽기) 미니 막대 ---- */
-
-/* ===== 공통(= 목록 기본값) ===== */
-
-/* 막대 + 텍스트를 감싸는 래퍼: 표 셀 안에서 폭/여백을 안정적으로 잡는다 */
-.fsoMiniBarWrap {
-  min-width: 200px;
-  max-width: 260px;
-  padding: 4px 0;
+/* ---- 상세(읽기) 모드 ---- */
+/* 읽기 모드도 수정 모드와 같은 .fsoAllocBar 를 쓰므로 막대 전용 규칙이 따로 없다 */
+.fsoViewBar {
+  margin-bottom: 16px;
 }
 
-/* 목록 막대: 구간 사이에 얇은 틈을 두고 양끝/구간을 둥글게 → 한결 깔끔한 느낌 */
+.fsoViewHint {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted, #64748b);
+}
+
+
+/* ---- 목록 미니 막대 (한 줄) ---- */
+.fsoMiniBarWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 140px;
+  max-width: 200px;
+  padding: 6px 0;
+  outline: none;
+  cursor: default;
+}
+
+/* 구간 사이에 얇은 틈을 두고 양끝/구간을 둥글게 */
 .fsoMiniBar {
   display: flex;
+  flex: 1;
+  min-width: 0;
   gap: 2px;
-  width: 100%;
   height: 10px;
   border-radius: 999px;
   overflow: hidden;
@@ -1153,57 +1175,80 @@
 .fsoMiniBar span {
   display: block;
   height: 100%;
-  min-width: 4px;          /* 비율이 아주 작아도 구간이 보이게 */
+  min-width: 4px; /* 비율이 아주 작아도 구간이 보이게 */
   border-radius: 999px;
 }
 
-/* 막대 아래 제품별 수량 텍스트: 길면 " · " 단위로 자연스럽게 줄바꿈 */
-.fsoMiniBarText {
-  margin-top: 8px;
+/* 제품 종류 수 */
+.fsoMiniBarCount {
+  flex-shrink: 0;
   font-size: 12px;
-  line-height: 1.55;
   color: var(--text-muted, #64748b);
-  white-space: normal;
-  word-break: keep-all;
+  font-variant-numeric: tabular-nums;
 }
 
-/* ===== 상세(읽기) 모드: 수정 모드 배분 막대와 같은 크기 ===== */
-
-.fsoViewBar {
-  margin-bottom: 16px;
+.fsoMiniBarWrap:focus-visible .fsoMiniBar {
+  outline: 2px solid var(--fso-seg-1);
+  outline-offset: 2px;
 }
 
-/* 수정 모드와 동일: 전체 너비 / 높이 34px / 둥근 사각형 / 구간 사이 틈 없음 */
-.fsoViewBar .fsoMiniBarWrap {
-  min-width: 0;
-  max-width: none;
-  padding: 0;
-}
-
-.fsoViewBar .fsoMiniBar {
-  gap: 0;
-  width: 100%;
-  max-width: none;
-  height: 34px;
+/* ---- 호버 툴팁 (body 에 portal 로 그려지므로 fixed) ---- */
+.fsoTip {
+  position: fixed;
+  z-index: 10000;
+  min-width: 200px;
+  max-width: 280px;
+  padding: 10px 12px;
+  transform: translate(-50%, -100%); /* 기본: 막대 위쪽 */
   border-radius: 10px;
-}
-
-.fsoViewBar .fsoMiniBar span {
-  min-width: 0;
-  border-radius: 0;
-}
-
-/* 막대 아래 수량 텍스트도 수정 모드 안내 문구 크기에 맞춤 */
-.fsoViewBar .fsoMiniBarText {
-  margin-top: 10px;
-  font-size: 13px;
-}
-
-.fsoViewHint {
-  margin: 10px 0 0;
+  background: #1e293b;
+  color: #f8fafc;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
   font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--text-muted, #64748b);
+  line-height: 1.4;
+  pointer-events: none; /* 툴팁이 마우스를 가로채 깜빡이지 않도록 */
+}
+
+.fsoTip--below {
+  transform: translate(-50%, 0); /* 위쪽 공간이 부족하면 막대 아래쪽 */
+}
+
+.fsoTipTitle {
+  margin-bottom: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.fsoTipRow {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto 40px;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.fsoTipDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.fsoTipName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fsoTipQty,
+.fsoTipPct {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.fsoTipPct {
+  text-align: right;
+  color: #94a3b8;
 }
 
 

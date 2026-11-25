@@ -30,15 +30,12 @@ import "@/pages/page/inpiSales/InpiSales.css";
 
 /**
  * 목록 행 타입
- * - 목록 API 응답에는 제품별 배분(lines)이 없어서, 화면에서 상세 조회 결과를 붙여 쓴다.
- * - 백엔드 목록 응답에 lines 가 추가되면 LOAD_LINES_FROM_DETAIL 을 false 로 바꾸면 된다.
+ * - 목록 API 응답에 제품별 배분(lines)이 포함된다.
+ * - 응답 타입(FiberSalesOrderResponse)에 lines 가 이미 선언돼 있으면 이 교차 타입은 생략해도 된다.
  */
 type FiberOrderRow = FiberSalesOrderResponse & {
     lines?: FiberSalesOrderLineResponse[];
 };
-
-/** true: 목록 조회 후 현재 페이지 행마다 상세(getDetail)를 호출해 제품별 배분을 채운다 (페이지당 최대 10건) */
-const LOAD_LINES_FROM_DETAIL = false;
 
 const LIST_PATH = "/inpi-sales/sales-order";
 
@@ -178,9 +175,13 @@ export function InpiSalesOrderPage() {
             name: "orderDateTo",
             value: queryOrderDateTo,
         },
-    ], [businessPartnerOptions, rawItemOptions]);
+        // URL 검색조건이 바뀌면(뒤로가기 등) 입력칸 값도 함께 갱신되도록 의존성에 포함
+    ], [
+        businessPartnerOptions, rawItemOptions,
+        queryOrderCode, queryBpCode, queryRawItemCode, queryStatus, queryOrderDateFrom, queryOrderDateTo,
+    ]);
 
-    // 섬유 수주 목록 조회
+    // 섬유 수주 목록 조회 (제품별 배분 lines 는 목록 응답에 포함되어 있다)
     const loadOrders = useCallback(async () => {
         if (!isReady) return;
 
@@ -205,25 +206,8 @@ export function InpiSalesOrderPage() {
 
             const response = await FiberSalesOrderApi.getList(params);
             const pageData = response.data;
-            const rows: FiberOrderRow[] = pageData.content ?? [];
 
-            // 제품별 배분은 상세 응답에만 있으므로 현재 페이지 행에 붙인다 (실패한 행은 "-" 표시)
-            const rowsWithLines = LOAD_LINES_FROM_DETAIL
-                ? await Promise.all(
-                    rows.map(async (row) => {
-                        if (row.lines) return row;
-                        try {
-                            const detail = await FiberSalesOrderApi.getDetail(row.orderCode);
-                            return { ...row, lines: detail.data?.lines ?? [] };
-                        } catch (error) {
-                            console.error(`수주 배분 조회 실패(${row.orderCode}):`, error);
-                            return row;
-                        }
-                    }),
-                )
-                : rows;
-
-            setOrders(rowsWithLines);
+            setOrders(pageData.content ?? []);
             setTotalElements(pageData.totalElements ?? 0);
             setTotalPages(pageData.totalPages ?? 0);
         } catch (error) {
@@ -312,7 +296,7 @@ export function InpiSalesOrderPage() {
                 cell: ({ getValue }) => `${formatKg(getValue<number>())} ${FIBER_QTY_UNIT}`,
             },
             {
-                // 제품별 배분: 목업의 미니 막대 + 제품별 kg 텍스트
+                // 제품별 배분: 한 줄 미니 막대 (마우스를 올리면 제품별 kg/비율 툴팁)
                 id: "allocation",
                 header: "제품별 배분",
                 enableSorting: false,
