@@ -354,13 +354,22 @@ const HempInputSimulationPage = () => {
   const [rawWeight, setRawWeight] = useState<number | null>(DEFAULT_RAW);
   const [oilPercent, setOilPercent] = useState<number | null>(DEFAULT_OIL_PERCENT);
   const [attempted, setAttempted] = useState(false);
-  const [result, setResult] = useState<MainResult | null>(null);
+  const [calc, setCalc] = useState<{ rawWeight: number; oilPercent: number; result: MainResult } | null>(null);
 
   // 헴프박 재투입 입력
   const [parkWeight, setParkWeight] = useState<number | null>(0);
   const [powderPercent, setPowderPercent] = useState<number | null>(DEFAULT_POWDER_PERCENT);
   const [parkAttempted, setParkAttempted] = useState(false);
-  const [parkResult, setParkResult] = useState<ParkResult | null>(null);
+  const [parkCalc, setParkCalc] = useState<{ parkWeight: number; powderPercent: number; result: ParkResult } | null>(
+    null,
+  );
+
+  // 계산했던 입력과 지금 입력이 같을 때만 결과를 보인다 (바뀐 입력의 결과로 잘못 읽히지 않게)
+  const result = calc && calc.rawWeight === rawWeight && calc.oilPercent === oilPercent ? calc.result : null;
+  const parkResult =
+    parkCalc && parkCalc.parkWeight === parkWeight && parkCalc.powderPercent === powderPercent
+      ? parkCalc.result
+      : null;
 
   // 시뮬레이션 API 요청 중 (중복 요청 방지)
   const [calculating, setCalculating] = useState<"main" | "park" | null>(null);
@@ -390,7 +399,7 @@ const HempInputSimulationPage = () => {
     setAttempted(true);
 
     if (!isValidWeight(rawWeight) || !isValidPercent(oilPercent)) {
-      setResult(null);
+      setCalc(null);
       setFocusRequest({ formId: "wsimMainForm" });
       return;
     }
@@ -412,14 +421,14 @@ const HempInputSimulationPage = () => {
           : null;
 
       const next = toMainResult(raw, dryPark);
-      setResult(next);
+      setCalc({ rawWeight, oilPercent, result: next });
 
       // 헴프박 재투입 영역 초기화 (최소 산출량을 기본 투입량으로)
       setParkWeight(next.parkMinQty);
-      setParkResult(null);
+      setParkCalc(null);
       setParkAttempted(false);
     } catch (error) {
-      setResult(null);
+      setCalc(null);
       alert(errorMessage(error, "원물 투입 시뮬레이션 계산 중 오류가 발생했습니다."));
     } finally {
       setCalculating(null);
@@ -432,7 +441,7 @@ const HempInputSimulationPage = () => {
     setParkAttempted(true);
 
     if (!isValidWeight(parkWeight) || !isValidPercent(powderPercent)) {
-      setParkResult(null);
+      setParkCalc(null);
       setFocusRequest({ formId: "wsimParkForm" });
       return;
     }
@@ -440,9 +449,9 @@ const HempInputSimulationPage = () => {
     setCalculating("park");
     try {
       const res = requireData(await SalesOrderApi.simulateByproduct({ parkWeight, powderPercent }));
-      setParkResult(toParkResult(res));
+      setParkCalc({ parkWeight, powderPercent, result: toParkResult(res) });
     } catch (error) {
-      setParkResult(null);
+      setParkCalc(null);
       alert(errorMessage(error, "헴프박 재투입 계산 중 오류가 발생했습니다."));
     } finally {
       setCalculating(null);
@@ -453,11 +462,11 @@ const HempInputSimulationPage = () => {
     setRawWeight(DEFAULT_RAW);
     setOilPercent(DEFAULT_OIL_PERCENT);
     setAttempted(false);
-    setResult(null);
+    setCalc(null);
     setParkWeight(0);
     setPowderPercent(DEFAULT_POWDER_PERCENT);
     setParkAttempted(false);
-    setParkResult(null);
+    setParkCalc(null);
   };
 
   const hasPark = !!result && result.parkMinQty > 0;

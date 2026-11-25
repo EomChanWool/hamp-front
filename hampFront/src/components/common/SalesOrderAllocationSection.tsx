@@ -54,7 +54,8 @@ function errorMessage(error: unknown, fallback: string): string {
 
 /**
  * 디바운스된 key가 바뀔 때마다 시뮬레이션을 호출한다. key가 null이면 호출하지 않는다.
- * 결과는 key와 함께 보관해서, 현재 key와 다르면 "계산 중"으로 본다(직전 결과는 계속 보여줌).
+ * 결과는 key와 함께 보관해서, 현재 key와 다르면 "계산 중"으로 보고 data를 비운다
+ * (바뀐 비율 옆에 이전 비율 기준 수량이 보이지 않게). 품목명 표시용으로 직전 결과는 lastData로 남긴다.
  */
 function useSimulation<T>(
   key: string | null,
@@ -81,11 +82,14 @@ function useSimulation<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedKey]);
 
-  if (key == null) return { data: null, error: null, loading: false };
+  const lastData = result?.data ?? null;
+  if (key == null) return { data: null, lastData, error: null, loading: false };
+  const current = result?.key === key;
   return {
-    data: result?.data ?? null,
-    error: result?.key === key ? result.error : null,
-    loading: result?.key !== key,
+    data: current ? (result?.data ?? null) : null,
+    lastData,
+    error: current ? (result?.error ?? null) : null,
+    loading: !current,
   };
 }
 
@@ -160,6 +164,16 @@ export function SalesOrderAllocationSection({
   const semiSeed = raw.data?.semiSeedCapacity ?? null;
   const dryPark = park.data?.dryParkCapacity ?? null;
 
+  // 계산 중에도 라벨·카드 제목이 기본 이름으로 바뀌었다 돌아오지 않도록 직전 결과의 품목명을 쓴다
+  const names = {
+    oil: raw.lastData?.oilCapacity.itemNm,
+    seed: raw.lastData?.seedCapacity.itemNm,
+    semiSeed: raw.lastData?.semiSeedCapacity.itemNm,
+    powder: park.lastData?.powderCapacity.itemNm,
+    conc: park.lastData?.concCapacity.itemNm,
+    dryPark: park.lastData?.dryParkCapacity.itemNm,
+  };
+
   const rawGroup = (
     <AllocationGroup
       variant={variant}
@@ -169,10 +183,10 @@ export function SalesOrderAllocationSection({
     >
       <PercentControl
         id={`so-alloc-oil-${variant}`}
-        label={`${oil?.itemNm ?? FALLBACK_NAME[ALLOCATION_ITEM.oil]} 배분 비율`}
+        label={`${names.oil ?? FALLBACK_NAME[ALLOCATION_ITEM.oil]} 배분 비율`}
         value={oilPercent}
         disabled={disabled}
-        restLabel={seed?.itemNm ?? FALLBACK_NAME[ALLOCATION_ITEM.seed]}
+        restLabel={names.seed ?? FALLBACK_NAME[ALLOCATION_ITEM.seed]}
         onChange={(v) => onChange({ ...percents, oilPercent: v })}
         onCommit={handleCommit}
       />
@@ -187,9 +201,9 @@ export function SalesOrderAllocationSection({
       <div className="soAllocCards">
         <AllocationCard
           itemCode={ALLOCATION_ITEM.oil}
-          itemNm={oil?.itemNm}
+          itemNm={names.oil}
           percent={oilPercent}
-          inputLabel={`배분 투입량(${semiSeed?.itemNm ?? "탈피씨드"})`}
+          inputLabel={`배분 투입량(${names.semiSeed ?? "탈피씨드"})`}
           inputQty={oil?.semiSeedQty}
           inputUnit={semiSeed?.unit}
           qty={oil?.qty}
@@ -200,9 +214,9 @@ export function SalesOrderAllocationSection({
         />
         <AllocationCard
           itemCode={ALLOCATION_ITEM.seed}
-          itemNm={seed?.itemNm}
+          itemNm={names.seed}
           percent={100 - oilPercent}
-          inputLabel={`배분 투입량(${semiSeed?.itemNm ?? "탈피씨드"})`}
+          inputLabel={`배분 투입량(${names.semiSeed ?? "탈피씨드"})`}
           inputQty={seed?.semiSeedQty}
           inputUnit={semiSeed?.unit}
           qty={seed?.qty}
@@ -224,10 +238,10 @@ export function SalesOrderAllocationSection({
     >
       <PercentControl
         id={`so-alloc-powder-${variant}`}
-        label={`${powder?.itemNm ?? FALLBACK_NAME[ALLOCATION_ITEM.powder]} 배분 비율`}
+        label={`${names.powder ?? FALLBACK_NAME[ALLOCATION_ITEM.powder]} 배분 비율`}
         value={powderPercent}
         disabled={disabled}
-        restLabel={conc?.itemNm ?? FALLBACK_NAME[ALLOCATION_ITEM.conc]}
+        restLabel={names.conc ?? FALLBACK_NAME[ALLOCATION_ITEM.conc]}
         onChange={(v) => onChange({ ...percents, powderPercent: v })}
         onCommit={handleCommit}
       />
@@ -245,9 +259,9 @@ export function SalesOrderAllocationSection({
       <div className="soAllocCards">
         <AllocationCard
           itemCode={ALLOCATION_ITEM.powder}
-          itemNm={powder?.itemNm}
+          itemNm={names.powder}
           percent={powderPercent}
-          inputLabel={`배분 투입량(${dryPark?.itemNm ?? "건조 헴프박"})`}
+          inputLabel={`배분 투입량(${names.dryPark ?? "건조 헴프박"})`}
           inputQty={powder?.dryParkQty}
           inputUnit={dryPark?.unit}
           qty={powder?.qty}
@@ -258,9 +272,9 @@ export function SalesOrderAllocationSection({
         />
         <AllocationCard
           itemCode={ALLOCATION_ITEM.conc}
-          itemNm={conc?.itemNm}
+          itemNm={names.conc}
           percent={100 - powderPercent}
-          inputLabel={`배분 투입량(${dryPark?.itemNm ?? "건조 헴프박"})`}
+          inputLabel={`배분 투입량(${names.dryPark ?? "건조 헴프박"})`}
           inputQty={conc?.dryParkQty}
           inputUnit={dryPark?.unit}
           qty={conc?.qty}

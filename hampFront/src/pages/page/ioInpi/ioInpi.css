@@ -1,0 +1,130 @@
+/* 인피 입고관리 */
+
+.inpiPanelActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* 넓은 화면에서는 버튼들이 한 줄로 유지되도록 줄어들지 않게 한다 */
+@media (min-width: 768px) {
+  .inpiPanelActions {
+    flex-shrink: 0;
+  }
+}
+
+.inpiPanelActions .ghostButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.inpiPlainButton {
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  white-space: nowrap;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+/* 라벨 인쇄여부 빠른 필터 */
+.inpiTabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.inpiTab {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.inpiTab[aria-pressed="true"] {
+  background: var(--primary-light);
+  color: var(--perm-accent);
+  border-color: transparent;
+}
+
+[data-theme="dark"] .inpiTab[aria-pressed="true"] {
+  color: var(--primary);
+}
+
+.inpiTab b {
+  margin-left: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.inpiListBody {
+  position: relative;
+  min-height: 200px;
+}
+
+/* 체크박스 열은 전역 th/td 최소 폭(90px)보다 좁게 */
+.inpiListBody th:first-child,
+.inpiListBody td:first-child:not([colspan]) {
+  min-width: 0;
+  width: 44px;
+}
+
+.inpiLoading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--bg-card) 60%, transparent);
+  z-index: 1;
+}
+
+.inpiLotCode {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.inpiSub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.inpiNum {
+  display: block;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 숫자 컬럼 헤더도 셀처럼 오른쪽에 붙인다 (정렬 아이콘 포함) */
+.inpiListBody th .inpiNum {
+  margin-left: auto;
+}
+
+.inpiListFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.inpiSum {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.inpiSum b {
+  color: var(--text-heading);
+  font-variant-numeric: tabular-nums;
+}

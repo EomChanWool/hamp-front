@@ -45,8 +45,12 @@ export function clampPercent(raw: string | number): number {
   return Math.min(100, Math.max(0, Number(digits)));
 }
 
-/** 비율 직접 입력값 해석 - 숫자 외 문자는 제거, 빈 값은 0, 100을 넘으면 null(반영하지 않음) */
+/**
+ * 비율 직접 입력값 해석 - 숫자 외 문자는 제거, 빈 값은 0.
+ * 100을 넘거나 소수·음수면 null(반영하지 않음) - 점·부호만 지워 1.5 → 15, -5 → 5로 바뀌는 것을 막는다
+ */
 export function parsePercentInput(raw: string): number | null {
+  if (/[.-]/.test(raw)) return null;
   const digits = raw.replace(/[^0-9]/g, "");
   if (digits === "") return 0;
   const value = Number(digits);

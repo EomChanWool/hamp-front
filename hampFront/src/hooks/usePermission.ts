@@ -99,10 +99,17 @@ export function usePermission(menus: MenuResponse[]) {
       const allIds = new Set([...Object.keys(prev).map(Number), ...descendantIds]);
       allIds.forEach((id) => {
         if (targetIdsSet.has(id)) {
-          next[id] = {
-            ...(prev[id] || EMPTY_PERM),
-            [permKey]: newValue,
-          };
+          // 서버 규칙(조회 없이 등록·수정·삭제·승인 불가)에 맞춰 조회와 연동:
+          // 조회를 끄면 나머지도 끄고, 나머지를 켜면 조회도 켠다
+          if (permKey === "read" && !newValue) {
+            next[id] = { ...EMPTY_PERM };
+          } else {
+            next[id] = {
+              ...(prev[id] || EMPTY_PERM),
+              [permKey]: newValue,
+              ...(permKey !== "read" && newValue ? { read: true } : {}),
+            };
+          }
         } else {
           next[id] = { ...(prev[id] || EMPTY_PERM) };
         }
