@@ -11,6 +11,7 @@ import { formatDateTime } from '@/utils/common'
 import { FiberReceiptApi, type FiberReceiptListParams, type FiberReceiptResponse } from '@/api/ioInpi/FiberReceipt'
 import { BusinessPartnerApi, type BusinessPartnerOptionResponse } from '@/api/sales/BusinessPartner'
 import { ItemApi, type ItemOptionResponse } from '@/api/master/Item'
+import { FiberReceiptCreateModal } from '@/pages/page/ioInpi/FiberReceiptCreateModal'
 import '@components/table/Custable.css'
 import '@/pages/page/ioInpi/ioInpi.css'
 
@@ -53,6 +54,7 @@ type ListRequest = {
   filters: Filters
   page: number
   sortParams: string[]
+  refreshKey: number
 }
 
 type ListResult = {
@@ -63,8 +65,10 @@ type ListResult = {
   failed: boolean
 }
 
+type CountRequest = Filters & { refreshKey: number }
+
 type CountResult = {
-  request: Filters
+  request: CountRequest
   counts: TabCounts | null
 }
 
@@ -104,6 +108,10 @@ export function InpiInboundManagePage() {
   const [sorting, setSorting] = useState<SortingState>([])
   const sortParams = useMemo(() => sorting.map((sort) => `${sort.id},${sort.desc ? 'desc' : 'asc'}`), [sorting])
 
+  // 등록 후처럼 조건이 그대로여도 목록·탭 건수를 다시 불러올 때 올린다
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+
   const [listResult, setListResult] = useState<ListResult | null>(null)
   const [countResult, setCountResult] = useState<CountResult | null>(null)
 
@@ -142,7 +150,10 @@ export function InpiInboundManagePage() {
   }, [])
 
   // 응답마다 어떤 요청의 결과인지 같이 들고 있다가, 현재 요청과 다르면 로딩 중으로 본다
-  const listRequest = useMemo(() => ({ filters, page, sortParams }), [filters, page, sortParams])
+  const listRequest = useMemo<ListRequest>(
+    () => ({ filters, page, sortParams, refreshKey }),
+    [filters, page, sortParams, refreshKey],
+  )
 
   useEffect(() => {
     let ignore = false
@@ -175,9 +186,9 @@ export function InpiInboundManagePage() {
 
   // 탭 건수는 라벨 인쇄여부를 뺀 나머지 검색 조건 기준 (탭을 바꿔도 다시 세지 않음)
   const { labelPrinted: activeTab, receiptLotCode, bpCode, orderCode, rawItemCode, receivedAtFrom, receivedAtTo } = filters
-  const countRequest = useMemo<Filters>(
-    () => ({ receiptLotCode, bpCode, orderCode, rawItemCode, labelPrinted: '', receivedAtFrom, receivedAtTo }),
-    [receiptLotCode, bpCode, orderCode, rawItemCode, receivedAtFrom, receivedAtTo],
+  const countRequest = useMemo<CountRequest>(
+    () => ({ receiptLotCode, bpCode, orderCode, rawItemCode, labelPrinted: '', receivedAtFrom, receivedAtTo, refreshKey }),
+    [receiptLotCode, bpCode, orderCode, rawItemCode, receivedAtFrom, receivedAtTo, refreshKey],
   )
 
   useEffect(() => {
@@ -212,6 +223,13 @@ export function InpiInboundManagePage() {
   const countLoaded = countResult?.request === countRequest
   const tabCounts = countLoaded ? countResult.counts : null
   const countFailed = countLoaded && countResult.counts === null
+
+  // 새 입고는 기본 정렬(생성일 역순)에서 맨 앞에 오므로 첫 페이지를 다시 불러온다
+  const handleCreated = () => {
+    setIsCreateOpen(false)
+    setPage(0)
+    setRefreshKey((key) => key + 1)
+  }
 
   const handleSortChange = (next: SortingState) => {
     setSorting(next)
@@ -426,7 +444,7 @@ export function InpiInboundManagePage() {
           선택 해제
         </button>
       )}
-      <button type="button" className="primaryButton" onClick={notReady}>
+      <button type="button" className="primaryButton" onClick={() => setIsCreateOpen(true)}>
         등록
       </button>
     </div>
@@ -477,6 +495,15 @@ export function InpiInboundManagePage() {
         </div>
         <CusPagination page={page} totalPages={totalPages} totalCount={totalElements} onPageChange={setPage} />
       </Panel>
+
+      {isCreateOpen && (
+        <FiberReceiptCreateModal
+          bpOptions={bpOptions}
+          itemOptions={itemOptions}
+          onClose={() => setIsCreateOpen(false)}
+          onCreated={handleCreated}
+        />
+      )}
     </section>
   )
 }
