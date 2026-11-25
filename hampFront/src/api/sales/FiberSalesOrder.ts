@@ -99,6 +99,8 @@ export interface FiberSalesOrderResponse {
     dueDate: string | null;
     /** 수주 상태 */
     status: FiberSalesOrderStatus | string;
+    /** 제품별 원물 배분 */
+    lines: FiberSalesOrderLineResponse[];
     /** 비고 */
     note: string | null;
     /** 생성 일시 */

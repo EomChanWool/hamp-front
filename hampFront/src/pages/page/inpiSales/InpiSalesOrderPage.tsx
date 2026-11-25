@@ -38,7 +38,7 @@ type FiberOrderRow = FiberSalesOrderResponse & {
 };
 
 /** true: 목록 조회 후 현재 페이지 행마다 상세(getDetail)를 호출해 제품별 배분을 채운다 (페이지당 최대 10건) */
-const LOAD_LINES_FROM_DETAIL = true;
+const LOAD_LINES_FROM_DETAIL = false;
 
 const LIST_PATH = "/inpi-sales/sales-order";
 
