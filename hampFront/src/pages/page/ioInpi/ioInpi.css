@@ -111,6 +111,12 @@
   margin-left: auto;
 }
 
+/* 오른쪽 정렬 숫자가 바로 옆 왼쪽 정렬 컬럼(보관 창고)과 붙어 보이지 않도록 여백을 넓힌다 */
+.inpiListBody th:has(.inpiNum),
+.inpiListBody td:has(> .inpiNum) {
+  padding-right: 40px;
+}
+
 .inpiListFooter {
   display: flex;
   align-items: center;
