@@ -83,7 +83,7 @@ export function SalesBusinessPartnerDetailPage() {
     } catch (error) {
       console.error("거래처 상세 조회 실패:", error);
       alert("상세 정보를 불러오는 중 오류가 발생했습니다.");
-      navigate({ pathname: "/sales/business-partner", search: location.search });
+      navigate({ pathname: "/seed-sales/business-partner", search: location.search });
     } finally {
       setIsLoading(false);
     }
@@ -169,7 +169,7 @@ export function SalesBusinessPartnerDetailPage() {
     try {
       await BusinessPartnerApi.delete(partner.bpCode);
       alert("거래처가 삭제되었습니다.");
-      navigate({ pathname: "/sales/business-partner", search: location.search });
+      navigate({ pathname: "/seed-sales/business-partner", search: location.search });
     } catch (error) {
       console.error("거래처 삭제 실패:", error);
       const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
@@ -246,7 +246,7 @@ export function SalesBusinessPartnerDetailPage() {
                 type="button"
                 className="ghostButton"
                 onClick={() =>
-                  navigate({ pathname: "/sales/business-partner", search: location.search })
+                  navigate({ pathname: "/seed-sales/business-partner", search: location.search })
                 }
                 disabled={isBusy}
               >

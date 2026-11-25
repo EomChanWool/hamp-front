@@ -103,17 +103,17 @@ import { InpiDefectManagePage } from '@pages/page/inpi/InpiDefectManagePage'
 import { InpiDefectStatusPage } from '@pages/page/inpi/InpiDefectStatusPage'
 
 //영업관리
-import { DeliveryManagePage } from '@pages/page/sales/DeliveryManagePage'
-import { DeliveryStatusPage } from '@pages/page/sales/DeliveryStatusPage'
-import { SalesOrderPage } from '@pages/page/sales/SalesOrderPage'
-import { SalesOrderCreatePage } from '@pages/page/sales/SalesOrderCreatePage'
-import { SalesOrderDetailPage } from '@pages/page/sales/SalesOrderDetailPage'
-import { OrderStatusPage } from '@pages/page/sales/OrderStatusPage'
-import { OrderPerformancePage } from '@pages/page/sales/OrderPerformancePage'
-import { SalesBusinessPartnerPage } from '@/pages/page/sales/SalesBusinessPartnerPage'
-import { SalesBusinessPartnerCreatePage } from '@/pages/page/sales/SalesBusinessPartnerCreatePage'
-import { SalesBusinessPartnerDetailPage } from '@/pages/page/sales/SalesBusinessPartnerDetailPage'
-import HempInputSimulationPage from '@/pages/page/sales/HempInputSimulationPage';
+import { DeliveryManagePage } from '@/pages/page/seedSales/DeliveryManagePage'
+import { DeliveryStatusPage } from '@/pages/page/seedSales/DeliveryStatusPage'
+import { SalesOrderPage } from '@/pages/page/seedSales/SalesOrderPage'
+import { SalesOrderCreatePage } from '@/pages/page/seedSales/SalesOrderCreatePage'
+import { SalesOrderDetailPage } from '@/pages/page/seedSales/SalesOrderDetailPage'
+import { OrderStatusPage } from '@/pages/page/seedSales/OrderStatusPage'
+import { OrderPerformancePage } from '@/pages/page/seedSales/OrderPerformancePage'
+import { SalesBusinessPartnerPage } from '@/pages/page/seedSales/SalesBusinessPartnerPage'
+import { SalesBusinessPartnerCreatePage } from '@/pages/page/seedSales/SalesBusinessPartnerCreatePage'
+import { SalesBusinessPartnerDetailPage } from '@/pages/page/seedSales/SalesBusinessPartnerDetailPage'
+import HempInputSimulationPage from '@/pages/page/seedSales/HempInputSimulationPage';
 
 // 태블릿 전용 페이지
 import { WorkTabletGuard } from '@/pages/work/WorkTabletGuard'
@@ -245,9 +245,9 @@ export const menuRoutes: MenuRouteGroup[] = [
     ],
   },
   {
-    title: '영업관리',
+    title: '씨드영업관리',
     icon: BriefcaseIcon,
-    path: '/sales',
+    path: '/seed-sales',
     items: [
       { path: 'sales-order', name: '수주관리', element: <SalesOrderPage /> },
       { path: 'sales-order/create', name: '수주 등록', element: <SalesOrderCreatePage />, hidden: true },

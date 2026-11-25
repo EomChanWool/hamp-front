@@ -39,7 +39,7 @@ export function SalesBusinessPartnerCreatePage() {
   // 취소 버튼 클릭 시 (기존 검색/페이지 조건 유지)
   const handleCancel = () => {
     const queryString = searchParams.toString();
-    navigate(queryString ? `/sales/business-partner?${queryString}` : "/sales/business-partner");
+    navigate(queryString ? `/seed-sales/business-partner?${queryString}` : "/seed-sales/business-partner");
   };
 
   // 유효성 검사
@@ -92,7 +92,7 @@ export function SalesBusinessPartnerCreatePage() {
     try {
       await BusinessPartnerApi.create(payload);
       alert("성공적으로 등록되었습니다.");
-      navigate("/sales/business-partner", { replace: true });
+      navigate("/seed-sales/business-partner", { replace: true });
     } catch (error) {
       console.error("거래처 등록 실패:", error);
       const message = axios.isAxiosError(error)

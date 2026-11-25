@@ -205,7 +205,7 @@ export function SalesOrderPage() {
     const handleRowClick = (orderCode: string) => {
         const queryString = searchParams.toString();
         navigate(
-            `/sales/sales-order/${encodeURIComponent(orderCode)}${queryString ? `?${queryString}` : ""
+            `/seed-sales/sales-order/${encodeURIComponent(orderCode)}${queryString ? `?${queryString}` : ""
             }`
         );
     };
@@ -255,7 +255,7 @@ export function SalesOrderPage() {
                 onAction={() => {
                     const queryString = searchParams.toString();
                     navigate(
-                        `/sales/sales-order/create${queryString ? `?${queryString}` : ""
+                        `/seed-sales/sales-order/create${queryString ? `?${queryString}` : ""
                         }`
                     );
                 }}
