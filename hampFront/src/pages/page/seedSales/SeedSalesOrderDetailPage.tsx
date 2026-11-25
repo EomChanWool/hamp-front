@@ -30,7 +30,7 @@ const ALLOCATION_GROUP_LABEL: Record<string, string> = {
   PARK: "헴프박(PARK)",
 };
 
-export function SalesOrderDetailPage() {
+export function SeedSalesOrderDetailPage() {
   const { orderCode } = useParams<{ orderCode: string }>();
   const navigate = useNavigate();
   const location = useLocation();

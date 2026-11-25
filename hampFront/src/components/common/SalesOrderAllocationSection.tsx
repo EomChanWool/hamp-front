@@ -14,7 +14,7 @@ import {
   formatQty,
   type AllocationPercents,
 } from "@/utils/salesOrderAllocation";
-import "@/pages/page/seedSales/Sales.css";
+import "@/pages/page/seedSales/SeedSales.css";
 
 const SIMULATION_DEBOUNCE_MS = 300;
 

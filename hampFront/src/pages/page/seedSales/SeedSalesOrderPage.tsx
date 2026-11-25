@@ -15,7 +15,7 @@ import type { SalesOrderResponse } from "@/api/sales/SalesOrder";
 import { SalesOrderApi } from "@/api/sales/SalesOrder";
 import Spinner from "@/components/common/Spinner";
 
-export function SalesOrderPage() {
+export function SeedSalesOrderPage() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 

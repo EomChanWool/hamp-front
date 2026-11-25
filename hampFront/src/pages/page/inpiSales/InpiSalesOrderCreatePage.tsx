@@ -26,7 +26,7 @@ type SalesOrderCreateForm = Omit<SalesOrderCreateRequest, "lines">;
 const REQUIRED_TOTAL = 3;
 
 
-export function SalesOrderCreatePage() {
+export function InpiSalesOrderCreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);

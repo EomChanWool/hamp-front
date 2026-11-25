@@ -12,7 +12,7 @@ import type {
 import Spinner from "@/components/common/Spinner";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
 
-export function SalesBusinessPartnerDetailPage() {
+export function InpiSalesBusinessPartnerDetailPage() {
   const { bpCode } = useParams<{ bpCode: string }>();
   const navigate = useNavigate();
   const location = useLocation();

@@ -1,0 +1,896 @@
+/* ── 그룹별 생산 진행률 패널 ─────────────────────────────────────────────── */
+.summaryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: -15px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.summaryDesc {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.legend {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legendDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.legendHigh {
+  background: #10b981;
+}
+
+.legendMid {
+  background: #f59e0b;
+}
+
+.legendLow {
+  background: #ef4444;
+}
+
+/* 세그먼트 탭 */
+.tabGroup {
+  display: flex;
+  background: var(--border);
+  padding: 3px;
+  border-radius: 8px;
+  gap: 4px;
+  margin-bottom: 20px;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.tabButton {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tabButtonActive {
+  background: var(--bg-card, #fff);
+  color: var(--text-heading);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-weight: 600;
+}
+
+/* 그룹 카드 목록 */
+.groupList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.groupRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "name    name"
+    "pct     count"
+    "bar     bar"
+    "numbers numbers";
+  align-items: end;
+  column-gap: 8px;
+  min-width: 0;
+  padding: 14px 16px;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: border-color 0.2s ease;
+}
+
+.groupRow:hover {
+  border-color: var(--text-muted);
+}
+
+.groupHead,
+.groupFoot {
+  display: contents;
+}
+
+.groupName {
+  grid-area: name;
+  min-width: 0;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-heading);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.groupPct {
+  grid-area: pct;
+  min-width: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.groupCount {
+  grid-area: count;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.groupNumbers {
+  grid-area: numbers;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+.pctHigh {
+  color: #059669;
+}
+
+.pctMid {
+  color: #d97706;
+}
+
+.pctLow {
+  color: #dc2626;
+}
+
+[data-theme="dark"] .pctHigh {
+  color: #34d399;
+}
+
+[data-theme="dark"] .pctMid {
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .pctLow {
+  color: #f87171;
+}
+
+.groupBarTrack {
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  grid-area: bar;
+  margin: 12px 0 8px;
+}
+
+.groupBarFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.emptyState {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* 그룹 패널 로딩/에러 상태 — 목록 패널의 스피너 영역과 톤을 맞춤 */
+.groupStateBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.groupStateError {
+  color: #ef4444;
+}
+
+/* 진행률 색상 등급 (90%↑ / 50~89% / 50%↓) */
+.barHigh {
+  background: #10b981;
+}
+
+.barMid {
+  background: #f59e0b;
+}
+
+.barLow {
+  background: #ef4444;
+}
+
+/* ── 수주현황 목록 테이블 내 진행률 셀 ──────────────────────────────────── */
+.progressCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.progressTrack {
+  position: relative;
+  width: 80px;
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.progressFill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progressPct {
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 35px;
+  text-align: right;
+}
+
+/* 실적 미연동 배지 내부 */
+.noDataBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.noDataDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #64748b;
+  flex-shrink: 0;
+}
+
+/* ---------- 품목 셀 (품목명 + 품목코드) ---------- */
+.itemCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.3;
+}
+
+.itemCell__barcode {
+  font-weight: 600;
+  color: #111827;
+}
+
+/* 다크모드 품목 이름 색상 적용 */
+[data-theme="dark"] .itemCell__barcode,
+[data-theme="dark"] .seedItemRow__barcode {
+  color: #f8fafc !important;
+}
+
+/* ══════════════════════════════════════════
+   수주실적 — 기간 바
+══════════════════════════════════════════ */
+.opBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.opBar__desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.opBar__desc strong {
+  margin-right: 2px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+/* 수량 및 금액 + 단위 정렬 */
+.sales-qty-unit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* 수량 및 금액 */
+.sales-qty-value {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+/* 수량 단위 및 금액 단위 */
+.sales-qty-unit-label {
+  display: inline-block;
+  width: 36px;
+  flex-shrink: 0;
+  text-align: left;
+  white-space: nowrap;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* ══════════════════════════════════════════
+   공용 세그먼트 토글
+   수주실적(상단)과 기간별 현황(차트 패널)이 같은 클래스를 쓰므로 디자인이 항상 같다.
+   OrderPerformanceDashboard.css 에 있던 기존 .orderPerfDashboard__toggle 규칙은
+   겹치면 지우고 이 블록을 단일 기준으로 쓴다.
+══════════════════════════════════════════ */
+.orderPerfDashboard__toggle {
+  display: inline-flex;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--border);
+  overflow-x: auto;
+}
+
+.orderPerfDashboard__toggle button {
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.orderPerfDashboard__toggle button:hover:not(.isActive):not(:disabled) {
+  color: var(--text-heading);
+}
+
+.orderPerfDashboard__toggle button.isActive {
+  background: var(--bg-card, #fff);
+  color: var(--text-heading);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.orderPerfDashboard__toggle button:focus-visible {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+.orderPerfDashboard__toggle button:disabled {
+  cursor: default;
+}
+
+/* ══════════════════════════════════════════
+   KPI 카드
+   4장 모두 같은 뼈대(라벨 → 값 → 서브). 톤 색(--k)만 바꿔서 아이콘 칩이 같이 바뀐다.
+   진행률 카드만 오른쪽에 링(.opKpi__chart)이 붙는다.
+══════════════════════════════════════════ */
+.opKpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.opKpi {
+  --k: #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  min-height: 124px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-card, #fff);
+  transition: border-color 0.2s ease;
+}
+
+.opKpi:hover {
+  border-color: color-mix(in srgb, var(--k) 45%, var(--border));
+}
+
+.opKpi--blue {
+  --k: #3b82f6;
+}
+
+.opKpi--amber {
+  --k: #f59e0b;
+}
+
+.opKpi--green {
+  --k: #10b981;
+}
+
+.opKpi__main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.opKpi__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+/* 아이콘 칩 */
+.opKpi__icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--k) 14%, transparent);
+  color: var(--k);
+}
+
+.opKpi__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.opKpi__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.opKpi__value {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--text-heading);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-family: 'montserrat', sans-serif;
+}
+
+.opKpi__value small {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+.opKpi__sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 진행률 카드: 링은 오른쪽 보조 비주얼 */
+.opKpi__chart {
+  flex: none;
+  display: grid;
+  place-items: center;
+}
+
+/* ══════════════════════════════════════════
+   반응형 (공용 레이아웃 컨테이너 기준)
+   1024 : 2x2
+   640  : 1열
+══════════════════════════════════════════ */
+@container content (max-width: 1024px) {
+  .opKpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container content (max-width: 640px) {
+  .opKpis {
+    grid-template-columns: 1fr;
+  }
+
+  .opKpi__value {
+    font-size: 24px;
+  }
+}
+
+/* ================================
+   반응형
+   1024 : 태블릿 — 진행바 폭 축소
+   640  : 폰 — 진행률 셀을 2행으로 재배치
+================================ */
+
+@container content (max-width: 1024px) {
+  .progressTrack {
+    width: 60px;
+  }
+}
+
+@container content (max-width: 640px) {
+  .progressCell {
+    flex-wrap: wrap;
+  }
+
+  .progressTrack {
+    width: 100%;
+  }
+
+  .progressPct {
+    min-width: auto;
+  }
+}
+
+/* ── 수주 생산 배분 입력 (SalesOrderAllocationSection 전용: soAlloc*, 등록/상세 공용) ─────────── */
+
+.soAllocGroup {
+  --so-alloc-line: var(--border, #e3e6ea);
+  --so-alloc-muted: var(--text-muted, #64748b);
+  --so-alloc-ink: var(--text-heading, #14181f);
+  --so-alloc-body: var(--text-body, #1e293b);
+  --so-alloc-accent: var(--primary, #57d3a1);
+  --so-alloc-warn: #b45309;
+  --so-alloc-danger: #c0293d;
+  --so-alloc-ctl-bg: color-mix(in srgb, var(--so-alloc-ink) 4%, var(--bg-card, #ffffff));
+  --so-alloc-track: color-mix(in srgb, var(--so-alloc-ink) 12%, var(--bg-card, #ffffff));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+[data-theme="dark"] .soAllocGroup {
+  --so-alloc-warn: #fbbf24;
+  --so-alloc-danger: #f87171;
+}
+
+.soAllocDesc {
+  margin: -8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--so-alloc-muted);
+}
+
+/* ---------- 비율 입력 ---------- */
+.soAllocControl {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.soAllocLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--so-alloc-body);
+}
+
+.soAllocControlRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* 브라우저 기본 슬라이더는 밝은 강조색이면 손잡이를 어둡게 바꿔 그리므로 트랙·손잡이를 직접 그린다.
+   채움 끝 = 손잡이 중심 (--so-alloc-pct: 0~100, 손잡이 지름 18px 기준) */
+.soAllocRange {
+  --so-alloc-thumb: 18px;
+  --so-alloc-fill: calc(var(--so-alloc-thumb) / 2 + (100% - var(--so-alloc-thumb)) * var(--so-alloc-pct, 0) / 100);
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  height: 6px;
+  margin: 0;
+  /* 전역 input 규칙(padding 0 14px, border 1px)이 걸리면 손잡이 이동 범위와 채움 기준이 어긋나므로 해제 */
+  padding: 0;
+  border: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--so-alloc-accent) 0,
+    var(--so-alloc-accent) var(--so-alloc-fill),
+    var(--so-alloc-track) var(--so-alloc-fill),
+    var(--so-alloc-track) 100%
+  );
+  outline: none;
+  cursor: pointer;
+}
+
+.soAllocRange::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  width: var(--so-alloc-thumb);
+  height: var(--so-alloc-thumb);
+  border: 2px solid var(--so-alloc-accent);
+  border-radius: 50%;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2);
+  transition: box-shadow 0.15s ease;
+}
+
+.soAllocRange::-moz-range-thumb {
+  box-sizing: border-box;
+  width: var(--so-alloc-thumb);
+  height: var(--so-alloc-thumb);
+  border: 2px solid var(--so-alloc-accent);
+  border-radius: 50%;
+  background: var(--bg-card, #ffffff);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2);
+}
+
+.soAllocRange:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--so-alloc-accent) 25%, transparent);
+}
+
+.soAllocRange:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--so-alloc-accent) 25%, transparent);
+}
+
+.soAllocRange:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.soAllocPercentInput {
+  position: relative;
+  flex: 0 0 96px;
+}
+
+.soAllocPercentInput input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0 32px 0 12px;
+  font: inherit;
+  font-size: 14px;
+  text-align: right;
+  color: var(--so-alloc-ink);
+  background: var(--so-alloc-ctl-bg);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  outline: none;
+}
+
+.soAllocPercentInput input:focus-visible {
+  background: var(--bg-card, #ffffff);
+  border-color: var(--so-alloc-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--so-alloc-accent) 18%, transparent);
+}
+
+.soAllocPercentInput input:disabled {
+  color: var(--so-alloc-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.soAllocPercentInput span {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--so-alloc-muted);
+  pointer-events: none;
+}
+
+.soAllocRest {
+  font-size: 13px;
+  color: var(--so-alloc-muted);
+}
+
+.soAllocHint {
+  font-size: 12px;
+  color: var(--so-alloc-danger);
+}
+
+.soAllocRest strong {
+  color: var(--so-alloc-ink);
+}
+
+/* ---------- 공통 구간 / 상태 안내 ---------- */
+.soAllocBase,
+.soAllocStatus {
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  border-radius: 10px;
+}
+
+.soAllocBase {
+  color: var(--so-alloc-body);
+  background: var(--so-alloc-ctl-bg);
+}
+
+.soAllocBase strong {
+  color: var(--so-alloc-ink);
+}
+
+.soAllocStatus {
+  color: var(--so-alloc-muted);
+  border: 1px dashed var(--so-alloc-line);
+}
+
+.soAllocStatus.isError {
+  color: var(--so-alloc-danger);
+  border-color: color-mix(in srgb, var(--so-alloc-danger) 40%, transparent);
+  background: color-mix(in srgb, var(--so-alloc-danger) 6%, transparent);
+}
+
+/* ---------- 분기 카드 ---------- */
+.soAllocCards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.soAllocCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--so-alloc-line);
+  border-radius: 12px;
+  background: var(--bg-card, #ffffff);
+}
+
+.soAllocCard.isUncertain {
+  border-style: dashed;
+}
+
+.soAllocCardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.soAllocCardTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--so-alloc-ink);
+}
+
+.soAllocCode {
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--so-alloc-muted);
+}
+
+.soAllocBadge {
+  flex-shrink: 0;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--so-alloc-accent) 70%, var(--so-alloc-ink));
+  background: color-mix(in srgb, var(--so-alloc-accent) 16%, transparent);
+}
+
+.soAllocBadge.isWarn {
+  color: var(--so-alloc-warn);
+  background: color-mix(in srgb, var(--so-alloc-warn) 14%, transparent);
+}
+
+.soAllocFigures {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.soAllocFigures > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.soAllocFigures dt {
+  color: var(--so-alloc-muted);
+}
+
+.soAllocFigures dd {
+  margin: 0;
+  text-align: right;
+  color: var(--so-alloc-body);
+}
+
+.soAllocFigures dd strong {
+  color: var(--so-alloc-ink);
+}
+
+.soAllocNote {
+  margin: 0;
+  padding-top: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--so-alloc-muted);
+  border-top: 1px solid var(--so-alloc-line);
+}
+
+.soAllocCard.isUncertain .soAllocNote {
+  color: var(--so-alloc-warn);
+}
+
+/* ---------- 상세 화면 보조 문구 ---------- */
+.soAllocLegacyNotice {
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #b45309;
+  background: color-mix(in srgb, #b45309 8%, transparent);
+  border: 1px solid color-mix(in srgb, #b45309 30%, transparent);
+  border-radius: 10px;
+}
+
+[data-theme="dark"] .soAllocLegacyNotice {
+  color: #fbbf24;
+}
+
+.soAllocTableHint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted, #64748b);
+}
+
+@media (max-width: 720px) {
+  .soAllocCards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- 상세 화면 숫자 입력칸 (입력칸 + 단위) ---------- */
+.soNumberEdit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.soNumberEdit > span {
+  white-space: nowrap;
+}

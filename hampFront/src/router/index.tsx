@@ -102,18 +102,30 @@ import { InpiInspectionStandardsPage } from '@pages/page/inpi/InpiInspectionStan
 import { InpiDefectManagePage } from '@pages/page/inpi/InpiDefectManagePage'
 import { InpiDefectStatusPage } from '@pages/page/inpi/InpiDefectStatusPage'
 
-//영업관리
-import { DeliveryManagePage } from '@/pages/page/seedSales/DeliveryManagePage'
-import { DeliveryStatusPage } from '@/pages/page/seedSales/DeliveryStatusPage'
-import { SalesOrderPage } from '@/pages/page/seedSales/SalesOrderPage'
-import { SalesOrderCreatePage } from '@/pages/page/seedSales/SalesOrderCreatePage'
-import { SalesOrderDetailPage } from '@/pages/page/seedSales/SalesOrderDetailPage'
-import { OrderStatusPage } from '@/pages/page/seedSales/OrderStatusPage'
-import { OrderPerformancePage } from '@/pages/page/seedSales/OrderPerformancePage'
-import { SalesBusinessPartnerPage } from '@/pages/page/seedSales/SalesBusinessPartnerPage'
-import { SalesBusinessPartnerCreatePage } from '@/pages/page/seedSales/SalesBusinessPartnerCreatePage'
-import { SalesBusinessPartnerDetailPage } from '@/pages/page/seedSales/SalesBusinessPartnerDetailPage'
+//씨드영업관리
+import { SeedDeliveryManagePage } from '@/pages/page/seedSales/SeedDeliveryManagePage'
+import { SeedDeliveryStatusPage } from '@/pages/page/seedSales/SeedDeliveryStatusPage'
+import { SeedSalesOrderPage } from '@/pages/page/seedSales/SeedSalesOrderPage'
+import { SeedSalesOrderCreatePage } from '@/pages/page/seedSales/SeedSalesOrderCreatePage'
+import { SeedSalesOrderDetailPage } from '@/pages/page/seedSales/SeedSalesOrderDetailPage'
+import { SeedOrderStatusPage } from '@/pages/page/seedSales/SeedOrderStatusPage'
+import { SeedOrderPerformancePage } from '@/pages/page/seedSales/SeedOrderPerformancePage'
+import { SeedSalesBusinessPartnerPage } from '@/pages/page/seedSales/SeedSalesBusinessPartnerPage'
+import { SeedSalesBusinessPartnerCreatePage } from '@/pages/page/seedSales/SeedSalesBusinessPartnerCreatePage'
+import { SeedSalesBusinessPartnerDetailPage } from '@/pages/page/seedSales/SeedSalesBusinessPartnerDetailPage'
 import HempInputSimulationPage from '@/pages/page/seedSales/HempInputSimulationPage';
+
+//인피영업관리
+import { InpiDeliveryManagePage } from '@/pages/page/inpiSales/InpiDeliveryManagePage'
+import { InpiDeliveryStatusPage } from '@/pages/page/inpiSales/InpiDeliveryStatusPage'
+import { InpiSalesOrderPage } from '@/pages/page/inpiSales/InpiSalesOrderPage'
+import { InpiSalesOrderCreatePage } from '@/pages/page/inpiSales/InpiSalesOrderCreatePage'
+import { InpiSalesOrderDetailPage } from '@/pages/page/inpiSales/InpiSalesOrderDetailPage'
+import { InpiOrderStatusPage } from '@/pages/page/inpiSales/InpiOrderStatusPage'
+import { InpiOrderPerformancePage } from '@/pages/page/inpiSales/InpiOrderPerformancePage'
+import { InpiSalesBusinessPartnerPage } from '@/pages/page/inpiSales/InpiSalesBusinessPartnerPage'
+import { InpiSalesBusinessPartnerCreatePage } from '@/pages/page/inpiSales/InpiSalesBusinessPartnerCreatePage'
+import { InpiSalesBusinessPartnerDetailPage } from '@/pages/page/inpiSales/InpiSalesBusinessPartnerDetailPage'
 
 // 태블릿 전용 페이지
 import { WorkTabletGuard } from '@/pages/work/WorkTabletGuard'
@@ -249,16 +261,16 @@ export const menuRoutes: MenuRouteGroup[] = [
     icon: BriefcaseIcon,
     path: '/seed-sales',
     items: [
-      { path: 'sales-order', name: '수주관리', element: <SalesOrderPage /> },
-      { path: 'sales-order/create', name: '수주 등록', element: <SalesOrderCreatePage />, hidden: true },
-      { path: 'sales-order/:orderCode', name: '수주 상세', element: <SalesOrderDetailPage />, hidden: true },
-      { path: 'delivery-manage', name: '납품관리', element: <DeliveryManagePage /> },
-      { path: 'business-partner', name: '거래처관리', element: <SalesBusinessPartnerPage /> },
-      { path: 'business-partner/create', name: '거래처 등록', element: <SalesBusinessPartnerCreatePage />, hidden: true },
-      { path: 'business-partner/:bpCode', name: '거래처 상세', element: <SalesBusinessPartnerDetailPage />, hidden: true },
-      { path: 'order-status', name: '수주현황', element: <OrderStatusPage /> },
-      { path: 'delivery-status', name: '납품현황', element: <DeliveryStatusPage /> },
-      { path: 'order-performance', name: '수주실적현황', element: <OrderPerformancePage /> },
+      { path: 'sales-order', name: '수주관리', element: <SeedSalesOrderPage /> },
+      { path: 'sales-order/create', name: '수주 등록', element: <SeedSalesOrderCreatePage />, hidden: true },
+      { path: 'sales-order/:orderCode', name: '수주 상세', element: <SeedSalesOrderDetailPage />, hidden: true },
+      { path: 'delivery-manage', name: '납품관리', element: <SeedDeliveryManagePage /> },
+      { path: 'business-partner', name: '거래처관리', element: <SeedSalesBusinessPartnerPage /> },
+      { path: 'business-partner/create', name: '거래처 등록', element: <SeedSalesBusinessPartnerCreatePage />, hidden: true },
+      { path: 'business-partner/:bpCode', name: '거래처 상세', element: <SeedSalesBusinessPartnerDetailPage />, hidden: true },
+      { path: 'order-status', name: '수주현황', element: <SeedOrderStatusPage /> },
+      { path: 'delivery-status', name: '납품현황', element: <SeedDeliveryStatusPage /> },
+      { path: 'order-performance', name: '수주실적현황', element: <SeedOrderPerformancePage /> },
       { path: 'input-simulation', name: '원물 투입 시뮬레이션', element: <HempInputSimulationPage /> },
     ],
   },
@@ -293,6 +305,23 @@ export const menuRoutes: MenuRouteGroup[] = [
       { path: 'insp-standards', name: '검사기준서', element: <FoodInspectionStandardsPage /> },
       { path: 'defect-manage', name: '불량관리', element: <FoodDefectManagePage /> },
       { path: 'defect-status', name: '불량현황', element: <FoodDefectStatusPage /> },
+    ],
+  },
+  {
+    title: '인피영업관리',
+    icon: BriefcaseIcon,
+    path: '/inpi-sales',
+    items: [
+      { path: 'sales-order', name: '수주관리', element: <InpiSalesOrderPage /> },
+      { path: 'sales-order/create', name: '수주 등록', element: <InpiSalesOrderCreatePage />, hidden: true },
+      { path: 'sales-order/:orderCode', name: '수주 상세', element: <InpiSalesOrderDetailPage />, hidden: true },
+      { path: 'delivery-manage', name: '납품관리', element: <InpiDeliveryManagePage /> },
+      { path: 'business-partner', name: '거래처관리', element: <InpiSalesBusinessPartnerPage /> },
+      { path: 'business-partner/create', name: '거래처 등록', element: <InpiSalesBusinessPartnerCreatePage />, hidden: true },
+      { path: 'business-partner/:bpCode', name: '거래처 상세', element: <InpiSalesBusinessPartnerDetailPage />, hidden: true },
+      { path: 'order-status', name: '수주현황', element: <InpiOrderStatusPage /> },
+      { path: 'delivery-status', name: '납품현황', element: <InpiDeliveryStatusPage /> },
+      { path: 'order-performance', name: '수주실적현황', element: <InpiOrderPerformancePage /> },
     ],
   },
   {

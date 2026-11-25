@@ -15,7 +15,7 @@ import type { BusinessPartnerResponse } from "@/api/sales/BusinessPartner";
 import { BusinessPartnerApi } from "@/api/sales/BusinessPartner";
 import Spinner from "@/components/common/Spinner";
 
-export function SalesBusinessPartnerPage() {
+export function SeedSalesBusinessPartnerPage() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 

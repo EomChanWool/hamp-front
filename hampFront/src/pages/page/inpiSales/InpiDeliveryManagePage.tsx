@@ -29,7 +29,7 @@ const dummyDeliveries: DeliveryRow[] = [
 
 const PAGE_SIZE = 10
 
-export function DeliveryManagePage() {
+export function InpiDeliveryManagePage() {
   const [filteredDeliveries, setFilteredDeliveries] = useState<DeliveryRow[]>(dummyDeliveries)
   const [modalDelivery, setModalDelivery] = useState<DeliveryRow | null>(null)
   const [page, setPage] = useState(0)

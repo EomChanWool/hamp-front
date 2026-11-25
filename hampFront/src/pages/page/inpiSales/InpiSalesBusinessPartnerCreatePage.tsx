@@ -15,7 +15,7 @@ type SummaryRow = {
   value: string;
 };
 
-export function SalesBusinessPartnerCreatePage() {
+export function InpiSalesBusinessPartnerCreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 

@@ -10,7 +10,7 @@ import { SalesOrderApi, type SalesOrderPerformanceKpiResponse, type SalesOrderPe
 import { OrderPerformanceDashboard } from '@pages/page/dashboard/OrderPerformanceDashboard';
 import { ProgressRadialChart } from '@components/chart/ProgressRadialChart';
 import { Panel } from '@/components/card/Panel';
-import './Sales.css'; // 반드시 OrderPerformanceDashboard import 보다 아래에 둘 것 (토글 스타일 덮어쓰기)
+import './SeedSales.css'; // 반드시 OrderPerformanceDashboard import 보다 아래에 둘 것 (토글 스타일 덮어쓰기)
 
 type PeriodUnit = 'month' | 'quarter' | 'year';
 type GroupByType = 'item' | 'bp' | 'order';
@@ -174,7 +174,7 @@ function StatCard({
   );
 }
 
-export function OrderPerformancePage() {
+export function SeedOrderPerformancePage() {
   const [period, setPeriod] = useState<PeriodUnit>('year');
   const [groupBy, setGroupBy] = useState<GroupByType>('item');
 
