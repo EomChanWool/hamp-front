@@ -5,6 +5,7 @@ import { Panel } from '@components/card/Panel'
 import { SearchBand, type SearchField } from '@components/search/SearchBand'
 import { CusTable } from '@components/table/CusTable'
 import { CusPagination } from '@components/table/CusPagination'
+import { QrLabelPrintModal, type QrLabelItem } from '@/components/modal/QrLabelPrintModal'
 import { Badge } from '@/components/common/Badge'
 import Spinner from '@/components/common/Spinner'
 import { formatDateTime } from '@/utils/common'
@@ -98,8 +99,6 @@ function getErrorMessage(error: unknown, fallback: string) {
   return typeof message === 'string' && message ? message : fallback
 }
 
-const notReady = () => window.alert('준비 중인 기능입니다.')
-
 export function InpiInboundManagePage() {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
   const [page, setPage] = useState(0)
@@ -126,7 +125,10 @@ export function InpiInboundManagePage() {
   const [listResult, setListResult] = useState<ListResult | null>(null)
   const [countResult, setCountResult] = useState<CountResult | null>(null)
 
-  const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [selectedReceipts, setSelectedReceipts] = useState<FiberReceiptResponse[]>([])
+  const selectedIds = useMemo(() => selectedReceipts.map((receipt) => receipt.receiptId), [selectedReceipts])
+  const [isLabelOpen, setIsLabelOpen] = useState(false)
+  const [isMarkingPrinted, setIsMarkingPrinted] = useState(false)
 
   const [bpOptions, setBpOptions] = useState<BusinessPartnerOptionResponse[]>([])
   const [itemOptions, setItemOptions] = useState<ItemOptionResponse[]>([])
@@ -173,9 +175,17 @@ export function InpiInboundManagePage() {
     })
       .then((res) => {
         if (ignore) return
+        const content = res.data?.content ?? []
+        // 선택해 둔 입고는 재조회된 최신 값으로 바꿔 라벨에 옛 값이 찍히지 않게 한다
+        const latest = new Map(content.map((row) => [row.receiptId, row]))
+        setSelectedReceipts((prev) =>
+          prev.some((receipt) => latest.has(receipt.receiptId))
+            ? prev.map((receipt) => latest.get(receipt.receiptId) ?? receipt)
+            : prev,
+        )
         setListResult({
           request: listRequest,
-          rows: res.data?.content ?? [],
+          rows: content,
           totalElements: res.data?.totalElements ?? 0,
           totalPages: res.data?.totalPages ?? 0,
           failed: false,
@@ -277,7 +287,7 @@ export function InpiInboundManagePage() {
       try {
         const res = await FiberReceiptApi.delete(target.receiptId)
         window.alert(res.message || '삭제되었습니다.')
-        setSelectedIds((prev) => prev.filter((receiptId) => receiptId !== target.receiptId))
+        setSelectedReceipts((prev) => prev.filter((receipt) => receipt.receiptId !== target.receiptId))
         if (rows.length === 1 && page > 0) setPage(page - 1)
         setRefreshKey((key) => key + 1)
         return true
@@ -307,7 +317,7 @@ export function InpiInboundManagePage() {
   const applyFilters = (next: Filters) => {
     setFilters(next)
     setPage(0)
-    setSelectedIds([]) // 검색 조건이 바뀌면 선택 초기화
+    setSelectedReceipts([]) // 검색 조건이 바뀌면 선택 초기화
   }
 
   const handleSearch = () => {
@@ -377,16 +387,21 @@ export function InpiInboundManagePage() {
   const isAllSelectedOnPage = rows.length > 0 && rows.every((row) => selectedIdSet.has(row.receiptId))
   const isSomeSelectedOnPage = !isAllSelectedOnPage && rows.some((row) => selectedIdSet.has(row.receiptId))
 
-  const handleToggleRow = useCallback((receiptId: number) => {
-    setSelectedIds((prev) => (prev.includes(receiptId) ? prev.filter((id) => id !== receiptId) : [...prev, receiptId]))
+  const handleToggleRow = useCallback((target: FiberReceiptResponse) => {
+    setSelectedReceipts((prev) =>
+      prev.some((receipt) => receipt.receiptId === target.receiptId)
+        ? prev.filter((receipt) => receipt.receiptId !== target.receiptId)
+        : [...prev, target],
+    )
   }, [])
 
   const handleToggleAllOnPage = useCallback(
     (checked: boolean) => {
-      const pageIds = rows.map((row) => row.receiptId)
-      setSelectedIds((prev) =>
-        checked ? Array.from(new Set([...prev, ...pageIds])) : prev.filter((id) => !pageIds.includes(id)),
-      )
+      const pageIds = new Set(rows.map((row) => row.receiptId))
+      setSelectedReceipts((prev) => {
+        const rest = prev.filter((receipt) => !pageIds.has(receipt.receiptId))
+        return checked ? [...rest, ...rows] : rest
+      })
     },
     [rows],
   )
@@ -418,7 +433,7 @@ export function InpiInboundManagePage() {
             aria-label={`${row.original.receiptLotCode} 선택`}
             checked={selectedIdSet.has(row.original.receiptId)}
             onClick={(e) => e.stopPropagation()}
-            onChange={() => handleToggleRow(row.original.receiptId)}
+            onChange={() => handleToggleRow(row.original)}
           />
         ),
       },
@@ -526,13 +541,53 @@ export function InpiInboundManagePage() {
     ],
   )
 
+  // 입고 1건당 라벨 1장, QR 값은 입고 LOT
+  const labelItems: QrLabelItem[] = useMemo(
+    () =>
+      selectedReceipts.map((receipt) => ({
+        id: String(receipt.receiptId),
+        qrValue: receipt.receiptLotCode,
+        title: [receipt.receiptLotCode, receipt.bpNm ?? receipt.bpCode, receipt.orderCode].filter(Boolean).join(' · '),
+        name: receipt.rawItemNm ?? receipt.rawItemCode,
+        code: receipt.rawItemCode,
+        qty: Number(receipt.receiptQty ?? 0),
+        qtyLabel: '입고중량',
+        unit: receipt.unit ?? 'kg',
+      })),
+    [selectedReceipts],
+  )
+
+  // 인쇄창에서 취소해도 afterprint가 오므로 정상 출력 여부를 한 번 더 확인한다
+  const handlePrinted = async () => {
+    const targetIds = selectedIds
+    if (targetIds.length === 0) return
+    if (!window.confirm(`라벨이 정상 출력됐나요?
+[확인]을 누르면 선택한 ${targetIds.length}건이 인쇄완료로 바뀝니다.`)) return
+
+    setIsMarkingPrinted(true)
+    try {
+      const res = await FiberReceiptApi.markPrinted(targetIds)
+      if (!mountedRef.current) return
+      window.alert(res.message || '라벨 인쇄 완료로 표시했습니다.')
+      setIsLabelOpen(false)
+      setSelectedReceipts([])
+      setRefreshKey((key) => key + 1)
+    } catch (error) {
+      if (!mountedRef.current) return
+      console.error('인피 입고 라벨 인쇄 완료 표시 실패:', error)
+      window.alert(getErrorMessage(error, '라벨 인쇄 완료 표시에 실패했습니다.'))
+    } finally {
+      if (mountedRef.current) setIsMarkingPrinted(false)
+    }
+  }
+
   const panelActions = (
     <div className="inpiPanelActions">
-      <button type="button" className="ghostButton" disabled={selectedIds.length === 0} onClick={notReady}>
+      <button type="button" className="ghostButton" disabled={selectedIds.length === 0} onClick={() => setIsLabelOpen(true)}>
         선택 라벨 인쇄 ({selectedIds.length}건)
       </button>
       {selectedIds.length > 0 && (
-        <button type="button" className="inpiPlainButton" onClick={() => setSelectedIds([])}>
+        <button type="button" className="inpiPlainButton" onClick={() => setSelectedReceipts([])}>
           선택 해제
         </button>
       )}
@@ -588,6 +643,15 @@ export function InpiInboundManagePage() {
         </div>
         <CusPagination page={page} totalPages={totalPages} totalCount={totalElements} onPageChange={setPage} />
       </Panel>
+
+      <QrLabelPrintModal
+        isOpen={isLabelOpen}
+        onClose={() => setIsLabelOpen(false)}
+        items={labelItems}
+        modalTitle={`라벨 인쇄 미리보기 (${labelItems.length}건)`}
+        onPrinted={handlePrinted}
+        isBusy={isMarkingPrinted}
+      />
 
       {isCreateOpen && (
         <FiberReceiptFormModal
