@@ -688,7 +688,11 @@ export function PermissionBoard() {
                     {/* 우측: 선택된 대메뉴의 서브메뉴 매트릭스 */}
                     <div className="permMenuDetail">
                         {!activeTopMenu ? (
-                            <div className="permDetailEmpty">좌측에서 메뉴를 선택하세요.</div>
+                            <div className="permDetailEmpty">
+                                {isSearching && visibleTopMenus.length === 0
+                                    ? "검색어와 일치하는 메뉴가 없습니다."
+                                    : "좌측에서 메뉴를 선택하세요."}
+                            </div>
                         ) : (
                             <>
                                 {/* 1단: 제목 + 변경사항/선택 요약 뱃지 + 액션 버튼 (가로 스크롤 대상 아님) */}
