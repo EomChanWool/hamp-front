@@ -10,7 +10,7 @@ import { useTableSorting } from "@/hooks/useTableSorting";
 import { BusinessPartnerApi, type BusinessPartnerOptionResponse } from "@/api/sales/BusinessPartner";
 import { SalesOrderApi, type SalesOrderStatusLineResponse, type SalesOrderStatusGroupResponse } from "@/api/sales/SalesOrder";
 import { Badge } from "@/components/common/Badge";
-import "./Sales.css";
+import "./InpiSales.css";
 import { ItemApi, type ItemOptionResponse } from "@/api/master/Item";
 
 // 진행률 구간 임계값 — 로직(getProgressToneClass)과 범례 텍스트가 이 값을 함께 참조하므로
@@ -26,7 +26,7 @@ function getProgressToneClass(pct: number | null | undefined): "barHigh" | "barM
     return "barLow";
 }
 
-export function OrderStatusPage() {
+export function InpiOrderStatusPage() {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [orderStatusList, setOrderStatusList] = useState<SalesOrderStatusLineResponse[]>([]);

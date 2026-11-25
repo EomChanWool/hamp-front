@@ -30,7 +30,7 @@ const ALLOCATION_GROUP_LABEL: Record<string, string> = {
   PARK: "헴프박(PARK)",
 };
 
-export function SalesOrderDetailPage() {
+export function SeedSalesOrderDetailPage() {
   const { orderCode } = useParams<{ orderCode: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -231,7 +231,7 @@ export function SalesOrderDetailPage() {
     } catch (error) {
       console.error("수주 상세 조회 실패:", error);
       alert("상세 정보를 불러오는 중 오류가 발생했습니다.");
-      navigate({ pathname: "/sales/sales-order", search: location.search });
+      navigate({ pathname: "/seed-sales/sales-order", search: location.search });
     } finally {
       setIsLoading(false);
     }
@@ -319,7 +319,7 @@ export function SalesOrderDetailPage() {
     try {
       await SalesOrderApi.delete(order.orderCode);
       alert("삭제되었습니다.");
-      navigate({ pathname: "/sales/sales-order", search: location.search });
+      navigate({ pathname: "/seed-sales/sales-order", search: location.search });
     } catch (error) {
       console.error("수주 삭제 실패:", error);
       const errorMessage = axios.isAxiosError(error) ? error.response?.data?.message : null;
@@ -380,7 +380,7 @@ export function SalesOrderDetailPage() {
               <button
                 type="button"
                 className="ghostButton"
-                onClick={() => navigate({ pathname: "/sales/sales-order", search: location.search })}
+                onClick={() => navigate({ pathname: "/seed-sales/sales-order", search: location.search })}
                 disabled={isBusy}
               >
                 목록
