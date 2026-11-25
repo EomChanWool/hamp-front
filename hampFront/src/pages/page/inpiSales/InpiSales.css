@@ -1193,20 +1193,34 @@
 }
 
 /* ---- 호버 툴팁 (body 에 portal 로 그려지므로 fixed) ---- */
+/* 기본 테마 */
 .fsoTip {
+  --tip-bg: #f8fafc;
+  --tip-color: #1e293b;
+  --tip-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
+
   position: fixed;
   z-index: 10000;
   min-width: 200px;
   max-width: 280px;
   padding: 10px 12px;
-  transform: translate(-50%, -100%); /* 기본: 막대 위쪽 */
+  transform: translate(-50%, -100%);
   border-radius: 10px;
-  background: #1e293b;
-  color: #f8fafc;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
+
+  background: var(--tip-bg);
+  color: var(--tip-color);
+  box-shadow: var(--tip-shadow);
+
   font-size: 12.5px;
   line-height: 1.4;
-  pointer-events: none; /* 툴팁이 마우스를 가로채 깜빡이지 않도록 */
+  pointer-events: none;
+}
+
+/* 다크 테마 */
+[data-theme="dark"] .fsoTip {
+  --tip-bg: #1e293b;
+  --tip-color: #f8fafc;
+  --tip-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 .fsoTip--below {
