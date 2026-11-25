@@ -1129,10 +1129,22 @@
 
 
 /* ---- 목록/상세(읽기) 미니 막대 ---- */
+
+/* ===== 공통(= 목록 기본값) ===== */
+
+/* 막대 + 텍스트를 감싸는 래퍼: 표 셀 안에서 폭/여백을 안정적으로 잡는다 */
+.fsoMiniBarWrap {
+  min-width: 200px;
+  max-width: 260px;
+  padding: 4px 0;
+}
+
+/* 목록 막대: 구간 사이에 얇은 틈을 두고 양끝/구간을 둥글게 → 한결 깔끔한 느낌 */
 .fsoMiniBar {
   display: flex;
-  width: 140px;
-  height: 8px;
+  gap: 2px;
+  width: 100%;
+  height: 10px;
   border-radius: 999px;
   overflow: hidden;
   background: var(--fso-seg-rest);
@@ -1141,23 +1153,50 @@
 .fsoMiniBar span {
   display: block;
   height: 100%;
+  min-width: 4px;          /* 비율이 아주 작아도 구간이 보이게 */
+  border-radius: 999px;
 }
 
+/* 막대 아래 제품별 수량 텍스트: 길면 " · " 단위로 자연스럽게 줄바꿈 */
 .fsoMiniBarText {
-  margin-top: 4px;
+  margin-top: 8px;
   font-size: 12px;
+  line-height: 1.55;
   color: var(--text-muted, #64748b);
+  white-space: normal;
+  word-break: keep-all;
 }
 
-/* 상세(읽기) 모드: 표 위 미니 막대 영역 */
+/* ===== 상세(읽기) 모드: 수정 모드 배분 막대와 같은 크기 ===== */
+
 .fsoViewBar {
-  margin-bottom: 14px;
+  margin-bottom: 16px;
+}
+
+/* 수정 모드와 동일: 전체 너비 / 높이 34px / 둥근 사각형 / 구간 사이 틈 없음 */
+.fsoViewBar .fsoMiniBarWrap {
+  min-width: 0;
+  max-width: none;
+  padding: 0;
 }
 
 .fsoViewBar .fsoMiniBar {
+  gap: 0;
   width: 100%;
-  max-width: 360px;
-  height: 10px;
+  max-width: none;
+  height: 34px;
+  border-radius: 10px;
+}
+
+.fsoViewBar .fsoMiniBar span {
+  min-width: 0;
+  border-radius: 0;
+}
+
+/* 막대 아래 수량 텍스트도 수정 모드 안내 문구 크기에 맞춤 */
+.fsoViewBar .fsoMiniBarText {
+  margin-top: 10px;
+  font-size: 13px;
 }
 
 .fsoViewHint {
