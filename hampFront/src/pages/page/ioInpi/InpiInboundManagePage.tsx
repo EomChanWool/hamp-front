@@ -589,20 +589,25 @@ export function InpiInboundManagePage() {
       <SearchBand fields={searchFields} onSearch={handleSearch} onReset={handleReset} />
 
       <Panel title="인피 입고 목록" action={panelActions}>
-        <div className="inpiTabs" role="group" aria-label="라벨 인쇄여부 빠른 필터">
-          {LABEL_PRINTED_OPTIONS.map((option) => (
-            <button
-              key={option.value || 'all'}
-              type="button"
-              className="inpiTab"
-              aria-pressed={activeTab === option.value}
-              title={countFailed ? '건수를 불러오지 못했습니다.' : undefined}
-              onClick={() => handleTabChange(option.value)}
-            >
-              {option.label}
-              <b>{tabCounts ? tabCounts[option.value].toLocaleString() : '-'}</b>
-            </button>
-          ))}
+        <div className="inpiListBar">
+          <div className="inpiTabs" role="group" aria-label="라벨 인쇄여부 빠른 필터">
+            {LABEL_PRINTED_OPTIONS.map((option) => (
+              <button
+                key={option.value || 'all'}
+                type="button"
+                className="inpiTab"
+                aria-pressed={activeTab === option.value}
+                title={countFailed ? '건수를 불러오지 못했습니다.' : undefined}
+                onClick={() => handleTabChange(option.value)}
+              >
+                {option.label}
+                <b>{tabCounts ? tabCounts[option.value].toLocaleString() : '-'}</b>
+              </button>
+            ))}
+          </div>
+          <span className="inpiSum">
+            현재 페이지 합계 중량 <b>{formatWeight(pageWeightSum)}</b> kg
+          </span>
         </div>
 
         <div className="inpiListBody">
@@ -623,11 +628,6 @@ export function InpiInboundManagePage() {
           />
         </div>
 
-        <div className="inpiListFooter">
-          <span className="inpiSum">
-            현재 페이지 합계 중량 <b>{formatWeight(pageWeightSum)}</b> kg
-          </span>
-        </div>
         <CusPagination page={page} totalPages={totalPages} totalCount={totalElements} onPageChange={setPage} />
       </Panel>
 
