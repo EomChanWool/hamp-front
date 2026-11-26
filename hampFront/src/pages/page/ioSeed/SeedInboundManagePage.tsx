@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type RefObject,
 } from "react";
 import axios from "axios";
 import { Panel } from "@components/card/Panel";
@@ -53,6 +54,28 @@ type InlineEditing =
 
 const EMPTY_FORM: InlineForm = { receivedAt: "", receiptQty: "", note: "", boxQty: "1" };
 
+type ValidatedField = "receivedAt" | "receiptQty" | "boxQty";
+type FormErrors = Partial<Record<ValidatedField, string>>;
+const VALIDATED_FIELDS: ValidatedField[] = ["receivedAt", "receiptQty", "boxQty"];
+
+function validateField(key: ValidatedField, state: InlineForm): string | undefined {
+  if (key === "receivedAt") {
+    return state.receivedAt ? undefined : "입고일시를 입력해주세요.";
+  }
+  if (key === "receiptQty") {
+    if (state.receiptQty.trim() === "") return "입고수량을 입력해주세요.";
+    const qty = Number(state.receiptQty);
+    if (!Number.isFinite(qty) || qty <= 0) return "입고수량은 0보다 커야 합니다.";
+    return undefined;
+  }
+  if (key === "boxQty") {
+    if (state.boxQty.trim() === "") return "박스수를 입력해주세요.";
+    const box = Number(state.boxQty);
+    if (!Number.isInteger(box) || box < 1) return "박스수는 1 이상의 정수로 입력해주세요.";
+    return undefined;
+  }
+}
+
 function formatQty(value: number | null | undefined, unit: string | null | undefined) {
   const qty = (value ?? 0).toLocaleString();
   return unit ? `${qty} ${unit}` : qty;
@@ -83,8 +106,12 @@ export function SeedInboundManagePage() {
 
   const [editing, setEditing] = useState<InlineEditing | null>(null);
   const [form, setForm] = useState<InlineForm>(EMPTY_FORM);
+  const [errors, setErrors] = useState<FormErrors>({});
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const receivedAtInputRef = useRef<HTMLInputElement>(null);
+  const receiptQtyInputRef = useRef<HTMLInputElement>(null);
+  const boxQtyInputRef = useRef<HTMLInputElement>(null);
   const noteInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedReceiptIds, setSelectedReceiptIds] = useState<number[]>([]);
@@ -171,11 +198,17 @@ export function SeedInboundManagePage() {
     });
   };
 
+  useEffect(() => {
+    if (editing) receivedAtInputRef.current?.focus();
+  }, [editing]);
+
   const resetViewState = () => {
     setIsLoading(true);
     setExpandedOrderCodes([]);
     setReceiptsByOrder({});
     setEditing(null);
+    setForm(EMPTY_FORM);
+    setErrors({});
     setSelectedReceiptIds([]);
   };
 
@@ -203,6 +236,7 @@ export function SeedInboundManagePage() {
       if (isEditingHere) {
         setEditing(null);
         setForm(EMPTY_FORM);
+        setErrors({});
       }
       setExpandedOrderCodes((prev) => prev.filter((code) => code !== orderCode));
       return;
@@ -214,6 +248,7 @@ export function SeedInboundManagePage() {
   const handleStartCreate = (orderCode: string) => {
     if (editing || isSaving) return;
     setForm(EMPTY_FORM);
+    setErrors({});
     setEditing({ mode: "create", orderCode });
   };
 
@@ -225,6 +260,7 @@ export function SeedInboundManagePage() {
       note: receipt.note ?? "",
       boxQty: String(receipt.boxQty ?? 1),
     });
+    setErrors({});
     setEditing({ mode: "edit", orderCode: receipt.orderCode, receiptId: receipt.receiptId });
   };
 
@@ -232,6 +268,23 @@ export function SeedInboundManagePage() {
     if (isSaving) return;
     setEditing(null);
     setForm(EMPTY_FORM);
+    setErrors({});
+  };
+
+  const updateForm = <K extends keyof InlineForm>(key: K, value: InlineForm[K]) => {
+    const nextForm = { ...form, [key]: value };
+    setForm(nextForm);
+    if (key in errors) {
+      const field = key as ValidatedField;
+      const nextMessage = validateField(field, nextForm);
+      setErrors((prev) => {
+        if (prev[field] === nextMessage) return prev;
+        const next = { ...prev };
+        if (nextMessage) next[field] = nextMessage;
+        else delete next[field];
+        return next;
+      });
+    }
   };
 
   /** 저장 후 누적 입고수량이 계약 원료수량을 넘으면 확인. false 면 저장 중단 */
@@ -265,20 +318,26 @@ export function SeedInboundManagePage() {
   const handleSaveInline = async (summary: SeedGoodsReceiptOrderSummaryResponse) => {
     if (!editing || isSaving) return;
 
-    if (!form.receivedAt) {
-      window.alert("입고일시를 입력해주세요.");
+    const nextErrors: FormErrors = {};
+    for (const key of VALIDATED_FIELDS) {
+      const message = validateField(key, form);
+      if (message) nextErrors[key] = message;
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      const fieldRefs: Record<ValidatedField, RefObject<HTMLInputElement | null>> = {
+        receivedAt: receivedAtInputRef,
+        receiptQty: receiptQtyInputRef,
+        boxQty: boxQtyInputRef,
+      };
+      const firstInvalid = VALIDATED_FIELDS.find((key) => nextErrors[key]);
+      if (firstInvalid) fieldRefs[firstInvalid].current?.focus();
       return;
     }
+    setErrors({});
+
     const receiptQty = Number(form.receiptQty);
-    if (form.receiptQty.trim() === "" || !Number.isFinite(receiptQty) || receiptQty <= 0) {
-      window.alert("입고수량은 0보다 커야 합니다.");
-      return;
-    }
     const boxQty = Number(form.boxQty);
-    if (!Number.isInteger(boxQty) || boxQty < 1) {
-      window.alert("박스수는 1 이상의 정수로 입력해주세요.");
-      return;
-    }
     if (!confirmOverReceipt(summary, receiptQty)) return;
 
     const payload = {
@@ -298,6 +357,7 @@ export function SeedInboundManagePage() {
       window.alert(response.message || (editing.mode === "create" ? "등록되었습니다." : "수정되었습니다."));
       setEditing(null);
       setForm(EMPTY_FORM);
+      setErrors({});
       refreshOrders([editing.orderCode]);
     } catch (error) {
       console.error(editing.mode === "create" ? "등록 실패:" : "수정 실패:", error);
@@ -372,14 +432,6 @@ export function SeedInboundManagePage() {
     [selectedReceipts],
   );
 
-  const handleOpenLabelModal = () => {
-    if (selectedReceipts.length === 0) {
-      window.alert("인쇄할 입고 건을 먼저 선택해주세요.");
-      return;
-    }
-    setIsLabelModalOpen(true);
-  };
-
   // 인쇄창이 닫힌 뒤 → 정상 출력 여부를 재확인하고, 확인한 경우에만 인쇄완료로 표시
   const handlePrinted = async () => {
     // 재확인 창이 떠 있는 동안 선택이 바뀌어도 처음 대상이 유지되도록 먼저 복사해 둔다
@@ -398,7 +450,7 @@ export function SeedInboundManagePage() {
       if (!mountedRef.current) return;
 
       // 인피 입고와 동일하게 처리 완료 안내 (서버 메시지가 있으면 우선 사용)
-      window.alert(res.message || "라벨 인쇄 완료로 표시했습니다.");
+      window.alert(res?.message || "라벨 인쇄 완료로 표시했습니다.");
       setIsLabelModalOpen(false);
       setSelectedReceiptIds([]);
       refreshOrders(targets.map((r) => r.orderCode).filter((code): code is string => !!code));
@@ -415,23 +467,39 @@ export function SeedInboundManagePage() {
     <>
       <td>
         <input
+          ref={receivedAtInputRef}
           className="tableInput"
           type="datetime-local"
           aria-label="입고일시"
+          aria-invalid={errors.receivedAt ? true : undefined}
+          aria-describedby={errors.receivedAt ? "seed-inline-error-receivedAt" : undefined}
           value={form.receivedAt}
-          onChange={(e) => setForm((prev) => ({ ...prev, receivedAt: e.target.value }))}
+          onChange={(e) => updateForm("receivedAt", e.target.value)}
         />
+        {errors.receivedAt && (
+          <span id="seed-inline-error-receivedAt" className="seedInboundFieldError" role="alert">
+            {errors.receivedAt}
+          </span>
+        )}
       </td>
       <td>
         <NumberInput
+          ref={receiptQtyInputRef}
           className="tableInput seedInboundQtyInput"
           aria-label="입고수량"
+          aria-invalid={errors.receiptQty ? true : undefined}
+          aria-describedby={errors.receiptQty ? "seed-inline-error-receiptQty" : undefined}
           placeholder={summary.unit ?? "수량"}
           // DB decimal(12,2)
           decimalScale={2}
           value={toNumberOrNull(form.receiptQty)}
-          onValueChange={(value) => setForm((prev) => ({ ...prev, receiptQty: value == null ? "" : String(value) }))}
+          onValueChange={(value) => updateForm("receiptQty", value == null ? "" : String(value))}
         />
+        {errors.receiptQty && (
+          <span id="seed-inline-error-receiptQty" className="seedInboundFieldError" role="alert">
+            {errors.receiptQty}
+          </span>
+        )}
       </td>
       <td>
         <input
@@ -442,16 +510,24 @@ export function SeedInboundManagePage() {
           aria-label="비고"
           placeholder="메모 (선택)"
           value={form.note}
-          onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
+          onChange={(e) => updateForm("note", e.target.value)}
         />
       </td>
       <td>
         <NumberInput
+          ref={boxQtyInputRef}
           className="tableInput seedInboundBoxInput"
           aria-label="박스수"
+          aria-invalid={errors.boxQty ? true : undefined}
+          aria-describedby={errors.boxQty ? "seed-inline-error-boxQty" : undefined}
           value={toNumberOrNull(form.boxQty)}
-          onValueChange={(value) => setForm((prev) => ({ ...prev, boxQty: value == null ? "" : String(value) }))}
+          onValueChange={(value) => updateForm("boxQty", value == null ? "" : String(value))}
         />
+        {errors.boxQty && (
+          <span id="seed-inline-error-boxQty" className="seedInboundFieldError" role="alert">
+            {errors.boxQty}
+          </span>
+        )}
       </td>
       <td>{labelCell}</td>
       <td>
@@ -537,7 +613,7 @@ export function SeedInboundManagePage() {
                   const isEditingRow = editing?.mode === "edit" && editing.receiptId === r.receiptId;
                   if (isEditingRow) {
                     return (
-                      <tr key={r.receiptId}>
+                      <tr key={r.receiptId} className="seedInboundEditingRow">
                         <td className="seedInboundCheckCol" />
                         {renderInlineInputs(summary, renderLabelBadge(r.labelPrinted))}
                       </tr>
@@ -585,7 +661,7 @@ export function SeedInboundManagePage() {
                   );
                 })}
                 {isCreatingHere && (
-                  <tr>
+                  <tr className="seedInboundEditingRow">
                     <td className="seedInboundCheckCol" />
                     {renderInlineInputs(summary, renderLabelBadge(false))}
                   </tr>
@@ -643,12 +719,17 @@ export function SeedInboundManagePage() {
         title="수주별 원료 입고 현황"
         action={
           <div className="seedInboundPanelActions">
-            <button type="button" className="ghostButton" onClick={handleOpenLabelModal}>
+            <button
+              type="button"
+              className="ghostButton"
+              disabled={selectedReceipts.length === 0}
+              onClick={() => setIsLabelModalOpen(true)}
+            >
               선택 라벨 인쇄 ({selectedReceipts.length}건 · 라벨 {selectedLabelCount}장)
             </button>
             {selectedReceipts.length > 0 && (
-              <button type="button" className="ghostButton" onClick={() => setSelectedReceiptIds([])}>
-                일괄취소
+              <button type="button" className="seedInboundPlainButton" onClick={() => setSelectedReceiptIds([])}>
+                선택 해제
               </button>
             )}
           </div>

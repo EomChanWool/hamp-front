@@ -1,0 +1,730 @@
+/* 인피 생산실적관리 */
+
+/* ── 오늘 실적 요약 KPI ── */
+.inpiPerfMetricGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.inpiPerfMetricCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  text-align: left;
+  font-weight: 400;
+  color: inherit;
+}
+
+button.inpiPerfMetricCard.is-clickable {
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+button.inpiPerfMetricCard.is-clickable:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.inpiPerfMetricTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inpiPerfMetricIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.inpiPerfMetricIcon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.inpiPerfMetricIcon.is-good {
+  background: #e8f6ef;
+  color: #1b7a52;
+}
+
+.inpiPerfMetricIcon.is-info {
+  background: #e9f0fa;
+  color: #2a5da8;
+}
+
+.inpiPerfMetricIcon.is-warn {
+  background: #fcf3e0;
+  color: #9a6410;
+}
+
+[data-theme="dark"] .inpiPerfMetricIcon.is-good {
+  background: rgba(52, 199, 135, 0.15);
+  color: #6ee7b7;
+}
+
+[data-theme="dark"] .inpiPerfMetricIcon.is-info {
+  background: rgba(96, 140, 230, 0.18);
+  color: #a9c4ff;
+}
+
+[data-theme="dark"] .inpiPerfMetricIcon.is-warn {
+  background: rgba(245, 180, 60, 0.15);
+  color: #f5c46b;
+}
+
+.inpiPerfMetricLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.inpiPerfMetricValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+.inpiPerfMetricValue small {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+
+.inpiPerfMetricSub {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* ── 작업 중인 작업지시 카드 ── */
+.inpiPerfPanelHint {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.inpiPerfSectionLoading {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inpiPerfEmptyText {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.inpiPerfWoCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr));
+  gap: 14px;
+}
+
+.inpiPerfWoCard {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-subtle);
+  padding: 16px 18px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.inpiPerfWoHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.inpiPerfWoHead strong {
+  display: block;
+  font-size: 16px;
+  color: var(--text-heading);
+}
+
+.inpiPerfWoSub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.inpiPerfElapsed {
+  color: #9a6410;
+  font-weight: 600;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .inpiPerfElapsed {
+  color: #f5c46b;
+}
+
+.inpiPerfProdRows {
+  display: grid;
+  gap: 8px;
+}
+
+.inpiPerfProdRow {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.inpiPerfProdRow__name {
+  color: var(--text-body);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inpiPerfProdRow__bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.inpiPerfProdRow__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.inpiPerfProdRow__val {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.inpiPerfProdRow__val b {
+  color: var(--text-heading);
+}
+
+.inpiPerfWoFoot {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.inpiPerfWoFoot__meta {
+  flex: 1;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  min-width: 140px;
+}
+
+.inpiPerfPlainBtn {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--bg-subtle);
+  color: var(--text-body);
+  border: 1px solid var(--border);
+}
+
+.inpiPerfPlainBtn:hover:not(:disabled) {
+  background: var(--border);
+}
+
+/* ── 차트 ── */
+.inpiPerfChartWrap {
+  width: 100%;
+  min-height: 240px;
+}
+
+/* ── 목록 테이블 보조 ── */
+.inpiPerfListBody {
+  position: relative;
+  min-height: 200px;
+}
+
+.inpiPerfLoading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--bg-card) 60%, transparent);
+  z-index: 1;
+}
+
+.inpiPerfCode {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.inpiPerfSub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.inpiPerfNum {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+span.inpiPerfNum {
+  display: block;
+}
+
+/* 숫자 컬럼 헤더도 셀처럼 오른쪽에 붙인다 (정렬 아이콘 포함) */
+.inpiPerfListBody th .inpiPerfNum {
+  margin-left: auto;
+}
+
+/* 오른쪽 정렬 숫자가 바로 옆 왼쪽 정렬 컬럼과 붙어 보이지 않도록 여백을 넓힌다 */
+.inpiPerfListBody th:has(.inpiPerfNum),
+.inpiPerfListBody td:has(> .inpiPerfNum) {
+  padding-right: 40px;
+}
+
+.inpiPerfBold {
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.inpiPerfMuted {
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.inpiPerfChipWrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.inpiPerfLotChip {
+  display: inline-block;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-heading);
+  white-space: nowrap;
+}
+
+/* ── 실적 상세·등록·수정 / 작업 완료 모달 ── */
+.detailModal.inpiPerfModal {
+  width: min(760px, 94vw);
+  max-width: 760px;
+}
+
+.inpiPerfModalBody {
+  display: grid;
+  gap: 16px;
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.inpiPerfReadGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.inpiPerfReadGrid div {
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  min-width: 0;
+}
+
+.inpiPerfReadGrid dt {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.inpiPerfReadGrid dd {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-heading);
+  word-break: break-word;
+  font-variant-numeric: tabular-nums;
+}
+
+.inpiPerfReadGrid__wide {
+  grid-column: 1 / -1;
+}
+
+.inpiPerfStatusInline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.inpiPerfMassSection {
+  display: grid;
+  gap: 8px;
+}
+
+.inpiPerfSectionLabel {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.inpiPerfMassBar {
+  display: flex;
+  height: 26px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--border);
+}
+
+.inpiPerfMassBar span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.inpiPerfMassBar__out {
+  background: var(--primary);
+}
+
+.inpiPerfMassBar__res {
+  background: #e7a94b;
+}
+
+.inpiPerfMassBar__loss {
+  background: repeating-linear-gradient(135deg, transparent 0 6px, rgba(127, 127, 127, 0.18) 6px 12px);
+  color: var(--text-muted) !important;
+}
+
+.inpiPerfLegend {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.inpiPerfInfoNote {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #e9f0fa;
+  color: #2a5da8;
+}
+
+[data-theme="dark"] .inpiPerfInfoNote {
+  background: rgba(96, 140, 230, 0.18);
+  color: #a9c4ff;
+}
+
+.inpiPerfWarnNote {
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fcf3e0;
+  color: #9a6410;
+}
+
+[data-theme="dark"] .inpiPerfWarnNote {
+  background: rgba(245, 180, 60, 0.15);
+  color: #f5c46b;
+}
+
+.inpiPerfErrorBox {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fbe9eb;
+  color: #c0293d;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .inpiPerfErrorBox {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+}
+
+.inpiPerfModalLoading {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inpiPerfFormBody {
+  display: grid;
+  gap: 16px;
+}
+
+.inpiPerfFormGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 16px;
+  align-items: start;
+}
+
+.inpiPerfField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.inpiPerfField--full {
+  grid-column: 1 / -1;
+}
+
+.inpiPerfLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-body);
+}
+
+.inpiPerfSubLabel {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.inpiPerfRequired::after {
+  content: " *";
+  color: #dc2626;
+}
+
+.inpiPerfModal .tableInput {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-body);
+}
+
+.inpiPerfModal .tableInput:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+.inpiPerfModal .tableInput[aria-invalid="true"] {
+  border-color: #dc2626;
+}
+
+.inpiPerfModal .tableInput[aria-invalid="true"]:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.16);
+}
+
+.inpiPerfModal .tableInput:disabled {
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.inpiPerfModal textarea.tableInput {
+  height: auto;
+  min-height: 76px;
+  padding: 10px 12px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.inpiPerfSuffixWrap {
+  position: relative;
+}
+
+.inpiPerfSuffixWrap .tableInput {
+  padding-right: 38px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.inpiPerfSuffixWrap > span {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.inpiPerfHint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.inpiPerfFieldError {
+  font-size: 12px;
+  color: #dc2626;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .inpiPerfFieldError {
+  color: #f87171;
+}
+
+/* 제품 선택 버튼 */
+.inpiPerfProdPick {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inpiPerfProdOpt {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--text-body);
+  min-width: 150px;
+}
+
+.inpiPerfProdOpt b {
+  font-size: 14px;
+  color: var(--text-heading);
+}
+
+.inpiPerfProdOpt small {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.inpiPerfProdOpt[aria-pressed="true"] {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+/* 원물 투입 표 */
+.inpiPerfLotTable {
+  width: 100%;
+  min-width: 0;
+  border-collapse: collapse;
+}
+
+.inpiPerfLotTable th,
+.inpiPerfLotTable td {
+  padding: 9px 10px;
+  font-size: 13.5px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+
+.inpiPerfLotTable th {
+  height: 38px;
+  font-size: 12.5px;
+}
+
+.inpiPerfLotTable tr.is-active {
+  background: var(--primary-light);
+}
+
+.inpiPerfLotTable .inpiPerfSuffixWrap {
+  width: 130px;
+  margin-left: auto;
+}
+
+.inpiPerfLotTable tfoot td {
+  font-weight: 700;
+  color: var(--text-heading);
+  border-bottom: none;
+}
+
+.inpiPerfEmptyCell {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 20px 0 !important;
+}
+
+/* 가습 여부 라디오 */
+.inpiPerfRadioRow {
+  display: flex;
+  gap: 8px;
+}
+
+.inpiPerfRadioRow label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-heading);
+  cursor: pointer;
+}
+
+.inpiPerfRadioRow input {
+  accent-color: var(--primary);
+}
+
+.inpiPerfRadioRow label:has(input:checked) {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+@media (max-width: 900px) {
+  .inpiPerfMetricGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .inpiPerfReadGrid,
+  .inpiPerfFormGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .inpiPerfReadGrid__wide {
+    grid-column: auto;
+  }
+
+  .inpiPerfProdRow {
+    grid-template-columns: 90px minmax(0, 1fr);
+  }
+
+  .inpiPerfProdRow__val {
+    grid-column: 1 / -1;
+  }
+}
