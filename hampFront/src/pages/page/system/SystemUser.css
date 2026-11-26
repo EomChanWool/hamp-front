@@ -101,6 +101,365 @@
   margin-top: 16px;
 }
 
+/* ================================
+   USER AUTH — 사용자 상세 권한 그룹
+================================ */
+
+.userIdText {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ── 편집: 권한 그룹 선택 카드 ── */
+.authPickGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+  gap: 12px;
+}
+
+.authPick {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  text-align: left;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--text-body);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.authPick:hover:not(:disabled) {
+  border-color: var(--text-muted);
+}
+
+.authPick:focus-visible {
+  outline: 2px solid var(--dl-accent, var(--perm-solid));
+  outline-offset: 2px;
+}
+
+.authPick:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.authPick.isChecked {
+  border-color: var(--dl-accent, var(--perm-solid));
+  background: color-mix(in srgb, var(--dl-accent, var(--perm-solid)) 6%, var(--bg-card));
+  box-shadow: 0 0 0 1px var(--dl-accent, var(--perm-solid));
+}
+
+.authPickBox {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border: 1.5px solid var(--dl-line-strong, #cdd3dc);
+  border-radius: 5px;
+  background: var(--bg-card);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.authPick.isChecked .authPickBox {
+  background: var(--dl-accent, var(--perm-solid));
+  border-color: var(--dl-accent, var(--perm-solid));
+}
+
+.authPickBox svg {
+  width: 14px;
+  height: 14px;
+  color: #fff;
+}
+
+[data-theme="dark"] .authPick.isChecked .authPickBox svg {
+  color: #0f1117;
+}
+
+.authPickText {
+  min-width: 0;
+}
+
+.authPickText strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.authPickText small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* ── 조회: 권한 그룹 카드 ── */
+.authCardList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.authCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.authCardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+}
+
+.authCardTitleWrap {
+  min-width: 0;
+}
+
+.authCardTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.authCardDesc {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.authCardActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.authCardCount {
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-body);
+  background: color-mix(in srgb, var(--text-muted) 14%, transparent);
+  border-radius: 999px;
+}
+
+.authCardToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 10px 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-body);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.authCardToggle:hover {
+  background: var(--bg-subtle);
+}
+
+.authCardToggle svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.18s ease;
+}
+
+.authCardToggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.authCardBody {
+  padding: 18px;
+}
+
+.authCardEmpty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* 요약: 대메뉴별 카테고리 카드 */
+.authCategoryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: 16px;
+}
+
+.authCategory {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.authCategoryHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px 0 16px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--text-heading);
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+}
+
+.authCategoryHead span {
+  position: relative;
+  min-width: 0;
+  padding-left: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 제목 앞 세로 바 — 모든 카테고리 동일 포인트 컬러 */
+.authCategoryHead span::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 14px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  background: var(--dl-accent, var(--perm-solid));
+}
+
+.authCategoryHead em {
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 20px;
+  padding: 0 7px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.authTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 14px 16px 16px;
+}
+
+.authTag {
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-body);
+  background: color-mix(in srgb, var(--text-muted) 10%, var(--bg-card));
+  border-radius: 999px;
+}
+
+/* 상세: 권한 매트릭스 (div grid — 전역 table/th/td 규칙의 영향을 받지 않도록) */
+.permMatrix {
+  --perm-col: 56px;
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.permRow {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) repeat(5, var(--perm-col));
+  align-items: center;
+  min-width: 460px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-top: 1px solid var(--border);
+}
+
+.permRow:first-child {
+  border-top: 0;
+}
+
+.permRow--head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  min-height: 36px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+}
+
+.permRow--group {
+  grid-template-columns: 1fr;
+  min-height: 34px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-heading);
+  background: color-mix(in srgb, var(--text-muted) 8%, var(--bg-card));
+}
+
+.permRow:not(.permRow--head):not(.permRow--group):hover {
+  background: var(--bg-subtle);
+}
+
+.permName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--text-body);
+}
+
+.permCell {
+  display: flex;
+  justify-content: center;
+}
+
+.permMark {
+  width: 16px;
+  height: 16px;
+  color: color-mix(in srgb, var(--text-muted) 45%, transparent);
+}
+
+.permMark--on {
+  color: var(--dl-accent, var(--perm-solid));
+}
 
 /* ================================
    USER AUTH GROUP DETAILS (권한 그룹 상세 현황)
