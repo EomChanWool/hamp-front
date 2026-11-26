@@ -788,123 +788,19 @@
 }
 
 /* ================================
-   DetailLayout — Card Grid 
-================================ */
-.detailCard {
-  --dl-bg: #fcfcfb;
-  --dl-panel: #ffffff;
-  --dl-ink: #14181f;
-  --dl-ink-soft: #5b6472;
-  --dl-ink-faint: #9aa3b0;
-  --dl-line: #e3e6ea;
-  --dl-line-strong: #c7cdd5;
-
-  --dl-accent: #00a6a6;
-  --dl-accent-soft: #e7f3f0;
-  --dl-accent-ink: #0a4a3e;
-
-  --dl-danger: #c0293d;
-  --dl-danger-soft: #fbe9eb;
-
-  --dl-mono: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, monospace;
-
-  display: flex;
-  flex-direction: column;
-  background: var(--dl-panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  /* overflow: hidden; */
-}
-
-[data-theme="dark"] .detailCard {
-  --dl-bg: var(--bg-subtle);
-  --dl-panel: var(--bg-card);
-  --dl-ink: var(--text-heading);
-  --dl-ink-soft: var(--text-body);
-  --dl-ink-faint: var(--text-muted);
-  --dl-line: var(--border);
-  --dl-line-strong: #334155;
-
-  --dl-accent: #57d3a1;
-  --dl-accent-soft: var(--primary-light);
-  --dl-accent-ink: #57d3a1;
-
-  --dl-danger: #f87171;
-  --dl-danger-soft: rgba(248, 113, 113, 0.15);
-}
-
-/* ================================
-   헤더
-================================ */
-.detailCard .detailHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 22px;
-  padding: 34px 38px 24px;
-}
-
-.detailCard .detailHeaderTitleGroup {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  min-width: 0;
-}
-
-.detailCard .detailTitle {
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: -0.015em;
-  color: var(--dl-ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.detailCard .detailCode {
-  display: inline-flex;
-  align-items: center;
-  height: 40px;
-  padding: 0 16px;
-  border: 1px solid var(--dl-line-strong);
-  border-radius: 10px;
-  background: var(--dl-bg);
-  color: var(--dl-ink-soft);
-  font-family: var(--dl-mono);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.detailCard .detailCode::before {
-  margin-right: 2px;
-  color: var(--dl-ink-faint);
-  font-weight: 500;
-}
-
-.detailCard .detailMeta {
-  font-family: var(--dl-mono);
-  font-size: 16px;
-  color: var(--dl-ink-faint);
-  white-space: nowrap;
-}
-
-/* ================================
    DetailLayout — Enterprise
 ================================ */
 .detailCard {
   --dl-bg: var(--bg-subtle, #f7f8fa);
   --dl-panel: var(--bg-card, #ffffff);
   --dl-ink: var(--text-heading, #14181f);
-  --dl-ink-soft: var(--text-body, #5b6472);
-  --dl-ink-faint: var(--text-muted, #8b94a1);
+  --dl-ink-soft: var(--text-body, #475569);
+  --dl-ink-faint: var(--text-muted, #64748b);
   --dl-line: var(--border, #e3e6ea);
-  --dl-line-strong: var(--border-strong, #c7cdd5);
+  --dl-line-strong: #cdd3dc;
 
-  --dl-accent: var(--primary, #0052cc);
+  /* 흰 글씨 대비를 위해 라이트는 진한 그린, 다크는 밝은 primary */
+  --dl-accent: var(--perm-solid, #17875f);
   --dl-accent-soft: color-mix(in srgb, var(--dl-accent) 10%, var(--dl-panel));
   --dl-accent-ink: var(--dl-accent);
 
@@ -923,6 +819,8 @@
 
 [data-theme="dark"] .detailCard {
   --dl-line-strong: #334155;
+  --dl-ink-faint: #94a3b8; /* 12px 라벨 대비 확보 */
+  --dl-accent: var(--primary, #57d3a1);
   --dl-danger: #f87171;
 }
 
@@ -962,7 +860,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 24px var(--dl-pad-x) 20px;
+  padding: 22px;
   border-bottom: 1px solid var(--dl-line);
 }
 
@@ -975,7 +873,7 @@
 
 .detailCard .detailTitle {
   margin: 0;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1.3;
   letter-spacing: -0.01em;
@@ -989,21 +887,22 @@
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
-  height: 28px;
+  height: 26px;
   padding: 0 10px;
   border: 1px solid var(--dl-line);
   border-radius: 6px;
   background: var(--dl-bg);
   color: var(--dl-ink-soft);
   font-family: var(--dl-mono);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
 }
 
-/* 뱃지가 들어오면 박스 제거 */
-.detailCard .detailCode:has(.detailBadge) {
+/* 뱃지(상태)가 들어오면 칩 박스 제거 */
+.detailCard .detailCode:has(.detailBadge),
+.detailCard .detailCode:has(.badge) {
   height: auto;
   padding: 0;
   border: 0;
@@ -1021,34 +920,45 @@
 .detailCard .detailBody {
   display: flex;
   flex-direction: column;
-  padding: 8px var(--dl-pad-x) 12px;
+  padding: 0 22px 22px 22px;
 }
 
 .detailCard .detailSection {
-  padding: 24px 0;
+  padding: 22px 0;
 }
 
 .detailCard .detailSection + .detailSection {
   border-top: 1px solid var(--dl-line);
 }
 
-.detailCard .detailSectionTitle {
+.detailCard .detailSectionHead {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 0 18px;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.detailCard .detailSectionTitle {
+  margin: 0 0 16px;
   font-size: 15px;
   font-weight: 700;
   line-height: 1.4;
   color: var(--dl-ink);
 }
 
-.detailCard .detailSectionTitle::before {
-  content: "";
-  width: 3px;
-  height: 14px;
-  border-radius: 2px;
-  background: var(--dl-accent);
+.detailCard .detailSectionHead .detailSectionTitle {
+  margin: 0;
+}
+
+.detailCard .detailSectionTitle .required {
+  color: var(--dl-danger);
+}
+
+.detailCard .detailSectionMeta {
+  font-size: 12px;
+  color: var(--dl-ink-faint);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- 필드 그리드 (최대 4열, 220px 미만이면 자동 줄바꿈) ---------- */
@@ -1056,9 +966,9 @@
   display: grid;
   grid-template-columns: repeat(
     auto-fill,
-    minmax(max(220px, calc((100% - 72px) / 4)), 1fr)
+    minmax(max(220px, calc((100% - 96px) / 4)), 1fr)
   );
-  gap: 20px 24px;
+  gap: 22px;
 }
 
 .detailCard .detailField {
@@ -1078,6 +988,7 @@
   line-height: 1.4;
   letter-spacing: 0.01em;
   color: var(--dl-ink-faint);
+  padding-left: 4px;
 }
 
 .detailCard .detailField label.requiredLabel {
@@ -1089,12 +1000,11 @@
   color: var(--dl-danger);
 }
 
-/* 읽기 모드: 라벨과 왼쪽 선 일치 */
+/* 읽기 모드: 라벨과 왼쪽 선 일치 (기존 padding 0 12px 제거) */
 .detailCard .detailValue {
   display: flex;
   align-items: center;
   min-height: 40px;
-  padding: 0 12px;
   font-size: 14px;
   font-weight: 500;
   line-height: 1.5;
@@ -1150,12 +1060,12 @@
 /* 검증 실패 칸: 호버·포커스 때도 빨간 표시 유지 */
 .detailCard .tableInput[aria-invalid="true"],
 .detailCard .tableInput[aria-invalid="true"]:hover:not(:disabled):not(:focus) {
-  border-color: var(--dl-danger, #c0293d);
+  border-color: var(--dl-danger);
 }
 
 .detailCard .tableInput[aria-invalid="true"]:focus-visible {
-  border-color: var(--dl-danger, #c0293d);
-  box-shadow: 0 0 0 3px rgba(192, 41, 61, 0.2);
+  border-color: var(--dl-danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dl-danger) 22%, transparent);
 }
 
 .detailCard .tableInput:disabled {
@@ -1200,7 +1110,7 @@
   background: currentColor;
 }
 
-/* ---------- 푸터 ---------- */
+/* ---------- 푸터 (긴 화면에서도 액션이 항상 보이도록 sticky) ---------- */
 .detailCard .detailFooter {
   display: flex;
   justify-content: space-between;
@@ -1245,23 +1155,25 @@
   cursor: not-allowed;
 }
 
-.detailCard .detailFooter .btnPrimary {
+/* 주 버튼: btnPrimary / primaryButton 둘 다 대응 */
+.detailCard .detailFooter .btnPrimary,
+.detailCard .detailFooter .primaryButton {
   color: #fff;
   background: var(--dl-accent);
   border-color: var(--dl-accent);
 }
 
-.detailCard .detailFooter .btnPrimary:hover:not(:disabled) {
+.detailCard .detailFooter .btnPrimary:hover:not(:disabled),
+.detailCard .detailFooter .primaryButton:hover:not(:disabled) {
   color: #fff;
   background: color-mix(in srgb, var(--dl-accent) 88%, #000);
   border-color: color-mix(in srgb, var(--dl-accent) 88%, #000);
 }
 
-[data-theme="dark"] .detailCard .detailFooter .btnPrimary {
-  color: #0f1117;
-}
-
-[data-theme="dark"] .detailCard .detailFooter .btnPrimary:hover:not(:disabled) {
+[data-theme="dark"] .detailCard .detailFooter .btnPrimary,
+[data-theme="dark"] .detailCard .detailFooter .primaryButton,
+[data-theme="dark"] .detailCard .detailFooter .btnPrimary:hover:not(:disabled),
+[data-theme="dark"] .detailCard .detailFooter .primaryButton:hover:not(:disabled) {
   color: #0f1117;
 }
 
@@ -1282,6 +1194,10 @@
 }
 
 /* ---------- 반응형 ---------- */
+@container content (max-width: 1024px) {
+  .detailCard { --dl-pad-x: 24px; }
+}
+
 @container content (max-width: 640px) {
   .detailCard { --dl-pad-x: 20px; }
 
@@ -1291,7 +1207,9 @@
     gap: 8px;
   }
 
-  .detailCard .detailTitle { font-size: 20px; }
+  .detailCard .detailTitle { font-size: 18px; }
+
+  .detailCard .detailFooter { flex-wrap: wrap; }
 }
 
 /* ==========================================
@@ -1962,23 +1880,6 @@
 }
 
 @container content (max-width: 1024px) {
-  .detailCard .detailHeader {
-    padding: 28px 28px 20px;
-  }
-
-  .detailCard .detailTitle {
-    font-size: 26px;
-  }
-
-  .detailCard .detailBody {
-    padding: 24px;
-    gap: 20px;
-  }
-
-  .detailCard .detailSection {
-    padding: 22px 24px;
-  }
-
   .createHeader {
     padding: 28px 28px 20px;
   }
@@ -2037,35 +1938,9 @@
   }
 }
 
-@container content (max-width: 640px) {
-  .detailCard .detailHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
-    padding: 24px 20px 20px;
-  }
-
-  .detailCard .detailBody {
-    grid-template-columns: 1fr;
-    padding: 20px;
-    gap: 20px;
-  }
-
-  .detailCard .detailFooter {
-    padding: 20px;
-  }
-}
-
 @container content (max-width: 600px) {
-  .detailCard .detailTitle,
   .createTitle {
     font-size: 22px;
-  }
-
-  .detailCard .detailCode {
-    font-size: 13px;
-    height: 34px;
-    padding: 0 12px;
   }
 
   .facilityHeaderCard {
