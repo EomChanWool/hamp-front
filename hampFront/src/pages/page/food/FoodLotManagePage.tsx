@@ -54,6 +54,15 @@ export function FoodLotManagePage() {
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
   const [isPrintSubmitting, setIsPrintSubmitting] = useState(false);
 
+  // 언마운트 이후 상태 변경/알림 방지용
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const { sorting, sortParams, handleSortingChange } = useTableSorting();
 
   // [정확한 새로고침 감지]
@@ -274,27 +283,36 @@ export function FoodLotManagePage() {
     setIsLabelModalOpen(false);
   };
 
-  // 인쇄가 진행된 뒤 → 출력완료 상태로 변경(PUT)
+  // 인쇄창이 닫힌 뒤 → 정상 출력 여부를 재확인하고, 확인한 경우에만 출력완료 상태로 변경(PUT)
   const handleLabelPrinted = useCallback(async () => {
+    // 재확인 창이 떠 있는 동안 선택이 바뀌어도 처음 대상이 유지되도록 먼저 복사해 둔다
     const lotCodes = labelItems.map((item) => item.id);
     if (lotCodes.length === 0) return;
+
+    const confirmed = window.confirm(
+      `라벨이 정상 출력됐나요?\n[확인]을 누르면 선택한 ${lotCodes.length}건이 출력완료로 바뀝니다.`,
+    );
+    if (!confirmed) return;
 
     setIsPrintSubmitting(true);
     try {
       await LotApi.putLabelPrint({ lotCodes });
+      // 응답을 기다리는 사이 화면을 벗어났다면 이후 알림/상태 변경 생략
+      if (!mountedRef.current) return;
 
       window.alert(`${lotCodes.length}건이 라벨 출력완료로 처리되었습니다.`);
       setIsLabelModalOpen(false);
       setSelectedLotCodes([]);
       await loadLots();
     } catch (error) {
+      if (!mountedRef.current) return;
       console.error("라벨 출력 상태 변경 실패:", error);
       const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
       window.alert(
         `${message || "출력 상태 변경에 실패했습니다."}\n라벨 인쇄는 진행되었을 수 있으니 확인 후 다시 시도해주세요.`,
       );
     } finally {
-      setIsPrintSubmitting(false);
+      if (mountedRef.current) setIsPrintSubmitting(false);
     }
   }, [labelItems, loadLots]);
 
@@ -444,7 +462,6 @@ export function FoodLotManagePage() {
         isOpen={isLabelModalOpen}
         onClose={handleCloseLabelModal}
         items={labelItems}
-        confirmMessage={`선택한 ${labelItems.length}건의 라벨을 인쇄하시겠습니까?`}
         onPrinted={handleLabelPrinted}
         isBusy={isPrintSubmitting}
       />

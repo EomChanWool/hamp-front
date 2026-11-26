@@ -91,6 +91,15 @@ export function SeedInboundManagePage() {
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
   const [isMarkingPrinted, setIsMarkingPrinted] = useState(false);
 
+  // 언마운트 이후 상태 변경/알림 방지용
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const orderCodeRef = useRef<HTMLInputElement>(null);
   const statusRef = useRef<HTMLSelectElement>(null);
 
@@ -371,20 +380,34 @@ export function SeedInboundManagePage() {
     setIsLabelModalOpen(true);
   };
 
+  // 인쇄창이 닫힌 뒤 → 정상 출력 여부를 재확인하고, 확인한 경우에만 인쇄완료로 표시
   const handlePrinted = async () => {
+    // 재확인 창이 떠 있는 동안 선택이 바뀌어도 처음 대상이 유지되도록 먼저 복사해 둔다
     const targets = selectedReceipts;
     if (targets.length === 0) return;
+
+    const confirmed = window.confirm(
+      `라벨이 정상 출력됐나요?\n[확인]을 누르면 선택한 ${targets.length}건(라벨 ${labelItems.length}장)이 인쇄완료로 바뀝니다.`,
+    );
+    if (!confirmed) return;
+
     setIsMarkingPrinted(true);
     try {
-      await SeedGoodsReceiptApi.markPrinted(targets.map((r) => r.receiptId));
+      const res = await SeedGoodsReceiptApi.markPrinted(targets.map((r) => r.receiptId));
+      // 응답을 기다리는 사이 화면을 벗어났다면 이후 알림/상태 변경 생략
+      if (!mountedRef.current) return;
+
+      // 인피 입고와 동일하게 처리 완료 안내 (서버 메시지가 있으면 우선 사용)
+      window.alert(res.message || "라벨 인쇄 완료로 표시했습니다.");
       setIsLabelModalOpen(false);
       setSelectedReceiptIds([]);
       refreshOrders(targets.map((r) => r.orderCode).filter((code): code is string => !!code));
     } catch (error) {
+      if (!mountedRef.current) return;
       console.error("라벨 인쇄 완료 표시 실패:", error);
       window.alert(getErrorMessage(error, "라벨 인쇄 완료 표시에 실패했습니다."));
     } finally {
-      setIsMarkingPrinted(false);
+      if (mountedRef.current) setIsMarkingPrinted(false);
     }
   };
 

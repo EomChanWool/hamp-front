@@ -95,6 +95,8 @@ import { FoodDefectStatusPage } from '@pages/page/food/FoodDefectStatusPage'
 import { InpiInventoryStatusPage } from '@pages/page/inpi/InpiInventoryStatusPage'
 import { InpiInventoryManagePage } from '@pages/page/inpi/InpiInventoryManagePage'
 import { InpiWorkOrdersPage } from '@pages/page/inpi/InpiWorkOrdersPage'
+import { InpiWorkOrderCreatePage } from '@/pages/page/inpi/InpiWorkOrderCreatePage'
+import { InpiWorkOrderDetailPage } from '@/pages/page/inpi/InpiWorkOrderDetailPage'
 import { InpiProductionResultsPage } from '@pages/page/inpi/InpiProductionResultsPage'
 import { InpiProductionStatusPage } from '@pages/page/inpi/InpiProductionStatusPage'
 import { InpiLotManagePage } from '@pages/page/inpi/InpiLotManagePage'
@@ -221,7 +223,7 @@ export const menuRoutes: MenuRouteGroup[] = [
         name: '환경 데이터 이력 조회',
         element: <FacilityEnvironmentHistoryPage />,
       },
-      { path: 'cctv', name: 'CCTV 현황', element: <FacilityCctvPage />, hidden: true},
+      { path: 'cctv', name: 'CCTV 현황', element: <FacilityCctvPage />, hidden: true },
       { path: 'data-manage', name: '데이터 관리', element: <FacilityDataManagePage /> },
     ],
   },
@@ -339,6 +341,8 @@ export const menuRoutes: MenuRouteGroup[] = [
     path: '/inpi',
     items: [
       { path: 'work-orders', name: '작업지시관리', element: <InpiWorkOrdersPage /> },
+      { path: 'work-orders/create', name: '수주 등록', element: <InpiWorkOrderCreatePage />, hidden: true },
+      { path: 'work-orders/:workId', name: '수주 상세', element: <InpiWorkOrderDetailPage />, hidden: true },
       { path: 'prod-results', name: '생산실적관리', element: <InpiProductionResultsPage /> },
       { path: 'prod-status', name: '생산현황', element: <InpiProductionStatusPage /> },
       { path: 'lot-manage', name: 'LOT관리', element: <InpiLotManagePage /> },

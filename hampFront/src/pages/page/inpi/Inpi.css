@@ -1,0 +1,67 @@
+/* 섬유 작업지시 (목록/등록/상세) 전용 스타일 - 공용 form*/inpi* 클래스는 기존 CSS를 그대로 사용 */
+
+.fwo-code { font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace; font-size: 13px; font-weight: 600; }
+.fwo-sub { display: block; font-size: 12px; color: var(--text-muted, #64748b); margin-top: 2px; }
+.fwo-time { font-variant-numeric: tabular-nums; font-size: 13px; white-space: nowrap; }
+
+/* 진행률 */
+.fwo-prog { display: grid; gap: 4px; min-width: 160px; }
+.fwo-prog__bar { height: 8px; border-radius: 999px; background: var(--seg-rest, #e3e6ea); overflow: hidden; }
+.fwo-prog__bar span { display: block; height: 100%; background: var(--primary, #57d3a1); border-radius: inherit; }
+.fwo-prog__bar span.is-over { background: #e7a94b; }
+.fwo-prog small { font-size: 12px; color: var(--text-muted, #64748b); font-variant-numeric: tabular-nums; }
+
+/* 바코드 스캔 */
+.fwo-scan { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.fwo-scan input { flex: 1; min-width: 220px; max-width: 420px; height: 42px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--border, #ebecee); background: var(--bg-subtle, #f8fafc); font-family: ui-monospace, Consolas, monospace; }
+.fwo-hint { margin: 0 0 12px; font-size: 13px; line-height: 1.6; color: var(--text-muted, #64748b); }
+
+/* 진행 단계 */
+.fwo-flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.fwo-flowStep { padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border, #ebecee); background: var(--bg-subtle, #f8fafc); display: grid; gap: 4px; }
+.fwo-flowStep b { font-size: 13.5px; }
+.fwo-flowStep span { font-size: 12.5px; color: var(--text-muted, #64748b); font-variant-numeric: tabular-nums; }
+.fwo-flowStep.is-done { border-color: #1b7a52; background: rgba(52, 199, 135, .12); }
+.fwo-flowStep.is-done b { color: #1b7a52; }
+.fwo-flowStep.is-now { border-color: #9a6410; background: rgba(245, 180, 60, .14); }
+.fwo-flowStep.is-now b { color: #9a6410; }
+.fwo-flowStep.is-off { opacity: .55; }
+
+/* 읽기 전용 그리드 */
+.fwo-readGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.fwo-readGrid div { padding: 12px 14px; border-radius: 10px; background: var(--bg-subtle, #f8fafc); border: 1px solid var(--border, #ebecee); min-width: 0; }
+.fwo-readGrid dt { font-size: 12.5px; color: var(--text-muted, #64748b); }
+.fwo-readGrid dd { margin: 4px 0 0; font-weight: 600; word-break: break-word; font-variant-numeric: tabular-nums; }
+.fwo-readGrid .is-wide { grid-column: 1 / -1; }
+
+/* 제품별 배분 대비 실적 */
+.fwo-prodList { display: grid; gap: 14px; }
+.fwo-prodRow { display: grid; grid-template-columns: minmax(0, 170px) minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+.fwo-prodRow__nm { font-weight: 600; }
+.fwo-prodRow__nm small { display: block; font-weight: 400; font-size: 12px; color: var(--text-muted, #64748b); }
+.fwo-prodBar { height: 12px; border-radius: 999px; background: var(--seg-rest, #e3e6ea); overflow: hidden; }
+.fwo-prodBar span { display: block; height: 100%; border-radius: inherit; background: var(--primary, #57d3a1); }
+.fwo-prodBar span.is-over { background: #e7a94b; }
+.fwo-prodRow__val { font-size: 13px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fwo-prodRow__val .is-muted { color: var(--text-muted, #64748b); }
+
+/* 서브 테이블 */
+.fwo-tableWrap { overflow-x: auto; }
+.fwo-table { width: 100%; min-width: 640px; border-collapse: collapse; }
+.fwo-table th, .fwo-table td { padding: 10px 12px; text-align: left; font-size: 13.5px; white-space: nowrap; border-bottom: 1px solid var(--border, #ebecee); }
+.fwo-table th { background: var(--th-bg, #eceff4); color: var(--th-fg, #475569); font-weight: 600; }
+.fwo-table .is-num { text-align: right; font-variant-numeric: tabular-nums; }
+.fwo-empty { text-align: center; color: var(--text-muted, #64748b); padding: 28px 0; }
+
+/* 안내 */
+.fwo-info { font-size: 13px; line-height: 1.55; padding: 10px 14px; border-radius: 10px; color: #2a5da8; background: rgba(96, 140, 230, .14); }
+.fwo-lockNote { margin-top: 12px; font-size: 13px; padding: 10px 14px; border-radius: 10px; color: #9a6410; background: rgba(245, 180, 60, .14); }
+.fwo-disabledReason { margin: 0; font-size: 12px; color: var(--text-muted, #64748b); text-align: center; }
+.fwo-fieldError { font-size: 12px; color: #c0293d; font-weight: 500; }
+
+@media (max-width: 640px) {
+  .fwo-flow, .fwo-readGrid { grid-template-columns: 1fr; }
+  .fwo-readGrid .is-wide { grid-column: auto; }
+  .fwo-prodRow { grid-template-columns: 1fr; gap: 6px; }
+  .fwo-prodRow__val { text-align: left; }
+}
