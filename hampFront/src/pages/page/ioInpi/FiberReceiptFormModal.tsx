@@ -30,6 +30,18 @@ type FormState = {
 
 type FieldErrorKey = 'bpCode' | 'rawItemCode' | 'receiptQty' | 'receivedAt'
 
+const REQUIRED_FIELDS: readonly FieldErrorKey[] = ['bpCode', 'rawItemCode', 'receiptQty', 'receivedAt']
+
+function validateField(key: FieldErrorKey, state: FormState): string | null {
+  if (key === 'bpCode') return state.bpCode ? null : '거래처를 선택해주세요.'
+  if (key === 'rawItemCode') return state.rawItemCode ? null : '원료 품목을 선택해주세요.'
+  if (key === 'receiptQty') {
+    if (state.receiptQty === null) return '입고 중량을 입력해주세요.'
+    return state.receiptQty > 0 ? null : '입고 중량은 0보다 커야 합니다.'
+  }
+  return state.receivedAt ? null : '입고일시를 입력해주세요.'
+}
+
 type OrderStatus =
   | { state: 'loading' }
   | { state: 'loaded'; detail: FiberSalesOrderDetailResponse }
@@ -158,14 +170,14 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
     setForm((prev) => ({ ...prev, ...patch }))
     setErrors((prev) => {
       let next: Partial<Record<FieldErrorKey, string>> | null = null
-      for (const key of ['bpCode', 'rawItemCode', 'receiptQty', 'receivedAt'] as const) {
+      const patched = { ...form, ...patch }
+      for (const key of REQUIRED_FIELDS) {
         if (!(key in patch) || !prev[key]) continue
-        const value = patch[key]
-        const valid = key === 'receiptQty' ? typeof value === 'number' && value > 0 : Boolean(value)
-        if (valid) {
-          next ??= { ...prev }
-          delete next[key]
-        }
+        const message = validateField(key, patched)
+        if (message === prev[key]) continue
+        next ??= { ...prev }
+        if (message) next[key] = message
+        else delete next[key]
       }
       return next ?? prev
     })
@@ -323,11 +335,10 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
     if (isSaving || isOrderLoading) return
 
     const nextErrors: Partial<Record<FieldErrorKey, string>> = {}
-    if (!form.bpCode) nextErrors.bpCode = '거래처를 선택해주세요.'
-    if (!form.rawItemCode) nextErrors.rawItemCode = '원료 품목을 선택해주세요.'
-    if (form.receiptQty === null) nextErrors.receiptQty = '입고 중량을 입력해주세요.'
-    else if (!(form.receiptQty > 0)) nextErrors.receiptQty = '입고 중량은 0보다 커야 합니다.'
-    if (!form.receivedAt) nextErrors.receivedAt = '입고일시를 입력해주세요.'
+    for (const key of REQUIRED_FIELDS) {
+      const message = validateField(key, form)
+      if (message) nextErrors[key] = message
+    }
 
     if (Object.keys(nextErrors).length > 0 || form.receiptQty === null) {
       setErrors(nextErrors)

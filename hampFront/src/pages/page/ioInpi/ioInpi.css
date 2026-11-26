@@ -15,8 +15,7 @@
   }
 }
 
-.inpiPanelActions .ghostButton:disabled,
-.inpiPanelActions .ghostButton:disabled:hover {
+.inpiPanelActions .ghostButton:disabled {
   background: var(--bg-subtle);
   color: var(--text-muted);
   border: 1px solid var(--border);
