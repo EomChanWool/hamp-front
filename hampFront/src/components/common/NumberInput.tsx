@@ -23,6 +23,8 @@ type NumberInputProps = Omit<
   decimalScale?: number;
   allowNegative?: boolean;
   max?: number;
+  /** max 초과 시 표시할 안내 문구 (미지정 시 기본 문구 사용) */
+  maxMessage?: string;
   /** 입력 중에도 천 단위 쉼표 표시 */
   thousandSeparator?: boolean;
   /** 입력칸과 suffix를 감싸는 요소의 클래스 (예: formInputWrap) */
@@ -68,6 +70,7 @@ export function NumberInput({
   decimalScale = 0,
   allowNegative = false,
   max,
+  maxMessage,
   thousandSeparator = true,
   wrapClassName,
   suffix,
@@ -125,7 +128,9 @@ export function NumberInput({
     }
     const next = toNumber(text);
     if (next !== null) {
-      if (max != null && next > max) return { ok: false, message: `${max.toLocaleString("ko-KR")} 이하로 입력해주세요.` };
+      if (max != null && next > max) {
+        return { ok: false, message: maxMessage ?? `${max.toLocaleString("ko-KR")} 이하로 입력해주세요.` };
+      }
       if (Math.abs(next) > Number.MAX_SAFE_INTEGER) return { ok: false, message: "입력할 수 있는 범위를 넘었습니다." };
     }
     return { ok: true, text, value: next };

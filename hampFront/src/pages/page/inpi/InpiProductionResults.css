@@ -245,6 +245,11 @@ button.inpiPerfMetricCard.is-clickable:hover {
   background: var(--border);
 }
 
+.inpiPerfPlainBtn:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
 /* ── 차트 ── */
 .inpiPerfChartWrap {
   width: 100%;
@@ -337,8 +342,8 @@ span.inpiPerfNum {
 
 .inpiPerfModalBody {
   display: grid;
-  gap: 16px;
-  padding: 20px 24px;
+  gap: 12px;
+  padding: 16px 20px;
   overflow-y: auto;
   flex: 1;
 }
@@ -346,13 +351,13 @@ span.inpiPerfNum {
 .inpiPerfReadGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
   margin: 0;
 }
 
 .inpiPerfReadGrid div {
-  padding: 11px 13px;
-  border-radius: 10px;
+  padding: 8px 11px;
+  border-radius: 8px;
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   min-width: 0;
@@ -528,13 +533,13 @@ span.inpiPerfNum {
 
 .inpiPerfFormBody {
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
 .inpiPerfFormGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px 16px;
+  gap: 12px 14px;
   align-items: start;
 }
 
@@ -596,10 +601,10 @@ span.inpiPerfNum {
 
 .inpiPerfModal textarea.tableInput {
   height: auto;
-  min-height: 76px;
-  padding: 10px 12px;
+  min-height: 56px;
+  padding: 8px 10px;
   resize: vertical;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 .inpiPerfSuffixWrap {
@@ -648,12 +653,12 @@ span.inpiPerfNum {
   display: grid;
   gap: 2px;
   text-align: left;
-  padding: 10px 14px;
-  border-radius: 10px;
+  padding: 8px 12px;
+  border-radius: 9px;
   border: 1px solid var(--border);
   background: var(--bg-subtle);
   color: var(--text-body);
-  min-width: 150px;
+  min-width: 136px;
 }
 
 .inpiPerfProdOpt b {
@@ -674,6 +679,12 @@ span.inpiPerfNum {
 }
 
 /* 원물 투입 표 */
+@media (min-width: 641px) {
+  .inpiPerfModal .tableWrap {
+    overflow: visible;
+  }
+}
+
 .inpiPerfLotTable {
   width: 100%;
   min-width: 0;
@@ -682,24 +693,143 @@ span.inpiPerfNum {
 
 .inpiPerfLotTable th,
 .inpiPerfLotTable td {
-  padding: 9px 10px;
-  font-size: 13.5px;
+  padding: 6px 10px;
+  font-size: 13px;
   white-space: nowrap;
   border-bottom: 1px solid var(--border);
 }
 
 .inpiPerfLotTable th {
-  height: 38px;
-  font-size: 12.5px;
+  height: 32px;
+  font-size: 12px;
 }
 
 .inpiPerfLotTable tr.is-active {
   background: var(--primary-light);
 }
 
+.inpiPerfLotInputRow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.inpiPerfLotNumWrap {
+  position: relative;
+}
+
+.inpiPerfLotNumWrap .numberInputHint {
+  position: absolute;
+  bottom: calc(100% + 7px);
+  right: 0;
+  z-index: 20;
+  padding: 5px 10px;
+  border-radius: 7px;
+  background: #fff5f5;
+  color: #c0293d;
+  border: 1px solid #f5c2c7;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  pointer-events: none;
+  animation: inpiPerfPopIn 0.12s ease-out;
+}
+
+.inpiPerfLotNumWrap .numberInputHint::before,
+.inpiPerfLotNumWrap .numberInputHint::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  right: 18px;
+  border: 5px solid transparent;
+}
+
+.inpiPerfLotNumWrap .numberInputHint::before {
+  border-top-color: #f5c2c7;
+}
+
+.inpiPerfLotNumWrap .numberInputHint::after {
+  top: calc(100% - 1px);
+  border-top-color: #fff5f5;
+}
+
+[data-theme="dark"] .inpiPerfLotNumWrap .numberInputHint {
+  background: #2b1a1d;
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.35);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .inpiPerfLotNumWrap .numberInputHint::before {
+  border-top-color: rgba(248, 113, 113, 0.35);
+}
+
+[data-theme="dark"] .inpiPerfLotNumWrap .numberInputHint::after {
+  border-top-color: #2b1a1d;
+}
+
+@keyframes inpiPerfPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .inpiPerfLotTable .inpiPerfSuffixWrap {
-  width: 130px;
-  margin-left: auto;
+  width: 112px;
+}
+
+.inpiPerfLotTable .tableInput {
+  height: 34px;
+  font-size: 13px;
+}
+
+.inpiPerfFillBtn {
+  height: 34px;
+  padding: 0 9px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-body);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.inpiPerfFillBtn:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+.inpiPerfFillBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.inpiPerfLivePreview {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+}
+
+.inpiPerfLivePreviewHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .inpiPerfLotTable tfoot td {
@@ -784,5 +914,19 @@ span.inpiPerfNum {
 
   .inpiPerfProdRow__val {
     grid-column: 1 / -1;
+  }
+
+  .inpiPerfLotNumWrap .numberInputHint {
+    position: static;
+    margin-top: 4px;
+    white-space: normal;
+    text-align: right;
+    box-shadow: none;
+    animation: none;
+  }
+
+  .inpiPerfLotNumWrap .numberInputHint::before,
+  .inpiPerfLotNumWrap .numberInputHint::after {
+    display: none;
   }
 }
