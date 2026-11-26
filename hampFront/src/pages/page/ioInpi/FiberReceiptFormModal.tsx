@@ -28,6 +28,8 @@ type FormState = {
   note: string
 }
 
+type FieldErrorKey = 'bpCode' | 'rawItemCode' | 'receiptQty' | 'receivedAt'
+
 type OrderStatus =
   | { state: 'loading' }
   | { state: 'loaded'; detail: FiberSalesOrderDetailResponse }
@@ -92,6 +94,7 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
 
   const [initialState] = useState<FormState>(() => initialForm(receipt))
   const [form, setForm] = useState<FormState>(initialState)
+  const [errors, setErrors] = useState<Partial<Record<FieldErrorKey, string>>>({})
   const [orderOptions, setOrderOptions] = useState<FiberSalesOrderOptionResponse[]>([])
   const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(() =>
     receipt?.orderCode ? { state: 'loading' } : null,
@@ -133,6 +136,11 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
 
   const handleClose = useCallback(() => {
     if (isSaving) return
+    onClose()
+  }, [isSaving, onClose])
+
+  const handleDismiss = useCallback(() => {
+    if (isSaving) return
     if (isDirty && !window.confirm('작성 중인 내용이 사라집니다. 닫으시겠습니까?')) return
     onClose()
   }, [isSaving, isDirty, onClose])
@@ -140,13 +148,28 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
   useEffect(() => {
     if (isSaving) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') handleClose()
+      if (event.key === 'Escape') handleDismiss()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [isSaving, handleClose])
+  }, [isSaving, handleDismiss])
 
-  const update = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }))
+  const update = (patch: Partial<FormState>) => {
+    setForm((prev) => ({ ...prev, ...patch }))
+    setErrors((prev) => {
+      let next: Partial<Record<FieldErrorKey, string>> | null = null
+      for (const key of ['bpCode', 'rawItemCode', 'receiptQty', 'receivedAt'] as const) {
+        if (!(key in patch) || !prev[key]) continue
+        const value = patch[key]
+        const valid = key === 'receiptQty' ? typeof value === 'number' && value > 0 : Boolean(value)
+        if (valid) {
+          next ??= { ...prev }
+          delete next[key]
+        }
+      }
+      return next ?? prev
+    })
+  }
 
   const loadOrderOptions = useCallback(
     (bpCode: string) => {
@@ -299,16 +322,22 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
     event.preventDefault()
     if (isSaving || isOrderLoading) return
 
-    const fail = (message: string, target: HTMLElement | null) => {
-      window.alert(message)
-      target?.focus()
-    }
+    const nextErrors: Partial<Record<FieldErrorKey, string>> = {}
+    if (!form.bpCode) nextErrors.bpCode = '거래처를 선택해주세요.'
+    if (!form.rawItemCode) nextErrors.rawItemCode = '원료 품목을 선택해주세요.'
+    if (form.receiptQty === null) nextErrors.receiptQty = '입고 중량을 입력해주세요.'
+    else if (!(form.receiptQty > 0)) nextErrors.receiptQty = '입고 중량은 0보다 커야 합니다.'
+    if (!form.receivedAt) nextErrors.receivedAt = '입고일시를 입력해주세요.'
 
-    if (!form.bpCode) return fail('거래처를 선택해주세요.', bpRef.current)
-    if (!form.rawItemCode) return fail('원료 품목을 선택해주세요.', itemRef.current)
-    if (form.receiptQty === null) return fail('입고 중량을 입력해주세요.', qtyRef.current)
-    if (!(form.receiptQty > 0)) return fail('입고 중량은 0보다 커야 합니다.', qtyRef.current)
-    if (!form.receivedAt) return fail('입고일시를 입력해주세요.', receivedAtRef.current)
+    if (Object.keys(nextErrors).length > 0 || form.receiptQty === null) {
+      setErrors(nextErrors)
+      if (nextErrors.bpCode) bpRef.current?.focus()
+      else if (nextErrors.rawItemCode) itemRef.current?.focus()
+      else if (nextErrors.receiptQty) qtyRef.current?.focus()
+      else if (nextErrors.receivedAt) receivedAtRef.current?.focus()
+      return
+    }
+    setErrors({})
     if (!confirmPrintedChange()) return
     if (!confirmOverReceipt(form.receiptQty)) return
 
@@ -349,7 +378,7 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
 
   return (
     <>
-      <div className="modalOverlay" onClick={handleClose} />
+      <div className="modalOverlay" onClick={handleDismiss} />
       <form className="detailModal inpiFormModal" role="dialog" aria-modal="true" aria-labelledby={titleId} onSubmit={handleSubmit} noValidate>
         <div className="detailModalHeader">
           <div>
@@ -401,6 +430,8 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
               ref={bpRef}
               className="tableInput"
               value={form.bpCode}
+              aria-invalid={Boolean(errors.bpCode) || undefined}
+              aria-describedby={errors.bpCode ? id('bp-error') : undefined}
               onChange={(e) => handleBpChange(e.target.value)}
             >
               <option value="">거래처 선택</option>
@@ -410,6 +441,11 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
                 </option>
               ))}
             </select>
+            {errors.bpCode && (
+              <span id={id('bp-error')} className="inpiFieldError" role="alert">
+                {errors.bpCode}
+              </span>
+            )}
           </div>
 
           <div className="detailField">
@@ -440,6 +476,8 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
               className="tableInput"
               value={form.rawItemCode}
               disabled={!!form.orderCode}
+              aria-invalid={Boolean(errors.rawItemCode) || undefined}
+              aria-describedby={errors.rawItemCode ? id('item-error') : undefined}
               onChange={(e) => update({ rawItemCode: e.target.value })}
             >
               <option value="">품목 선택</option>
@@ -449,6 +487,11 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
                 </option>
               ))}
             </select>
+            {errors.rawItemCode && (
+              <span id={id('item-error')} className="inpiFieldError" role="alert">
+                {errors.rawItemCode}
+              </span>
+            )}
           </div>
 
           <div className="detailField">
@@ -466,7 +509,14 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
               max={MAX_RECEIPT_QTY}
               wrapClassName="inpiUnitInput"
               suffix={<span aria-hidden="true">{unit}</span>}
+              aria-invalid={Boolean(errors.receiptQty) || undefined}
+              aria-describedby={errors.receiptQty ? id('qty-error') : undefined}
             />
+            {errors.receiptQty && (
+              <span id={id('qty-error')} className="inpiFieldError" role="alert">
+                {errors.receiptQty}
+              </span>
+            )}
           </div>
 
           {orderStatus && (
@@ -504,8 +554,15 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
               className="tableInput"
               type="datetime-local"
               value={form.receivedAt}
+              aria-invalid={Boolean(errors.receivedAt) || undefined}
+              aria-describedby={errors.receivedAt ? id('receivedAt-error') : undefined}
               onChange={(e) => update({ receivedAt: e.target.value })}
             />
+            {errors.receivedAt && (
+              <span id={id('receivedAt-error')} className="inpiFieldError" role="alert">
+                {errors.receivedAt}
+              </span>
+            )}
           </div>
 
           <div className="detailField inpiFormFull">
