@@ -214,8 +214,13 @@ export interface FiberSalesOrderListParams {
 export interface FiberSalesOrderOptionParams {
     /** 거래처 코드 - 지정하면 해당 거래처의 수주만 조회, 생략 시 전체 */
     bpCode?: string;
+     /**
+     * 미배정 수주만 조회할지 여부
+     * - true  : 미배정 수주만 조회
+     * - false : 전체 수주 조회 (서버 기본값)
+     */
+    unassignedOnly?: boolean;
 }
-
 
 // ── API 최종 응답 타입 ────────────────────────────────────────────────────────
 
@@ -278,6 +283,7 @@ export const FiberSalesOrderApi = {
     /**
      * 섬유 수주 셀렉트 옵션 조회
      * @param params.bpCode 거래처 코드 (생략 시 전체 조회)
+     * @param params.unassignedOnly 미배정 수주만 조회할지 여부 (기본값 false, 생략 시 전체 조회)
      */
     getOptions: async (params?: FiberSalesOrderOptionParams): Promise<ApiResponseListFiberSalesOrderOptionResponse> => {
         const res = await apiClient.get<ApiResponseListFiberSalesOrderOptionResponse>('/fiber-sales-orders/options', {

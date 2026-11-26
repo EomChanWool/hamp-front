@@ -3,8 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { UserApi, type UserOptionResponse } from '@/api/User'
 import {
   FiberSalesOrderApi,
-  type FiberSalesOrderLineResponse,
-  type FiberSalesOrderResponse,
+  type FiberSalesOrderDetailResponse,
+  type FiberSalesOrderOptionResponse,
 } from '@/api/sales/FiberSalesOrder'
 import { FiberWorkOrderApi } from '@/api/FiberWorkOrder'
 import { SelectBox, type SelectBoxOption } from '@/components/common/SelectBox'
@@ -14,9 +14,6 @@ import { CLOSED_ORDER_STATUSES, calcPct, fmtKg, getErrorMessage } from '@/utils/
 import '@/pages/layout/Layout.css'
 import '@/pages/page/inpiSales/InpiSales.css'
 import '@/pages/page/inpi/Inpi.css'
-
-/** 수주 목록 응답에 제품별 배분(lines)이 포함된다 */
-type FiberOrderRow = FiberSalesOrderResponse & { lines?: FiberSalesOrderLineResponse[] }
 
 const LIST_PATH = '/inpi/work-orders'
 // 필수: 수주 · 예정 시작일
@@ -35,54 +32,71 @@ export function InpiWorkOrderCreatePage() {
     note: '',
   })
 
-  const [orders, setOrders] = useState<FiberOrderRow[]>([])
+  /** 작업지시가 아직 배정되지 않은 수주 옵션 */
+  const [orders, setOrders] = useState<FiberSalesOrderOptionResponse[]>([])
   const [userOptions, setUserOptions] = useState<UserOptionResponse[]>([])
-  /** 이미 유효한 작업지시가 있는 수주 (orderCode → workId). 수주 1건당 작업지시 1개 */
-  const [assignedMap, setAssignedMap] = useState<Record<string, string>>({})
+  /** 선택한 수주의 상세 (납기·투입량·제품별 배분 표시용) */
+  const [orderDetail, setOrderDetail] = useState<FiberSalesOrderDetailResponse | null>(null)
+  const [isDetailLoading, setIsDetailLoading] = useState(false)
 
   const orderSelectRef = useRef<HTMLButtonElement>(null)
   const workDateRef = useRef<HTMLInputElement>(null)
 
+  // 미배정 수주 옵션 + 담당자 옵션 조회
   useEffect(() => {
     let ignore = false
-    Promise.allSettled([
-      FiberSalesOrderApi.getList({ page: 0, size: 200, sort: 'orderDate,desc' }),
-      FiberWorkOrderApi.getList({ page: 0, size: 500 }),
-      UserApi.getOptions(),
-    ]).then(([orderRes, woRes, userRes]) => {
-      if (ignore) return
-      if (orderRes.status === 'fulfilled') {
-        setOrders((orderRes.value.data?.content ?? []).filter((o) => !CLOSED_ORDER_STATUSES.includes(o.status)))
-      } else {
-        console.error('섬유 수주 조회 실패:', orderRes.reason)
-        window.alert(getErrorMessage(orderRes.reason, '수주 목록을 불러오지 못했습니다.'))
-      }
-      if (woRes.status === 'fulfilled') {
-        const map: Record<string, string> = {}
-        ;(woRes.value.data?.content ?? [])
-          .filter((wo) => wo.status !== 'CANCELLED')
-          .forEach((wo) => {
-            map[wo.orderCode] = wo.workId
-          })
-        setAssignedMap(map)
-      }
-      if (userRes.status === 'fulfilled') setUserOptions(userRes.value.data ?? [])
-    })
+    Promise.allSettled([FiberSalesOrderApi.getOptions({ unassignedOnly: true }), UserApi.getOptions()]).then(
+      ([orderRes, userRes]) => {
+        if (ignore) return
+        if (orderRes.status === 'fulfilled') {
+          setOrders((orderRes.value.data ?? []).filter((o) => !CLOSED_ORDER_STATUSES.includes(o.status)))
+        } else {
+          console.error('섬유 수주 옵션 조회 실패:', orderRes.reason)
+          window.alert(getErrorMessage(orderRes.reason, '수주 목록을 불러오지 못했습니다.'))
+        }
+        if (userRes.status === 'fulfilled') setUserOptions(userRes.value.data ?? [])
+      },
+    )
     return () => {
       ignore = true
     }
   }, [])
+
+  // 수주 선택 시 상세 조회 (옵션 응답에는 납기·수량·배분이 없음)
+  useEffect(() => {
+    if (!form.orderCode) {
+      setOrderDetail(null)
+      setIsDetailLoading(false)
+      return
+    }
+    let ignore = false
+    setOrderDetail(null)
+    setIsDetailLoading(true)
+    FiberSalesOrderApi.getDetail(form.orderCode)
+      .then((res) => {
+        if (!ignore) setOrderDetail(res.data ?? null)
+      })
+      .catch((error) => {
+        if (ignore) return
+        console.error('섬유 수주 상세 조회 실패:', error)
+        window.alert(getErrorMessage(error, '수주 상세를 불러오지 못했습니다.'))
+      })
+      .finally(() => {
+        if (!ignore) setIsDetailLoading(false)
+      })
+    return () => {
+      ignore = true
+    }
+  }, [form.orderCode])
 
   const orderSelectOptions = useMemo<SelectBoxOption[]>(
     () =>
       orders.map((order) => ({
         value: order.orderCode,
         label: `${order.orderCode} · ${order.bpNm ?? '-'}`,
-        description: assignedMap[order.orderCode]
-          ? `작업지시 있음 (${assignedMap[order.orderCode]})`
-          : `${order.rawItemNm ?? order.rawItemCode ?? '-'} ${fmtKg(order.requestInputQty)}kg${order.dueDate ? ` · 납기 ${order.dueDate}` : ''}`,
+        description: order.rawItemNm ?? order.rawItemCode ?? '-',
       })),
-    [orders, assignedMap],
+    [orders],
   )
 
   const managerSelectOptions = useMemo<SelectBoxOption[]>(
@@ -93,15 +107,15 @@ export function InpiWorkOrderCreatePage() {
     [userOptions],
   )
 
-  const selectedOrder = orders.find((o) => o.orderCode === form.orderCode) ?? null
+  const selectedOption = orders.find((o) => o.orderCode === form.orderCode) ?? null
   const selectedManager = userOptions.find((u) => u.userId === form.managerId)
 
+  // 상세가 오기 전에는 옵션 정보로 먼저 보여준다
+  const bpNm = orderDetail?.bpNm ?? selectedOption?.bpNm ?? ''
+  const rawItemNm = orderDetail?.rawItemNm ?? selectedOption?.rawItemNm ?? orderDetail?.rawItemCode ?? selectedOption?.rawItemCode ?? ''
+  const detailLines = orderDetail?.lines ?? []
+
   const handleOrderChange = (orderCode: string) => {
-    const dup = assignedMap[orderCode]
-    if (dup) {
-      window.alert(`이 수주에는 이미 작업지시(${dup})가 있습니다. 섬유 작업지시는 수주 1건당 1개입니다.`)
-      return
-    }
     setForm((prev) => ({ ...prev, orderCode }))
   }
 
@@ -149,12 +163,12 @@ export function InpiWorkOrderCreatePage() {
   }
 
   const summaryRows: { label: string; value: string }[] = [
-    { label: '거래처', value: selectedOrder?.bpNm ?? '' },
-    { label: '수주', value: selectedOrder?.orderCode ?? '' },
+    { label: '거래처', value: bpNm },
+    { label: '수주', value: selectedOption?.orderCode ?? '' },
     {
       label: '원물',
-      value: selectedOrder
-        ? `${selectedOrder.rawItemNm ?? selectedOrder.rawItemCode ?? ''} ${fmtKg(selectedOrder.requestInputQty)}kg`
+      value: selectedOption
+        ? `${rawItemNm} ${orderDetail ? `${fmtKg(orderDetail.requestInputQty)}kg` : ''}`.trim()
         : '',
     },
     { label: '시작일', value: form.workDate },
@@ -179,8 +193,9 @@ export function InpiWorkOrderCreatePage() {
                 <div>
                   <h2 className="formCardTitle" id="fwo-sec-order">수주</h2>
                   <p className="formCardDesc">
-                    작업할 거래처 수주를 고릅니다. 섬유동은 임가공이라 수주 1건당 작업지시는 1개입니다(취소한 건 제외).
-                    제품·원물 LOT·수량은 여기서 정하지 않고, 작업하면서 현장 PC에서 실적 줄로 남깁니다.
+                    작업할 거래처 수주를 고릅니다. 섬유동은 임가공이라 수주 1건당 작업지시는 1개이며, 아직 작업지시가 없는
+                    미배정 수주만 표시됩니다. 제품·원물 LOT·수량은 여기서 정하지 않고, 작업하면서 현장 PC에서 실적 줄로
+                    남깁니다.
                   </p>
                 </div>
               </div>
@@ -202,32 +217,37 @@ export function InpiWorkOrderCreatePage() {
                     invalid={isInvalid('orderCode')}
                     onChange={handleOrderChange}
                   />
-                  {Object.keys(assignedMap).length > 0 && (
-                    <span className="fwo-sub">작업지시가 이미 있는 수주는 고를 수 없습니다(수주 1건당 1개).</span>
-                  )}
+                  {orders.length === 0 && <span className="fwo-sub">작업지시를 등록할 수 있는 미배정 수주가 없습니다.</span>}
                 </div>
               </div>
 
-              {selectedOrder && (
+              {selectedOption && (
                 <dl className="fwo-readGrid" style={{ marginTop: 16 }}>
-                  <div><dt>거래처</dt><dd>{selectedOrder.bpNm ?? '-'}</dd></div>
-                  <div><dt>투입원료</dt><dd>{selectedOrder.rawItemNm ?? selectedOrder.rawItemCode ?? '-'}</dd></div>
-                  <div><dt>납기</dt><dd>{selectedOrder.dueDate ?? '-'}</dd></div>
-                  <div><dt>수주 원물</dt><dd>{fmtKg(selectedOrder.requestInputQty)} kg</dd></div>
+                  <div><dt>거래처</dt><dd>{bpNm || '-'}</dd></div>
+                  <div><dt>투입원료</dt><dd>{rawItemNm || '-'}</dd></div>
+                  <div><dt>납기</dt><dd>{isDetailLoading ? '불러오는 중...' : orderDetail?.dueDate ?? '-'}</dd></div>
+                  <div>
+                    <dt>수주 원물</dt>
+                    <dd>
+                      {isDetailLoading ? '불러오는 중...' : orderDetail ? `${fmtKg(orderDetail.requestInputQty)} kg` : '-'}
+                    </dd>
+                  </div>
                   <div className="is-wide">
                     <dt>제품별 배분 (수주에서 가져옴)</dt>
                     <dd>
-                      {(selectedOrder.lines ?? []).length > 0
-                        ? (selectedOrder.lines ?? [])
-                            .map(
-                              (line) =>
-                                `${line.productItemNm || line.productItemCode} ${fmtKg(line.allocatedInputQty)}kg (${calcPct(
-                                  line.allocatedInputQty,
-                                  selectedOrder.requestInputQty,
-                                )}%)`,
-                            )
-                            .join(' / ')
-                        : '-'}
+                      {isDetailLoading
+                        ? '불러오는 중...'
+                        : detailLines.length > 0 && orderDetail
+                          ? detailLines
+                              .map(
+                                (line) =>
+                                  `${line.productItemNm || line.productItemCode} ${fmtKg(line.allocatedInputQty)}kg (${calcPct(
+                                    line.allocatedInputQty,
+                                    orderDetail.requestInputQty,
+                                  )}%)`,
+                              )
+                              .join(' / ')
+                          : '-'}
                     </dd>
                   </div>
                 </dl>
@@ -323,7 +343,7 @@ export function InpiWorkOrderCreatePage() {
             </dl>
 
             <div className="formActions">
-              <button type="submit" className="primaryButton" disabled={isSubmitting}>
+              <button type="submit" className="primaryButton" disabled={isSubmitting || isDetailLoading}>
                 {isSubmitting ? '등록 중...' : '등록'}
               </button>
               <button type="button" className="ghostButton" onClick={handleCancel} disabled={isSubmitting}>
