@@ -6,7 +6,7 @@
   --chart-5: #727c94; /* 슬레이트 */
   --chart-6: #8d97af; /* 연한 슬레이트 */
 }
- 
+
 [data-theme="dark"] {
   --chart-1: #455ddc;
   --chart-2: #43d1a7;
@@ -17,143 +17,96 @@
 }
 
 /* ================================
-   REALTIME
+   ACCESS LOG TABLE
 ================================ */
-.accessSwiperWrap {
-  position: relative;
+.accessUser {
   display: flex;
   align-items: center;
   gap: 10px;
-  overflow: hidden;
 }
 
-.accessSwiper {
-  flex: 1;
-  min-width: 0;
-}
-
-.accessSwiperBtn {
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+.accessAvatar {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-}
-
-.accessSwiperBtn:hover {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(87, 211, 161, 0.3);
-}
-
-.accessItem {
-  flex: 1;
-}
-
-.accessItem .imgBox {
-  width: 100%;
-  height: 363px;
-  aspect-ratio: 1 / 1;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 10px;
-}
-
-.accessItem .imgBox img {
-  width: 100%;
-  height: 100%;
-  display: block;
   object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
 }
 
-.accessInfoBox {
-  padding: 12px 4px 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.accessInfoName {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.accessInfoLabel {
-  font-size: 10px;
+.accessUser strong {
+  font-size: 14px;
   font-weight: 600;
-  color: #fff;
-  background: var(--primary);
-  padding: 2px 7px;
-  border-radius: 4px;
-  letter-spacing: 0.02em;
-  flex-shrink: 0;
-}
-
-.accessInfoName strong {
-  font-size: 15px;
-  font-weight: 700;
   color: var(--text-heading);
-  letter-spacing: -0.3px;
+  letter-spacing: -0.2px;
 }
 
-.accessInfoMeta {
-  display: flex;
+.accessTime {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+/* 구분: 점 + 텍스트 */
+.accessType {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
-  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-body);
 }
 
-.accessInfoDot {
-  width: 3px;
-  height: 3px;
+.accessType::before {
+  content: "";
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: var(--border);
-  flex-shrink: 0;
+  background: var(--chart-2);
 }
 
-.accessSwiperBtnBox {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
+.accessType.out::before {
+  background: var(--chart-5);
+}
+
+/* 상태 배지: 정상은 중립, 미인가만 강조 */
+.accessBadge {
+  display: inline-flex;
   align-items: center;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 10;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
-/* 다크모드 */
-[data-theme="dark"] .accessSwiperBtn {
-  background: var(--bg-card);
-  border-color: var(--border);
+.accessBadge.ok {
+  background: var(--bg-subtle);
   color: var(--text-muted);
+  border: 1px solid var(--border);
 }
 
-[data-theme="dark"] .accessSwiperBtn:hover {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
+.accessBadge.denied {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.25);
 }
 
-[data-theme="dark"] .accessInfoName strong {
-  color: var(--text-heading);
+[data-theme="dark"] .accessBadge.denied {
+  background: rgba(239, 68, 68, 0.16);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.35);
 }
 
-[data-theme="dark"] .accessInfoMeta {
-  color: var(--text-muted);
+/* ================================
+   CCTV GRID
+================================ */
+.cctvGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
 }
 
+/* 반응형은 베이스 규칙 뒤에 와야 덮어쓰기가 정상 동작 */
 @media (max-width: 1180px) {
   .cctvGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -164,15 +117,6 @@
   .cctvGrid {
     grid-template-columns: 1fr;
   }
-}
-
-/* ================================
-   CCTV GRID
-================================ */
-.cctvGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
 }
 
 .cctvCard {
@@ -205,11 +149,13 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(0deg,
-      transparent,
-      transparent 2px,
-      rgba(255, 255, 255, 0.015) 2px,
-      rgba(255, 255, 255, 0.015) 4px);
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.015) 2px,
+    rgba(255, 255, 255, 0.015) 4px
+  );
   pointer-events: none;
   z-index: 1;
 }
@@ -371,6 +317,10 @@
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
 }
 
+[data-theme="dark"] .cctvFrame {
+  background: #0a0f1a;
+}
+
 [data-theme="dark"] .infoItem {
   background: var(--bg-subtle);
   border-color: var(--border);
@@ -378,7 +328,6 @@
 
 /* ── 애니메이션 ── */
 @keyframes cctvPulse {
-
   0%,
   100% {
     opacity: 1;
@@ -387,13 +336,4 @@
   50% {
     opacity: 0.3;
   }
-}
-
-[data-theme="dark"] .cctvCard {
-  background: var(--bg-card);
-  border-color: var(--border);
-}
-
-[data-theme="dark"] .cctvFrame {
-  background: #0a0f1a;
 }
