@@ -15,8 +15,12 @@
   }
 }
 
-.inpiPanelActions .ghostButton:disabled {
-  opacity: 0.45;
+.inpiPanelActions .ghostButton:disabled,
+.inpiPanelActions .ghostButton:disabled:hover {
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  opacity: 1;
   cursor: not-allowed;
 }
 
@@ -137,6 +141,30 @@
 }
 
 /* ── 등록 모달 ── */
+/* select·input·textarea 테두리와 높이를 사각 박스로 통일 */
+.inpiFormModal .tableInput {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-body);
+}
+
+.inpiFormModal select.tableInput {
+  height: 42px;
+  padding: 0 14px;
+}
+
+.inpiFormModal .tableInput:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+.inpiFormModal .tableInput:disabled {
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
 /* 전역 label이 grid라 별표가 다음 줄로 내려가지 않게 한 줄로 둔다 */
 .detailField label.inpiRequired {
   display: block;

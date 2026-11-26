@@ -90,7 +90,8 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
   const receivedAtRef = useRef<HTMLInputElement>(null)
   const noteRef = useRef<HTMLTextAreaElement>(null)
 
-  const [form, setForm] = useState<FormState>(() => initialForm(receipt))
+  const [initialState] = useState<FormState>(() => initialForm(receipt))
+  const [form, setForm] = useState<FormState>(initialState)
   const [orderOptions, setOrderOptions] = useState<FiberSalesOrderOptionResponse[]>([])
   const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(() =>
     receipt?.orderCode ? { state: 'loading' } : null,
@@ -121,19 +122,29 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
     [],
   )
 
-  const handleClose = () => {
+  const isDirty =
+    form.bpCode !== initialState.bpCode ||
+    form.orderCode !== initialState.orderCode ||
+    form.rawItemCode !== initialState.rawItemCode ||
+    form.receiptQty !== initialState.receiptQty ||
+    form.storId !== initialState.storId ||
+    form.receivedAt !== initialState.receivedAt ||
+    form.note !== initialState.note
+
+  const handleClose = useCallback(() => {
     if (isSaving) return
+    if (isDirty && !window.confirm('작성 중인 내용이 사라집니다. 닫으시겠습니까?')) return
     onClose()
-  }
+  }, [isSaving, isDirty, onClose])
 
   useEffect(() => {
     if (isSaving) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape') handleClose()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [isSaving, onClose])
+  }, [isSaving, handleClose])
 
   const update = (patch: Partial<FormState>) => setForm((prev) => ({ ...prev, ...patch }))
 
@@ -339,7 +350,7 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
   return (
     <>
       <div className="modalOverlay" onClick={handleClose} />
-      <form className="detailModal" role="dialog" aria-modal="true" aria-labelledby={titleId} onSubmit={handleSubmit} noValidate>
+      <form className="detailModal inpiFormModal" role="dialog" aria-modal="true" aria-labelledby={titleId} onSubmit={handleSubmit} noValidate>
         <div className="detailModalHeader">
           <div>
             <h3 id={titleId}>{receipt ? `인피 입고 상세 · ${receipt.receiptLotCode}` : '인피 입고 등록'}</h3>
