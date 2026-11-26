@@ -2156,6 +2156,60 @@ textarea.tableInput {
   font-size: 15px;
 }
 
+/* ── 상세 모달: 아이콘 라벨 리스트 ── */
+.detailRows {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detailRow {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  min-height: 48px;
+}
+
+.detailRowLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.detailRowIcon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  stroke-width: 1.6;
+}
+
+.detailRowValue {
+  min-width: 0;
+  color: var(--text-heading);
+  font-size: 14px;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+/* 수정 모드 인풋은 행 높이에 맞춰 슬림하게 */
+.detailRowValue input.tableInput {
+  height: 36px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+@media (max-width: 600px) {
+  .detailRow {
+    grid-template-columns: 110px minmax(0, 1fr);
+    gap: 12px;
+  }
+}
+
 .detailModalFooter {
   display: flex;
   justify-content: space-between;
