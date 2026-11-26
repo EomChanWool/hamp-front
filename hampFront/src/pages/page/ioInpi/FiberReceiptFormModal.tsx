@@ -84,6 +84,10 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
   const isEdit = receipt !== undefined
   const titleId = useId()
   const fieldId = useId()
+  const bpRef = useRef<HTMLSelectElement>(null)
+  const itemRef = useRef<HTMLSelectElement>(null)
+  const qtyRef = useRef<HTMLInputElement>(null)
+  const receivedAtRef = useRef<HTMLInputElement>(null)
   const noteRef = useRef<HTMLTextAreaElement>(null)
 
   const [form, setForm] = useState<FormState>(() => initialForm(receipt))
@@ -101,6 +105,14 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
     mountedRef.current = true
     return () => {
       mountedRef.current = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const prevFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    bpRef.current?.focus()
+    return () => {
+      if (prevFocused?.isConnected) prevFocused.focus()
     }
   }, [])
 
@@ -276,11 +288,16 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
     event.preventDefault()
     if (isSaving || isOrderLoading) return
 
-    if (!form.bpCode) return window.alert('거래처를 선택해주세요.')
-    if (!form.rawItemCode) return window.alert('원료 품목을 선택해주세요.')
-    if (form.receiptQty === null) return window.alert('입고 중량을 입력해주세요.')
-    if (!(form.receiptQty > 0)) return window.alert('입고 중량은 0보다 커야 합니다.')
-    if (!form.receivedAt) return window.alert('입고일시를 입력해주세요.')
+    const fail = (message: string, target: HTMLElement | null) => {
+      window.alert(message)
+      target?.focus()
+    }
+
+    if (!form.bpCode) return fail('거래처를 선택해주세요.', bpRef.current)
+    if (!form.rawItemCode) return fail('원료 품목을 선택해주세요.', itemRef.current)
+    if (form.receiptQty === null) return fail('입고 중량을 입력해주세요.', qtyRef.current)
+    if (!(form.receiptQty > 0)) return fail('입고 중량은 0보다 커야 합니다.', qtyRef.current)
+    if (!form.receivedAt) return fail('입고일시를 입력해주세요.', receivedAtRef.current)
     if (!confirmPrintedChange()) return
     if (!confirmOverReceipt(form.receiptQty)) return
 
@@ -368,7 +385,13 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
             <label htmlFor={id('bp')} className="inpiRequired">
               거래처
             </label>
-            <select id={id('bp')} className="tableInput" value={form.bpCode} onChange={(e) => handleBpChange(e.target.value)}>
+            <select
+              id={id('bp')}
+              ref={bpRef}
+              className="tableInput"
+              value={form.bpCode}
+              onChange={(e) => handleBpChange(e.target.value)}
+            >
               <option value="">거래처 선택</option>
               {bpSelectOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -402,6 +425,7 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
             </label>
             <select
               id={id('item')}
+              ref={itemRef}
               className="tableInput"
               value={form.rawItemCode}
               disabled={!!form.orderCode}
@@ -422,6 +446,7 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
             </label>
             <NumberInput
               id={id('qty')}
+              ref={qtyRef}
               className="tableInput"
               placeholder="0.00"
               value={form.receiptQty}
@@ -464,6 +489,7 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
             </label>
             <input
               id={id('receivedAt')}
+              ref={receivedAtRef}
               className="tableInput"
               type="datetime-local"
               value={form.receivedAt}
