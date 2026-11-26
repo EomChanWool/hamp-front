@@ -2,441 +2,195 @@
    ROUTING SECTION
 ================================ */
 .routingSection {
+  --rt-accent: var(--dl-accent, var(--perm-solid, #00a6a6));
+  --rt-in: #2563eb;
+  --rt-out: #c2410c;
+  --rt-danger: #dc2626;
+
   grid-column: 1 / -1;
-  margin-top: 16px;
+  margin-top: 24px;
   padding-top: 24px;
   border-top: 1px solid var(--border);
 }
 
-.routingHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.routingEmptyBox {
-  padding: 28px;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 17px;
-  background: var(--bg-subtle);
-  border-radius: 12px;
-  border: 1px solid var(--border);
-}
-
-.routingList {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.routingItem {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: var(--bg-card, #ffffff);
-  padding: 14px 18px;
-  border: 1px solid var(--border, #e5e7eb);
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
-  /* 뱃지+정보+select가 한 줄에 다 안 들어가는 좁은 화면에서
-     줄바꿈되도록 허용 (기존엔 nowrap 상태라 그냥 넘쳤음) */
-  flex-wrap: wrap;
-}
-
-.routingItem:focus {
-  outline: none;
-  border: 2px solid #00a6a6;
-  background: var(--bg-card);
-  box-shadow: 0 0 8px rgba(0, 166, 166, 0.25);
-  z-index: 5;
-}
-
-.routingItem:focus-visible {
-  outline: none;
-  border-color: #00a6a6;
-  background: var(--bg-card);
-  box-shadow: 0 0 0 2px rgba(0, 166, 166, 0.15);
-}
-
-.routingItem.keyboardActive {
-  border: 2px dashed #00a6a6 !important;
-  background: var(--bg-card);
-  box-shadow: 0 8px 20px rgba(0, 166, 166, 0.2);
-  transform: translateY(-2px);
-  z-index: 10;
-  animation: pulseBorder 1.5s infinite;
-}
-
-@keyframes pulseBorder {
-  0% {
-    border-color: #00a6a6;
-  }
-  50% {
-    border-color: #5eead4;
-  }
-  100% {
-    border-color: #00a6a6;
-  }
-}
-
-.routingSelect {
-  width: 130px;
-  flex-shrink: 0;
-  height: 42px !important;
-  font-size: 14px !important;
-  padding: 0 10px !important;
-}
-
-.subtitleWrapper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.requiredLabel {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-heading, #14181f);
-}
-
-.required {
-  color: #c0293d;
-}
-
-.routingHeaderRight {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.routingCount {
-  font-size: 14px;
-  color: var(--text-muted, #6b7280);
-  font-weight: 500;
-}
-
-.routingStepWrapper {
-  display: flex;
-  align-items: center;
-  min-width: 50px;
-}
-
-/* STEP 뱃지를 감싸는 컨테이너 (relative 기준점) */
-.routingStepContainer {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-/* 뱃지 위에 완전히 겹쳐서 투명하게 자리 잡을 select */
-.routingStepOverlaySelect {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0; /* 눈에 안 보이게 숨김 */
-  cursor: pointer;
-  z-index: 2; /* 뱃지보다 위에 와서 클릭을 가로챔 */
-}
-
-.routingStepBadge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background-color: #f3f4f6;
-  color: #374151;
-  font-weight: 700;
-  font-size: 12px;
-  border: 1px solid #d1d5db;
-}
-
-.routingStepBadge.final {
-  background-color: #d1fae5;
-  color: #065f46;
-  border: 1px solid #10b981;
-}
-
-.routingStepBadge .stepText {
-  font-size: 9px;
-  line-height: 1;
-  margin-bottom: 2px;
-  opacity: 0.8;
-}
-
-.routingStepBadge .stepNum {
-  line-height: 1;
-}
-
-.routingInfoWrapper {
-  flex: 1;
-  min-width: 160px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.routingCode {
-  font-weight: 600;
-  color: #1d4ed8;
-  font-size: 15px;
-}
-
-.routingName {
-  font-weight: 600;
-  color: var(--text-body, #1f2937);
-  font-size: 15px;
-}
-
-/* ================================
-   TYPE & CATEGORY CARD BUTTON COMPONENT
-================================ */
-.cardButtonGroup {
-  display: flex;
-  gap: 12px;
-  width: 100%;
-  flex-wrap: wrap;
-}
-
-/* 1. '종류' 전용 가로형 아이콘 버튼 스타일 */
-.inlineTypeButton {
-  flex: 1;
-  min-width: 140px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 14px 16px;
-  background-color: var(--bg-card, #ffffff);
-  border: 1px solid var(--border, #d1d5db);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-}
-
-.inlineTypeButton:hover {
-  border-color: #10b981;
-  background-color: var(--bg-subtle, #f9fafb);
-}
-
-.inlineTypeButton.active {
-  border-color: #10b981;
-  background-color: #f0fdf4;
-  box-shadow: 0 0 0 1px #10b981;
-}
-
-.inlineButtonInner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.inlineTypeButton .cardIcon {
-  display: flex;
-  align-items: center;
-  color: #4b5563;
-}
-
-.inlineTypeButton.active .cardIcon {
-  color: #10b981;
-}
-
-.inlineTypeButton .cardText {
-  font-weight: 600;
-  color: var(--text-body, #1f2937);
-  font-size: 15px;
-}
-
-/* 2. '품목구분' 전용 세로형 카드 버튼 스타일 (원료/반제품/완제품) */
-.typeCardButton {
-  flex: 1;
-  min-width: 100px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 14px;
-  background-color: var(--bg-card, #ffffff);
-  border: 1px solid var(--border, #d1d5db);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-}
-
-.typeCardButton:hover {
-  border-color: #10b981;
-  background-color: var(--bg-subtle, #f9fafb);
-}
-
-.typeCardButton.active {
-  border-color: #10b981;
-  background-color: #f0fdf4;
-  box-shadow: 0 0 0 1px #10b981;
-}
-
-.typeCardButton .cardText.main {
-  font-weight: 700;
-  color: var(--text-body, #1f2937);
-  font-size: 15px;
-  line-height: 1.4;
-}
-
-.typeCardButton .cardText.sub {
-  font-size: 13px;
-  color: #6b7280;
-  margin-top: 2px;
-  line-height: 1.2;
-}
-
-/* 공통 비활성화(disabled) 상태 처리 */
-.inlineTypeButton:disabled,
-.typeCardButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-/* 다크모드 대응 */
-[data-theme="dark"] .inlineTypeButton:hover,
-[data-theme="dark"] .typeCardButton:hover {
-  border-color: #10b981;
-  background-color: #334155;
-}
-
-[data-theme="dark"] .inlineTypeButton.active,
-[data-theme="dark"] .typeCardButton.active {
-  border-color: #10b981;
-  background-color: #064e3b;
+[data-theme="dark"] .routingSection {
+  --rt-in: #60a5fa;
+  --rt-out: #fb923c;
+  --rt-danger: #f87171;
 }
 
 /* ========================================================
    공정 라우팅 설정 영역 (신규 품목 등록 / 품목 상세 공용)
 ======================================================== */
 
-/* 헤더 및 안내 문구 */
+/* ── 헤더 ── */
 .routing-header-wrapper {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
-}
-.routing-header-label {
-  font-size: 16px;
-  font-weight: 600;
-}
-.routing-header-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.routing-count-text {
-  font-weight: 500;
-}
-.routing-guide-text {
-  font-size: 13px;
-  color: #6b7280;
   margin-bottom: 12px;
 }
 
-/* 레이아웃 */
+.routing-header-label {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-heading);
+}
+
+.routing-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.routing-count-text {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+/* 안내 문구: 본문 위 정보 박스 */
+.routing-guide-text {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+/* 상세 패널 안의 안내(최종공정/체크박스)는 박스 없이 텍스트만 */
+.routing-form-group .routing-guide-text {
+  margin: 8px 0 0;
+  padding: 0;
+  font-size: 12px;
+  background: none;
+  border: 0;
+}
+
+.routingEmptyBox {
+  padding: 32px 16px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+
+/* ── 레이아웃 ── */
 .routing-layout-grid {
   display: grid;
-  grid-template-columns: 1fr 500px;
+  grid-template-columns: minmax(0, 1fr) 440px;
   gap: 20px;
   align-items: start;
 }
-/* grid 자식이 내용(긴 자재명 등) 때문에 칸을 밀어내며 넘치는 것 방지 */
+
 .routing-layout-grid > * {
   min-width: 0;
 }
+
 .routing-w-100 {
   width: 100%;
 }
 
-/* 좌측: 공정 리스트 박스 */
+/* ── 좌측: 공정 리스트 (수정 모드: 구분선 행) ── */
 .routing-list-container {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 12px;
-  background: #f9fafb;
   max-height: 600px;
   overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 
-/* 개별 아이템 (드래그 앤 드롭) */
 .routing-list-item {
+  position: relative;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 14px;
-  margin-bottom: 8px;
-  border-radius: 6px;
+  gap: 8px 12px;
+  min-height: 52px;
+  margin: 0;
+  padding: 8px 14px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
   cursor: grab;
-  transition: all 0.15s ease;
   user-select: none;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  flex-wrap: wrap;
-  gap: 8px;
+  transition: background-color 0.12s ease;
 }
+
+.routing-list-item:last-child {
+  border-bottom: 0;
+}
+
+.routing-list-item:hover {
+  background: var(--bg-subtle);
+}
+
+/* 선택: 테두리 두께 변화 없이 inset 그림자로 표시 → 행이 흔들리지 않음 */
+.routing-list-item.is-selected {
+  background: color-mix(in srgb, var(--rt-accent) 7%, var(--bg-card));
+  box-shadow: inset 3px 0 0 var(--rt-accent);
+}
+
+.routing-list-item.is-drag-over {
+  background: color-mix(in srgb, var(--rt-accent) 12%, var(--bg-card));
+  box-shadow: inset 0 2px 0 var(--rt-accent);
+}
+
 .routing-list-item.is-dragged {
   opacity: 0.4;
-}
-.routing-list-item.is-drag-over {
-  background: #d1fae5;
-  border: 2px dashed #059669;
-}
-.routing-list-item.is-selected {
-  background: #ecfdf5;
-  border: 2px solid #10b981;
 }
 
 .routing-item-left {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-width: 0;
   flex: 1 1 auto;
+  gap: 10px;
+  min-width: 0;
 }
+
 .routing-drag-handle {
-  color: #9ca3af;
-  font-size: 16px;
-  letter-spacing: 1px;
-  padding: 2px 4px;
-  display: inline-block;
   flex-shrink: 0;
-}
-.routing-drag-handle.is-dragging {
-  cursor: grabbing;
-}
-.routing-drag-handle:not(.is-dragging) {
+  padding: 2px 2px;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--text-muted);
+  opacity: 0.7;
   cursor: grab;
 }
 
-.routing-seq {
-  font-weight: 600;
-  color: #374151;
-  min-width: 24px;
-  flex-shrink: 0;
+.routing-drag-handle.is-dragging {
+  cursor: grabbing;
 }
 
-/* 공정코드 뱃지 래퍼 */
+.routing-seq {
+  flex-shrink: 0;
+  min-width: 22px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
 .routing-code-wrap {
   display: inline-flex;
   align-items: center;
@@ -444,195 +198,271 @@
   white-space: nowrap;
 }
 
-/* 공정명: 남는 공간을 차지하되, 정말 부족할 때만 말줄임 */
-.routing-oper-nm {
+/* 공정코드: 시스템 식별자이므로 보조 정보로 낮춤
+   (Badge 컴포넌트 스타일이 이기면 각 속성에 !important 추가) */
+.routing-code-wrap > * {
+  height: 20px;
+  padding: 0 6px;
+  font-family: 'montserrat', sans-serif;
+  font-size: 11px;
   font-weight: 500;
-  color: #1f2937;
+  letter-spacing: 0;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.routing-oper-nm {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  min-width: 0;
-  flex: 1 1 auto;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-heading);
 }
+
 .routing-item-right {
   display: flex;
   align-items: center;
-  gap: 8px;
   flex-shrink: 0;
+  gap: 8px;
   margin-left: auto;
 }
 
-/* 공정 타입 배지 (일반/최종) */
+/* 공정구분 라벨: 기본 중립 / 최종 계열만 포인트 */
 .routing-type-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
   font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 4px;
   font-weight: 500;
-  background: #f3f4f6;
-  color: #4b5563;
   white-space: nowrap;
-}
-.routing-type-badge.is-final {
-  background: #d1fae5;
-  color: #065f46;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
 }
 
-/* 이동 화살표 버튼 */
+.routing-type-badge.is-final {
+  font-weight: 600;
+  color: color-mix(in srgb, var(--rt-accent) 70%, var(--text-heading));
+  background: color-mix(in srgb, var(--rt-accent) 9%, transparent);
+  border-color: color-mix(in srgb, var(--rt-accent) 35%, var(--border));
+}
+
+/* 이동 화살표 */
 .routing-arrow-group {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
+
 .routing-arrow-btn {
-  border: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 20px;
+  padding: 0;
+  color: var(--text-muted);
   background: transparent;
-  cursor: pointer;
-  padding: 4px;
+  border: 0;
   border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.15s ease;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
 }
+
 .routing-arrow-btn:hover:not(:disabled) {
-  background-color: #e6f4ea;
+  color: var(--text-heading);
+  background: color-mix(in srgb, var(--text-muted) 16%, transparent);
 }
+
+.routing-arrow-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.routing-arrow-btn:focus-visible,
+.routing-move-btn:focus-visible,
+.routing-mtrl-add-btn:focus-visible,
+.routing-mtrl-remove:focus-visible,
+.routing-delete-btn:focus-visible {
+  outline: 2px solid var(--rt-accent);
+  outline-offset: 2px;
+}
+
 .routing-arrow-icon {
-  width: 16px;
-  height: 16px;
-  color: #374151;
+  width: 14px;
+  height: 14px;
 }
 
-/* 우측: 상세 편집 패널 */
+/* ── 우측: 상세 편집 패널 ── */
 .routing-detail-panel {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 20px;
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   min-width: 0;
-}
-.routing-empty-panel {
-  text-align: center;
-  color: #9ca3af;
-  padding: 40px 0;
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 
-/* 상세 패널 내부 UI */
+.routing-empty-panel {
+  padding: 48px 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* STEP 카드: 중립 배경 + 번호 블록만 포인트 */
 .routing-step-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: #f0fdf4;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  border: 1px solid #bbf7d0;
   flex-wrap: wrap;
-}
-.routing-step-badge {
-  background: #10b981;
-  color: #fff;
-  padding: 8px 12px;
-  border-radius: 6px;
-  text-align: center;
-  font-weight: bold;
-}
-.routing-step-badge-title {
-  font-size: 10px;
-  opacity: 0.9;
-}
-.routing-step-badge-num {
-  font-size: 16px;
-}
-.routing-step-info-nm {
-  font-size: 16px;
-  font-weight: bold;
-  color: #065f46;
-}
-.routing-step-info-code {
-  font-size: 12px;
-  color: #047857;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 
-/* 빠른 이동 버튼 그룹 */
+.routing-step-badge {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  text-align: center;
+  color: #fff;
+  background: var(--rt-accent);
+  border-radius: 8px;
+}
+
+.routing-step-badge-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  opacity: 0.9;
+}
+
+.routing-step-badge-num {
+  margin-top: 2px;
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.routing-step-info-nm {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-heading);
+}
+
+.routing-step-info-code {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* 앞으로 / 뒤로 */
 .routing-move-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 8px;
+  margin-bottom: 16px;
 }
+
 .routing-move-btn {
-  padding: 8px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: #fff;
-  cursor: pointer;
-  font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
+  height: 34px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-body);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
 }
+
 .routing-move-btn:hover:not(:disabled) {
-  background: #f9fafb;
+  background: var(--bg-subtle);
+}
+
+.routing-move-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* 폼 요소 */
-/* 공정명 / 공정구분을 한 줄(2열)로 배치하는 행 */
 .routing-form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
+
 .routing-form-row > * {
   min-width: 0;
-} /* 인풋이 칸을 밀어내지 않도록 */
+}
+
 .routing-form-group {
   margin-bottom: 16px;
 }
+
 .routing-form-row .routing-form-group {
   margin-bottom: 0;
 }
+
 .routing-label {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
   margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
 }
+
 .routing-input-readonly {
-  background-color: #f3f4f6;
+  color: var(--text-muted);
+  background-color: var(--bg-subtle);
   cursor: not-allowed;
 }
+
 .routing-select {
   width: 100%;
   padding: 8px;
-  background: #fff;
 }
 
 /* ========================================================
    공정별 투입(IN) / 산출(OUT) 자재 영역
 ======================================================== */
-
-/* 섹션 전체 (위쪽 구분선 + 아래 여백) */
 .routing-mtrl-section {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   padding-top: 16px;
-  border-top: 1px solid var(--border, #e5e7eb);
+  border-top: 1px solid var(--border);
 }
+
 .routing-mtrl-title {
+  margin-bottom: 12px;
   font-size: 14px;
   font-weight: 700;
-  color: var(--text-heading, #111827);
-  margin-bottom: 12px;
+  color: var(--text-heading);
 }
 
-/* IN / OUT 한 묶음 */
 .routing-mtrl-group + .routing-mtrl-group {
   margin-top: 16px;
 }
+
 .routing-mtrl-group-header {
   display: flex;
   justify-content: space-between;
@@ -640,131 +470,152 @@
   gap: 8px;
   margin-bottom: 8px;
 }
+
+/* IN / OUT 구분은 이 라벨과 코드 칩에서만 색 사용 */
 .routing-mtrl-group-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
   font-weight: 700;
 }
-.routing-mtrl-group-title.is-in {
-  color: #16a34a;
-} /* 투입: 초록 */
-.routing-mtrl-group-title.is-out {
-  color: #dc2626;
-} /* 산출: 빨강 */
 
-/* 점선 알약 버튼 (miniButton primary 와 같은 초록 계열) */
+.routing-mtrl-group-title::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.routing-mtrl-group-title.is-in {
+  color: var(--rt-in);
+}
+
+.routing-mtrl-group-title.is-out {
+  color: var(--rt-out);
+}
+
+/* 추가 버튼: 일반 아웃라인 버튼 */
 .routing-mtrl-add-btn {
-  padding: 4px 12px;
+  height: 26px;
+  padding: 0 10px;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
-  border: 1px dashed #10b981;
-  border-radius: 999px;
-  background: #f0fdf4;
-  color: #047857;
+  color: var(--text-body);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
 }
+
 .routing-mtrl-add-btn:hover:not(:disabled) {
-  background: #d1fae5;
+  background: var(--bg-subtle);
+  border-color: var(--text-muted);
 }
+
 .routing-mtrl-add-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* 품목 선택 select ([+ 추가] 눌렀을 때 노출) */
 .routing-mtrl-picker {
   width: 100%;
   margin-bottom: 8px;
 }
 
-/* 자재 목록 - 약 3~4행 높이를 넘으면 스크롤 (높이는 필요에 맞게 조정) */
 .routing-mtrl-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
   max-height: 176px;
-  overflow-y: auto;
   padding-right: 2px;
+  overflow-y: auto;
   scrollbar-width: thin;
 }
 
-/* 자재 1행: [품목코드] 품목명 단위 ............ 삭제 */
 .routing-mtrl-item {
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
   padding: 8px 12px;
-  border: 1px solid var(--border, #e5e7eb);
-  border-radius: 8px;
-  background: var(--bg-subtle, #f9fafb);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
 }
+
 .routing-mtrl-item > :first-child {
   flex-shrink: 0;
-} /* 코드 칩은 줄어들지 않게 */
+}
 
-/* 품목코드 칩 (라이트: IN 파랑 / OUT 초록 톤) */
 .routing-mtrl-code {
-  padding: 2px 8px;
-  border: 1px solid transparent;
-  border-radius: 6px;
+  padding: 1px 7px;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
+  border: 0;
+  border-radius: 4px;
 }
+
 .routing-mtrl-code.is-in {
-  background: #eff6ff;
-  color: #16a34a;
-  border-color: rgba(22, 163, 74, 0.15);
+  color: var(--rt-in);
+  background: color-mix(in srgb, var(--rt-in) 11%, transparent);
 }
+
 .routing-mtrl-code.is-out {
-  background: #ecfdf5;
-  color: #dc2626;
-  border-color: rgba(239, 68, 68, 0.12);
+  color: var(--rt-out);
+  background: color-mix(in srgb, var(--rt-out) 11%, transparent);
 }
 
 .routing-mtrl-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-body, #1f2937);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.routing-mtrl-unit {
-  font-size: 12px;
-  color: var(--text-muted, #6b7280);
-  flex-shrink: 0;
-}
-.routing-mtrl-remove {
-  margin-left: auto;
-  flex-shrink: 0;
-  padding: 2px 4px;
-  border: none;
-  background: transparent;
-  color: #dc2626;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
+  color: var(--text-body);
+}
+
+.routing-mtrl-unit {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* 삭제 계열만 빨강 (hover 때 강조) */
+.routing-mtrl-remove {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 2px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
   cursor: pointer;
 }
+
 .routing-mtrl-remove:hover:not(:disabled) {
-  text-decoration: underline;
+  color: var(--rt-danger);
 }
+
 .routing-mtrl-remove:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* 자재가 없을 때 */
 .routing-mtrl-empty {
   padding: 12px 0;
   text-align: center;
   font-size: 13px;
-  color: #9ca3af;
-  border: 1px dashed var(--border, #e5e7eb);
-  border-radius: 8px;
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
 }
 
 .routing-mtrl-yield {
@@ -772,116 +623,214 @@
   align-items: center;
   gap: 4px;
 }
+
 .routing-mtrl-yield-input {
   width: 72px;
   text-align: right;
 }
+
 .routing-mtrl-yield-unit {
   font-size: 12px;
-  opacity: 0.7;
+  color: var(--text-muted);
 }
+
 .routing-mtrl-yield-error {
   margin: 2px 0 6px;
   font-size: 12px;
-  color: #dc2626;
+  color: var(--rt-danger);
 }
 
-/* --------------------------------------------------------
-  읽기 모드: 공정 정보 옆(가운데)에 IN/OUT 자재 칩 나열
-   한 줄 구성: [순번 코드 공정명] [IN 칩.. OUT 칩..] ........ [공정구분]
--------------------------------------------------------- */
-.routing-list-item.is-readonly {
-  cursor: default;
-  flex-wrap: nowrap;
-} /* 읽기 전용이라 grab 커서 제거, 웹에서는 한 줄 */
-
-/* 공정 정보 영역(순번 + 코드 뱃지 + 공정명) */
-.routing-list-item.is-readonly .routing-item-left {
-  flex: 0 0 clamp(320px, 40%, 520px);
-}
-
+/* 읽기 모드 자재 요약 (카드 하단에 배치됨) */
 .routing-mtrl-summary {
-  flex: 1 1 0;
-  min-width: 0;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 18px;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 }
+
 .routing-mtrl-summary-group {
-  display: inline-flex;
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
 }
+
 .routing-mtrl-summary-tag {
-  min-width: 28px;
-  font-size: 12px;
+  width: 37px;
+  height: 23px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
   font-weight: 700;
-}
-.routing-mtrl-summary-tag.is-in {
-  color: #16a34a;
-}
-.routing-mtrl-summary-tag.is-out {
-  color: #dc2626;
+  font-family: 'montserrat', sans-serif;
+  letter-spacing: 0.04em;
+  text-align: center;
+  border-radius: 4px;
 }
 
-/* 자재 칩 (품목명 + 단위) */
+.routing-mtrl-summary-tag.is-in {
+  color: var(--rt-in);
+  background: color-mix(in srgb, var(--rt-in) 11%, transparent);
+}
+
+.routing-mtrl-summary-tag.is-out {
+  color: var(--rt-out);
+  background: color-mix(in srgb, var(--rt-out) 11%, transparent);
+}
+
+/* 자재 칩: 구분은 앞의 IN/OUT 태그가 하므로 칩 자체는 중립 */
 .routing-mtrl-chip {
   display: inline-flex;
   align-items: baseline;
   gap: 4px;
-  padding: 2px 10px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 2px 8px;
+  font-size: 12.5px;
+  font-weight: 500;
   white-space: nowrap;
+  color: var(--text-body);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 4px;
 }
+
 .routing-mtrl-chip small {
   font-size: 11px;
   font-weight: 500;
-  opacity: 0.75;
-}
-.routing-mtrl-chip.is-in {
-  background: rgba(22, 163, 74, 0.15);
-  color: #16a34a;
-  border-color: rgba(22, 163, 74, 0.15);
-}
-.routing-mtrl-chip.is-out {
-  background: rgba(239, 68, 68, 0.12);
-  color: #dc2626;
-  border-color: rgba(239, 68, 68, 0.12);
+  font-family: 'montserrat', sans-serif;
+  color: var(--text-muted);
 }
 
-/* 삭제 버튼 */
+/* 이 공정 제외 */
 .routing-delete-btn {
   width: 100%;
-  padding: 10px;
-  background: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #fca5a5;
-  border-radius: 6px;
+  height: 36px;
+  font-size: 13px;
   font-weight: 600;
+  color: var(--rt-danger);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--rt-danger) 35%, var(--border));
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.12s ease;
 }
+
 .routing-delete-btn:hover:not(:disabled) {
-  background: #fecaca;
+  background: color-mix(in srgb, var(--rt-danger) 8%, var(--bg-card));
+}
+
+.routing-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* --------------------------------------------------------
+   읽기 모드: 공정 카드 그리드
+   (컨테이너 안에 .is-readonly 항목만 있을 때 적용 → 수정 모드는 영향 없음)
+
+   ┌──────────────────────────┐
+   │ 01                [일반공정] │
+   │ 크기선별(이물제거)           │
+   │ OPER_SIZE_SORT           │
+   │ ───────────────────────  │
+   │ IN  [헴프 탈각 씨드 KG]     │
+   │ OUT [헴프씨드(완제품) 80%]  │
+   └──────────────────────────┘
+-------------------------------------------------------- */
+.routing-list-container:has(> .is-readonly) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  max-height: none;
+  overflow: visible;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.routing-list-item.is-readonly {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "seq  .    type"
+    "nm   nm   nm"
+    "code code code"
+    "mat  mat  mat";
+  align-content: start;
+  align-items: center;
+  gap: 0;
+  min-height: 0;
+  padding: 14px 16px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: default;
+}
+
+.routing-list-item.is-readonly:hover {
+  background: var(--bg-card);
+}
+
+/* 최종 계열 카드는 테두리만 살짝 강조 */
+.routing-list-item.is-readonly:has(.routing-type-badge.is-final) {
+  border-color: color-mix(in srgb, var(--rt-accent) 40%, var(--border));
+}
+
+/* left 래퍼를 풀어서 seq / code / name을 카드 grid에 직접 배치 */
+.routing-list-item.is-readonly .routing-item-left {
+  display: contents;
+}
+
+.routing-list-item.is-readonly .routing-seq {
+  grid-area: seq;
+  font-size: 13px;
+  font-family: 'montserrat', sans-serif;
+}
+
+.routing-list-item.is-readonly .routing-item-right {
+  grid-area: type;
+  margin-left: 0;
+}
+
+.routing-list-item.is-readonly .routing-oper-nm {
+  grid-area: nm;
+  margin-top: 12px;
+  white-space: normal;
+  overflow: visible;
+}
+
+.routing-list-item.is-readonly .routing-code-wrap {
+  grid-area: code;
+  justify-self: start;
+  margin-top: 4px;
+}
+
+/* 자재 영역: 카드 하단, 구분선으로 분리 */
+.routing-list-item.is-readonly .routing-mtrl-summary,
+.routing-list-item.is-readonly:not(:has(.routing-mtrl-summary))::after {
+  grid-area: mat;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* 자재 없는 공정: 빈 칸 대신 안내 문구 (누락처럼 보이지 않게) */
+.routing-list-item.is-readonly:not(:has(.routing-mtrl-summary))::after {
+  content: "투입·산출 자재 없음";
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 /* ========================================================
    반응형
-   1024 : 태블릿 — 우측 500px 고정 패널을 비율 기반으로 전환
-   860  : 좌우 2단 → 세로 스택 (리스트가 위, 상세편집이 아래)
-   480  : 폰 — 라우팅 아이템 내부 select 등 폭 조정
+   1024 : 우측 패널 폭 축소
+   860  : 2단 → 세로 스택
+   480  : 폰
+   ※ 읽기 모드 카드 그리드는 auto-fill이라 별도 처리 불필요
 ======================================================== */
-
 @container content (max-width: 1024px) {
-  /* 500px 고정폭이 태블릿에서 왼쪽 리스트를 거의 다 밀어내던 문제.
-     고정폭 대신 최대 45%까지만 차지하도록 완화 */
   .routing-layout-grid {
-    grid-template-columns: 1fr minmax(280px, 45%);
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 42%);
   }
 
   .routing-list-container {
@@ -890,7 +839,6 @@
 }
 
 @container content (max-width: 860px) {
-  /* 그래도 좁으면 아예 세로로 쌓아서 각 영역이 전체 폭을 쓰게 함 */
   .routing-layout-grid {
     grid-template-columns: 1fr;
   }
@@ -898,31 +846,10 @@
   .routing-list-container {
     max-height: 360px;
   }
-
-  .routingSelect {
-    width: 110px;
-  }
 }
 
 @container content (max-width: 480px) {
-  .routingItem {
-    padding: 12px 14px;
-    gap: 10px;
-  }
-
-  .routingSelect {
-    width: 100%;
-  }
-
-  .routingStepWrapper {
-    min-width: 44px;
-  }
-
-  .routing-move-grid {
-    grid-template-columns: 1fr;
-  }
-
-  /* 폰 폭에서는 공정명/공정구분을 다시 세로로 */
+  .routing-move-grid,
   .routing-form-row {
     grid-template-columns: 1fr;
   }
@@ -932,239 +859,10 @@
   }
 
   .routing-list-item {
-    padding: 10px;
+    padding: 8px 12px;
   }
-}
 
-/* 읽기 모드: 컨테이너가 좁으면 자재 요약을 다음 줄로 내려서 표시 */
-@container content (max-width: 700px) {
   .routing-list-item.is-readonly {
-    flex-wrap: wrap;
+    padding: 14px 16px 16px;
   }
-  .routing-list-item.is-readonly .routing-item-left {
-    flex: 1 1 auto;
-  }
-  .routing-mtrl-summary {
-    flex-basis: 100%;
-    order: 3;
-  }
-}
-
-/* ========================================================
-   공정 라우팅 설정 영역 (다크모드)
-======================================================== */
-
-[data-theme="dark"] .routing-header-label {
-  color: var(--text-heading);
-}
-
-[data-theme="dark"] .routing-count-text {
-  color: var(--text-body);
-}
-
-[data-theme="dark"] .routing-guide-text {
-  color: var(--text-muted);
-}
-
-/* 좌측: 공정 리스트 박스 */
-[data-theme="dark"] .routing-list-container {
-  border: 1px solid var(--border);
-  background: var(--bg-subtle);
-}
-
-/* 개별 아이템 (드래그 앤 드롭) */
-[data-theme="dark"] .routing-list-item {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-}
-
-[data-theme="dark"] .routing-list-item.is-drag-over {
-  background: var(--primary-light);
-  border: 2px dashed #57d3a1;
-}
-
-[data-theme="dark"] .routing-list-item.is-selected {
-  background: var(--primary-light);
-  border: 2px solid #57d3a1;
-}
-
-[data-theme="dark"] .routing-drag-handle {
-  color: var(--text-muted);
-}
-
-[data-theme="dark"] .routing-seq {
-  color: var(--text-body);
-}
-
-[data-theme="dark"] .routing-oper-nm {
-  color: var(--text-main);
-}
-
-/* 공정 타입 배지 (일반/최종) */
-[data-theme="dark"] .routing-type-badge {
-  background: #252a36;
-  color: var(--text-body);
-  border: 1px solid var(--border);
-}
-
-[data-theme="dark"] .routing-type-badge.is-final {
-  background: var(--primary-light);
-  color: #57d3a1;
-  border-color: rgba(87, 211, 161, 0.25);
-}
-
-/* 이동 화살표 버튼 */
-[data-theme="dark"] .routing-arrow-btn:hover:not(:disabled) {
-  background-color: #1e2130;
-}
-
-[data-theme="dark"] .routing-arrow-icon {
-  color: var(--text-muted);
-}
-
-/* 우측: 상세 편집 패널 */
-[data-theme="dark"] .routing-detail-panel {
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  box-shadow: var(--shadow);
-}
-
-[data-theme="dark"] .routing-empty-panel {
-  color: var(--text-muted);
-}
-
-/* 상세 패널 내부 UI */
-[data-theme="dark"] .routing-step-card {
-  background: var(--primary-light);
-  border: 1px solid rgba(87, 211, 161, 0.25);
-}
-
-[data-theme="dark"] .routing-step-badge {
-  background: #57d3a1;
-  color: #dbeafe;
-}
-
-[data-theme="dark"] .routing-step-info-nm {
-  color: #57d3a1;
-}
-
-[data-theme="dark"] .routing-step-info-code {
-  color: #93c5fd;
-}
-
-/* 빠른 이동 버튼 그룹 (miniButton 스타일 계승) */
-[data-theme="dark"] .routing-move-btn {
-  background: #252a36;
-  border: 1px solid #3a4150;
-  color: #cbd5e1;
-}
-
-[data-theme="dark"] .routing-move-btn:hover:not(:disabled) {
-  background: #303848;
-}
-
-/* 폼 요소 (기존 input/select 규칙과 동기화) */
-[data-theme="dark"] .routing-label {
-  color: var(--text-heading);
-}
-
-[data-theme="dark"] .routing-input-readonly {
-  background-color: var(--bg-subtle);
-  border-color: var(--border);
-  color: var(--text-muted);
-}
-
-[data-theme="dark"] .routing-select {
-  background: var(--bg-subtle);
-  border-color: var(--border);
-  color: var(--text-main);
-}
-
-[data-theme="dark"] .routing-select:focus {
-  border-color: #57d3a1;
-  box-shadow: 0 0 0 3px rgba(87, 211, 161, 0.15);
-}
-
-/* 투입/산출 자재 영역 (다크모드) - 시안 이미지 스타일 */
-[data-theme="dark"] .routing-mtrl-section {
-  border-top: 1px solid var(--border);
-}
-
-[data-theme="dark"] .routing-mtrl-title {
-  color: var(--text-heading);
-}
-
-[data-theme="dark"] .routing-mtrl-group-title.is-in,
-[data-theme="dark"] .routing-mtrl-summary-tag.is-in {
-  color: #4ade80;
-}
-
-[data-theme="dark"] .routing-mtrl-group-title.is-out,
-[data-theme="dark"] .routing-mtrl-summary-tag.is-out {
-  color: #f87171;
-}
-
-[data-theme="dark"] .routing-mtrl-add-btn {
-  background: transparent;
-  border-color: rgba(87, 211, 161, 0.55);
-  color: #57d3a1;
-}
-
-[data-theme="dark"] .routing-mtrl-add-btn:hover:not(:disabled) {
-  background: var(--primary-light);
-}
-
-[data-theme="dark"] .routing-mtrl-item {
-  background: var(--bg-subtle);
-  border: 1px solid var(--border);
-}
-
-/* 다크: 코드 칩은 IN/OUT 구분 없이 회색 칩 (시안과 동일) */
-[data-theme="dark"] .routing-mtrl-code.is-in,
-[data-theme="dark"] .routing-mtrl-code.is-out {
-  background: #252a36;
-  color: var(--text-body);
-  border-color: var(--border);
-}
-
-[data-theme="dark"] .routing-mtrl-name {
-  color: var(--text-main);
-}
-
-[data-theme="dark"] .routing-mtrl-unit {
-  color: var(--text-muted);
-}
-
-[data-theme="dark"] .routing-mtrl-remove {
-  color: #f87171;
-}
-
-[data-theme="dark"] .routing-mtrl-empty {
-  color: var(--text-muted);
-  border-color: var(--border);
-}
-
-/* 다크: 읽기 모드 자재 칩 */
-[data-theme="dark"] .routing-mtrl-chip.is-in {
-  background: rgba(96, 165, 250, 0.12);
-  color: #4ade80;
-  border-color: rgba(96, 165, 250, 0.3);
-}
-
-[data-theme="dark"] .routing-mtrl-chip.is-out {
-  background: var(--primary-light);
-  color: #f87171;
-  border-color: rgba(87, 211, 161, 0.25);
-}
-
-/* 삭제 버튼 (기존 miniButton.danger 스타일 계승) */
-[data-theme="dark"] .routing-delete-btn {
-  background: #451a1a;
-  border: 1px solid #7f1d1d;
-  color: #fca5a5;
-}
-
-[data-theme="dark"] .routing-delete-btn:hover:not(:disabled) {
-  background: #7f1d1d;
-  color: white;
 }
