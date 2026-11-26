@@ -31,15 +31,19 @@ export function FiberWorkOrderCompleteModal({
   const endAtRef = useRef<HTMLInputElement>(null)
   const mountedRef = useRef(true)
 
+  const hasNoPerformance = (workOrder.performanceCount ?? 0) <= 0
+
   useEffect(() => {
     mountedRef.current = true
     const prevFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    agingRef.current?.focus()
+    if (!hasNoPerformance) {
+      agingRef.current?.focus()
+    }
     return () => {
       mountedRef.current = false
       if (prevFocused?.isConnected) prevFocused.focus()
     }
-  }, [])
+  }, [hasNoPerformance])
 
   const isDirty = agingDays !== null || humidified !== '' || endAt !== ''
 
@@ -199,10 +203,16 @@ export function FiberWorkOrderCompleteModal({
             </div>
           </dl>
 
-          {errors.general && (
-            <div className="inpiPerfErrorBox" role="alert">
-              {errors.general}
+          {hasNoPerformance ? (
+            <div className="inpiPerfWarnNote" role="alert">
+              등록된 실적 줄이 없어 작업을 완료할 수 없습니다. 먼저 실적 줄을 1건 이상 등록해 주세요.
             </div>
+          ) : (
+            errors.general && (
+              <div className="inpiPerfErrorBox" role="alert">
+                {errors.general}
+              </div>
+            )
           )}
 
           <div className="inpiPerfFormGrid">
@@ -220,7 +230,7 @@ export function FiberWorkOrderCompleteModal({
                 decimalScale={0}
                 max={365}
                 placeholder="0"
-                disabled={isSubmitting}
+                disabled={isSubmitting || hasNoPerformance}
                 value={agingDays}
                 onValueChange={(next) => {
                   setAgingDays(next)
@@ -247,7 +257,7 @@ export function FiberWorkOrderCompleteModal({
                     name="inpiDoneHumid"
                     value="true"
                     checked={humidified === 'true'}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || hasNoPerformance}
                     onChange={() => {
                       setHumidified('true')
                       clearError('humidified')
@@ -261,7 +271,7 @@ export function FiberWorkOrderCompleteModal({
                     name="inpiDoneHumid"
                     value="false"
                     checked={humidified === 'false'}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || hasNoPerformance}
                     onChange={() => {
                       setHumidified('false')
                       clearError('humidified')
@@ -288,7 +298,7 @@ export function FiberWorkOrderCompleteModal({
                 className="tableInput"
                 aria-invalid={errors.endAt ? true : undefined}
                 aria-describedby={errors.endAt ? 'inpi-done-err-end' : undefined}
-                disabled={isSubmitting}
+                disabled={isSubmitting || hasNoPerformance}
                 value={endAt}
                 onChange={(e) => {
                   setEndAt(e.target.value)
@@ -315,7 +325,7 @@ export function FiberWorkOrderCompleteModal({
             <button type="button" className="inpiPerfPlainBtn" disabled={isSubmitting} onClick={handleClose}>
               닫기
             </button>
-            <button type="submit" className="primaryButton" disabled={isSubmitting}>
+            <button type="submit" className="primaryButton" disabled={isSubmitting || hasNoPerformance}>
               {isSubmitting ? '처리 중...' : '작업 완료'}
             </button>
           </div>

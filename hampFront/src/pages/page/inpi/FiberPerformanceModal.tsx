@@ -21,6 +21,86 @@ type ModalMode = 'view' | 'create' | 'edit'
 type FormField = 'productItemCode' | 'inputs' | 'outputQty' | 'residueQty' | 'workDate'
 type FormErrors = Partial<Record<FormField, string>>
 
+interface MassBreakdownBarProps {
+  inputQty: number
+  outputQty: number
+  residueQty: number | null
+}
+
+function MassBreakdownBar({ inputQty, outputQty, residueQty }: MassBreakdownBarProps) {
+  const pctOf = (val: number) => (inputQty > 0 ? Math.max(0, Math.min(100, (val / inputQty) * 100)) : 0)
+  const outPct = pctOf(outputQty)
+  const resPct = residueQty != null ? pctOf(residueQty) : 0
+  const unmeasuredRest = Math.max(0, Math.round((inputQty - outputQty) * 100) / 100)
+  const lossQty =
+    residueQty != null ? Math.round((inputQty - outputQty - residueQty) * 100) / 100 : null
+  const lossVal = residueQty != null ? Math.max(0, lossQty ?? 0) : unmeasuredRest
+  const lossPct = pctOf(lossVal)
+
+  return (
+    <>
+      <div className="inpiPerfMassBar" aria-label="투입 중량 구성">
+        <span
+          className="inpiPerfMassBar__out"
+          style={{ width: `${outPct}%` }}
+          title={`생산 ${formatKg(outputQty)} (${formatNum(outPct, 1)}%)`}
+        >
+          {outPct >= 14 ? `생산 ${formatNum(outputQty, 1)}` : ''}
+        </span>
+        {residueQty != null ? (
+          <>
+            <span
+              className="inpiPerfMassBar__res"
+              style={{ width: `${resPct}%` }}
+              title={`잔재 ${formatKg(residueQty)} (${formatNum(resPct, 1)}%)`}
+            >
+              {resPct >= 10 ? '잔재' : ''}
+            </span>
+            <span
+              className="inpiPerfMassBar__loss"
+              style={{ width: `${lossPct}%` }}
+              title={`손실 ${formatKg(lossQty)} (${formatNum(lossPct, 1)}%)`}
+            >
+              {lossPct >= 10 ? '손실' : ''}
+            </span>
+          </>
+        ) : (
+          <span
+            className="inpiPerfMassBar__loss"
+            style={{ width: `${lossPct}%` }}
+            title={`잔재·손실 ${formatKg(unmeasuredRest)} (${formatNum(lossPct, 1)}%)`}
+          >
+            {lossPct >= 20 ? `잔재·손실 ${formatNum(unmeasuredRest, 1)}` : lossPct >= 12 ? '잔재·손실' : ''}
+          </span>
+        )}
+      </div>
+      <div className="inpiPerfMassLegend">
+        <span className="inpiPerfMassLegendItem">
+          <i className="inpiPerfMassSwatch is-out" />
+          생산 <b>{formatKg(outputQty)}</b> ({formatNum(outPct, 1)}%)
+        </span>
+        {residueQty != null ? (
+          <>
+            <span className="inpiPerfMassLegendItem">
+              <i className="inpiPerfMassSwatch is-res" />
+              잔재 <b>{formatKg(residueQty)}</b> ({formatNum(resPct, 1)}%)
+            </span>
+            <span className="inpiPerfMassLegendItem">
+              <i className="inpiPerfMassSwatch is-loss" />
+              손실 <b>{formatKg(lossQty)}</b> ({formatNum(lossPct, 1)}%)
+            </span>
+          </>
+        ) : (
+          <span className="inpiPerfMassLegendItem">
+            <i className="inpiPerfMassSwatch is-loss" />
+            잔재·손실 <b>{formatKg(unmeasuredRest)}</b> ({formatNum(lossPct, 1)}%)
+          </span>
+        )}
+      </div>
+    </>
+  )
+}
+
 interface FiberPerformanceModalProps {
   initialMode: ModalMode
   /** create 모드에서는 필수, view/edit 모드에서는 없으면 필요 시 조회 */
@@ -46,9 +126,13 @@ export function FiberPerformanceModal({
   } | null>(null)
 
   const today = todayString()
-  const [productItemCode, setProductItemCode] = useState(
-    initialMode === 'edit' && performance ? performance.productItemCode : '',
-  )
+  const initialProductCode =
+    initialMode === 'edit' && performance
+      ? performance.productItemCode
+      : initialMode === 'create' && initialWorkOrderDetail?.products.length === 1
+        ? initialWorkOrderDetail.products[0].productItemCode
+        : ''
+  const [productItemCode, setProductItemCode] = useState(initialProductCode)
   const [lotInputs, setLotInputs] = useState<Record<number, number | null>>(() => {
     if (initialMode === 'edit' && performance) {
       return Object.fromEntries(performance.inputs.map((inp) => [inp.receiptId, inp.inputQty]))
@@ -70,7 +154,7 @@ export function FiberPerformanceModal({
   const [isDeleting, setIsDeleting] = useState(false)
 
   const [initialSnapshot, setInitialSnapshot] = useState(() => ({
-    productItemCode: initialMode === 'edit' && performance ? performance.productItemCode : '',
+    productItemCode: initialProductCode,
     lotInputs:
       initialMode === 'edit' && performance
         ? Object.fromEntries(performance.inputs.map((inp) => [inp.receiptId, inp.inputQty]))
@@ -86,6 +170,7 @@ export function FiberPerformanceModal({
   const workDateRef = useRef<HTMLInputElement>(null)
   const firstProductBtnRef = useRef<HTMLButtonElement>(null)
   const firstLotInputRef = useRef<HTMLInputElement>(null)
+  const autoFocusedKeyRef = useRef<string | null>(null)
   const mountedRef = useRef(true)
 
   const baseWorkId = initialWorkOrderDetail?.workOrder.workId ?? performance?.workId ?? ''
@@ -128,12 +213,18 @@ export function FiberPerformanceModal({
     Promise.all([receiptsPromise, detailPromise])
       .then(([receiptsRes, detailRes]) => {
         if (ignore) return
+        const fetchedDetail = detailRes?.data ?? null
         setEditFetchResult({
           key: editFetchKey,
           receipts: receiptsRes.data ?? [],
-          detail: detailRes?.data ?? null,
+          detail: fetchedDetail,
           error: null,
         })
+        if (mode === 'create' && fetchedDetail?.products.length === 1) {
+          const singleCode = fetchedDetail.products[0].productItemCode
+          setProductItemCode((prev) => prev || singleCode)
+          setInitialSnapshot((prev) => (prev.productItemCode ? prev : { ...prev, productItemCode: singleCode }))
+        }
       })
       .catch((error) => {
         if (ignore) return
@@ -149,7 +240,23 @@ export function FiberPerformanceModal({
     return () => {
       ignore = true
     }
-  }, [editFetchKey, baseWorkId, needsDetailFetch])
+  }, [editFetchKey, baseWorkId, needsDetailFetch, mode])
+
+  const productCount = workOrderDetail?.products.length ?? 0
+
+  // 추가/수정 폼 로드 완료 시 첫 입력 요소로 자동 포커스
+  useEffect(() => {
+    if (!editFetchKey || isLoadingEditData || loadError) return
+    if (autoFocusedKeyRef.current === editFetchKey) return
+    autoFocusedKeyRef.current = editFetchKey
+    if (mode === 'create' && !productItemCode && productCount > 1) {
+      firstProductBtnRef.current?.focus()
+    } else if (firstLotInputRef.current && !firstLotInputRef.current.disabled) {
+      firstLotInputRef.current.focus()
+    } else {
+      outputRef.current?.focus()
+    }
+  }, [editFetchKey, isLoadingEditData, loadError, mode, productItemCode, productCount])
 
   // 수정 중인 실적 줄이 기존에 투입했던 LOT별 중량 (수정 시 투입 가능 상한 계산용)
   const ownInputMap = useMemo(() => {
@@ -170,6 +277,14 @@ export function FiberPerformanceModal({
     }
     return map
   }, [inputReceipts, ownInputMap])
+
+  const firstEnabledLotId = useMemo(() => {
+    const found = inputReceipts.find((r) => {
+      const allow = receiptAllowanceMap.get(r.receiptId) ?? Number(r.remainingQty ?? 0)
+      return allow > 0
+    })
+    return found?.receiptId ?? null
+  }, [inputReceipts, receiptAllowanceMap])
 
   const totalInputQty = useMemo(
     () =>
@@ -390,13 +505,12 @@ export function FiberPerformanceModal({
   const isLocked = workStatus !== 'IN_PROGRESS'
   const products = workOrderDetail?.products ?? []
 
-  // 상세 보기 중량 구성 바 계산
+  // 상세 보기 중량 구성 설명 계산
   const viewInputQty = performance ? Number(performance.inputQty ?? 0) : 0
   const viewOutputQty = performance ? Number(performance.outputQty ?? 0) : 0
   const viewResidueQty = performance?.residueQty != null ? Number(performance.residueQty) : null
   const viewLossQty =
     viewResidueQty != null ? Math.round((viewInputQty - viewOutputQty - viewResidueQty) * 100) / 100 : null
-  const pctOfInput = (val: number) => (viewInputQty > 0 ? Math.max(0, Math.min(100, (val / viewInputQty) * 100)) : 0)
 
   const modalTitle =
     mode === 'view' && performance
@@ -504,29 +618,11 @@ export function FiberPerformanceModal({
 
               <div className="inpiPerfMassSection">
                 <p className="inpiPerfSectionLabel">중량 구성</p>
-                <div className="inpiPerfMassBar" aria-label="투입 중량 구성">
-                  <span className="inpiPerfMassBar__out" style={{ width: `${pctOfInput(viewOutputQty)}%` }}>
-                    생산 {formatNum(viewOutputQty, 1)}
-                  </span>
-                  {viewResidueQty != null ? (
-                    <>
-                      <span className="inpiPerfMassBar__res" style={{ width: `${pctOfInput(viewResidueQty)}%` }}>
-                        {pctOfInput(viewResidueQty) >= 10 ? '잔재' : ''}
-                      </span>
-                      <span
-                        className="inpiPerfMassBar__loss"
-                        style={{ width: `${pctOfInput(Math.max(0, viewLossQty ?? 0))}%` }}
-                      />
-                    </>
-                  ) : (
-                    <span
-                      className="inpiPerfMassBar__loss"
-                      style={{ width: `${pctOfInput(Math.max(0, viewInputQty - viewOutputQty))}%` }}
-                    >
-                      잔재·손실 {formatNum(Math.max(0, viewInputQty - viewOutputQty), 1)}
-                    </span>
-                  )}
-                </div>
+                <MassBreakdownBar
+                  inputQty={viewInputQty}
+                  outputQty={viewOutputQty}
+                  residueQty={viewResidueQty}
+                />
                 <p className="inpiPerfLegend">
                   {viewResidueQty != null
                     ? `투입 ${formatKg(viewInputQty)} = 생산 ${formatKg(viewOutputQty)} + 잔재 ${formatKg(viewResidueQty)} + 계량되지 않은 손실(먼지·수분 등) ${formatKg(viewLossQty)}`
@@ -612,34 +708,55 @@ export function FiberPerformanceModal({
                           </td>
                         </tr>
                       ) : (
-                        inputReceipts.map((r, idx) => {
+                        inputReceipts.map((r) => {
                           const allow = receiptAllowanceMap.get(r.receiptId) ?? Number(r.remainingQty ?? 0)
                           const val = lotInputs[r.receiptId] ?? null
                           const isDisabled = allow <= 0 && (val == null || val === 0)
                           return (
-                            <tr key={r.receiptId} className={val != null && val > 0 ? 'is-active' : undefined}>
+                            <tr
+                              key={r.receiptId}
+                              className={val != null && val > 0 ? 'is-active' : undefined}
+                            >
                               <td>
                                 <span className="inpiPerfCode">{r.receiptLotCode}</span>
                               </td>
                               <td className="inpiPerfNum">{formatKg(r.receiptQty)}</td>
                               <td className="inpiPerfNum">{formatKg(allow)}</td>
                               <td className="inpiPerfNum">
-                                <NumberInput
-                                  ref={idx === 0 ? firstLotInputRef : undefined}
-                                  wrapClassName="inpiPerfSuffixWrap"
-                                  className="tableInput"
-                                  aria-label={`${r.receiptLotCode} 투입 중량`}
-                                  aria-invalid={errors.inputs ? true : undefined}
-                                  decimalScale={2}
-                                  placeholder={allow <= 0 ? '소진' : '0'}
-                                  disabled={isDisabled || isBusy}
-                                  value={val}
-                                  onValueChange={(next) => {
-                                    setLotInputs((prev) => ({ ...prev, [r.receiptId]: next }))
-                                    clearFieldError('inputs')
-                                  }}
-                                  suffix={<span>kg</span>}
-                                />
+                                <div className="inpiPerfLotInputRow">
+                                  <div className="inpiPerfLotNumWrap">
+                                    <NumberInput
+                                      ref={r.receiptId === firstEnabledLotId ? firstLotInputRef : undefined}
+                                      wrapClassName="inpiPerfSuffixWrap"
+                                      className="tableInput"
+                                      aria-label={`${r.receiptLotCode} 투입 중량`}
+                                      aria-invalid={errors.inputs ? true : undefined}
+                                      decimalScale={2}
+                                      max={allow > 0 ? allow : undefined}
+                                      maxMessage={`남은 양(${formatNum(allow)} kg)을 초과할 수 없습니다.`}
+                                      placeholder={allow <= 0 ? '소진' : '0'}
+                                      disabled={isDisabled || isBusy}
+                                      value={val}
+                                      onValueChange={(next) => {
+                                        setLotInputs((prev) => ({ ...prev, [r.receiptId]: next }))
+                                        clearFieldError('inputs')
+                                      }}
+                                      suffix={<span>kg</span>}
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="inpiPerfFillBtn"
+                                    aria-label={`${r.receiptLotCode} 전량 투입`}
+                                    disabled={isDisabled || isBusy || allow <= 0 || val === allow}
+                                    onClick={() => {
+                                      setLotInputs((prev) => ({ ...prev, [r.receiptId]: allow }))
+                                      clearFieldError('inputs')
+                                    }}
+                                  >
+                                    전량
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           )
@@ -751,6 +868,36 @@ export function FiberPerformanceModal({
                   )}
                 </div>
 
+                {totalInputQty > 0 && outputQty != null && outputQty > 0 && (() => {
+                  const liveRes = residueQty != null && residueQty >= 0 ? residueQty : null
+                  const liveAccounted = Math.round((outputQty + (liveRes ?? 0)) * 100) / 100
+                  const isExceeding = liveAccounted > totalInputQty
+
+                  return (
+                    <div className="inpiPerfLivePreview inpiPerfField--full" aria-label="중량 구성 미리보기">
+                      <div className="inpiPerfLivePreviewHead">
+                        <span className="inpiPerfSectionLabel">중량 구성</span>
+                        <Badge tone={isExceeding ? 'warn' : 'good'}>
+                          수율 {formatNum((outputQty / totalInputQty) * 100, 1)}%
+                        </Badge>
+                      </div>
+                      {isExceeding ? (
+                        <div className="inpiPerfWarnNote" role="status">
+                          생산({formatKg(outputQty)})
+                          {liveRes != null ? ` + 잔재(${formatKg(liveRes)})` : ''} 합계({formatKg(liveAccounted)})가
+                          투입 합계({formatKg(totalInputQty)})보다 큽니다. 입력한 중량을 확인해 주세요.
+                        </div>
+                      ) : (
+                        <MassBreakdownBar
+                          inputQty={totalInputQty}
+                          outputQty={outputQty}
+                          residueQty={liveRes}
+                        />
+                      )}
+                    </div>
+                  )
+                })()}
+
                 <div className="inpiPerfField inpiPerfField--full">
                   <label className="inpiPerfLabel" htmlFor="inpi-perf-note">
                     작업내용 · 특이사항
@@ -758,7 +905,7 @@ export function FiberPerformanceModal({
                   <textarea
                     id="inpi-perf-note"
                     className="tableInput"
-                    rows={3}
+                    rows={2}
                     maxLength={255}
                     placeholder="예) 솜 베일 1개(80×40×60), 카딩기 2호기"
                     disabled={isBusy}
