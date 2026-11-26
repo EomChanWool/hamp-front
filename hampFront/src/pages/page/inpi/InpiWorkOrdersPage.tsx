@@ -61,7 +61,6 @@ export function InpiWorkOrdersPage() {
     setIsReady(true)
 
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // URL 검색조건
