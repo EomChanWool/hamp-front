@@ -109,13 +109,19 @@
   width: 100%;
 }
 
-/* ── 좌측: 공정 리스트 (수정 모드: 구분선 행) ── */
+/* ── 좌측: 공정 리스트 (구분선 행) ── */
 .routing-list-container {
   max-height: 600px;
   overflow-y: auto;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 8px;
+}
+
+/* 읽기 모드는 16단계 전체가 스크롤 없이 보이도록 높이 제한 해제 */
+.routing-list-container:has(> .is-readonly) {
+  max-height: none;
+  overflow: visible;
 }
 
 .routing-list-item {
@@ -187,6 +193,7 @@
   min-width: 22px;
   font-size: 12px;
   font-weight: 700;
+  font-family: 'montserrat', sans-serif;
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
 }
@@ -199,7 +206,7 @@
 }
 
 /* 공정코드: 시스템 식별자이므로 보조 정보로 낮춤
-   (Badge 컴포넌트 스타일이 이기면 각 속성에 !important 추가) */
+   (Badge 컴포넌트 스타일을 이기기 위해 색/배경/테두리에 !important) */
 .routing-code-wrap > * {
   height: 20px;
   padding: 0 6px;
@@ -207,9 +214,9 @@
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0;
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid var(--border);
+  color: var(--text-muted) !important;
+  background: transparent !important;
+  border: 1px solid var(--border) !important;
   border-radius: 4px;
 }
 
@@ -640,11 +647,13 @@
   color: var(--rt-danger);
 }
 
-/* 읽기 모드 자재 요약 (카드 하단에 배치됨) */
+/* 읽기 모드 자재 요약: IN / OUT 그룹을 한 줄로 이어 붙임 */
 .routing-mtrl-summary {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
   min-width: 0;
 }
 
@@ -725,108 +734,71 @@
 }
 
 /* --------------------------------------------------------
-   읽기 모드: 공정 카드 그리드
-   (컨테이너 안에 .is-readonly 항목만 있을 때 적용 → 수정 모드는 영향 없음)
+   읽기 모드: 한 줄 행 (16단계 대응)
 
-   ┌──────────────────────────┐
-   │ 01                [일반공정] │
-   │ 크기선별(이물제거)           │
-   │ OPER_SIZE_SORT           │
-   │ ───────────────────────  │
-   │ IN  [헴프 탈각 씨드 KG]     │
-   │ OUT [헴프씨드(완제품) 80%]  │
-   └──────────────────────────┘
+   [순번 · 공정명 · 코드] [IN/OUT 자재 ...]              [공정구분]
+
+   01  겉피탈피(탈곡)  OPER_DEHUSK   IN [..]  OUT [..]            [일반공정]
+   02  세척           OPER_WASH                                   [일반공정]
+
+   → 열 폭을 고정해서 모든 행의 자재 시작 위치가 세로로 정렬됨
+   → 공정구분은 항상 마지막 열(오른쪽 끝)에 고정
 -------------------------------------------------------- */
-.routing-list-container:has(> .is-readonly) {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
-  max-height: none;
-  overflow: visible;
-  background: none;
-  border: 0;
-  border-radius: 0;
-}
-
 .routing-list-item.is-readonly {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-areas:
-    "seq  .    type"
-    "nm   nm   nm"
-    "code code code"
-    "mat  mat  mat";
-  align-content: start;
+  grid-template-columns: 360px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0;
-  min-height: 0;
-  padding: 14px 16px 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  gap: 0 20px;
+  min-height: 44px;
+  padding: 8px 16px;
   cursor: default;
 }
 
 .routing-list-item.is-readonly:hover {
-  background: var(--bg-card);
+  background: transparent;
 }
 
-/* 최종 계열 카드는 테두리만 살짝 강조 */
-.routing-list-item.is-readonly:has(.routing-type-badge.is-final) {
-  border-color: color-mix(in srgb, var(--rt-accent) 40%, var(--border));
-}
-
-/* left 래퍼를 풀어서 seq / code / name을 카드 grid에 직접 배치 */
+/* 순번 → 공정명 → 코드 순으로 표시 (DOM 순서는 순번, 코드, 공정명) */
 .routing-list-item.is-readonly .routing-item-left {
-  display: contents;
+  grid-column: 1;
+  grid-row: 1;
+  flex: none;
+  gap: 10px;
 }
 
 .routing-list-item.is-readonly .routing-seq {
-  grid-area: seq;
-  font-size: 13px;
-  font-family: 'montserrat', sans-serif;
-}
-
-.routing-list-item.is-readonly .routing-item-right {
-  grid-area: type;
-  margin-left: 0;
+  order: 0;
 }
 
 .routing-list-item.is-readonly .routing-oper-nm {
-  grid-area: nm;
-  margin-top: 12px;
-  white-space: normal;
-  overflow: visible;
+  order: 1;
+  flex: 0 1 150px;
+  min-width: 0;
 }
 
 .routing-list-item.is-readonly .routing-code-wrap {
-  grid-area: code;
-  justify-self: start;
-  margin-top: 4px;
+  order: 2;
 }
 
-/* 자재 영역: 카드 하단, 구분선으로 분리 */
-.routing-list-item.is-readonly .routing-mtrl-summary,
-.routing-list-item.is-readonly:not(:has(.routing-mtrl-summary))::after {
-  grid-area: mat;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
+/* 자재 요약: 가운데 열 (없는 행은 그냥 비어 있음) */
+.routing-list-item.is-readonly .routing-mtrl-summary {
+  grid-column: 2;
+  grid-row: 1;
 }
 
-/* 자재 없는 공정: 빈 칸 대신 안내 문구 (누락처럼 보이지 않게) */
-.routing-list-item.is-readonly:not(:has(.routing-mtrl-summary))::after {
-  content: "투입·산출 자재 없음";
-  font-size: 12px;
-  color: var(--text-muted);
+/* 공정구분: 마지막 열, 오른쪽 끝 */
+.routing-list-item.is-readonly .routing-item-right {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  margin-left: 0;
 }
 
 /* ========================================================
    반응형
    1024 : 우측 패널 폭 축소
-   860  : 2단 → 세로 스택
+   860  : 2단 → 세로 스택 / 읽기 모드 자재는 다음 줄로
    480  : 폰
-   ※ 읽기 모드 카드 그리드는 auto-fill이라 별도 처리 불필요
 ======================================================== */
 @container content (max-width: 1024px) {
   .routing-layout-grid {
@@ -846,6 +818,20 @@
   .routing-list-container {
     max-height: 360px;
   }
+
+  .routing-list-item.is-readonly {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 12px;
+  }
+
+  .routing-list-item.is-readonly .routing-item-right {
+    grid-column: 2;
+  }
+
+  .routing-list-item.is-readonly .routing-mtrl-summary {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
 }
 
 @container content (max-width: 480px) {
@@ -860,9 +846,5 @@
 
   .routing-list-item {
     padding: 8px 12px;
-  }
-
-  .routing-list-item.is-readonly {
-    padding: 14px 16px 16px;
   }
 }
