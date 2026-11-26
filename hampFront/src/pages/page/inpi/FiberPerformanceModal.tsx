@@ -504,29 +504,79 @@ export function FiberPerformanceModal({
 
               <div className="inpiPerfMassSection">
                 <p className="inpiPerfSectionLabel">중량 구성</p>
-                <div className="inpiPerfMassBar" aria-label="투입 중량 구성">
-                  <span className="inpiPerfMassBar__out" style={{ width: `${pctOfInput(viewOutputQty)}%` }}>
-                    생산 {formatNum(viewOutputQty, 1)}
-                  </span>
-                  {viewResidueQty != null ? (
+                {(() => {
+                  const outPct = pctOfInput(viewOutputQty)
+                  const resPct = viewResidueQty != null ? pctOfInput(viewResidueQty) : 0
+                  const unmeasuredRest = Math.max(0, viewInputQty - viewOutputQty)
+                  const lossVal = viewResidueQty != null ? Math.max(0, viewLossQty ?? 0) : unmeasuredRest
+                  const lossPct = pctOfInput(lossVal)
+                  return (
                     <>
-                      <span className="inpiPerfMassBar__res" style={{ width: `${pctOfInput(viewResidueQty)}%` }}>
-                        {pctOfInput(viewResidueQty) >= 10 ? '잔재' : ''}
-                      </span>
-                      <span
-                        className="inpiPerfMassBar__loss"
-                        style={{ width: `${pctOfInput(Math.max(0, viewLossQty ?? 0))}%` }}
-                      />
+                      <div className="inpiPerfMassBar" aria-label="투입 중량 구성">
+                        <span
+                          className="inpiPerfMassBar__out"
+                          style={{ width: `${outPct}%` }}
+                          title={`생산 ${formatKg(viewOutputQty)} (${formatNum(outPct, 1)}%)`}
+                        >
+                          {outPct >= 14 ? `생산 ${formatNum(viewOutputQty, 1)}` : ''}
+                        </span>
+                        {viewResidueQty != null ? (
+                          <>
+                            <span
+                              className="inpiPerfMassBar__res"
+                              style={{ width: `${resPct}%` }}
+                              title={`잔재 ${formatKg(viewResidueQty)} (${formatNum(resPct, 1)}%)`}
+                            >
+                              {resPct >= 10 ? '잔재' : ''}
+                            </span>
+                            <span
+                              className="inpiPerfMassBar__loss"
+                              style={{ width: `${lossPct}%` }}
+                              title={`손실 ${formatKg(viewLossQty)} (${formatNum(lossPct, 1)}%)`}
+                            >
+                              {lossPct >= 10 ? '손실' : ''}
+                            </span>
+                          </>
+                        ) : (
+                          <span
+                            className="inpiPerfMassBar__loss"
+                            style={{ width: `${lossPct}%` }}
+                            title={`잔재·손실 ${formatKg(unmeasuredRest)} (${formatNum(lossPct, 1)}%)`}
+                          >
+                            {lossPct >= 20
+                              ? `잔재·손실 ${formatNum(unmeasuredRest, 1)}`
+                              : lossPct >= 12
+                                ? '잔재·손실'
+                                : ''}
+                          </span>
+                        )}
+                      </div>
+                      <div className="inpiPerfMassLegend">
+                        <span className="inpiPerfMassLegendItem">
+                          <i className="inpiPerfMassSwatch is-out" />
+                          생산 <b>{formatKg(viewOutputQty)}</b> ({formatNum(outPct, 1)}%)
+                        </span>
+                        {viewResidueQty != null ? (
+                          <>
+                            <span className="inpiPerfMassLegendItem">
+                              <i className="inpiPerfMassSwatch is-res" />
+                              잔재 <b>{formatKg(viewResidueQty)}</b> ({formatNum(resPct, 1)}%)
+                            </span>
+                            <span className="inpiPerfMassLegendItem">
+                              <i className="inpiPerfMassSwatch is-loss" />
+                              손실 <b>{formatKg(viewLossQty)}</b> ({formatNum(lossPct, 1)}%)
+                            </span>
+                          </>
+                        ) : (
+                          <span className="inpiPerfMassLegendItem">
+                            <i className="inpiPerfMassSwatch is-loss" />
+                            잔재·손실 <b>{formatKg(unmeasuredRest)}</b> ({formatNum(lossPct, 1)}%)
+                          </span>
+                        )}
+                      </div>
                     </>
-                  ) : (
-                    <span
-                      className="inpiPerfMassBar__loss"
-                      style={{ width: `${pctOfInput(Math.max(0, viewInputQty - viewOutputQty))}%` }}
-                    >
-                      잔재·손실 {formatNum(Math.max(0, viewInputQty - viewOutputQty), 1)}
-                    </span>
-                  )}
-                </div>
+                  )
+                })()}
                 <p className="inpiPerfLegend">
                   {viewResidueQty != null
                     ? `투입 ${formatKg(viewInputQty)} = 생산 ${formatKg(viewOutputQty)} + 잔재 ${formatKg(viewResidueQty)} + 계량되지 않은 손실(먼지·수분 등) ${formatKg(viewLossQty)}`

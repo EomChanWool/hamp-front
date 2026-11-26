@@ -428,6 +428,47 @@ span.inpiPerfNum {
   color: var(--text-muted) !important;
 }
 
+.inpiPerfMassLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.inpiPerfMassLegendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inpiPerfMassLegendItem b {
+  color: var(--text-heading);
+  font-weight: 600;
+}
+
+.inpiPerfMassSwatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.inpiPerfMassSwatch.is-out {
+  background: var(--primary);
+}
+
+.inpiPerfMassSwatch.is-res {
+  background: #e7a94b;
+}
+
+.inpiPerfMassSwatch.is-loss {
+  background: repeating-linear-gradient(135deg, var(--border) 0 3px, rgba(127, 127, 127, 0.35) 3px 6px);
+  border: 1px solid var(--border);
+}
+
 .inpiPerfLegend {
   margin: 0;
   font-size: 13px;
@@ -696,7 +737,24 @@ span.inpiPerfNum {
 }
 
 .inpiPerfRadioRow input {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  padding: 0;
+  margin: 0;
+  border-radius: 50%;
   accent-color: var(--primary);
+  box-shadow: none;
+}
+
+.inpiPerfRadioRow input:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+.inpiPerfRadioRow label:has(input:focus-visible) {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .inpiPerfRadioRow label:has(input:checked) {
