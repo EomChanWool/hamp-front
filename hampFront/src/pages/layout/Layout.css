@@ -893,7 +893,7 @@
   border-radius: 6px;
   background: var(--dl-bg);
   color: var(--dl-ink-soft);
-  font-family: var(--dl-mono);
+  font-family: 'montserrat', sans-serif;
   font-size: 12px;
   font-weight: 600;
   line-height: 1;
