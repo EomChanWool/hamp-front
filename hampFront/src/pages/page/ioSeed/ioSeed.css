@@ -1239,8 +1239,35 @@
 
 .seedInboundPanelActions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
-  align-items: center;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .seedInboundPanelActions {
+    flex-shrink: 0;
+  }
+}
+
+.seedInboundPanelActions .ghostButton:disabled {
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.seedInboundPlainButton {
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  white-space: nowrap;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
 }
 
 .seedInboundOrderRow {
@@ -1378,9 +1405,29 @@
   width: 70px;
 }
 
-.seedInboundQtyInput[aria-invalid="true"],
-.seedInboundBoxInput[aria-invalid="true"] {
-  border-color: var(--dl-danger, #c0293d);
+.seedInboundEditingRow td {
+  vertical-align: top;
+}
+
+.seedInboundEditingRow .tableInput[aria-invalid="true"] {
+  border-color: #dc2626;
+}
+
+.seedInboundEditingRow .tableInput[aria-invalid="true"]:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.16);
+}
+
+.seedInboundFieldError {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #dc2626;
+  white-space: normal;
+}
+
+[data-theme="dark"] .seedInboundFieldError {
+  color: #f87171;
 }
 
 [data-theme="dark"] .seedInboundProgress__track {
