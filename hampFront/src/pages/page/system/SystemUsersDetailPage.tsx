@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Badge } from "@components/common/Badge";
-import { formatDateTime } from "@/utils/common";
 import axios from "axios";
+import { ChevronDownIcon, CheckIcon, MinusIcon } from "@heroicons/react/16/solid";
+import { Badge } from "@components/common/Badge";
+import { formatDateTime, isValidPhone } from "@/utils/common";
 import type { UserDetailResponse, UserUpdateRequest } from "@/api/User";
 import type { AuthGroupResponse } from "@/api/auth/Auth";
 import type { MenuPermissionResponse } from "@/api/Menu";
@@ -10,21 +11,144 @@ import Spinner from "@/components/common/Spinner";
 import { UserApi } from "@/api/User";
 import { AuthGroupApi } from "@/api/auth/Auth";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
-import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
-import { isValidPhone } from "@/utils/common";
 import "./SystemUser.css";
 
-// 소메뉴 옆에 표시할 CRUD 권한 필드 정의
 const PERMISSION_FIELDS: {
   key: "create" | "read" | "update" | "delete" | "approve";
   label: string;
 }[] = [
-    { key: "read", label: "조회" },
-    { key: "create", label: "등록" },
-    { key: "update", label: "수정" },
-    { key: "delete", label: "삭제" },
-    { key: "approve", label: "승인" },
-  ];
+  { key: "read", label: "조회" },
+  { key: "create", label: "등록" },
+  { key: "update", label: "수정" },
+  { key: "delete", label: "삭제" },
+  { key: "approve", label: "승인" },
+];
+
+type MenuNode = MenuPermissionResponse & { children: MenuPermissionResponse[] };
+type UserAuthGroup = NonNullable<UserDetailResponse["authGroups"]>[number];
+
+/** 대메뉴(menuId % 100 === 0) 아래에 조회 가능한 소메뉴만 묶어서 반환 */
+function buildMenuTree(menus: MenuPermissionResponse[]): MenuNode[] {
+  return menus
+    .filter((m) => m.menuId % 100 === 0)
+    .map((parent) => ({
+      ...parent,
+      children: menus.filter(
+        (m) =>
+          m.menuId > parent.menuId &&
+          m.menuId < parent.menuId + 100 &&
+          m.read === true
+      ),
+    }))
+    .filter((parent) => parent.children.length > 0);
+}
+
+type AuthGroupCardProps = {
+  group: UserAuthGroup;
+  collapsed: boolean;
+  onToggle: () => void;
+};
+
+/** 권한 그룹 1개의 메뉴 권한 현황 카드 (요약: 태그 / 상세: 권한 매트릭스) */
+function AuthGroupCard({ group, collapsed, onToggle }: AuthGroupCardProps) {
+  const tree = useMemo(
+    () => buildMenuTree(group.menuPermissions ?? []),
+    [group.menuPermissions]
+  );
+  const totalCount = tree.reduce((acc, p) => acc + p.children.length, 0);
+
+  return (
+    <article className="authCard">
+      <header className="authCardHead">
+        <div className="authCardTitleWrap">
+          <h4 className="authCardTitle">{group.authNm}</h4>
+          {group.authDesc && <p className="authCardDesc">{group.authDesc}</p>}
+        </div>
+
+        <div className="authCardActions">
+          <span className="authCardCount">메뉴 {totalCount}개</span>
+          <button
+            type="button"
+            className="authCardToggle"
+            aria-expanded={!collapsed}
+            onClick={onToggle}
+          >
+            {collapsed ? "권한 상세" : "요약"}
+            <ChevronDownIcon aria-hidden="true" />
+          </button>
+        </div>
+      </header>
+
+      <div className="authCardBody">
+        {tree.length === 0 ? (
+          <p className="authCardEmpty">설정된 유효 메뉴 권한이 없습니다.</p>
+        ) : collapsed ? (
+          <div className="authCategoryGrid">
+            {tree.map((parent) => (
+              <div key={parent.menuId} className="authCategory">
+                <div className="authCategoryHead">
+                  <span>{parent.menuNm}</span>
+                  <em>{parent.children.length}</em>
+                </div>
+                <div className="authTags">
+                  {parent.children.map((child) => (
+                    <span key={child.menuId} className="authTag">
+                      {child.menuNm}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="permMatrix" role="table" aria-label={`${group.authNm} 메뉴 권한`}>
+            <div className="permRow permRow--head" role="row">
+              <span role="columnheader">메뉴</span>
+              {PERMISSION_FIELDS.map(({ key, label }) => (
+                <span key={key} role="columnheader" className="permCell">
+                  {label}
+                </span>
+              ))}
+            </div>
+
+            {tree.map((parent) => (
+              <Fragment key={parent.menuId}>
+                <div className="permRow permRow--group" role="row">
+                  <span role="rowheader">{parent.menuNm}</span>
+                </div>
+
+                {parent.children.map((node) => (
+                  <div key={node.menuId} className="permRow" role="row">
+                    <span className="permName" role="rowheader">
+                      {node.menuNm}
+                    </span>
+                    {PERMISSION_FIELDS.map(({ key, label }) => (
+                      <span key={key} className="permCell" role="cell">
+                        {node[key] ? (
+                          <CheckIcon
+                            className="permMark permMark--on"
+                            role="img"
+                            aria-label={`${label} 가능`}
+                          />
+                        ) : (
+                          <MinusIcon
+                            className="permMark"
+                            role="img"
+                            aria-label={`${label} 불가`}
+                          />
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                ))}
+              </Fragment>
+            ))}
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
 
 export function SystemUserDetailPage() {
   const { userId } = useParams<{ userId: string }>();
@@ -41,7 +165,7 @@ export function SystemUserDetailPage() {
 
   const [isEditing, setIsEditing] = useState(false);
 
-  // 각 권한 그룹별 접힘/펼침 상태 (authId 기준, 기본값 true = 요약 상태)
+  // authId별 접힘 상태 (기본값 true = 요약)
   const [collapsedMap, setCollapsedMap] = useState<Record<string, boolean>>({});
 
   const [form, setForm] = useState<Record<string, string>>({
@@ -62,7 +186,7 @@ export function SystemUserDetailPage() {
       fields: [
         { label: "이름", key: "userNm", editable: true, required: true },
         { label: "전화번호", key: "phone", editable: true },
-        { label: "직책", key: "position", editable: true, fullWidth: true },
+        { label: "직책", key: "position", editable: true },
       ],
     },
   ];
@@ -74,9 +198,7 @@ export function SystemUserDetailPage() {
       setIsLoadingGroups(true);
       try {
         const response = await AuthGroupApi.getList();
-        if (isMounted) {
-          setAuthGroups(response.data ?? []);
-        }
+        if (isMounted) setAuthGroups(response.data ?? []);
       } catch (error) {
         console.error("권한 그룹 목록 조회 실패:", error);
       } finally {
@@ -89,7 +211,7 @@ export function SystemUserDetailPage() {
     };
   }, []);
 
-  // 2. 사용자 상세 데이터 조회 함수
+  // 2. 사용자 상세 데이터 조회
   const fetchUserDetail = async () => {
     if (!userId) return;
     setIsLoading(true);
@@ -101,8 +223,6 @@ export function SystemUserDetailPage() {
 
       if (userData) {
         setUser(userData);
-        const initialAuthIds = userData.authGroups?.map((g) => g.authId) || [];
-
         setForm({
           userId: userData.userId,
           userNm: userData.userNm || "",
@@ -111,7 +231,7 @@ export function SystemUserDetailPage() {
           use: userData.use ? "Y" : "N",
           createdAt: formatDateTime(userData.createdAt),
         });
-        setAuthIds(initialAuthIds);
+        setAuthIds(userData.authGroups?.map((g) => g.authId) || []);
       }
     } catch (error) {
       console.error("사용자 상세 조회 실패:", error);
@@ -126,6 +246,7 @@ export function SystemUserDetailPage() {
     fetchUserDetail();
   }, [userId, navigate, location.search]);
 
+  // 수정 모드를 빠져나오면 원본으로 롤백
   useEffect(() => {
     if (user && !isEditing) {
       setForm({
@@ -157,10 +278,9 @@ export function SystemUserDetailPage() {
       alert("최소 하나 이상의 권한 그룹을 선택해주세요.");
       return;
     }
-    // 전화번호: 선택 입력, 값이 있으면 형식 검사
     if (!isValidPhone(form.phone)) {
       alert("전화번호 형식이 올바르지 않습니다.\n예: 02-1234-5678, 010-1234-5678");
-      return false;
+      return;
     }
 
     setIsUpdating(true);
@@ -172,8 +292,7 @@ export function SystemUserDetailPage() {
         authIds,
       };
 
-      const encodedUserId = encodeURIComponent(user.userId);
-      await UserApi.update(encodedUserId, updatePayload);
+      await UserApi.update(encodeURIComponent(user.userId), updatePayload);
 
       alert("수정되었습니다.");
       await fetchUserDetail();
@@ -197,8 +316,7 @@ export function SystemUserDetailPage() {
 
     setIsDeactivating(true);
     try {
-      const encodedUserId = encodeURIComponent(user.userId);
-      await UserApi.delete(encodedUserId);
+      await UserApi.delete(encodeURIComponent(user.userId));
       alert("회원이 비활성화되었습니다.");
       navigate({ pathname: "/system/users", search: location.search });
     } catch (error) {
@@ -210,21 +328,14 @@ export function SystemUserDetailPage() {
     }
   };
 
-  // 권한 그룹별 요약/전체보기 토글 함수
   const toggleCollapse = (authId: string) => {
-    setCollapsedMap((prev) => {
-      const currentState = prev[authId] ?? true;
-      return {
-        ...prev,
-        [authId]: !currentState,
-      };
-    });
+    setCollapsedMap((prev) => ({ ...prev, [authId]: !(prev[authId] ?? true) }));
   };
 
   if (isLoading) {
     return (
       <section className="screenStack">
-        <div className="detailCard">
+        <div className="detailCard" aria-busy="true">
           <div className="flex justify-center p-10">
             <Spinner />
           </div>
@@ -235,13 +346,16 @@ export function SystemUserDetailPage() {
 
   if (!user) return null;
 
+  const goList = () =>
+    navigate({ pathname: "/system/users", search: location.search });
+
   return (
     <section className="screenStack">
       <DetailLayout
         title={user.userNm}
         subtitle={
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span>{form.userId}</span>
+            <span className="userIdText">{form.userId}</span>
             <Badge tone={form.use === "Y" ? "good" : "muted"}>
               {form.use === "Y" ? "사용" : "미사용"}
             </Badge>
@@ -295,9 +409,7 @@ export function SystemUserDetailPage() {
               <button
                 type="button"
                 className="ghostButton"
-                onClick={() =>
-                  navigate({ pathname: "/system/users", search: location.search })
-                }
+                onClick={goList}
                 disabled={isBusy}
               >
                 목록
@@ -314,195 +426,70 @@ export function SystemUserDetailPage() {
           )
         }
       >
-        <div className="detailSection detailSection--full">
-          <label className={isEditing ? "requiredLabel" : "sectionTitleUnderline"}>
-            권한 그룹 {isEditing && <span className="required">*</span>}
-          </label>
+        <section className="detailSection">
+          <div className="detailSectionHead">
+            <h3 className="detailSectionTitle">
+              권한 그룹
+              {isEditing && (
+                <span className="required" aria-hidden="true">
+                  {" "}
+                  *
+                </span>
+              )}
+            </h3>
+            <span className="detailSectionMeta">
+              {isEditing
+                ? `${authIds.length}개 선택`
+                : `${user.authGroups?.length ?? 0}개`}
+            </span>
+          </div>
 
           {isEditing ? (
             isLoadingGroups ? (
-              <div className="authGroupEmpty">권한 그룹 목록을 불러오는 중...</div>
+              <p className="authGroupEmpty">권한 그룹 목록을 불러오는 중...</p>
             ) : authGroups.length === 0 ? (
-              <div className="authGroupEmpty">선택 가능한 권한 그룹이 없습니다.</div>
+              <p className="authGroupEmpty">선택 가능한 권한 그룹이 없습니다.</p>
             ) : (
-              <div className="authGroupList">
+              <div className="authPickGrid" role="group" aria-label="권한 그룹 선택">
                 {authGroups.map((auth) => {
-                  const isChecked = authIds?.includes(auth.authId) ?? false;
+                  const checked = authIds.includes(auth.authId);
                   return (
-                    <div
+                    <button
                       key={auth.authId}
-                      className={`typeCardButton ${isChecked ? "active" : ""}`}
-                      onClick={() => {
-                        if (isBusy) return;
-                        handleAuthCheck(auth.authId, !isChecked);
-                      }}
-                      style={{
-                        cursor: isBusy ? "not-allowed" : "pointer",
-                      }}
+                      type="button"
+                      role="checkbox"
+                      aria-checked={checked}
+                      className={`authPick${checked ? " isChecked" : ""}`}
+                      disabled={isBusy}
+                      onClick={() => handleAuthCheck(auth.authId, !checked)}
                     >
-                      <div className="cardText main">{auth.authNm}</div>
-                      {auth.authDesc && (
-                        <div className="cardText sub">{auth.authDesc}</div>
-                      )}
-                    </div>
+                      <span className="authPickBox" aria-hidden="true">
+                        {checked && <CheckIcon />}
+                      </span>
+                      <span className="authPickText">
+                        <strong>{auth.authNm}</strong>
+                        {auth.authDesc && <small>{auth.authDesc}</small>}
+                      </span>
+                    </button>
                   );
                 })}
               </div>
             )
-          ) : (
-            <div className="userAuthGroupDetails">
-              {user.authGroups && user.authGroups.length > 0 ? (
-                user.authGroups.map((group) => {
-                  const rawMenus: MenuPermissionResponse[] = group.menuPermissions || [];
-
-                  const parentMenus = rawMenus.filter((m) => m.menuId % 100 === 0);
-
-                  const processedParents = parentMenus
-                    .map((parent) => {
-                      // 1. 하위 메뉴 중 READ(조회) 권한이 true인 항목만 필터링
-                      const children = rawMenus.filter(
-                        (m) =>
-                          m.menuId > parent.menuId &&
-                          m.menuId < parent.menuId + 100 &&
-                          m.read === true
-                      );
-
-                      // 2. READ 가능한 소메뉴가 하나라도 있는 경우에만 유효한 대메뉴로 반환
-                      if (children.length > 0) {
-                        return {
-                          ...parent,
-                          children,
-                        };
-                      }
-                      return null;
-                    })
-                    .filter(Boolean) as (MenuPermissionResponse & {
-                      children: MenuPermissionResponse[];
-                    })[];
-
-                  const totalCount = processedParents.reduce((acc, parent) => {
-                    return acc + (parent.children?.length || 0);
-                  }, 0);
-
-                  // true면 요약 상태 (알약 태그 표시), false면 전체 보기 상태 (상세 CRUD 닷 리스트)
-                  const isCollapsed = collapsedMap[group.authId] ?? true;
-
-                  return (
-                    <div key={group.authId} className="authGroupCard">
-                      {/* 권한 그룹 카드 헤더 */}
-                      <div className="authGroupCardHeader">
-                        <div className="authGroupCardHeaderLeft">
-                          <h4 className="authGroupCardTitle">{group.authNm}</h4>
-                          {group.authDesc && (
-                            <p className="authGroupCardDesc">{group.authDesc}</p>
-                          )}
-                        </div>
-                        <div className="authGroupCardHeaderRight">
-                          <span className="totalMenuBadge">
-                            총 {totalCount}개 메뉴
-                          </span>
-                          <button
-                            type="button"
-                            className="toggleViewBtn"
-                            onClick={() => toggleCollapse(group.authId)}
-                          >
-                            {isCollapsed ? (
-                              <>
-                                <span>전체 메뉴 보기</span>
-                                <ChevronDownIcon className="toggleIcon" aria-hidden="true" />
-                              </>
-                            ) : (
-                              <>
-                                <span>요약으로 보기</span>
-                                <ChevronUpIcon className="toggleIcon" aria-hidden="true" />
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* 대메뉴별 서브 카드 그리드 */}
-                      {processedParents.length > 0 ? (
-                        <div className="categoryGrid">
-                          {processedParents.map((parentMenu) => {
-                            const childMenus = parentMenu.children || [];
-
-                            return (
-                              <div key={parentMenu.menuId} className="categorySubCard">
-                                <div className="categorySubHeader">
-                                  <span className="categorySubTitle">{parentMenu.menuNm}</span>
-                                  {childMenus.length > 0 && (
-                                    <span className="categorySubCount">{childMenus.length}개</span>
-                                  )}
-                                </div>
-
-                                {isCollapsed ? (
-                                  <div className="categoryMenuTags">
-                                    {childMenus.length > 0 ? (
-                                      childMenus.map((child) => (
-                                        <span key={child.menuId} className="menuItemTag">
-                                          {child.menuNm}
-                                        </span>
-                                      ))
-                                    ) : (
-                                      <span className="menuPermissionsEmpty">하위 메뉴 없음</span>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <div className="menuPermList">
-                                    {childMenus.length > 0 && (
-                                      <div className="menuPermHeader">
-                                        <span className="menuPermHeaderName" />
-                                        <div className="menuPermHeaderLabels">
-                                          {PERMISSION_FIELDS.map(({ key, label }) => (
-                                            <span key={key} className="permHeaderLabel" title={label}>
-                                              {label}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {childMenus.length > 0 ? (
-                                      childMenus.map((node) => (
-                                        <div key={node.menuId} className="menuPermRow">
-                                          <span className="menuPermName">{node.menuNm}</span>
-                                          <div className="menuPermDots">
-                                            {PERMISSION_FIELDS.map(({ key, label }) => (
-                                              <span
-                                                key={key}
-                                                className={`permDot ${
-                                                  node[key] ? "permDot--on" : "permDot--off"
-                                                }`}
-                                                title={label}
-                                              />
-                                            ))}
-                                          </div>
-                                        </div>
-                                      ))
-                                    ) : (
-                                      <span className="menuPermissionsEmpty">하위 메뉴 없음</span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div className="menuPermissionsEmpty">
-                          설정된 유효 메뉴 권한이 없습니다.
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="detailValue">-</div>
-              )}
+          ) : user.authGroups && user.authGroups.length > 0 ? (
+            <div className="authCardList">
+              {user.authGroups.map((group) => (
+                <AuthGroupCard
+                  key={group.authId}
+                  group={group}
+                  collapsed={collapsedMap[group.authId] ?? true}
+                  onToggle={() => toggleCollapse(group.authId)}
+                />
+              ))}
             </div>
+          ) : (
+            <p className="authGroupEmpty">지정된 권한 그룹이 없습니다.</p>
           )}
-        </div>
+        </section>
       </DetailLayout>
     </section>
   );
