@@ -746,7 +746,7 @@
 -------------------------------------------------------- */
 .routing-list-item.is-readonly {
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr) auto;
+  grid-template-columns: 400px minmax(0, 1fr) auto;
   align-items: center;
   gap: 0 20px;
   min-height: 44px;
