@@ -65,3 +65,111 @@
   .fwo-prodRow { grid-template-columns: 1fr; gap: 6px; }
   .fwo-prodRow__val { text-align: left; }
 }
+
+/* 섬유동 작업현황판 전용 스타일 (fps- 접두사) - 공용 screenStack / Panel / ghostButton 은 기존 CSS 그대로 사용 */
+
+.fps-board { --fps-track: var(--seg-rest, #e3e6ea); --fps-warn: var(--warn-fg, #9a6410); }
+
+/* 헤더 */
+.fps-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.fps-head h1 { margin: 0; font-size: 22px; font-weight: 700; color: var(--text-heading, #0f172a); }
+.fps-head p { margin: 4px 0 0; font-size: 13px; color: var(--text-muted, #64748b); }
+.fps-headRight { display: grid; gap: 8px; justify-items: end; }
+.fps-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.fps-dateLabel { font-size: 13px; color: var(--text-muted, #64748b); }
+.fps-dateInput { height: 36px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--border, #ebecee); background: var(--bg-subtle, #f8fafc); color: inherit; }
+.fps-clock { text-align: right; display: grid; gap: 2px; }
+.fps-clock strong { font-size: 26px; font-weight: 700; color: var(--text-heading, #0f172a); font-variant-numeric: tabular-nums; }
+.fps-clock span { font-size: 12.5px; color: var(--text-muted, #64748b); }
+.fps-live { display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.fps-live i { width: 8px; height: 8px; border-radius: 50%; background: var(--good-fg, #1b7a52); }
+
+.fps-error { padding: 10px 14px; border-radius: 10px; font-size: 13px; color: var(--danger, #c0293d); background: var(--danger-soft, #fbe9eb); }
+.fps-loading { min-height: 300px; display: flex; align-items: center; justify-content: center; }
+
+/* 카드 */
+.fps-card { background: var(--bg-card, #fff); border: 1px solid var(--border, #ebecee); border-radius: 14px; padding: 20px 22px; min-width: 0; }
+
+/* 요약 숫자 */
+.fps-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.fps-stat { display: grid; gap: 6px; }
+.fps-stat span { font-size: 13px; color: var(--text-muted, #64748b); font-weight: 500; }
+.fps-stat strong { font-size: 34px; line-height: 1.1; font-weight: 700; color: var(--text-heading, #0f172a); font-variant-numeric: tabular-nums; }
+.fps-stat strong small { font-size: 15px; color: var(--text-muted, #64748b); font-weight: 600; margin-left: 4px; }
+.fps-stat em { font-style: normal; font-size: 12px; color: var(--text-muted, #64748b); }
+.fps-stat.warn strong { color: var(--fps-warn); }
+.fps-stat.danger strong { color: var(--danger, #c0293d); }
+
+/* 레이아웃: 왼쪽 수주별 / 오른쪽 담당자 + 작업 중 */
+.fps-layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.fps-col { display: grid; gap: 18px; min-width: 0; }
+
+/* 진행 막대 */
+.fps-bar { height: 12px; border-radius: 999px; background: var(--fps-track); overflow: hidden; }
+.fps-bar.is-thin { height: 8px; }
+.fps-bar span { display: block; height: 100%; border-radius: inherit; background: var(--primary, #57d3a1); }
+.fps-bar span.is-over { background: var(--fps-warn); }
+
+/* 수주별 */
+.fps-orders { display: grid; gap: 14px; }
+.fps-order { border: 1px solid var(--border, #ebecee); border-radius: 12px; padding: 16px 18px; display: grid; gap: 12px; background: var(--bg-subtle, #f8fafc); }
+.fps-orderTop { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.fps-orderName { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.fps-orderName b { font-size: 16px; color: var(--text-heading, #0f172a); }
+.fps-orderName code { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; color: var(--text-muted, #64748b); }
+.fps-tags { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.fps-tag { font-size: 12.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.fps-tag.ok { background: var(--info-bg, #e9f0fa); color: var(--info-fg, #2a5da8); }
+.fps-tag.soon { background: var(--warn-bg, #fcf3e0); color: var(--warn-fg, #9a6410); }
+.fps-tag.late { background: var(--danger-soft, #fbe9eb); color: var(--danger, #c0293d); }
+.fps-tag.muted { background: var(--muted-bg, #f1f3f5); color: var(--muted-fg, #5b6670); }
+.fps-orderTotal { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+.fps-pct { font-size: 28px; font-weight: 700; color: var(--text-heading, #0f172a); font-variant-numeric: tabular-nums; }
+.fps-pct small { font-size: 14px; color: var(--text-muted, #64748b); margin-left: 2px; }
+.fps-pct.is-over { color: var(--fps-warn); }
+.fps-facts { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-muted, #64748b); }
+.fps-facts b { color: var(--text-heading, #0f172a); font-variant-numeric: tabular-nums; }
+.fps-warnText { color: var(--fps-warn); }
+.fps-lines { display: grid; gap: 8px; }
+.fps-line { display: grid; grid-template-columns: 96px minmax(0, 1fr) 250px; gap: 12px; align-items: center; font-size: 13px; }
+.fps-line__nm { font-weight: 600; }
+.fps-line__val { text-align: right; color: var(--text-muted, #64748b); font-variant-numeric: tabular-nums; }
+.fps-line__val b { color: var(--text-heading, #0f172a); }
+
+/* 담당자별 */
+.fps-people { display: grid; gap: 12px; }
+.fps-person { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; align-items: center; }
+.fps-avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 15px; background: var(--primary-light, #dff7ec); color: var(--good-fg, #1b7a52); }
+.fps-avatar.is-none { background: var(--muted-bg, #f1f3f5); color: var(--muted-fg, #5b6670); }
+.fps-personMain { display: grid; gap: 6px; min-width: 0; }
+.fps-personTop { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; }
+.fps-personTop b { color: var(--text-heading, #0f172a); }
+.fps-personTop span { color: var(--text-muted, #64748b); font-variant-numeric: tabular-nums; }
+.fps-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.fps-chip { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--muted-bg, #f1f3f5); color: var(--muted-fg, #5b6670); }
+.fps-chip.run { background: var(--warn-bg, #fcf3e0); color: var(--warn-fg, #9a6410); }
+.fps-chip.done { background: var(--good-bg, #e8f6ef); color: var(--good-fg, #1b7a52); }
+
+/* 지금 작업 중 */
+.fps-running { display: grid; gap: 10px; }
+.fps-runCard { border-left: 4px solid var(--fps-warn); background: var(--bg-subtle, #f8fafc); border-radius: 8px; padding: 12px 14px; display: grid; gap: 6px; }
+.fps-runCard__t { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.fps-runCard__t b { color: var(--text-heading, #0f172a); }
+.fps-runCard__t span { color: var(--fps-warn); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 13px; }
+.fps-runCard__s { font-size: 12.5px; color: var(--text-muted, #64748b); }
+.fps-runCard code { font-family: ui-monospace, Consolas, monospace; }
+.fps-runNums { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 12.5px; color: var(--text-muted, #64748b); font-variant-numeric: tabular-nums; }
+.fps-runNums b { color: var(--text-heading, #0f172a); }
+
+.fps-empty { color: var(--text-muted, #64748b); font-size: 13px; margin: 0; }
+.fps-note { font-size: 12.5px; color: var(--text-muted, #64748b); line-height: 1.6; margin: 12px 0 0; }
+
+@media (max-width: 1100px) { .fps-layout { grid-template-columns: 1fr; } }
+@media (max-width: 760px) {
+  .fps-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fps-line { grid-template-columns: 72px minmax(0, 1fr); }
+  .fps-line__val { grid-column: 1 / -1; text-align: left; }
+  .fps-headRight { justify-items: start; }
+  .fps-clock { text-align: left; }
+}
+@media (prefers-reduced-motion: no-preference) { .fps-bar span { transition: width .4s; } }
