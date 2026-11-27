@@ -20,11 +20,9 @@ import Spinner from "@/components/common/Spinner";
 import { OperationSelectModal } from "@/components/modal/OperationSelectModal";
 import { useItemRoutings, type RoutingStep } from "@/hooks/useItemRoutings";
 import { DetailLayout, type DetailSection } from "@/pages/layout/DetailLayout";
-import {
-  RoutingMaterialSection,
-  toMaterialRequests,
-} from "@/components/common/RoutingMatarialSection";
+import { RoutingMaterialSection, toMaterialRequests } from "@/components/common/RoutingMatarialSection";
 import "./MasterItem.css";
+import { SelectBox, type SelectBoxOption } from "@components/common/SelectBox";
 
 interface OperationOption {
   operCode: string;
@@ -43,6 +41,22 @@ const getRoutingTypeLabel = (finalYn: string | undefined, matchedOp?: OperationO
   }
   return "";
 };
+
+const PRODUCT_TYPE_OPTIONS: SelectBoxOption[] = [
+  { value: "0", label: PRODUCT_TYPE_LABEL[0] },
+  { value: "1", label: PRODUCT_TYPE_LABEL[1] },
+];
+
+const CATEGORY_OPTIONS: SelectBoxOption[] = [
+  { value: "0", label: CATEGORY_LABEL[0] },
+  { value: "1", label: CATEGORY_LABEL[1] },
+  { value: "2", label: CATEGORY_LABEL[2] },
+];
+
+const SOLE_PRODUCTION_OPTIONS: SelectBoxOption[] = [
+  { value: "0", label: SOLE_PRODUCTION_LABEL[0] },
+  { value: "1", label: SOLE_PRODUCTION_LABEL[1], description: "수주 산출라인에서 다른 품목과 조합 불가" },
+];
 
 export function MasterItemsDetailPage() {
   const { itemCode } = useParams<{ itemCode: string }>();
@@ -136,7 +150,7 @@ export function MasterItemsDetailPage() {
         if (prevCategory !== "0" && routings.length > 0) {
           const ok = window.confirm(
             "원료는 공정 라우팅을 사용하지 않아 설정한 공정과 자재 정보가 초기화됩니다.\n" +
-              "(다시 반제품/완제품으로 변경하면 복원되며, 저장 전에는 서버 데이터에 영향이 없습니다)\n\n계속하시겠습니까?"
+              "(다시 반제품/완제품으로 변경하면 복원되며, 저장 전에는 서버 데이터에 영향이 없습니다)\n\n계속하시겠습니까?",
           );
           // 취소 → 품목구분 변경 자체를 막아 기존 라우팅 유지
           if (!ok) return;
@@ -176,37 +190,30 @@ export function MasterItemsDetailPage() {
           key: "productType",
           editable: true,
           renderEditor: (value, _onChange, disabled) => (
-            <select
-              className="tableInput"
+            <SelectBox
+              ariaLabel="종류"
               value={value}
+              options={PRODUCT_TYPE_OPTIONS}
               disabled={disabled}
-              onChange={(e) => handleFieldChange("productType", e.target.value)}
-            >
-              <option value="0">{PRODUCT_TYPE_LABEL[0]}</option>
-              <option value="1">{PRODUCT_TYPE_LABEL[1]}</option>
-            </select>
+              onChange={(v) => handleFieldChange("productType", v)}
+            />
           ),
-          renderValue: () =>
-            item ? PRODUCT_TYPE_LABEL[item.productType as ProductType] ?? "-" : "-",
+          renderValue: () => (item ? (PRODUCT_TYPE_LABEL[item.productType as ProductType] ?? "-") : "-"),
         },
         {
           label: "품목구분",
           key: "category",
           editable: true,
           renderEditor: (value, _onChange, disabled) => (
-            <select
-              className="tableInput"
+            <SelectBox
+              ariaLabel="품목구분"
               value={value}
+              options={CATEGORY_OPTIONS}
               disabled={disabled}
-              onChange={(e) => handleFieldChange("category", e.target.value)}
-            >
-              <option value="0">{CATEGORY_LABEL[0]}</option>
-              <option value="1">{CATEGORY_LABEL[1]}</option>
-              <option value="2">{CATEGORY_LABEL[2]}</option>
-            </select>
+              onChange={(v) => handleFieldChange("category", v)}
+            />
           ),
-          renderValue: () =>
-            item ? CATEGORY_LABEL[item.category as ItemCategory] ?? "-" : "-",
+          renderValue: () => (item ? (CATEGORY_LABEL[item.category as ItemCategory] ?? "-") : "-"),
         },
         // 단독생산 전용 여부 (1이면 수주 산출라인에서 다른 품목과 조합 불가)
         {
@@ -214,21 +221,15 @@ export function MasterItemsDetailPage() {
           key: "soleProductionYn",
           editable: true,
           renderEditor: (value, _onChange, disabled) => (
-            <select
-              className="tableInput"
+            <SelectBox
+              ariaLabel="단독생산 전용"
               value={value}
+              options={SOLE_PRODUCTION_OPTIONS}
               disabled={disabled}
-              title="예: 수주 산출라인에서 다른 품목과 조합 불가"
-              onChange={(e) => handleFieldChange("soleProductionYn", e.target.value)}
-            >
-              <option value="0">{SOLE_PRODUCTION_LABEL[0]}</option>
-              <option value="1">{SOLE_PRODUCTION_LABEL[1]}</option>
-            </select>
+              onChange={(v) => handleFieldChange("soleProductionYn", v)}
+            />
           ),
-          renderValue: () =>
-            item
-              ? SOLE_PRODUCTION_LABEL[item.soleProductionYn as SoleProductionYn] ?? "-"
-              : "-",
+          renderValue: () => (item ? (SOLE_PRODUCTION_LABEL[item.soleProductionYn as SoleProductionYn] ?? "-") : "-"),
         },
       ],
     },
@@ -374,8 +375,7 @@ export function MasterItemsDetailPage() {
   };
 
   const validateForm = (): boolean => {
-    const selectedCategory =
-      form.category !== "" ? (Number(form.category) as ItemCategory) : null;
+    const selectedCategory = form.category !== "" ? (Number(form.category) as ItemCategory) : null;
 
     // 완제품(2)만 공정 라우팅 필수 / 반제품(1)은 선택 / 원료(0)는 사용 불가
     //    ※ 공정별 자재 IN/OUT 최소 건수 및 "라우팅 전체 투입자재 1건 이상" 검증은 백엔드에서 처리
@@ -393,17 +393,14 @@ export function MasterItemsDetailPage() {
 
     setIsUpdating(true);
     try {
-      const selectedCategory =
-        form.category !== "" ? (Number(form.category) as ItemCategory) : null;
+      const selectedCategory = form.category !== "" ? (Number(form.category) as ItemCategory) : null;
 
       // 반제품(1)·완제품(2)만 라우팅 전송 가능 (원료(0)는 null)
       const isRoutingAllowedOnSave = selectedCategory === 1 || selectedCategory === 2;
 
       const updatePayload: ItemUpdateRequest = {
         productType:
-          form.productType !== "" && form.productType != null
-            ? (Number(form.productType) as ProductType)
-            : null,
+          form.productType !== "" && form.productType != null ? (Number(form.productType) as ProductType) : null,
         category: selectedCategory,
         itemNm: form.itemNm?.trim() ? form.itemNm.trim() : null,
         unit: form.unit?.trim() ? form.unit.trim() : null,
@@ -413,12 +410,12 @@ export function MasterItemsDetailPage() {
         // 완제품만 → 반제품·완제품. 반제품은 공정이 0건이면 빈 배열 전송
         routings: isRoutingAllowedOnSave
           ? routings.map((r) => ({
-            operCode: r.operCode?.trim() || null,
-            operSeq: r.operSeq ?? 1,
-            finalYn: r.finalYn || "N",
-            // [중복 공정 지원] operCode 로 맵을 조회하지 않고 "그 단계 자신의" 자재를 전송
-            materials: toMaterialRequests(r.materials),
-          }))
+              operCode: r.operCode?.trim() || null,
+              operSeq: r.operSeq ?? 1,
+              finalYn: r.finalYn || "N",
+              // [중복 공정 지원] operCode 로 맵을 조회하지 않고 "그 단계 자신의" 자재를 전송
+              materials: toMaterialRequests(r.materials),
+            }))
           : null,
       };
 
@@ -430,45 +427,35 @@ export function MasterItemsDetailPage() {
       setItem((prev) =>
         prev
           ? {
-            ...prev,
-            productType: updated?.productType ?? updatePayload.productType ?? prev.productType,
-            category: updated?.category ?? updatePayload.category ?? prev.category,
-            itemNm:
-              updated && "itemNm" in updated
-                ? (updated.itemNm ?? "")
-                : (updatePayload.itemNm ?? ""),
-            unit:
-              updated && "unit" in updated
-                ? (updated.unit ?? "")
-                : (updatePayload.unit ?? ""),
-            standard:
-              updated && "standard" in updated
-                ? (updated.standard ?? "")
-                : (updatePayload.standard ?? ""),
-            // 단독생산 전용 여부 반영
-            soleProductionYn:
-              updated?.soleProductionYn ?? updatePayload.soleProductionYn ?? prev.soleProductionYn,
-            routings: updatePayload.routings
-              ? routings.map((r) => ({
-                routingId: 0,
-                itemCode: prev.itemCode,
-                operCode: r.operCode,
-                operSeq: r.operSeq,
-                finalYn: r.finalYn,
-                // [중복 공정 지원] 저장한 "단계별" 자재를 상세 데이터에도 반영 (취소/읽기 모드 복원 시 사용)
-                materials: r.materials.map((m) => ({
-                  routingMtrlId: 0,
-                  itemCode: m.itemCode,
-                  itemNm: m.itemNm,
-                  unit: m.unit,
-                  ioType: m.ioType,
-                  // 계획 수율(%) - OUT 자재만 값이 있을 수 있음, 미확정이면 null
-                  yieldRate: m.yieldRate ?? null,
-                })),
-              }))
-              : [],
-          }
-          : null
+              ...prev,
+              productType: updated?.productType ?? updatePayload.productType ?? prev.productType,
+              category: updated?.category ?? updatePayload.category ?? prev.category,
+              itemNm: updated && "itemNm" in updated ? (updated.itemNm ?? "") : (updatePayload.itemNm ?? ""),
+              unit: updated && "unit" in updated ? (updated.unit ?? "") : (updatePayload.unit ?? ""),
+              standard: updated && "standard" in updated ? (updated.standard ?? "") : (updatePayload.standard ?? ""),
+              // 단독생산 전용 여부 반영
+              soleProductionYn: updated?.soleProductionYn ?? updatePayload.soleProductionYn ?? prev.soleProductionYn,
+              routings: updatePayload.routings
+                ? routings.map((r) => ({
+                    routingId: 0,
+                    itemCode: prev.itemCode,
+                    operCode: r.operCode,
+                    operSeq: r.operSeq,
+                    finalYn: r.finalYn,
+                    // [중복 공정 지원] 저장한 "단계별" 자재를 상세 데이터에도 반영 (취소/읽기 모드 복원 시 사용)
+                    materials: r.materials.map((m) => ({
+                      routingMtrlId: 0,
+                      itemCode: m.itemCode,
+                      itemNm: m.itemNm,
+                      unit: m.unit,
+                      ioType: m.ioType,
+                      // 계획 수율(%) - OUT 자재만 값이 있을 수 있음, 미확정이면 null
+                      yieldRate: m.yieldRate ?? null,
+                    })),
+                  }))
+                : [],
+            }
+          : null,
       );
 
       setIsEditing(false);
@@ -484,9 +471,7 @@ export function MasterItemsDetailPage() {
   const handleDelete = async () => {
     if (!item || isDeleting) return;
 
-    const confirmed = window.confirm(
-      `${item.itemNm ?? item.itemCode} 품목을 삭제하시겠습니까?`
-    );
+    const confirmed = window.confirm(`${item.itemNm ?? item.itemCode} 품목을 삭제하시겠습니까?`);
     if (!confirmed) return;
 
     setIsDeleting(true);
@@ -522,11 +507,10 @@ export function MasterItemsDetailPage() {
   const isRoutingRequired = currentCategory === "2";
   // 반제품(1)·완제품(2): 라우팅 사용 가능 / 원료(0): 사용 불가
   const isRoutingAllowed = currentCategory === "1" || currentCategory === "2";
-  const selectedRouting =
-    selectedIndex !== null && routings[selectedIndex] ? routings[selectedIndex] : null;
-  const selectedMatchedOp = selectedRouting
-    ? operations.find((op) => op.operCode === selectedRouting.operCode)
-    : null;
+  const selectedRouting = selectedIndex !== null && routings[selectedIndex] ? routings[selectedIndex] : null;
+  const selectedMatchedOp = selectedRouting ? operations.find((op) => op.operCode === selectedRouting.operCode) : null;
+  // G(수율 확정 지점)도 최종 계열로 강조 표시
+  const isSelectedFinal = selectedRouting ? selectedRouting.finalYn === "Y" || selectedRouting.finalYn === "G" : false;
 
   return (
     <section className="screenStack">
@@ -535,9 +519,7 @@ export function MasterItemsDetailPage() {
         subtitle={
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <span>{form.itemCode}</span>
-            <Badge tone={form.useYn === "Y" ? "good" : "muted"}>
-              {form.useYn === "Y" ? "사용" : "미사용"}
-            </Badge>
+            <Badge tone={form.useYn === "Y" ? "good" : "muted"}>{form.useYn === "Y" ? "사용" : "미사용"}</Badge>
           </div>
         }
         meta={`등록일자 ${form.createdAt}`}
@@ -553,12 +535,7 @@ export function MasterItemsDetailPage() {
         footerLeft={
           isEditing &&
           item.useYn === "Y" && (
-            <button
-              type="button"
-              className="btnDanger"
-              onClick={handleDelete}
-              disabled={isBusy}
-            >
+            <button type="button" className="btnDanger" onClick={handleDelete} disabled={isBusy}>
               {isDeleting ? "삭제 처리 중..." : "품목 삭제"}
             </button>
           )
@@ -566,20 +543,10 @@ export function MasterItemsDetailPage() {
         footerRight={
           isEditing ? (
             <>
-              <button
-                type="button"
-                className="ghostButton"
-                onClick={() => setIsEditing(false)}
-                disabled={isBusy}
-              >
+              <button type="button" className="ghostButton" onClick={() => setIsEditing(false)} disabled={isBusy}>
                 취소
               </button>
-              <button
-                type="button"
-                className="primaryButton"
-                onClick={handleSave}
-                disabled={isBusy}
-              >
+              <button type="button" className="primaryButton" onClick={handleSave} disabled={isBusy}>
                 {isUpdating ? "저장 중..." : "저장"}
               </button>
             </>
@@ -588,19 +555,12 @@ export function MasterItemsDetailPage() {
               <button
                 type="button"
                 className="ghostButton"
-                onClick={() =>
-                  navigate({ pathname: "/master/items", search: location.search })
-                }
+                onClick={() => navigate({ pathname: "/master/items", search: location.search })}
                 disabled={isBusy}
               >
                 목록
               </button>
-              <button
-                type="button"
-                className="primaryButton"
-                onClick={() => setIsEditing(true)}
-                disabled={isBusy}
-              >
+              <button type="button" className="primaryButton" onClick={() => setIsEditing(true)} disabled={isBusy}>
                 수정
               </button>
             </>
@@ -613,8 +573,7 @@ export function MasterItemsDetailPage() {
           <div className="routingSection">
             <div className="routing-header-wrapper">
               <label className="requiredLabel routing-header-label">
-                공정 라우팅 설정{" "}
-                {isRoutingRequired && isEditing && <span className="required">*</span>}
+                공정 라우팅 설정 {isRoutingRequired && isEditing && <span className="required">*</span>}
                 {/* 반제품은 선택 입력 */}
                 {!isRoutingRequired && isEditing && (
                   <span style={{ marginLeft: 4, fontWeight: 400, opacity: 0.6 }}>(선택)</span>
@@ -623,12 +582,7 @@ export function MasterItemsDetailPage() {
               <div className="routing-header-right">
                 <span className="routing-count-text">총 {routings.length}단계</span>
                 {isEditing && (
-                  <button
-                    type="button"
-                    className="miniButton primary"
-                    disabled={isBusy}
-                    onClick={handleOpenModal}
-                  >
+                  <button type="button" className="miniButton primary" disabled={isBusy} onClick={handleOpenModal}>
                     + 공정 선택 / 추가
                   </button>
                 )}
@@ -637,10 +591,15 @@ export function MasterItemsDetailPage() {
 
             {isEditing && (
               <div className="routing-guide-text">
-                ⠿ 드래그로 순서 변경, 항목 선택 시 우측에서 상세 편집
-                (마지막 공정이 최종공정이며, 최종공정이 바뀌면 해당 공정의 투입/산출 자재는 초기화됩니다.
-                같은 공정을 여러 단계로 추가할 수 있으며 자재는 단계별로 따로 관리됩니다.
-                마지막이 아닌 공정에서 최종 산출물의 수율이 확정되는 경우에는 "수율 확정 지점"으로 지정하세요)
+                <ul>
+                  <li>드래그 또는 화살표로 순서를 바꾸고, 항목을 선택하면 우측에서 상세 편집합니다.</li>
+                  <li>마지막 공정이 최종공정이며, 최종공정이 바뀌면 해당 공정의 투입/산출 자재는 초기화됩니다.</li>
+                  <li>같은 공정을 여러 단계로 추가할 수 있고, 자재는 단계별로 따로 관리됩니다.</li>
+                  <li>
+                    마지막이 아닌 공정에서 최종 산출물의 수율이 확정되면 <strong>수율 확정 지점</strong>으로
+                    지정하세요.
+                  </li>
+                </ul>
               </div>
             )}
 
@@ -651,7 +610,7 @@ export function MasterItemsDetailPage() {
                   : "등록된 공정 라우팅이 없습니다."}
               </div>
             ) : isEditing ? (
-              /* ===== 수정 모드: 등록 페이지와 동일한 2단 레이아웃 ===== */
+              /* ===== 수정 모드: 좌측 공정 리스트 + 우측 상세 패널 ===== */
               <div className="routing-layout-grid">
                 {/* [좌측 영역] 공정 리스트 */}
                 <div className="routing-list-container">
@@ -671,6 +630,8 @@ export function MasterItemsDetailPage() {
                           routingItemRefs.current[index] = el;
                         }}
                         draggable
+                        tabIndex={0}
+                        aria-current={isSelected ? "true" : undefined}
                         onDragStart={() => setDraggedIndex(index)}
                         onDragOver={(e) => {
                           e.preventDefault();
@@ -692,8 +653,16 @@ export function MasterItemsDetailPage() {
                           setDragOverIndex(null);
                         }}
                         onClick={() => setSelectedIndex(index)}
-                        className={`routing-list-item ${isSelected ? "is-selected" : ""} ${isDragOver ? "is-drag-over" : ""
-                          } ${isDragged ? "is-dragged" : ""}`}
+                        onKeyDown={(e) => {
+                          if (e.target !== e.currentTarget) return;
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setSelectedIndex(index);
+                          }
+                        }}
+                        className={`routing-list-item ${isSelected ? "is-selected" : ""} ${
+                          isDragOver ? "is-drag-over" : ""
+                        } ${isDragged ? "is-dragged" : ""}`}
                       >
                         <div className="routing-item-left">
                           <span
@@ -702,16 +671,11 @@ export function MasterItemsDetailPage() {
                           >
                             ⠿
                           </span>
-                          <span className="routing-seq">
-                            {String(route.operSeq ?? index + 1).padStart(2, "0")}
-                          </span>
+                          <span className="routing-seq">{String(route.operSeq ?? index + 1).padStart(2, "0")}</span>
                           <span className="routing-code-wrap">
                             <Badge tone="info">{route.operCode}</Badge>
                           </span>
-                          <span
-                            className="routing-oper-nm"
-                            title={matchedOp ? matchedOp.operNm : ""}
-                          >
+                          <span className="routing-oper-nm" title={matchedOp ? matchedOp.operNm : ""}>
                             {matchedOp ? matchedOp.operNm : ""}
                           </span>
                         </div>
@@ -733,6 +697,7 @@ export function MasterItemsDetailPage() {
                                 }
                               }}
                               title="위로 이동"
+                              aria-label={`${matchedOp ? matchedOp.operNm : route.operCode} 위로 이동`}
                             >
                               <ChevronUpIcon className="routing-arrow-icon" aria-hidden="true" />
                             </button>
@@ -747,6 +712,7 @@ export function MasterItemsDetailPage() {
                                 }
                               }}
                               title="아래로 이동"
+                              aria-label={`${matchedOp ? matchedOp.operNm : route.operCode} 아래로 이동`}
                             >
                               <ChevronDownIcon className="routing-arrow-icon" aria-hidden="true" />
                             </button>
@@ -761,92 +727,79 @@ export function MasterItemsDetailPage() {
                 <div className="routing-detail-panel">
                   {selectedRouting && selectedIndex !== null ? (
                     <div>
-                      {/* STEP 카드 */}
+                      {/* STEP 카드 (앞으로/뒤로 이동 버튼 포함) */}
                       <div className="routing-step-card">
                         <div className="routing-step-badge">
                           <div className="routing-step-badge-title">STEP</div>
-                          <div className="routing-step-badge-num">
-                            {String(selectedIndex + 1).padStart(2, "0")}
-                          </div>
+                          <div className="routing-step-badge-num">{String(selectedIndex + 1).padStart(2, "0")}</div>
                         </div>
-                        <div>
+                        <div className="routing-step-info">
                           <div className="routing-step-info-nm">
                             {selectedMatchedOp ? selectedMatchedOp.operNm : selectedRouting.operCode}
                           </div>
                           <div className="routing-step-info-code">{selectedRouting.operCode}</div>
                         </div>
-                      </div>
-
-                      {/* 앞으로 / 뒤로 빠른 이동 */}
-                      <div className="routing-move-grid">
-                        <button
-                          type="button"
-                          className="routing-move-btn"
-                          disabled={selectedIndex === 0 || isBusy}
-                          onClick={() => {
-                            if (handleMoveRouting(selectedIndex, selectedIndex - 1)) {
-                              setSelectedIndex(selectedIndex - 1);
-                            }
-                          }}
-                        >
-                          <ChevronUpIcon className="routing-arrow-icon" aria-hidden="true" />
-                          앞으로
-                        </button>
-                        <button
-                          type="button"
-                          className="routing-move-btn"
-                          disabled={selectedIndex === routings.length - 1 || isBusy}
-                          onClick={() => {
-                            if (handleMoveRouting(selectedIndex, selectedIndex + 1)) {
-                              setSelectedIndex(selectedIndex + 1);
-                            }
-                          }}
-                        >
-                          <ChevronDownIcon className="routing-arrow-icon" aria-hidden="true" />
-                          뒤로
-                        </button>
-                      </div>
-
-                      {/* 공정명 / 공정구분 → 한 줄(2열) 배치 */}
-                      <div className="routing-form-row">
-                        <div className="routing-form-group">
-                          <label className="routing-label">공정명</label>
-                          <input
-                            type="text"
-                            className="tableInput routing-input-readonly"
-                            value={selectedMatchedOp ? selectedMatchedOp.operNm : ""}
-                            disabled
-                          />
+                        <div className="routing-step-move">
+                          <button
+                            type="button"
+                            className="routing-icon-btn"
+                            title="앞으로 이동"
+                            aria-label="이 공정을 앞으로 이동"
+                            disabled={selectedIndex === 0 || isBusy}
+                            onClick={() => {
+                              if (handleMoveRouting(selectedIndex, selectedIndex - 1)) {
+                                setSelectedIndex(selectedIndex - 1);
+                              }
+                            }}
+                          >
+                            <ChevronUpIcon className="routing-arrow-icon" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            className="routing-icon-btn"
+                            title="뒤로 이동"
+                            aria-label="이 공정을 뒤로 이동"
+                            disabled={selectedIndex === routings.length - 1 || isBusy}
+                            onClick={() => {
+                              if (handleMoveRouting(selectedIndex, selectedIndex + 1)) {
+                                setSelectedIndex(selectedIndex + 1);
+                              }
+                            }}
+                          >
+                            <ChevronDownIcon className="routing-arrow-icon" aria-hidden="true" />
+                          </button>
                         </div>
+                      </div>
 
-                        <div className="routing-form-group">
-                          <label className="routing-label">공정구분</label>
-                          {/* 공정구분 라벨은 읽기 전용 표시 (Y 는 마지막 공정으로 자동 지정) */}
-                          <input
-                            type="text"
-                            className="tableInput routing-input-readonly"
-                            value={getRoutingTypeLabel(selectedRouting.finalYn, selectedMatchedOp)}
-                            disabled
+                      {/*
+                          공정구분은 읽기 전용 표시 (Y 는 마지막 공정으로 자동 지정)
+                          마지막 공정(Y)은 자동 지정 안내만, 그 외 공정은 "수율 확정 지점(G)" 체크박스 제공
+                          - 체크하면 해당 공정에서도 최종 산출물(완제품/자기 자신)을 산출 자재로 추가하고 수율 입력 가능
+                      */}
+                      <div className="routing-step-meta">
+                        <div className="routing-step-meta-item">
+                          <span className="routing-meta-label">공정구분</span>
+                          <span
+                            className={`routing-type-badge ${isSelectedFinal ? "is-final" : ""}`}
                             title="마지막 공정이 자동으로 최종공정이 됩니다"
-                          />
-                          {/*
-                              마지막 공정(Y)은 자동 지정 안내만, 그 외 공정은 "수율 확정 지점(G)" 체크박스 제공
-                              - 체크하면 해당 공정에서도 최종 산출물(완제품/자기 자신)을 산출 자재로 추가하고 수율 입력 가능
-                          */}
-                          {selectedRouting.finalYn === "Y" ? (
-                            <div className="routing-guide-text">마지막 공정이 자동으로 최종공정입니다</div>
-                          ) : (
-                            <label className="routing-guide-text" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                              <input
-                                type="checkbox"
-                                checked={selectedRouting.finalYn === "G"}
-                                disabled={isBusy}
-                                onChange={(e) => setYieldPoint(selectedRouting.rowKey, e.target.checked)}
-                              />
-                              수율 확정 지점 (일반공정 최종)
-                            </label>
-                          )}
+                          >
+                            {getRoutingTypeLabel(selectedRouting.finalYn, selectedMatchedOp) || "-"}
+                          </span>
                         </div>
+
+                        {selectedRouting.finalYn === "Y" ? (
+                          <span className="routing-step-note">마지막 공정이 자동으로 최종공정입니다</span>
+                        ) : (
+                          <label className="routing-check">
+                            <input
+                              type="checkbox"
+                              checked={selectedRouting.finalYn === "G"}
+                              disabled={isBusy}
+                              onChange={(e) => setYieldPoint(selectedRouting.rowKey, e.target.checked)}
+                            />
+                            수율 확정 지점 (일반공정 최종)
+                          </label>
+                        )}
                       </div>
 
                       {/* 이 "단계"의 투입(IN) / 산출(OUT) 자재 (+ 산출 자재 수율) */}
@@ -896,16 +849,11 @@ export function MasterItemsDetailPage() {
                   return (
                     <div key={route.rowKey} className="routing-list-item is-readonly">
                       <div className="routing-item-left">
-                        <span className="routing-seq">
-                          {String(route.operSeq ?? index + 1).padStart(2, "0")}
-                        </span>
+                        <span className="routing-seq">{String(route.operSeq ?? index + 1).padStart(2, "0")}</span>
                         <span className="routing-code-wrap">
                           <Badge tone="info">{route.operCode}</Badge>
                         </span>
-                        <span
-                          className="routing-oper-nm"
-                          title={matchedOp ? matchedOp.operNm : ""}
-                        >
+                        <span className="routing-oper-nm" title={matchedOp ? matchedOp.operNm : ""}>
                           {matchedOp ? matchedOp.operNm : ""}
                         </span>
                       </div>

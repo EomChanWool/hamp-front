@@ -14,6 +14,12 @@ import {
 } from '@/api/seed/StockHistory';
 import { ItemApi, type ItemOptionResponse, type ItemCategory } from '@/api/master/Item';
 import { PenIcon, RotateIcon, TriangleIcon } from "@/components/icons/CustomIcons";
+import { SelectBox, type SelectBoxOption } from '@components/common/SelectBox';
+
+const DIRECTION_OPTIONS: SelectBoxOption[] = [
+    { value: 'INCREASE', label: '증가 (조정)' },
+    { value: 'DECREASE', label: '감소 (조정)' },
+];
 
 /** 검색/등록에 노출할 품목 구분 (0: 원료, 2: 완제품 / 1: 반제품 제외) */
 const SELECTABLE_CATEGORIES: ItemCategory[] = [0, 2];
@@ -37,6 +43,16 @@ export function SeedInventoryManagePage() {
     // 등록/수정 행에서 선택한 품목 (수량 입력칸 옆 단위 표시용)
     const [selectedItemCode, setSelectedItemCode] = useState('');
     const selectedItemUnit = itemOptions.find((opt) => opt.itemCode === selectedItemCode)?.unit ?? '';
+
+    // SelectBox 내부 useMemo가 options 참조에 의존하므로 반드시 메모이제이션
+    const itemSelectOptions = useMemo<SelectBoxOption[]>(
+        () =>
+            itemOptions.map((opt) => ({
+                value: opt.itemCode,
+                label: `${opt.itemNm ?? '-'} (${opt.itemCode})`,
+            })),
+        [itemOptions]
+    );
 
     const [searchFilters, setSearchFilters] = useState({
         category: '',
@@ -371,25 +387,24 @@ export function SeedInventoryManagePage() {
 
                     if (isNew || isEditing) {
                         return (
-                            <select
-                                className="tableInput"
-                                defaultValue={editFormRef.current.itemCode}
-                                onChange={(e) => {
-                                    editFormRef.current.itemCode = e.target.value;
-                                    setSelectedItemCode(e.target.value);
+                            <SelectBox
+                                className="selectBox--cell"
+                                ariaLabel="품목 선택"
+                                placeholder="품목 선택"
+                                searchable
+                                searchPlaceholder="품목명 / 코드 검색"
+                                value={selectedItemCode}
+                                options={itemSelectOptions}
+                                onChange={(value) => {
+                                    editFormRef.current.itemCode = value;
+                                    setSelectedItemCode(value);
                                 }}
-                            >
-                                <option value="" disabled>품목 선택</option>
-                                {itemOptions.map((opt) => (
-                                    <option key={opt.itemCode} value={opt.itemCode}>
-                                        {opt.itemNm ?? '-'} ({opt.itemCode})
-                                    </option>
-                                ))}
-                            </select>
+                            />
                         );
                     }
 
-                    const categoryLabel = row.original.category === 0 ? '원료' : row.original.category === 1 ? '반제품' : '완제품';
+                    const categoryLabel =
+                        row.original.category === 0 ? '원료' : row.original.category === 1 ? '반제품' : '완제품';
                     return (
                         <div className="itemCell">
                             <span className="itemCell__name">{row.original.itemNm} ({categoryLabel})</span>
@@ -407,18 +422,17 @@ export function SeedInventoryManagePage() {
 
                     if (isNew || isEditing) {
                         return (
-                            <select
-                                className="tableInput"
-                                defaultValue={editFormRef.current.direction}
-                                onChange={(e) => {
-                                    const dir = e.target.value as 'INCREASE' | 'DECREASE';
+                            <SelectBox
+                                className="selectBox--cell"
+                                ariaLabel="증감 구분"
+                                value={selectedDirection}
+                                options={DIRECTION_OPTIONS}
+                                onChange={(value) => {
+                                    const dir = value as 'INCREASE' | 'DECREASE';
                                     editFormRef.current.direction = dir;
                                     setSelectedDirection(dir);
                                 }}
-                            >
-                                <option value="INCREASE">증가 (조정)</option>
-                                <option value="DECREASE">감소 (조정)</option>
-                            </select>
+                            />
                         );
                     }
 
@@ -433,12 +447,13 @@ export function SeedInventoryManagePage() {
                     } else if (ioType === '신고입고취소') {
                         badgeClass = 'badge muted';
                         iconNode = <RotateIcon />;
-
                     } else if (ioType === '생산투입') {
                         badgeClass = 'badge info';
-                        iconNode = (<span style={{ display: 'inline-flex', transform: 'rotate(180deg)' }}>
-                            <TriangleIcon />
-                        </span>);
+                        iconNode = (
+                            <span style={{ display: 'inline-flex', transform: 'rotate(180deg)' }}>
+                                <TriangleIcon />
+                            </span>
+                        );
                     } else {
                         badgeClass = 'badge danger';
                         iconNode = <TriangleIcon />;
@@ -450,46 +465,6 @@ export function SeedInventoryManagePage() {
                             {ioType}
                         </span>
                     );
-                },
-            },
-            {
-                accessorKey: 'increaseQty',
-                header: '증가수량',
-                cell: ({ row }) => {
-                    const item = row.original;
-                    const isNew = item.sthiId === -999999;
-                    const isEditing = item.sthiId === editingId;
-                    const unit = (isNew || isEditing ? selectedItemUnit : '') || item.unit || '';
-
-                    if ((isNew || isEditing) && selectedDirection === 'INCREASE') {
-                        return (
-                            <div className="stockQtyInput">
-                                <input
-                                    className="tableInput"
-                                    type="number"
-                                    min="0.01"
-                                    step="any"
-                                    defaultValue={editFormRef.current.qty}
-                                    onChange={(e) => {
-                                        editFormRef.current.qty =
-                                            e.target.value === '' ? undefined : Number(e.target.value);
-                                    }}
-                                />
-                                {unit && (
-                                    <span className="stockQtyInput__unit">{unit}</span>
-                                )}
-                            </div>
-                        );
-                    }
-
-                    if (isNew || isEditing) return '-';
-
-                    return item.increaseQty > 0 ? (
-                        <span className="qtyIncreaseText">
-                            +{item.increaseQty.toLocaleString()}
-                            {unit && <span className="stockQtyUnit"> {unit}</span>}
-                        </span>
-                    ) : '-';
                 },
             },
             {

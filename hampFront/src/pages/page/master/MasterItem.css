@@ -1,11 +1,9 @@
-/* ================================
-   ROUTING SECTION
-================================ */
 .routingSection {
   --rt-accent: var(--dl-accent, var(--perm-solid, #00a6a6));
   --rt-in: #2563eb;
   --rt-out: #c2410c;
   --rt-danger: #dc2626;
+  --rt-seq: 26px;
 
   grid-column: 1 / -1;
   margin-top: 24px;
@@ -19,11 +17,6 @@
   --rt-danger: #f87171;
 }
 
-/* ========================================================
-   공정 라우팅 설정 영역 (신규 품목 등록 / 품목 상세 공용)
-======================================================== */
-
-/* ── 헤더 ── */
 .routing-header-wrapper {
   display: flex;
   justify-content: space-between;
@@ -35,7 +28,7 @@
 
 .routing-header-label {
   margin: 0;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--text-heading);
@@ -62,41 +55,58 @@
   border-radius: 999px;
 }
 
-/* 안내 문구: 본문 위 정보 박스 */
 .routing-guide-text {
   margin: 0 0 14px;
-  padding: 10px 14px;
+  padding: 12px 14px 12px 16px;
   font-size: 12.5px;
-  line-height: 1.6;
-  color: var(--text-muted);
+  line-height: 1.65;
+  color: var(--text-body);
   background: var(--bg-subtle);
   border: 1px solid var(--border);
+  border-left: 3px solid var(--rt-accent);
   border-radius: 6px;
 }
 
-/* 상세 패널 안의 안내(최종공정/체크박스)는 박스 없이 텍스트만 */
+.routing-guide-text ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding-left: 16px;
+}
+
+.routing-guide-text li::marker {
+  color: var(--text-muted);
+}
+
+.routing-guide-text strong {
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
 .routing-form-group .routing-guide-text {
   margin: 8px 0 0;
   padding: 0;
   font-size: 12px;
+  color: var(--text-muted);
   background: none;
   border: 0;
+  border-radius: 0;
 }
 
 .routingEmptyBox {
-  padding: 32px 16px;
+  padding: 40px 16px;
   text-align: center;
   font-size: 14px;
   color: var(--text-muted);
   background: var(--bg-subtle);
   border: 1px dashed var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
-/* ── 레이아웃 ── */
 .routing-layout-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 440px;
+  grid-template-columns: 500px minmax(0, 1fr);
   gap: 20px;
   align-items: start;
 }
@@ -109,16 +119,14 @@
   width: 100%;
 }
 
-/* ── 좌측: 공정 리스트 (구분선 행) ── */
 .routing-list-container {
   max-height: 600px;
   overflow-y: auto;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
-/* 읽기 모드는 16단계 전체가 스크롤 없이 보이도록 높이 제한 해제 */
 .routing-list-container:has(> .is-readonly) {
   max-height: none;
   overflow: visible;
@@ -131,7 +139,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 8px 12px;
-  min-height: 52px;
+  min-height: 56px;
   margin: 0;
   padding: 8px 14px;
   background: transparent;
@@ -151,7 +159,11 @@
   background: var(--bg-subtle);
 }
 
-/* 선택: 테두리 두께 변화 없이 inset 그림자로 표시 → 행이 흔들리지 않음 */
+.routing-list-item:focus-visible {
+  outline: 2px solid var(--rt-accent);
+  outline-offset: -2px;
+}
+
 .routing-list-item.is-selected {
   background: color-mix(in srgb, var(--rt-accent) 7%, var(--bg-card));
   box-shadow: inset 3px 0 0 var(--rt-accent);
@@ -174,14 +186,56 @@
   min-width: 0;
 }
 
+.routing-layout-grid .routing-list-item {
+  flex-wrap: nowrap;
+}
+
+.routing-layout-grid .routing-item-left {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 2px;
+}
+
+.routing-layout-grid .routing-drag-handle {
+  grid-area: 1 / 1 / 3 / 2;
+}
+
+.routing-layout-grid .routing-seq {
+  grid-area: 1 / 2 / 3 / 3;
+}
+
+.routing-layout-grid .routing-oper-nm {
+  grid-area: 1 / 3 / 2 / 4;
+}
+
+.routing-layout-grid .routing-code-wrap {
+  grid-area: 2 / 3 / 3 / 4;
+  min-width: 0;
+}
+
+.routing-layout-grid .routing-code-wrap > * {
+  height: auto;
+  padding: 0;
+  font-size: 11px;
+  border: 0 !important;
+}
+
 .routing-drag-handle {
   flex-shrink: 0;
-  padding: 2px 2px;
+  padding: 2px;
   font-size: 15px;
   line-height: 1;
   color: var(--text-muted);
-  opacity: 0.7;
+  opacity: 0.45;
   cursor: grab;
+  transition: opacity 0.12s ease;
+}
+
+.routing-list-item:hover .routing-drag-handle,
+.routing-list-item.is-selected .routing-drag-handle {
+  opacity: 1;
 }
 
 .routing-drag-handle.is-dragging {
@@ -189,13 +243,33 @@
 }
 
 .routing-seq {
+  display: inline-grid;
+  place-items: center;
   flex-shrink: 0;
-  min-width: 22px;
+  width: var(--rt-seq);
+  height: var(--rt-seq);
+  font-family: "montserrat", sans-serif;
   font-size: 12px;
   font-weight: 700;
-  font-family: 'montserrat', sans-serif;
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.routing-list-item.is-selected .routing-seq {
+  color: #fff;
+  background: var(--rt-accent);
+  border-color: var(--rt-accent);
+}
+
+[data-theme="dark"] .routing-list-item.is-selected .routing-seq {
+  color: #0f1117;
 }
 
 .routing-code-wrap {
@@ -205,12 +279,10 @@
   white-space: nowrap;
 }
 
-/* 공정코드: 시스템 식별자이므로 보조 정보로 낮춤
-   (Badge 컴포넌트 스타일을 이기기 위해 색/배경/테두리에 !important) */
 .routing-code-wrap > * {
   height: 20px;
   padding: 0 6px;
-  font-family: 'montserrat', sans-serif;
+  font-family: "montserrat", sans-serif;
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0;
@@ -227,7 +299,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-heading);
 }
 
@@ -239,7 +311,6 @@
   margin-left: auto;
 }
 
-/* 공정구분 라벨: 기본 중립 / 최종 계열만 포인트 */
 .routing-type-badge {
   display: inline-flex;
   align-items: center;
@@ -261,11 +332,17 @@
   border-color: color-mix(in srgb, var(--rt-accent) 35%, var(--border));
 }
 
-/* 이동 화살표 */
 .routing-arrow-group {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  transition: opacity 0.12s ease;
+}
+
+@media (hover: hover) {
+  .routing-list-item:not(.is-selected):not(:hover):not(:focus-within) .routing-arrow-group {
+    opacity: 0;
+  }
 }
 
 .routing-arrow-btn {
@@ -279,7 +356,9 @@
   border: 0;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.12s ease, color 0.12s ease;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
 }
 
 .routing-arrow-btn:hover:not(:disabled) {
@@ -293,6 +372,7 @@
 }
 
 .routing-arrow-btn:focus-visible,
+.routing-icon-btn:focus-visible,
 .routing-move-btn:focus-visible,
 .routing-mtrl-add-btn:focus-visible,
 .routing-mtrl-remove:focus-visible,
@@ -306,13 +386,13 @@
   height: 14px;
 }
 
-/* ── 우측: 상세 편집 패널 ── */
 .routing-detail-panel {
+  container: rtpanel / inline-size;
   min-width: 0;
   padding: 20px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .routing-empty-panel {
@@ -322,13 +402,11 @@
   color: var(--text-muted);
 }
 
-/* STEP 카드: 중립 배경 + 번호 블록만 포인트 */
 .routing-step-card {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   padding: 12px 14px;
   background: var(--bg-subtle);
   border: 1px solid var(--border);
@@ -337,6 +415,7 @@
 
 .routing-step-badge {
   display: grid;
+  flex-shrink: 0;
   place-items: center;
   align-content: center;
   width: 44px;
@@ -346,6 +425,10 @@
   color: #fff;
   background: var(--rt-accent);
   border-radius: 8px;
+}
+
+[data-theme="dark"] .routing-step-badge {
+  color: #0f1117;
 }
 
 .routing-step-badge-title {
@@ -364,7 +447,15 @@
   line-height: 1;
 }
 
+.routing-step-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .routing-step-info-nm {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 15px;
   font-weight: 700;
   line-height: 1.3;
@@ -373,11 +464,82 @@
 
 .routing-step-info-code {
   margin-top: 2px;
+  font-family: "montserrat", sans-serif;
   font-size: 12px;
   color: var(--text-muted);
 }
 
-/* 앞으로 / 뒤로 */
+.routing-step-move {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.routing-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--text-body);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.routing-icon-btn:hover:not(:disabled) {
+  background: var(--bg-subtle);
+}
+
+.routing-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.routing-step-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  margin-bottom: 16px;
+  padding: 0 2px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.routing-step-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.routing-meta-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.routing-step-note {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.routing-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-body);
+  cursor: pointer;
+}
+
+.routing-check input {
+  accent-color: var(--rt-accent);
+}
+
 .routing-move-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -411,7 +573,6 @@
   cursor: not-allowed;
 }
 
-/* 폼 요소 */
 .routing-form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -450,13 +611,8 @@
   padding: 8px;
 }
 
-/* ========================================================
-   공정별 투입(IN) / 산출(OUT) 자재 영역
-======================================================== */
 .routing-mtrl-section {
   margin-bottom: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
 }
 
 .routing-mtrl-title {
@@ -466,8 +622,18 @@
   color: var(--text-heading);
 }
 
-.routing-mtrl-group + .routing-mtrl-group {
-  margin-top: 16px;
+.routing-mtrl-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.routing-mtrl-group {
+  min-width: 0;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 
 .routing-mtrl-group-header {
@@ -475,10 +641,9 @@
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
-/* IN / OUT 구분은 이 라벨과 코드 칩에서만 색 사용 */
 .routing-mtrl-group-title {
   display: inline-flex;
   align-items: center;
@@ -503,9 +668,8 @@
   color: var(--rt-out);
 }
 
-/* 추가 버튼: 일반 아웃라인 버튼 */
 .routing-mtrl-add-btn {
-  height: 26px;
+  height: 28px;
   padding: 0 10px;
   font-size: 12px;
   font-weight: 600;
@@ -515,7 +679,9 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.12s ease, border-color 0.12s ease;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
 }
 
 .routing-mtrl-add-btn:hover:not(:disabled) {
@@ -537,7 +703,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 176px;
+  max-height: 220px;
   padding-right: 2px;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -545,12 +711,13 @@
 
 .routing-mtrl-item {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 6px 10px;
   min-width: 0;
-  padding: 8px 12px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  padding: 8px 10px;
+  background: var(--bg-subtle);
+  border: 1px solid transparent;
   border-radius: 6px;
 }
 
@@ -560,6 +727,7 @@
 
 .routing-mtrl-code {
   padding: 1px 7px;
+  font-family: "montserrat", sans-serif;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -578,6 +746,7 @@
 }
 
 .routing-mtrl-name {
+  flex: 1 1 120px;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -593,7 +762,6 @@
   color: var(--text-muted);
 }
 
-/* 삭제 계열만 빨강 (hover 때 강조) */
 .routing-mtrl-remove {
   flex-shrink: 0;
   margin-left: auto;
@@ -617,7 +785,7 @@
 }
 
 .routing-mtrl-empty {
-  padding: 12px 0;
+  padding: 14px 0;
   text-align: center;
   font-size: 13px;
   color: var(--text-muted);
@@ -631,8 +799,11 @@
   gap: 4px;
 }
 
-.routing-mtrl-yield-input {
+.routingSection .routing-mtrl-item .routing-mtrl-yield-input {
   width: 72px;
+  height: 32px;
+  padding: 0 8px;
+  font-size: 13px;
   text-align: right;
 }
 
@@ -647,7 +818,6 @@
   color: var(--rt-danger);
 }
 
-/* 읽기 모드 자재 요약: IN / OUT 그룹을 한 줄로 이어 붙임 */
 .routing-mtrl-summary {
   display: flex;
   flex-direction: row;
@@ -665,14 +835,14 @@
 }
 
 .routing-mtrl-summary-tag {
-  width: 37px;
-  height: 23px;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 37px;
+  height: 23px;
+  font-family: "montserrat", sans-serif;
   font-size: 11px;
   font-weight: 700;
-  font-family: 'montserrat', sans-serif;
   letter-spacing: 0.04em;
   text-align: center;
   border-radius: 4px;
@@ -688,7 +858,6 @@
   background: color-mix(in srgb, var(--rt-out) 11%, transparent);
 }
 
-/* 자재 칩: 구분은 앞의 IN/OUT 태그가 하므로 칩 자체는 중립 */
 .routing-mtrl-chip {
   display: inline-flex;
   align-items: baseline;
@@ -704,13 +873,12 @@
 }
 
 .routing-mtrl-chip small {
+  font-family: "montserrat", sans-serif;
   font-size: 11px;
   font-weight: 500;
-  font-family: 'montserrat', sans-serif;
   color: var(--text-muted);
 }
 
-/* 이 공정 제외 */
 .routing-delete-btn {
   width: 100%;
   height: 36px;
@@ -733,24 +901,15 @@
   cursor: not-allowed;
 }
 
-/* --------------------------------------------------------
-   읽기 모드: 한 줄 행 (16단계 대응)
-
-   [순번 · 공정명 · 코드] [IN/OUT 자재 ...]              [공정구분]
-
-   01  겉피탈피(탈곡)  OPER_DEHUSK   IN [..]  OUT [..]            [일반공정]
-   02  세척           OPER_WASH                                   [일반공정]
-
-   → 열 폭을 고정해서 모든 행의 자재 시작 위치가 세로로 정렬됨
-   → 공정구분은 항상 마지막 열(오른쪽 끝)에 고정
--------------------------------------------------------- */
 .routing-list-item.is-readonly {
+  position: relative;
   display: grid;
-  grid-template-columns: 400px minmax(0, 1fr) auto;
+  grid-template-columns: 360px minmax(0, 1fr) auto;
   align-items: center;
   gap: 0 20px;
-  min-height: 44px;
-  padding: 8px 16px;
+  min-height: 48px;
+  padding: 10px 16px;
+  border-bottom: 0;
   cursor: default;
 }
 
@@ -758,7 +917,24 @@
   background: transparent;
 }
 
-/* 순번 → 공정명 → 코드 순으로 표시 (DOM 순서는 순번, 코드, 공정명) */
+.routing-list-item.is-readonly::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(16px + var(--rt-seq) / 2 - 1px);
+  width: 2px;
+  background: var(--border);
+}
+
+.routing-list-item.is-readonly:first-child::before {
+  top: 50%;
+}
+
+.routing-list-item.is-readonly:last-child::before {
+  bottom: 50%;
+}
+
 .routing-list-item.is-readonly .routing-item-left {
   grid-column: 1;
   grid-row: 1;
@@ -767,7 +943,10 @@
 }
 
 .routing-list-item.is-readonly .routing-seq {
+  position: relative;
+  z-index: 1;
   order: 0;
+  background: var(--bg-card);
 }
 
 .routing-list-item.is-readonly .routing-oper-nm {
@@ -780,13 +959,11 @@
   order: 2;
 }
 
-/* 자재 요약: 가운데 열 (없는 행은 그냥 비어 있음) */
 .routing-list-item.is-readonly .routing-mtrl-summary {
   grid-column: 2;
   grid-row: 1;
 }
 
-/* 공정구분: 마지막 열, 오른쪽 끝 */
 .routing-list-item.is-readonly .routing-item-right {
   grid-column: 3;
   grid-row: 1;
@@ -794,15 +971,16 @@
   margin-left: 0;
 }
 
-/* ========================================================
-   반응형
-   1024 : 우측 패널 폭 축소
-   860  : 2단 → 세로 스택 / 읽기 모드 자재는 다음 줄로
-   480  : 폰
-======================================================== */
+@container rtpanel (min-width: 760px) {
+  .routing-mtrl-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
 @container content (max-width: 1024px) {
   .routing-layout-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 42%);
+    grid-template-columns: 300px minmax(0, 1fr);
   }
 
   .routing-list-container {
@@ -831,6 +1009,7 @@
   .routing-list-item.is-readonly .routing-mtrl-summary {
     grid-column: 1 / -1;
     grid-row: 2;
+    padding-left: calc(var(--rt-seq) + 10px);
   }
 }
 
@@ -846,5 +1025,14 @@
 
   .routing-list-item {
     padding: 8px 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .routing-list-item,
+  .routing-seq,
+  .routing-drag-handle,
+  .routing-arrow-group {
+    transition: none;
   }
 }

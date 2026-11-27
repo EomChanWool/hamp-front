@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ItemApi,
   type ItemOptionResponse,
@@ -7,6 +7,7 @@ import {
   type MaterialIoType,
   type ProductType,
 } from "@/api/master/Item";
+import { SelectBox, type SelectBoxOption } from "./SelectBox";
 import "@/pages/page/master/MasterItem.css";
 
 export type { MaterialIoType };
@@ -105,8 +106,9 @@ function MaterialGroup({
   onRemove,
   onYieldChange,
 }: MaterialGroupProps) {
-  // [+ 추가] 클릭 시 나타나는 품목 선택 select 노출 여부
+  // [+ 추가] 클릭 시 나타나는 품목 선택 영역 노출 여부
   const [isPicking, setIsPicking] = useState(false);
+  const pickerRef = useRef<HTMLButtonElement>(null);
 
   // 범위(0~100) 밖 입력이 자동 보정된 자재 표시용 (itemCode → true)
   const [yieldAdjusted, setYieldAdjusted] = useState<Record<string, boolean>>({});
@@ -115,6 +117,21 @@ function MaterialGroup({
   //  - "5." 처럼 입력 도중의 문자열을 그대로 보여주기 위해 숫자 값과 별도로 보관
   //  - 입력칸에서 포커스가 빠지면(blur) 삭제하고 확정된 숫자 값을 표시
   const [yieldDraft, setYieldDraft] = useState<Record<string, string>>({});
+
+  // 선택 박스가 나타나면 바로 포커스 (키보드로 이어서 선택 가능)
+  useEffect(() => {
+    if (isPicking) pickerRef.current?.focus();
+  }, [isPicking]);
+
+  const pickerOptions = useMemo<SelectBoxOption[]>(
+    () =>
+      availableOptions.map((o) => ({
+        value: o.itemCode,
+        label: o.itemNm,
+        description: o.unit ? `${o.itemCode} · ${o.unit}` : o.itemCode,
+      })),
+    [availableOptions]
+  );
 
   const handlePick = (itemCode: string) => {
     const picked = availableOptions.find((o) => o.itemCode === itemCode);
@@ -181,6 +198,7 @@ function MaterialGroup({
           type="button"
           className="routing-mtrl-add-btn"
           disabled={disabled}
+          aria-expanded={isPicking}
           onClick={() => setIsPicking((prev) => !prev)}
         >
           {isPicking ? "닫기" : "+ 추가"}
@@ -189,22 +207,21 @@ function MaterialGroup({
 
       {/* 품목 선택 (추가 모드일 때만) */}
       {isPicking && (
-        <select
-          className="tableInput routing-mtrl-picker"
+        <SelectBox
+          ref={pickerRef}
+          className="routing-mtrl-picker"
+          ariaLabel={`${title} 품목 선택`}
           value=""
+          options={pickerOptions}
           disabled={disabled}
-          onChange={(e) => handlePick(e.target.value)}
-        >
-          <option value="">
-            {availableOptions.length === 0 ? "추가 가능한 품목이 없습니다" : "품목을 선택하세요"}
-          </option>
-          {availableOptions.map((o) => (
-            <option key={o.itemCode} value={o.itemCode}>
-              {o.itemCode} · {o.itemNm}
-              {o.unit ? ` (${o.unit})` : ""}
-            </option>
-          ))}
-        </select>
+          searchable
+          searchPlaceholder="품목명 또는 코드 검색"
+          emptyText={
+            availableOptions.length === 0 ? "추가 가능한 품목이 없습니다" : "검색 결과가 없습니다"
+          }
+          placeholder={availableOptions.length === 0 ? "추가 가능한 품목이 없습니다" : "품목을 선택하세요"}
+          onChange={handlePick}
+        />
       )}
 
       {/* 자재 목록 - 종류가 많아지면 .routing-mtrl-list 에서 세로 스크롤 */}
@@ -215,7 +232,6 @@ function MaterialGroup({
           list.map((m) => (
             <div key={`${m.ioType}-${m.itemCode}`}>
               <div className="routing-mtrl-item">
-                {/* 품목코드 칩: 라이트=IN 초록/OUT 빨강 톤, 다크=시안 이미지처럼 회색 칩 (CSS에서 분기) */}
                 <span className={`routing-mtrl-code ${m.ioType === "IN" ? "is-in" : "is-out"}`}>
                   {m.itemCode}
                 </span>
@@ -234,6 +250,7 @@ function MaterialGroup({
                       className="tableInput routing-mtrl-yield-input"
                       placeholder="수율"
                       title="계획 수율(%) - 0~100, 소수점 둘째 자리까지 / 비워두면 미확정"
+                      aria-label={`${m.itemNm} 계획 수율(%)`}
                       value={yieldDraft[m.itemCode] ?? m.yieldRate ?? ""}
                       disabled={disabled}
                       onChange={(e) => handleYieldInput(m.itemCode, e.target.value)}
@@ -247,6 +264,7 @@ function MaterialGroup({
                   type="button"
                   className="routing-mtrl-remove"
                   disabled={disabled}
+                  aria-label={`${m.itemNm} 삭제`}
                   onClick={() => onRemove(m.itemCode)}
                 >
                   삭제
@@ -425,28 +443,30 @@ export function RoutingMaterialSection({
     <div className="routing-mtrl-section">
       <div className="routing-mtrl-title">이 공정의 투입/산출 자재</div>
 
-      <MaterialGroup
-        key={`${resetKey ?? ""}-IN`}
-        ioType="IN"
-        title="투입 자재 (IN)"
-        list={inList}
-        availableOptions={availableInOptions}
-        disabled={disabled}
-        onAdd={(o) => handleAdd("IN", o)}
-        onRemove={(code) => handleRemove("IN", code)}
-      />
+      <div className="routing-mtrl-grid">
+        <MaterialGroup
+          key={`${resetKey ?? ""}-IN`}
+          ioType="IN"
+          title="투입 자재 (IN)"
+          list={inList}
+          availableOptions={availableInOptions}
+          disabled={disabled}
+          onAdd={(o) => handleAdd("IN", o)}
+          onRemove={(code) => handleRemove("IN", code)}
+        />
 
-      <MaterialGroup
-        key={`${resetKey ?? ""}-OUT`}
-        ioType="OUT"
-        title="산출 자재 (OUT)"
-        list={outList}
-        availableOptions={availableOutOptions}
-        disabled={disabled}
-        onAdd={(o) => handleAdd("OUT", o)}
-        onRemove={(code) => handleRemove("OUT", code)}
-        onYieldChange={handleYieldChange}
-      />
+        <MaterialGroup
+          key={`${resetKey ?? ""}-OUT`}
+          ioType="OUT"
+          title="산출 자재 (OUT)"
+          list={outList}
+          availableOptions={availableOutOptions}
+          disabled={disabled}
+          onAdd={(o) => handleAdd("OUT", o)}
+          onRemove={(code) => handleRemove("OUT", code)}
+          onYieldChange={handleYieldChange}
+        />
+      </div>
     </div>
   );
 }

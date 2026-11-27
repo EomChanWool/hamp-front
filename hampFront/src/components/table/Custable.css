@@ -184,3 +184,32 @@ tbody tr:hover td {
     height: 40px;
   }
 }
+
+.selectBox.selectBox--cell {
+  --ctl-h: 36px;
+  --ctl-bg: var(--bg-card, #ffffff);
+  --ctl-bg-hover: var(--bg-card, #ffffff);
+}
+
+.selectBox.selectBox--cell .selectBoxTrigger {
+  padding: 0 12px;
+  font-size: 14px;
+  border: 1px solid var(--border-strong, #c7cdd5);
+  border-radius: 8px;
+}
+
+.selectBox.selectBox--cell .selectBoxTrigger:hover:not(:disabled) {
+  border-color: var(--text-muted, #9aa3b0);
+}
+
+.selectBox.selectBox--cell .selectBoxTrigger:focus-visible,
+.selectBox.selectBox--cell .selectBoxTrigger[aria-expanded="true"] {
+  border-color: var(--primary, #0052cc);
+}
+
+.selectBox.selectBox--cell .selectBoxPanel {
+  right: auto;
+  min-width: 100%;
+  width: max-content;
+  max-width: 280px;
+}
