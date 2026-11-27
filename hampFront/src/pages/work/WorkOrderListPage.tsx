@@ -14,14 +14,16 @@ import { WorkOrderApi } from '@/api/WorkOrder';
 import type {
   WorkOrderDetailResponse,
   WorkOrderLineResponse,
+  WorkOrderResponse,
+  WorkOrderRoutingStepResponse,
+} from '@/api/WorkOrder';
+import { WorkPerformanceApi } from '@/api/WorkPerformance';
+import type {
   WorkOrderPerformanceDefectRequest,
   WorkOrderPerformanceMaterialQtyRequest,
   WorkOrderPerformanceReadyResponse,
   WorkOrderProductionLineResponse,
-  WorkOrderResponse,
-  WorkOrderRoutingStepResponse,
-  ZoneType,
-} from '@/api/WorkOrder';
+} from '@/api/WorkPerformance';
 import type { ItemOptionResponse } from '@/api/master/Item';
 import { DefectApi, type DefectOptionResponse } from '@/api/master/Defect';
 import { isValidWorkZone } from '@/utils/common';
@@ -310,13 +312,11 @@ function MaterialQtyInput({
 
 function PerformanceStartForm({
   ready,
-  zone,
   onCancel,
   onDone,
   onDirtyChange,
 }: {
   ready: WorkOrderPerformanceReadyResponse;
-  zone: string;
   onCancel: () => void;
   onDone: (message: string) => void;
   onDirtyChange: (dirty: boolean) => void;
@@ -365,8 +365,7 @@ function PerformanceStartForm({
     setIsSubmitting(true);
     setError(null);
     try {
-      await WorkOrderApi.startPerformance({
-        zone: Number(zone) as ZoneType,
+      await WorkPerformanceApi.startPerformance({
         workOrderLineId: ready.workOrderLineId,
         operCode: ready.operCode,
         materials: built.payload,
@@ -410,14 +409,12 @@ function PerformanceStartForm({
 
 function PerformanceFinishForm({
   ready,
-  zone,
   fallbackUnit,
   onCancel,
   onDone,
   onDirtyChange,
 }: {
   ready: WorkOrderPerformanceReadyResponse;
-  zone: string;
   fallbackUnit: string;
   onCancel: () => void;
   onDone: (message: string) => void;
@@ -568,8 +565,7 @@ function PerformanceFinishForm({
     setError(null);
 
     try {
-      await WorkOrderApi.finishPerformance({
-        zone: Number(zone) as ZoneType,
+      await WorkPerformanceApi.finishPerformance({
         workOrderLineId: ready.workOrderLineId,
         operCode: ready.operCode,
         materials: built.payload,
@@ -783,7 +779,7 @@ function PerformanceFinishForm({
 }
 
 /* ================================================================
-   공정 입력 화면
+   공정 입력 화면 (목업의 투입량 입력 / 생산실적 입력 화면)
    - 라인 정보 카드 + 시작/종료 폼
    - 입력할 자재 목록은 상세 데이터로 만들고(buildPerformanceReady), 확정은 start / finish API 로 보낸다
 ================================================================ */
@@ -793,7 +789,6 @@ function PerformanceEntryView({
   line,
   step,
   initialMode,
-  zone,
   productionLine,
   onCancel,
   onDone,
@@ -803,7 +798,6 @@ function PerformanceEntryView({
   line: WorkOrderLineResponse;
   step: WorkOrderRoutingStepResponse;
   initialMode: EntryMode;
-  zone: string;
   productionLine?: WorkOrderProductionLineResponse;
   onCancel: () => void;
   onDone: (message: string) => void;
@@ -902,7 +896,6 @@ function PerformanceEntryView({
         {mode === 'START' ? (
           <PerformanceStartForm
             ready={ready}
-            zone={zone}
             onCancel={onCancel}
             onDone={onDone}
             onDirtyChange={onDirtyChange}
@@ -910,7 +903,6 @@ function PerformanceEntryView({
         ) : (
           <PerformanceFinishForm
             ready={ready}
-            zone={zone}
             fallbackUnit={line.unit}
             onCancel={onCancel}
             onDone={onDone}
@@ -972,7 +964,7 @@ export function WorkOrderListPage() {
     }
 
     try {
-      const res = await WorkOrderApi.getMyList({ page: targetPage, size: PAGE_SIZE });
+      const res = await WorkPerformanceApi.getMyList({ page: targetPage, size: PAGE_SIZE });
       const pageData = res.data;
 
       setOrders((prev) =>
@@ -1005,7 +997,7 @@ export function WorkOrderListPage() {
 
     const [detailRes, linesRes] = await Promise.allSettled([
       WorkOrderApi.getDetail(workId),
-      WorkOrderApi.getProductionLines(workId),
+      WorkPerformanceApi.getProductionLines(workId),
     ]);
 
     if (detailRes.status === 'fulfilled') {
@@ -1149,7 +1141,6 @@ export function WorkOrderListPage() {
   const renderLine = (line: WorkOrderLineResponse, index: number) => {
     const steps = line.routingSteps;
     const lineStatus = getLineStatus(steps);
-    const doneCount = steps.filter((s) => s.done).length;
     const actionable = getActionableStep(steps);
     const lastDoneStep = [...steps].reverse().find((s) => s.done);
     // 칩에 보여줄 공정: 지금 입력할 공정, 없으면 마지막으로 끝난 공정
@@ -1225,11 +1216,6 @@ export function WorkOrderListPage() {
         </div>
 
         <div className="woLineSide">
-          {steps.length > 0 && (
-            <span className="woLineProgress">
-              {doneCount}/{steps.length}
-            </span>
-          )}
           <span className={`woLineStatus woLineStatus--${variant}`}>
             {variant === 'DONE' && <span aria-hidden="true">✓</span>}
             {statusLabel}
@@ -1248,7 +1234,6 @@ export function WorkOrderListPage() {
     const meta = getProductionMeta(pl.status);
     const line = findWorkOrderLine(pl, lines);
     const steps = line?.routingSteps ?? [];
-    const doneCount = steps.filter((s) => s.done).length;
     const actionable = line ? getActionableStep(steps) : null;
     const unit = line?.unit ?? pl.outputs?.[0]?.unit ?? '';
     const outs = productionOutputs(pl);
@@ -1262,8 +1247,7 @@ export function WorkOrderListPage() {
         subtitle = [
           line ? `지시 ${line.instructQty.toLocaleString()} ${line.unit}` : null,
           line?.bpNm,
-          line?.dueDate ? `납기 ${line.dueDate}` : null,
-          equipmentLabel(actionable?.step),
+          line?.dueDate ? `납기 ${line.dueDate}` : null
         ]
           .filter(Boolean)
           .join(' · ') || '투입량을 입력해 작업을 시작하세요';
@@ -1332,11 +1316,6 @@ export function WorkOrderListPage() {
         </div>
 
         <div className="woLineSide">
-          {steps.length > 0 && (
-            <span className="woLineProgress">
-              {doneCount}/{steps.length}
-            </span>
-          )}
           <span className={`woLineStatus woLineStatus--${meta.variant}`}>
             {pl.status === 'DONE' && <span aria-hidden="true">✓</span>}
             {pl.status === 'LOCKED' && <LockClosedIcon className="woLineStatusIcon" aria-hidden="true" />}
@@ -1588,7 +1567,6 @@ export function WorkOrderListPage() {
         line={entryLine}
         step={entryStep}
         initialMode={entryTarget.mode}
-        zone={zone}
         productionLine={entryProductionLine}
         onCancel={closeEntry}
         onDone={handlePerformanceDone}

@@ -359,13 +359,6 @@
   gap: 10px;
 }
 
-.woLineProgress {
-  color: #94a3b8;
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 13px;
-  font-weight: 600;
-}
-
 /* 오른쪽 상태 배지 (대기·투입입력 / 진행중·실적입력 / 완료) */
 .woLineStatus {
   display: inline-flex;
