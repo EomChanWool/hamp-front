@@ -353,7 +353,14 @@ export function SeedSalesOrderDetailPage() {
         form={form}
         isEditing={isEditing}
         isBusy={isBusy}
-        onChangeField={(key, val) => setForm((prev) => ({ ...prev, [key]: val }))}
+        onChangeField={(key, val) => {
+          if (key === "bpCode") {
+            const selectedBp = businessPartnerOptions.find((opt) => opt.bpCode === val);
+            setForm((prev) => ({ ...prev, bpCode: val, bpNm: selectedBp?.bpNm ?? "" }));
+            return;
+          }
+          setForm((prev) => ({ ...prev, [key]: val }));
+        }}
         onSubmit={(e) => {
           e.preventDefault();
           handleSave();

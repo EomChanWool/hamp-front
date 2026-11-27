@@ -445,12 +445,11 @@ export function SeedInboundManagePage() {
 
     setIsMarkingPrinted(true);
     try {
-      const res = await SeedGoodsReceiptApi.markPrinted(targets.map((r) => r.receiptId));
+      await SeedGoodsReceiptApi.markPrinted(targets.map((r) => r.receiptId));
       // 응답을 기다리는 사이 화면을 벗어났다면 이후 알림/상태 변경 생략
       if (!mountedRef.current) return;
 
-      // 인피 입고와 동일하게 처리 완료 안내 (서버 메시지가 있으면 우선 사용)
-      window.alert(res?.message || "라벨 인쇄 완료로 표시했습니다.");
+      window.alert("라벨 인쇄 완료로 표시했습니다.");
       setIsLabelModalOpen(false);
       setSelectedReceiptIds([]);
       refreshOrders(targets.map((r) => r.orderCode).filter((code): code is string => !!code));

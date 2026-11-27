@@ -553,9 +553,9 @@ export function InpiInboundManagePage() {
 
     setIsMarkingPrinted(true)
     try {
-      const res = await FiberReceiptApi.markPrinted(targetIds)
+      await FiberReceiptApi.markPrinted(targetIds)
       if (!mountedRef.current) return
-      window.alert(res.message || '라벨 인쇄 완료로 표시했습니다.')
+      window.alert('라벨 인쇄 완료로 표시했습니다.')
       setIsLabelOpen(false)
       setSelectedReceipts([])
       setRefreshKey((key) => key + 1)
