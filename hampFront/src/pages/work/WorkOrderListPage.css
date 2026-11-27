@@ -408,6 +408,153 @@
   stroke-width: 2.5;
 }
 
+/* ── 생산라인 현황: 잠김 / 포장대기 상태 ───────────────── */
+.woLineCard--LOCKED {
+  border-style: dashed;
+  border-color: rgba(148, 163, 184, 0.3);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.woLineCard--LOCKED .woLineName {
+  color: #94a3b8;
+}
+
+.woLineCard--LOCKED .woLineSeq {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+}
+
+.woLineCard--PACK {
+  border-color: rgba(168, 85, 247, 0.45);
+}
+
+.woLineCard--PACK .woLineSeq {
+  background: #9333ea;
+  color: #fff;
+}
+
+.woLineSeqIcon {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2.2;
+}
+
+.woLineStatusIcon {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2.2;
+}
+
+.woLineOperChip--PACK {
+  background: rgba(168, 85, 247, 0.16);
+  color: #c084fc;
+}
+
+.woLineOperChip--LOCKED {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+}
+
+.woLineStatus--PACK {
+  background: rgba(168, 85, 247, 0.14);
+  border-color: rgba(168, 85, 247, 0.45);
+  color: #c084fc;
+}
+
+.woLineStatus--LOCKED {
+  background: rgba(148, 163, 184, 0.1);
+  border-color: rgba(148, 163, 184, 0.25);
+  color: #94a3b8;
+}
+
+/* ── 생산라인 진행 요약 ───────────────── */
+.woLineSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+}
+
+.woLineSummaryProgress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.woLineSummaryText {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.woLineSummaryText strong {
+  color: #f0f0f0;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 15px;
+}
+
+.woLineSummaryBar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.woLineSummaryBarFill {
+  height: 100%;
+  border-radius: inherit;
+  background: #22c55e;
+  transition: width 0.3s ease;
+}
+
+.woLineSummaryChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.woLineSummaryChip {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: rgba(148, 163, 184, 0.14);
+  color: #cbd5e1;
+}
+
+.woLineSummaryChip--DONE {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+.woLineSummaryChip--PACK {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+}
+
+.woLineSummaryChip--FINISH {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.woLineSummaryChip--START {
+  background: rgba(59, 130, 246, 0.16);
+  color: var(--primary-light, #93c5fd);
+}
+
+.woLineSummaryChip--LOCKED {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+}
+
 /* ── 공정 입력 화면 (투입 입력 / 실적 입력) ───────────────── */
 .woEntryView {
   display: flex;
@@ -489,4 +636,10 @@
   .woEntryFormCard {
     padding: 16px 12px 18px;
   }
+}
+
+/* 입력 화면 헤드: 품목명 + 공정 배지 + 시작/종료 칩 */
+.woEntryView .workOrderCardHead {
+  flex-wrap: wrap;
+  gap: 8px;
 }
