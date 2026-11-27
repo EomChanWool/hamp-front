@@ -43,6 +43,11 @@ export interface HullReportUpdateRequest {
   note?: string;
 }
 
+/** 껍질 신고 승인/반려 요청 */
+export interface HullReportDecisionRequest {
+  note?: string;
+}
+
 export type ApiResponseHullReportResponse = ApiResponse<HullReportResponse>;
 export type ApiResponseListHullReportResponse = ApiResponse<HullReportResponse[]>;
 export type ApiResponseListHullReportCandidateResponse = ApiResponse<HullReportCandidateResponse[]>;
@@ -90,6 +95,30 @@ export const HullReportApi = {
   /** 껍질 신고 취소(삭제) (PENDING 상태에서만 가능) */
   delete: async (reportId: number): Promise<ApiResponseVoid> => {
     const res = await apiClient.delete<ApiResponseVoid>(`${BASE}/${reportId}`);
+    return res.data;
+  },
+
+  /** 껍질 신고 승인 */
+  approve: async (
+    reportId: number,
+    data?: HullReportDecisionRequest,
+  ): Promise<ApiResponseHullReportResponse> => {
+    const res = await apiClient.post<ApiResponseHullReportResponse>(
+      `${BASE}/${reportId}/approve`,
+      data ?? {},
+    );
+    return res.data;
+  },
+
+  /** 껍질 신고 반려 */
+  reject: async (
+    reportId: number,
+    data?: HullReportDecisionRequest,
+  ): Promise<ApiResponseHullReportResponse> => {
+    const res = await apiClient.post<ApiResponseHullReportResponse>(
+      `${BASE}/${reportId}/reject`,
+      data ?? {},
+    );
     return res.data;
   },
 };
