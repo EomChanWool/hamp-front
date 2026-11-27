@@ -1,5 +1,5 @@
 import { apiClient } from '@/api/apiClient';
-import type { ApiResponse } from '@/api/Common';
+import type { ApiResponse, ApiResponseVoid } from '@/api/Common';
 
 /** 껍질 신고 상태 */
 export type HullReportStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -38,6 +38,11 @@ export interface HullReportCreateRequest {
   note?: string;
 }
 
+/** 껍질 신고 메모 수정 요청 */
+export interface HullReportUpdateRequest {
+  note?: string;
+}
+
 export type ApiResponseHullReportResponse = ApiResponse<HullReportResponse>;
 export type ApiResponseListHullReportResponse = ApiResponse<HullReportResponse[]>;
 export type ApiResponseListHullReportCandidateResponse = ApiResponse<HullReportCandidateResponse[]>;
@@ -70,6 +75,21 @@ export const HullReportApi = {
   /** 껍질 신고 등록 */
   create: async (data: HullReportCreateRequest): Promise<ApiResponseHullReportResponse> => {
     const res = await apiClient.post<ApiResponseHullReportResponse>(BASE, data);
+    return res.data;
+  },
+
+  /** 껍질 신고 메모 수정 (PENDING 상태에서만 가능, 배치 구성은 변경 불가) */
+  update: async (
+    reportId: number,
+    data: HullReportUpdateRequest,
+  ): Promise<ApiResponseHullReportResponse> => {
+    const res = await apiClient.put<ApiResponseHullReportResponse>(`${BASE}/${reportId}`, data);
+    return res.data;
+  },
+
+  /** 껍질 신고 취소(삭제) (PENDING 상태에서만 가능) */
+  delete: async (reportId: number): Promise<ApiResponseVoid> => {
+    const res = await apiClient.delete<ApiResponseVoid>(`${BASE}/${reportId}`);
     return res.data;
   },
 };
