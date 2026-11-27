@@ -56,9 +56,10 @@ export interface WorkOrderResponse {
     status: string;
     managerId: string;
     managerNm: string;
-    orderCodes: string[];
+    orderCode: string; // 연결된 수주 코드
     itemNms: string[];
     totalInstructQty: number;
+    instructQtySum?: number; // 이 수주에 입고된 원물 총량 - 전처리 입고라벨 누적 스캔 완료 판정 기준
     lineCount: number;
     createdAt: string;
     updatedAt: string;
@@ -301,6 +302,20 @@ export const WorkOrderApi = {
         [key: string]: any;
     }): Promise<ApiResponsePageWorkOrderResponse> => {
         const res = await apiClient.get('/work-orders', { params });
+        return res.data;
+    },
+
+    /**
+     * 내 작업지시 목록 조회 (태블릿 화면용, 완료되지 않은 건 전체)
+     * GET /work-performances/my
+     * - 페이징 파라미터(page, size, sort)는 쿼리스트링으로 개별 전달한다 (예: sort: "workDate,desc")
+     */
+    getMyList: async (params?: {
+        page?: number;
+        size?: number;
+        sort?: string;
+    }): Promise<ApiResponsePageWorkOrderResponse> => {
+        const res = await apiClient.get('/work-performances/my', { params });
         return res.data;
     },
 
