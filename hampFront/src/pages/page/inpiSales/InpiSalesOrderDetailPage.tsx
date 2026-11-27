@@ -73,6 +73,8 @@ export function InpiSalesOrderDetailPage() {
   // 저장을 한 번 눌러 검증에 걸린 뒤부터 비어 있는 필수 칸을 빨갛게 표시 (수정을 새로 시작하면 초기화)
   const [showRequiredErrors, setShowRequiredErrors] = useState(false);
   const qtyInputRef = useRef<HTMLInputElement>(null);
+  const orderDateRef = useRef<HTMLInputElement>(null);
+  const dueDateRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<Record<string, any>>({});
   // 수정 중인 제품별 원물 배분 라인
@@ -105,6 +107,9 @@ export function InpiSalesOrderDetailPage() {
     [rawItemOptions]
   );
 
+  // 납기일이 수주일보다 빠르면 인라인 오류 표시
+  const dueDateInvalid = !!form.orderDate && !!form.dueDate && form.dueDate < form.orderDate;
+
   // 섹션 정의 (거래처/투입원료/상태는 셀렉트박스)
   const sections: DetailSection<FiberSalesOrderDetailResponse>[] = [
     {
@@ -131,11 +136,14 @@ export function InpiSalesOrderDetailPage() {
           key: "orderDate",
           editable: true,
           required: true,
-          renderEditor: (value, onChange, disabled) => (
+          renderEditor: (value, onChange, disabled, inputId) => (
             <input
+              ref={orderDateRef}
+              id={inputId}
               type="date"
               className="tableInput"
               value={value ?? ""}
+              aria-invalid={(showRequiredErrors && !value) || undefined}
               onChange={(e) => onChange(e.target.value)}
               disabled={disabled}
             />
@@ -145,14 +153,22 @@ export function InpiSalesOrderDetailPage() {
           label: "납기일",
           key: "dueDate",
           editable: true,
-          renderEditor: (value, onChange, disabled) => (
-            <input
-              type="date"
-              className="tableInput"
-              value={value ?? ""}
-              onChange={(e) => onChange(e.target.value)}
-              disabled={disabled}
-            />
+          renderEditor: (value, onChange, disabled, inputId) => (
+            <>
+              <input
+                ref={dueDateRef}
+                id={inputId}
+                type="date"
+                className="tableInput"
+                value={value ?? ""}
+                aria-invalid={dueDateInvalid || undefined}
+                onChange={(e) => onChange(e.target.value)}
+                disabled={disabled}
+              />
+              {dueDateInvalid && (
+                <span className="fsoFieldError">납기일은 수주일보다 빠를 수 없습니다.</span>
+              )}
+            </>
           ),
           renderValue: (value) => value || "-",
         },
@@ -301,10 +317,14 @@ export function InpiSalesOrderDetailPage() {
     setIsEditing(true);
   };
 
-  // 검증 실패한 칸으로 이동 (상세 레이아웃은 수량 칸만 ref 로 포커스)
+  // 검증 실패한 칸으로 이동
   const moveToInvalidField = (field: FiberOrderValidationField) => {
     if (field === "requestInputQty") {
       focusField(qtyInputRef.current);
+    } else if (field === "orderDate") {
+      focusField(orderDateRef.current);
+    } else if (field === "dueDate") {
+      focusField(dueDateRef.current);
     } else if (field === "lines") {
       document
         .getElementById(FIBER_ALLOCATION_ELEMENT_ID)
@@ -412,7 +432,14 @@ export function InpiSalesOrderDetailPage() {
         form={form}
         isEditing={isEditing}
         isBusy={isBusy}
-        onChangeField={(key, val) => setForm((prev) => ({ ...prev, [key]: val }))}
+        onChangeField={(key, val) => {
+          if (key === "bpCode") {
+            const selectedBp = businessPartnerOptions.find((opt) => opt.bpCode === val);
+            setForm((prev) => ({ ...prev, bpCode: val, bpNm: selectedBp?.bpNm ?? "" }));
+            return;
+          }
+          setForm((prev) => ({ ...prev, [key]: val }));
+        }}
         onSubmit={(e) => {
           e.preventDefault();
           handleSave();
