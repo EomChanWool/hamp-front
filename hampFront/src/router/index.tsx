@@ -341,8 +341,8 @@ export const menuRoutes: MenuRouteGroup[] = [
     path: '/inpi',
     items: [
       { path: 'work-orders', name: '작업지시관리', element: <InpiWorkOrdersPage /> },
-      { path: 'work-orders/create', name: '수주 등록', element: <InpiWorkOrderCreatePage />, hidden: true },
-      { path: 'work-orders/:workId', name: '수주 상세', element: <InpiWorkOrderDetailPage />, hidden: true },
+      { path: 'work-orders/create', name: '작업지시 등록', element: <InpiWorkOrderCreatePage />, hidden: true },
+      { path: 'work-orders/:workId', name: '작업지시 상세', element: <InpiWorkOrderDetailPage />, hidden: true },
       { path: 'prod-results', name: '생산실적관리', element: <InpiProductionResultsPage /> },
       { path: 'prod-status', name: '생산현황', element: <InpiProductionStatusPage /> },
       { path: 'lot-manage', name: 'LOT관리', element: <InpiLotManagePage /> },
