@@ -1795,6 +1795,109 @@
   color: #f3f4f6;
 }
 
+.hullSummaryCard {
+  background: #ffffff;
+  border: 1px solid #e3e6df;
+  border-radius: 14px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+.hullSummaryTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #1e2420;
+}
+
+.hullSummaryKv {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+}
+
+.hullKvItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hullKvValue {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e2420;
+  word-break: break-word;
+}
+
+.hullDecisionNote {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid #e3e6df;
+}
+
+.hullDecisionSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid #e3e6df;
+}
+
+.hullActionRow {
+  display: flex;
+  gap: 10px;
+}
+
+.hullDangerBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: 1px solid #8b2f2f;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #8b2f2f;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.hullDangerBtn:hover {
+  background: #fbeaea;
+}
+
+[data-theme="dark"] .hullSummaryCard {
+  background: #20232c;
+  border-color: #383c47;
+}
+
+[data-theme="dark"] .hullSummaryTitle,
+[data-theme="dark"] .hullKvValue {
+  color: #f3f4f6;
+}
+
+[data-theme="dark"] .hullDecisionNote,
+[data-theme="dark"] .hullDecisionSection {
+  border-top-color: #383c47;
+}
+
+[data-theme="dark"] .hullDangerBtn {
+  background: transparent;
+  border-color: #f87171;
+  color: #f87171;
+}
+
+[data-theme="dark"] .hullDangerBtn:hover {
+  background: rgba(239, 68, 68, 0.14);
+}
+
 [data-theme="dark"] .hullKpiCard {
   background: #20232c;
   border-color: #383c47;
