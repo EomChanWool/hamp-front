@@ -2,11 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { formatDateTime } from "@/utils/common";
 import axios from "axios";
-import type {
-  FacilityDetailResponse,
-  FacilityUpdateRequest,
-  StatusType,
-} from "@/api/equipment/Facility";
+import type { FacilityDetailResponse, FacilityUpdateRequest, StatusType } from "@/api/equipment/Facility";
 import { FacilityApi, STATUS_TYPE_LABEL } from "@/api/equipment/Facility";
 import { EquipmentApi } from "@/api/master/Equipment";
 import { FactoryZoneApi } from "@/api/master/FactoryZone";
@@ -20,7 +16,8 @@ import ImageGallery from "@components/common/ImageGallery";
 import ImageModal from "@components/modal/ImageModal";
 import UserMultiSelect from "@components/common/UserMultiSelect";
 import { LabelPrintModal } from "@/components/modal/LabelPrintModal";
-import "@/pages/layout/Layout.css";
+import "./Equipment.css";
+import { SelectBox } from "@components/common/SelectBox";
 
 type SectionField = {
   label: string;
@@ -34,6 +31,17 @@ type SectionDef = {
   title: string;
   fields: SectionField[];
 };
+
+const USE_YN_OPTIONS = [
+  { value: "true", label: "사용" },
+  { value: "false", label: "미사용" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "0", label: "정지" },
+  { value: "1", label: "작동" },
+  { value: "2", label: "고장" },
+];
 
 export function EquipmentFacilityDetailPage() {
   const { fcltCode } = useParams<{ fcltCode: string }>();
@@ -76,22 +84,21 @@ export function EquipmentFacilityDetailPage() {
           key: "eqCode",
           editable: true,
           renderEditor: (value, onChange, disabled) => (
-            <select
-              className="tableInput"
+            <SelectBox
+              ariaLabel="장비코드"
               value={value}
               disabled={disabled}
-              onChange={(e) => {
-                onChange(e.target.value);
-                fillEquipmentInfo(e.target.value);
+              placeholder="장비를 선택해주세요"
+              searchable
+              options={equipmentOptions.map((opt) => ({
+                value: opt.eqCode,
+                label: `${opt.eqCode} (${opt.eqNm ?? "-"})`,
+              }))}
+              onChange={(v) => {
+                onChange(v);
+                fillEquipmentInfo(v);
               }}
-            >
-              <option value="" disabled>장비를 선택해주세요</option>
-              {equipmentOptions.map((opt) => (
-                <option key={opt.eqCode} value={opt.eqCode}>
-                  {opt.eqCode} ({opt.eqNm ?? "-"})
-                </option>
-              ))}
-            </select>
+            />
           ),
         },
         { label: "장비명", key: "eqNm", editable: false },
@@ -106,22 +113,21 @@ export function EquipmentFacilityDetailPage() {
           key: "facCode",
           editable: true,
           renderEditor: (value, onChange, disabled) => (
-            <select
-              className="tableInput"
+            <SelectBox
+              ariaLabel="공장코드"
               value={value}
               disabled={disabled}
-              onChange={(e) => {
-                onChange(e.target.value);
-                fillFactoryZoneInfo(e.target.value);
+              placeholder="공장을 선택해주세요"
+              searchable
+              options={factoryZoneOptions.map((opt) => ({
+                value: opt.facCode,
+                label: `${opt.facCode} (${opt.facNm ?? "-"})`,
+              }))}
+              onChange={(v) => {
+                onChange(v);
+                fillFactoryZoneInfo(v);
               }}
-            >
-              <option value="" disabled>공장을 선택해주세요</option>
-              {factoryZoneOptions.map((opt) => (
-                <option key={opt.facCode} value={opt.facCode}>
-                  {opt.facCode} ({opt.facNm ?? "-"})
-                </option>
-              ))}
-            </select>
+            />
           ),
         },
         { label: "공장구역명", key: "facNm", editable: false },
@@ -157,9 +163,9 @@ export function EquipmentFacilityDetailPage() {
       const downloadPromises = targets.map(async (file) => {
         try {
           const response = await apiClient.get(`/attachments/${file.attachmentId}/download`, {
-            responseType: 'blob',
+            responseType: "blob",
           });
-          const blob = new Blob([response.data], { type: file.contentType || 'image/jpeg' });
+          const blob = new Blob([response.data], { type: file.contentType || "image/jpeg" });
           return {
             id: file.attachmentId,
             url: URL.createObjectURL(blob),
@@ -200,9 +206,8 @@ export function EquipmentFacilityDetailPage() {
       if (fcltData) {
         setFacility(fcltData);
         // 등록된 여러 담당자 ID 목록 추출
-        const managerUserIds = fcltData.managers && fcltData.managers.length > 0
-          ? fcltData.managers.map((m: any) => m.userId)
-          : [];
+        const managerUserIds =
+          fcltData.managers && fcltData.managers.length > 0 ? fcltData.managers.map((m: any) => m.userId) : [];
 
         setForm({
           fcltCode: fcltData.fcltCode,
@@ -255,9 +260,8 @@ export function EquipmentFacilityDetailPage() {
     if (facility && !isEditing) {
       equipmentRequestRef.current += 1;
       factoryZoneRequestRef.current += 1;
-      const managerUserIds = facility.managers && facility.managers.length > 0
-        ? facility.managers.map((m: any) => m.userId)
-        : [];
+      const managerUserIds =
+        facility.managers && facility.managers.length > 0 ? facility.managers.map((m: any) => m.userId) : [];
 
       setForm({
         fcltCode: facility.fcltCode,
@@ -291,9 +295,7 @@ export function EquipmentFacilityDetailPage() {
   const gallery = useImageGallery({
     initialExisting: initialExistingForGallery,
     onRemoveExisting: async (attachmentId) => {
-      setDeletedAttachmentIds((prev) =>
-        prev.includes(attachmentId) ? prev : [...prev, attachmentId]
-      );
+      setDeletedAttachmentIds((prev) => (prev.includes(attachmentId) ? prev : [...prev, attachmentId]));
       setExistingAttachments((prev) => prev.filter((f) => f.attachmentId !== attachmentId));
     },
   });
@@ -304,9 +306,8 @@ export function EquipmentFacilityDetailPage() {
 
     if (facility) {
       setExistingAttachments(facility.attachments ?? []);
-      const managerUserIds = facility.managers && facility.managers.length > 0
-        ? facility.managers.map((m: any) => m.userId)
-        : [];
+      const managerUserIds =
+        facility.managers && facility.managers.length > 0 ? facility.managers.map((m: any) => m.userId) : [];
 
       setForm({
         fcltCode: facility.fcltCode,
@@ -340,8 +341,7 @@ export function EquipmentFacilityDetailPage() {
         eqCode: form.eqCode?.trim() ? form.eqCode.trim() : null,
         facCode: form.facCode?.trim() ? form.facCode.trim() : null,
         fcltNm: form.fcltNm?.trim() ? form.fcltNm.trim() : null,
-        currentStatus:
-          form.currentStatus === "" ? null : (Number(form.currentStatus) as StatusType),
+        currentStatus: form.currentStatus === "" ? null : (Number(form.currentStatus) as StatusType),
         useYn: form.useYn === "true",
         managers: managers,
       };
@@ -352,7 +352,7 @@ export function EquipmentFacilityDetailPage() {
       if (deletedAttachmentIds.length > 0) {
         const uniqueIdsToDel = Array.from(new Set(deletedAttachmentIds));
         const results = await Promise.allSettled(
-          uniqueIdsToDel.map((id) => AttachmentApi.delete(id, facility.fcltCode))
+          uniqueIdsToDel.map((id) => AttachmentApi.delete(id, facility.fcltCode)),
         );
         failedDeleteNames = results
           .map((result, index) => {
@@ -380,10 +380,10 @@ export function EquipmentFacilityDetailPage() {
         console.error("이미지 처리 실패:", { failedUploadNames, failedDeleteNames });
         alert(
           `설비 정보는 저장되었습니다.\n` +
-          `다만 일부 이미지 처리에 실패했습니다:\n` +
-          failedUploadNames.map((name) => `- 업로드 실패: ${name}\n`).join("") +
-          failedDeleteNames.map((name) => `- 삭제 실패: ${name}\n`).join("") +
-          `다시 시도해주세요.`
+            `다만 일부 이미지 처리에 실패했습니다:\n` +
+            failedUploadNames.map((name) => `- 업로드 실패: ${name}\n`).join("") +
+            failedDeleteNames.map((name) => `- 삭제 실패: ${name}\n`).join("") +
+            `다시 시도해주세요.`,
         );
       } else {
         alert("수정되었습니다.");
@@ -406,9 +406,7 @@ export function EquipmentFacilityDetailPage() {
   const handleDelete = async () => {
     if (!facility || isDeleting) return;
 
-    const confirmed = window.confirm(
-      `${facility.fcltNm ?? facility.fcltCode} 설비를 삭제하시겠습니까?`
-    );
+    const confirmed = window.confirm(`${facility.fcltNm ?? facility.fcltCode} 설비를 삭제하시겠습니까?`);
     if (!confirmed) return;
 
     setIsDeleting(true);
@@ -488,9 +486,7 @@ export function EquipmentFacilityDetailPage() {
             />
           )
         ) : (
-          <div className="detailValue">
-            {field.renderValue ? field.renderValue(value) : value || "-"}
-          </div>
+          <div className="detailValue">{field.renderValue ? field.renderValue(value) : value || "-"}</div>
         )}
       </div>
     );
@@ -515,14 +511,15 @@ export function EquipmentFacilityDetailPage() {
 
   // 선택된 다중 담당자 이름들을 조합하여 표시 (조회 모드용)
   const currentManagerUserIds: string[] = form.managerUserIds || [];
-  const displayManagerNames = currentManagerUserIds.length > 0
-    ? currentManagerUserIds
-      .map((id) => {
-        const userObj = userOptions.find((u) => u.userId === id);
-        return userObj ? `${userObj.userNm} (${userObj.userId})` : id;
-      })
-      .join(", ")
-    : "-";
+  const displayManagerNames =
+    currentManagerUserIds.length > 0
+      ? currentManagerUserIds
+          .map((id) => {
+            const userObj = userOptions.find((u) => u.userId === id);
+            return userObj ? `${userObj.userNm} (${userObj.userId})` : id;
+          })
+          .join(", ")
+      : "-";
 
   return (
     <section className="screenStack">
@@ -554,9 +551,7 @@ export function EquipmentFacilityDetailPage() {
                   </svg>
                 </div>
                 <div className="facilityEmptyImageTitle">등록된 설비 이미지가 없습니다</div>
-                <p className="facilityEmptyImageDesc">
-                  설비 사진을 등록하면 이곳에 표시됩니다.
-                </p>
+                <p className="facilityEmptyImageDesc">설비 사진을 등록하면 이곳에 표시됩니다.</p>
                 {/* 클릭하면 바로 수정 모드로 전환되어 이미지 업로드 영역이 열림 */}
                 <button
                   type="button"
@@ -613,25 +608,21 @@ export function EquipmentFacilityDetailPage() {
               </div>
             )}
 
-            <div className="facilitySubtitle">
-              {`${form.eqNm || "장비 미지정"} · ${form.facNm || "공장 미지정"}`}
-            </div>
+            <div className="facilitySubtitle">{`${form.eqNm || "장비 미지정"} · ${form.facNm || "공장 미지정"}`}</div>
 
             {/* 사용여부 / 현재상태 / 담당자 입력폼 영역 */}
-            <div className="detailGrid" style={{ marginTop: '16px' }}>
+            <div className="detailGrid">
               <div className="detailField">
                 <label>사용여부</label>
                 {isEditing ? (
-                  <select
-                    className="tableInput"
-                    value={form.useYn === "true" ? "true" : "false"}
-                    disabled={isBusy}
-                    onChange={(e) => setFormField("useYn", e.target.value)}
-                  >
-                    <option value="true">사용</option>
-                    <option value="false">미사용</option>
-                  </select>
-                ) : (
+  <SelectBox
+    ariaLabel="사용여부"
+    value={form.useYn === "true" ? "true" : "false"}
+    options={USE_YN_OPTIONS}
+    disabled={isBusy}
+    onChange={(v) => setFormField("useYn", v)}
+  />
+) : (
                   <div className="detailValue">
                     <span className={`detailBadge ${form.useYn === "true" ? "good" : "muted"}`}>
                       {form.useYn === "true" ? "사용" : "미사용"}
@@ -643,23 +634,20 @@ export function EquipmentFacilityDetailPage() {
               <div className="detailField">
                 <label>현재상태</label>
                 {isEditing ? (
-                  <select
-                    className="tableInput"
-                    value={form.currentStatus}
-                    disabled={isBusy}
-                    onChange={(e) => setFormField("currentStatus", e.target.value)}
-                  >
-                    <option value="0">정지</option>
-                    <option value="1">작동</option>
-                    <option value="2">고장</option>
-                  </select>
-                ) : (
+  <SelectBox
+    ariaLabel="현재상태"
+    value={form.currentStatus}
+    options={STATUS_OPTIONS}
+    disabled={isBusy}
+    onChange={(v) => setFormField("currentStatus", v)}
+  />
+) : (
                   <div className="detailValue">{renderStatusBadge(form.currentStatus)}</div>
                 )}
               </div>
 
               {/* 담당자 다중 선택 영역 */}
-              <div className="detailField detailField--full">
+              <div className="detailField">
                 <label>담당자</label>
                 {isEditing ? (
                   <UserMultiSelect
@@ -692,12 +680,7 @@ export function EquipmentFacilityDetailPage() {
         <div className="detailFooter">
           <div>
             {isEditing && (
-              <button
-                type="button"
-                className="btnDanger"
-                onClick={handleDelete}
-                disabled={isBusy}
-              >
+              <button type="button" className="btnDanger" onClick={handleDelete} disabled={isBusy}>
                 {isDeleting ? "삭제 처리 중..." : "설비 삭제"}
               </button>
             )}
@@ -705,20 +688,10 @@ export function EquipmentFacilityDetailPage() {
           <div className="detailFooterActions">
             {isEditing ? (
               <>
-                <button
-                  type="button"
-                  className="ghostButton"
-                  onClick={handleCancelEdit}
-                  disabled={isBusy}
-                >
+                <button type="button" className="ghostButton" onClick={handleCancelEdit} disabled={isBusy}>
                   취소
                 </button>
-                <button
-                  type="button"
-                  className="primaryButton"
-                  onClick={handleSave}
-                  disabled={isBusy}
-                >
+                <button type="button" className="primaryButton" onClick={handleSave} disabled={isBusy}>
                   {isUpdating ? "저장 중..." : "저장"}
                 </button>
               </>
@@ -727,19 +700,12 @@ export function EquipmentFacilityDetailPage() {
                 <button
                   type="button"
                   className="ghostButton"
-                  onClick={() =>
-                    navigate({ pathname: "/equipment/facility", search: location.search })
-                  }
+                  onClick={() => navigate({ pathname: "/equipment/facility", search: location.search })}
                   disabled={isBusy}
                 >
                   목록
                 </button>
-                <button
-                  type="button"
-                  className="primaryButton"
-                  onClick={() => setIsEditing(true)}
-                  disabled={isBusy}
-                >
+                <button type="button" className="primaryButton" onClick={() => setIsEditing(true)} disabled={isBusy}>
                   수정
                 </button>
               </>
@@ -750,11 +716,7 @@ export function EquipmentFacilityDetailPage() {
 
       {/* 이미지 미리보기 모달 */}
       {isModalOpen && (
-        <ImageModal
-          images={gallery.images}
-          initialIndex={gallery.activeIndex}
-          onClose={() => setIsModalOpen(false)}
-        />
+        <ImageModal images={gallery.images} initialIndex={gallery.activeIndex} onClose={() => setIsModalOpen(false)} />
       )}
 
       {/* 라벨프린터 출력 모달 */}
