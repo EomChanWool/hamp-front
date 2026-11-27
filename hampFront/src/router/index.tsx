@@ -81,6 +81,8 @@ import { SeedOutboundManageCreatePage } from '@/pages/page/ioSeed/SeedOutboundMa
 import { SeedOutboundManageDetailPage } from '@/pages/page/ioSeed/SeedOutboundManageDetailPage'
 import { InpiInboundManagePage } from '@pages/page/ioInpi/InpiInboundManagePage'
 import { InpiOutboundManagePage } from '@pages/page/ioInpi/InpiOutboundManagePage'
+import { InpiOutboundManageCreatePage } from '@/pages/page/ioInpi/InpiOutboundManageCreatePage'
+import { InpiOutboundManageDetailPage } from '@/pages/page/ioInpi/InpiOutboundManageDetailPage'
 
 // 식품생산관리 + 식품품질검사
 import { FoodWorkOrdersPage } from '@pages/page/food/FoodWorkOrdersPage'
@@ -143,6 +145,7 @@ import { WorkTabletType } from '@/pages/work/WorkTabletType'
 // 출고처리 PC 전용 페이지 (태블릿 라우팅과 분리)
 import { WorkPcHome } from '@/pages/work/WorkPcHome'
 import { WorkOutboundScanPage } from '@/pages/work/WorkOutboundScanPage'
+
 
 const RootRouter = () => <RouterProvider router={router} />
 export default RootRouter
@@ -374,6 +377,8 @@ export const menuRoutes: MenuRouteGroup[] = [
       { path: 'seed-outbound-manage/:shipId', name: '출고지시서 상세', element: <SeedOutboundManageDetailPage />, hidden: true },
       { path: 'inpi-inbound-manage', name: '인피입고관리', element: <InpiInboundManagePage /> },
       { path: 'inpi-outbound-manage', name: '인피출고관리', element: <InpiOutboundManagePage /> },
+      { path: 'inpi-outbound-manage/create', name: '출고지시서 등록', element: <InpiOutboundManageCreatePage />, hidden: true },
+      { path: 'inpi-outbound-manage/:shipId', name: '출고지시서 상세', element: <InpiOutboundManageDetailPage />, hidden: true },
     ],
   },
 ]

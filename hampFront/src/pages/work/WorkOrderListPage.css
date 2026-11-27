@@ -359,13 +359,6 @@
   gap: 10px;
 }
 
-.woLineProgress {
-  color: #94a3b8;
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 13px;
-  font-weight: 600;
-}
-
 /* 오른쪽 상태 배지 (대기·투입입력 / 진행중·실적입력 / 완료) */
 .woLineStatus {
   display: inline-flex;
@@ -642,4 +635,48 @@
 .woEntryView .workOrderCardHead {
   flex-wrap: wrap;
   gap: 8px;
+}
+
+/* ── 전처리 QR 대기 화면  ── */
+
+.woPtProgress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.woPtScanForm {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.woPtScanInput {
+  flex: 1;
+  min-width: 0;
+  height: 56px;
+  padding: 0 16px;
+  border: 2px solid #d0d7de;
+  border-radius: 12px;
+  font-size: 18px;
+  background: #fff;
+}
+
+.woPtScanInput:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.woPtScanForm .workScanCancelBtn {
+  flex: 0 0 96px;
+}
+
+.woPtScanOk {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ecfdf3;
+  color: #067647;
+  font-size: 15px;
+  font-weight: 600;
 }
