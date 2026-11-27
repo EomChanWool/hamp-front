@@ -1,7 +1,6 @@
 import { apiClient } from '@/api/apiClient';
 import type { ApiResponse, ApiResponsePage, PageResponse } from '@/api/Common';
 import type { EquipmentOptionResponse } from '@/api/master/Equipment';
-import type { ItemOptionResponse } from '@/api/master/Item';
 
 // 도메인 상수 및 타입 (Literal Types)
 
@@ -137,100 +136,6 @@ export interface WorkOrderLineScanResponse {
     routingSteps: WorkOrderRoutingStepResponse[];
 }
 
-/**
- * 공정 시작/종료 입력 준비 정보
- * - 태블릿에서 라인의 [투입 입력]/[실적 입력]을 누르면 조회한다
- * - START_READY: 시작 전 → requiredMaterials 는 투입자재 목록
- * - FINISH_READY: 진행 중 → requiredMaterials 는 산출자재 목록
- * - 실제 기록은 startPerformance / finishPerformance 로 확정해야 된다
- */
-export interface WorkOrderPerformanceReadyResponse {
-    action: 'START_READY' | 'FINISH_READY';
-    workOrderLineId: number;
-    operCode: string;
-    operNm: string;
-    operSeq: number;
-    perfId: number | null;
-    requiredMaterials?: ItemOptionResponse[];
-}
-
-/** @deprecated 설비 스캔 방식 제거 - WorkOrderPerformanceReadyResponse 를 사용 */
-export type WorkOrderPerformanceScanResponse = WorkOrderPerformanceReadyResponse;
-
-/** 공정 시작/종료 시 자재별 수량 */
-export interface WorkOrderPerformanceMaterialQtyRequest {
-    itemCode: string;
-    qty: number;
-}
-
-/** 공정 종료 시 불량 수량 */
-export interface WorkOrderPerformanceDefectRequest {
-    defCode: string;
-    qty: number;
-}
-
-/** 공정을 투입수량과 함께 시작 확정할 때 보내는 요청 */
-export interface WorkOrderPerformanceStartRequest {
-    zone: ZoneType;
-    /** 스캔 대신 화면에서 라인을 직접 고르므로 어떤 라인인지 함께 보낸다 */
-    workOrderLineId: number;
-    operCode: string;
-    materials: WorkOrderPerformanceMaterialQtyRequest[];
-}
-
-/** 공정을 종료 확정할 때 보내는 요청 */
-export interface WorkOrderPerformanceFinishRequest {
-    zone: ZoneType;
-    /** 스캔 대신 화면에서 라인을 직접 고르므로 어떤 라인인지 함께 보낸다 */
-    workOrderLineId: number;
-    operCode: string;
-    materials: WorkOrderPerformanceMaterialQtyRequest[];
-    defects?: WorkOrderPerformanceDefectRequest[];
-}
-
-// ── 생산라인 현황(production-lines) 응답 모델 ──────────────────────────────────────
-// GET /work-performances/{workId}/production-lines
-// 태블릿 작업지시 상세에서 라인 카드를 그릴 때 쓰는 단순화된 상태
-
-/**
- * 생산라인 단순화 상태
- * - LOCKED: 선행 라인이 끝나지 않아 잠김 (lockedReason 에 선행 라인명)
- * - READY: 투입 입력 가능 (작업 시작 전)
- * - PRODUCING: 생산 중 (실적 입력 대기)
- * - AWAITING_PACK: 생산실적 기록 완료, 포장 대기
- * - DONE: 완료 (finalQty 확정)
- */
-export type ProductionLineStatus = 'LOCKED' | 'READY' | 'PRODUCING' | 'AWAITING_PACK' | 'DONE';
-
-/** 생산라인에 기록된 산출 자재 한 건 */
-export interface WorkOrderProductionLineMaterialResponse {
-    itemCode: string;
-    itemNm: string;
-    unit: string;
-    ioType: MaterialIoType;
-    qty: number;
-}
-
-/** 작업지시 생산라인 현황 한 건 */
-export interface WorkOrderProductionLineResponse {
-    /** 화면 표시 순서 (전체 공정 중 이 라인의 개념적 단계 - 중간에 비어있는 번호가 있을 수 있음) */
-    seq: number;
-    /** 이 라인이 생산하는(또는 전처리의 경우 투입되는) 품목 코드 */
-    itemCode: string;
-    itemNm: string;
-    /** 대표 공정명 (화면 배지용 - 예: 전처리/선별/착유) */
-    operNm: string;
-    status: ProductionLineStatus;
-    /** LOCKED 일 때만: 잠긴 이유(선행 라인명) */
-    lockedReason?: string | null;
-    /** 투입량 (작업시작 시 기록한 값, 시작 전이면 null) */
-    inputQty: number | null;
-    /** 생산실적으로 기록된 산출 자재 목록 (포장 전 - 품목에 따라 1건 또는 2건) */
-    outputs: WorkOrderProductionLineMaterialResponse[];
-    /** 포장 후 최종 산출량 (완료 전이면 null, 포장 단계가 없는 라인도 null) */
-    finalQty: number | null;
-}
-
 // ── 예상 투입원료(estimate) 요청/응답 모델 ──────────────────────────────────────────
 // POST /work-orders/estimate-raw-material
 // 작업지시 등록 시 산출수량 기준으로 예상 투입원료를 계산한다 (참고용 추정치)
@@ -333,15 +238,6 @@ export type ApiResponseWorkOrderStatusSummaryResponse = ApiResponse<WorkOrderSta
 /** 작업지시 라인 바코드 스캔 조회 API 최종 응답 타입 */
 export type ApiResponseWorkOrderLineScanResponse = ApiResponse<WorkOrderLineScanResponse>;
 
-/** 공정 시작/종료 입력 준비 정보 API 최종 응답 타입 */
-export type ApiResponseWorkOrderPerformanceReadyResponse = ApiResponse<WorkOrderPerformanceReadyResponse>;
-
-/** 작업지시 공정 시작 API 최종 응답 타입 (기본 ApiResponse 활용) */
-export type ApiResponseWorkOrderPerformanceStartResponse = ApiResponse<string>;
-
-/** 작업지시 생산라인 현황 조회 API 최종 응답 타입 */
-export type ApiResponseListWorkOrderProductionLineResponse = ApiResponse<WorkOrderProductionLineResponse[]>;
-
 /** 예상 투입원료 계산 API 최종 응답 타입 */
 export type ApiResponseWorkOrderMaterialEstimateResponse = ApiResponse<WorkOrderMaterialEstimateResponse>;
 
@@ -362,26 +258,6 @@ export const WorkOrderApi = {
         [key: string]: any;
     }): Promise<ApiResponsePageWorkOrderResponse> => {
         const res = await apiClient.get('/work-orders', { params });
-        return res.data;
-    },
-
-    /**
-     * 내 작업지시 목록 조회 (태블릿 화면용, 완료되지 않은 건 전체)
-     * GET /work-performances/my
-     * - 페이징 파라미터(page, size, sort)는 쿼리스트링으로 개별 전달한다 (예: sort: "workDate,desc")
-     */
-    getMyList: async (params?: {
-        page?: number;
-        size?: number;
-        sort?: string;
-    }): Promise<ApiResponsePageWorkOrderResponse> => {
-        const res = await apiClient.get('/work-performances/my', { params });
-        return res.data;
-    },
-
-    /** 작업지시 생산라인 현황 조회 (태블릿 화면용, 단순화된 상태) */
-    getProductionLines: async (workId: string): Promise<ApiResponseListWorkOrderProductionLineResponse> => {
-        const res = await apiClient.get(`/work-performances/${encodeURIComponent(workId)}/production-lines`);
         return res.data;
     },
 
@@ -435,33 +311,6 @@ export const WorkOrderApi = {
         const res = await apiClient.get('/work-orders/scan', {
             params: { code, zone },
         });
-        return res.data;
-    },
-
-    /**
-     * 공정 시작/종료 입력 준비 정보 조회 (설비 스캔 대체)
-     * GET /work-orders/performance/ready?zone=&workOrderLineId=&operCode=
-     * - 시작이면 투입자재, 종료면 산출자재 목록을 requiredMaterials 로 돌려준다
-     * - TODO(백엔드): 기존 설비 스캔 이벤트가 주던 값을 그대로 돌려주는 엔드포인트 필요
-     */
-    getPerformanceReady: async (params: {
-        zone: ZoneType;
-        workOrderLineId: number;
-        operCode: string;
-    }): Promise<ApiResponseWorkOrderPerformanceReadyResponse> => {
-        const res = await apiClient.get('/work-orders/performance/ready', { params });
-        return res.data;
-    },
-
-    /** 공정을 투입수량과 함께 시작 확정 */
-    startPerformance: async (data: WorkOrderPerformanceStartRequest): Promise<ApiResponse<null>> => {
-        const res = await apiClient.post('/work-orders/performance/start', data);
-        return res.data;
-    },
-
-    /** 공정을 종료 확정 */
-    finishPerformance: async (data: WorkOrderPerformanceFinishRequest): Promise<ApiResponse<null>> => {
-        const res = await apiClient.post('/work-orders/performance/finish', data);
         return res.data;
     },
 };
