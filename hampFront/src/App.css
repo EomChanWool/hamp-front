@@ -2192,6 +2192,7 @@ textarea.tableInput {
   height: 17px;
   flex-shrink: 0;
   stroke-width: 1.6;
+  margin-top: 2px;
 }
 
 .detailRowValue {

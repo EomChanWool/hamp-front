@@ -16,6 +16,38 @@ import type {
 import { OperationApi, OPER_TYPE_LABEL } from "@/api/master/Operation";
 import Spinner from "@/components/common/Spinner";
 import { DepartmentApi, type DepartmentOptionResponse } from "@/api/master/Department";
+import { SelectBox, type SelectBoxOption } from "@components/common/SelectBox";
+
+const OPER_TYPE_OPTIONS: SelectBoxOption[] = Object.entries(OPER_TYPE_LABEL).map(([value, label]) => ({
+    value,
+    label,
+}));
+
+type EditSelectCellProps = {
+    initialValue: string;
+    options: SelectBoxOption[];
+    placeholder?: string;
+    ariaLabel: string;
+    onChange: (value: string) => void;
+};
+
+function EditSelectCell({ initialValue, options, placeholder, ariaLabel, onChange }: EditSelectCellProps) {
+    const [value, setValue] = useState(initialValue);
+
+    return (
+        <SelectBox
+            className="selectBox--cell"
+            ariaLabel={ariaLabel}
+            value={value}
+            options={options}
+            placeholder={placeholder}
+            onChange={(v) => {
+                setValue(v);
+                onChange(v);
+            }}
+        />
+    );
+}
 
 export function MasterOperationPage() {
     const [operations, setOperations] = useState<OperationResponse[]>([]);
@@ -374,30 +406,28 @@ export function MasterOperationPage() {
                         const currentVal = editFormRef.current.depCode ?? "";
 
                         // 현재 선택된 부서코드가 옵션 목록에 존재하는지 확인
-                        const existsInOptions = departmentOptions.some(opt => opt.depCode === currentVal);
+                        const existsInOptions = departmentOptions.some((opt) => opt.depCode === currentVal);
+
+                        const options: SelectBoxOption[] = [
+                            ...(!existsInOptions && currentVal
+                                ? [{ value: currentVal, label: `${currentVal} (삭제된 부서)` }]
+                                : []),
+                            ...departmentOptions.map((opt) => ({
+                                value: opt.depCode,
+                                label: `${opt.depCode} (${opt.taskDesc ?? "-"})`,
+                            })),
+                        ];
 
                         return (
-                            <select
-                                className="tableInput"
-                                defaultValue={currentVal}
-                                onChange={(e) => {
-                                    editFormRef.current.depCode = e.target.value;
+                            <EditSelectCell
+                                ariaLabel={`${isNewRow ? "신규" : row.original.operCode} 부서코드`}
+                                initialValue={currentVal}
+                                options={options}
+                                placeholder="부서 선택"
+                                onChange={(v) => {
+                                    editFormRef.current.depCode = v;
                                 }}
-                            >
-                                <option value="" disabled>부서 선택</option>
-
-                                {!existsInOptions && currentVal && (
-                                    <option value={currentVal} style={{ color: "#9ca3af" }}>
-                                        {currentVal} (삭제된 부서)
-                                    </option>
-                                )}
-
-                                {departmentOptions.map((opt) => (
-                                    <option key={opt.depCode} value={opt.depCode}>
-                                        {opt.depCode} ({opt.taskDesc ?? "-"})
-                                    </option>
-                                ))}
-                            </select>
+                            />
                         );
                     }
                     return row.original.depCode || "-";
@@ -434,19 +464,14 @@ export function MasterOperationPage() {
 
                     if (isNewRow || isEditing) {
                         return (
-                            <select
-                                className="tableInput"
-                                defaultValue={String(editFormRef.current.operType ?? 0)}
-                                onChange={(e) => {
-                                    editFormRef.current.operType = Number(e.target.value) as OperType;
+                            <EditSelectCell
+                                ariaLabel={`${isNewRow ? "신규" : row.original.operCode} 공정구분`}
+                                initialValue={String(editFormRef.current.operType ?? 0)}
+                                options={OPER_TYPE_OPTIONS}
+                                onChange={(v) => {
+                                    editFormRef.current.operType = Number(v) as OperType;
                                 }}
-                            >
-                                {Object.entries(OPER_TYPE_LABEL).map(([value, label]) => (
-                                    <option key={value} value={value}>
-                                        {label}
-                                    </option>
-                                ))}
-                            </select>
+                            />
                         );
                     }
                     return OPER_TYPE_LABEL[row.original.operType] ?? "-";

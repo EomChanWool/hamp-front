@@ -14,6 +14,8 @@ import type {
 import { DefectApi } from "@/api/master/Defect";
 import { OperationApi, type OperationOptionResponse } from "@/api/master/Operation";
 import Spinner from "@/components/common/Spinner";
+import { EditSelectCell } from "@components/common/EditSelectCell";
+import type { SelectBoxOption } from "@components/common/SelectBox";
 
 export function MasterDefectsPage() {
   const [defects, setDefects] = useState<DefectResponse[]>([]);
@@ -89,13 +91,14 @@ export function MasterDefectsPage() {
   }, [fetchOperationOptions]);
 
   // 테이블 인라인 수정/등록용 공정 select 옵션 메모이제이션
-  const operationSelectOptions = useMemo(() => [
-    { label: "공정 선택", value: "" },
-    ...operationOptions.map((opt) => ({
-      label: `${opt.operCode} (${opt.operNm ?? "-"})`,
-      value: opt.operCode,
-    })),
-  ], [operationOptions]);
+  const operationSelectOptions = useMemo<SelectBoxOption[]>(
+    () =>
+      operationOptions.map((opt) => ({
+        label: `${opt.operCode} (${opt.operNm ?? "-"})`,
+        value: opt.operCode,
+      })),
+    [operationOptions]
+  );
 
   // 검색 필드 정의
   const searchFields: SearchField[] = useMemo(() => [
@@ -342,33 +345,26 @@ export function MasterDefectsPage() {
             const currentVal = editFormRef.current.operCode ?? "";
 
             // 현재 선택된 값이 옵션 목록에 존재하는지 확인
-            const existsInOptions = operationSelectOptions.some(opt => opt.value === currentVal);
+            const existsInOptions = operationSelectOptions.some((opt) => opt.value === currentVal);
+
+            const options: SelectBoxOption[] = [
+              ...(!existsInOptions && currentVal
+                ? [{ value: currentVal, label: `${currentVal} (삭제된 공정)` }]
+                : []),
+              ...operationSelectOptions,
+            ];
 
             return (
-              <select
-                className="tableInput"
-                defaultValue={currentVal}
-                onChange={(e) => {
-                  editFormRef.current.operCode = e.target.value;
+              <EditSelectCell
+                ariaLabel={`${isNewRow ? "신규" : row.original.defCode} 공정코드`}
+                initialValue={currentVal}
+                options={options}
+                placeholder="공정 선택"
+                searchable
+                onChange={(v) => {
+                  editFormRef.current.operCode = v;
                 }}
-              >
-                <option value="" disabled>공정 선택</option>
-
-                {!existsInOptions && currentVal && (
-                  <option value={currentVal} style={{ color: "#9ca3af" }}>
-                    {currentVal} (삭제된 공정)
-                  </option>
-                )}
-
-                {operationSelectOptions.map((opt) => {
-                  if (opt.value === "") return null;
-                  return (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  );
-                })}
-              </select>
+              />
             );
           }
           return row.original.operCode || "-";
