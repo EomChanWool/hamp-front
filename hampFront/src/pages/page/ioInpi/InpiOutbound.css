@@ -1,0 +1,65 @@
+/* 섬유 출고지시서 (목록/등록/상세) 전용 스타일 - fsh- 접두사
+   공용 form* / inpi* / fwo-* 클래스(Inpi.css)는 그대로 사용하고, 출고지시서에만 필요한 것만 둔다 */
+
+/* 진행 단계 4칸 (fwo-flow 기본은 3칸) */
+.fwo-flow.fsh-flow4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+/* 숫자 셀 (CusTable 안) */
+.fsh-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fsh-dest { display: inline-block; min-width: 160px; max-width: 260px; white-space: normal; line-height: 1.45; }
+.fsh-late { color: var(--warn-fg, #9a6410); font-weight: 600; }
+
+/* 체크박스 */
+.fsh-check { width: 18px; height: 18px; accent-color: var(--primary, #57d3a1); cursor: pointer; vertical-align: middle; }
+.fsh-check.is-blue { accent-color: var(--blue, #2563eb); }
+.fsh-check:disabled { cursor: not-allowed; opacity: .5; }
+
+/* 선택된 행 */
+.fsh-lotTable tbody tr.fsh-on td { background: var(--primary-light, #dff7ec); }
+.fsh-scanTable tbody tr.fsh-on td { background: var(--info-bg, #e9f0fa); }
+.fsh-lotTable td, .fsh-scanTable td { vertical-align: middle; }
+
+/* LOT 출고 중량 입력 */
+.fsh-qty {
+  width: 120px; height: 36px; padding: 0 10px;
+  text-align: right; font-variant-numeric: tabular-nums; font-size: 13.5px;
+  border-radius: 8px; border: 1px solid var(--border, #ebecee);
+  background: var(--bg-card, #fff); color: var(--text-heading, #0f172a);
+}
+.fsh-qty:focus-visible { outline: none; border-color: var(--primary, #57d3a1); box-shadow: 0 0 0 3px var(--primary-light, #dff7ec); }
+.fsh-qty:disabled { opacity: .4; cursor: not-allowed; }
+.fsh-qty[aria-invalid="true"] { border-color: var(--danger, #c0293d); }
+.fsh-partial { font-size: 11.5px; font-weight: 600; color: var(--warn-fg, #9a6410); margin-left: 6px; }
+.fsh-blockError { display: block; margin: 10px 0 0; }
+
+/* 서브 테이블 합계 줄 */
+.fsh-tfoot td { font-weight: 700; background: var(--bg-subtle, #f8fafc); }
+
+/* 출고 확인 대기 */
+.fsh-confirmBar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+.fsh-confirmBar > span { font-size: 13px; color: var(--text-muted, #64748b); font-variant-numeric: tabular-nums; }
+.fsh-linkBtn { background: transparent; border: none; color: var(--blue, #2563eb); font-size: 13px; font-weight: 600; padding: 0 4px; height: 28px; cursor: pointer; }
+.fsh-linkBtn:hover { text-decoration: underline; }
+.fsh-linkBtn.is-danger { color: var(--danger, #c0293d); }
+.fsh-linkBtn:disabled { opacity: .45; cursor: not-allowed; text-decoration: none; }
+
+/* 우측 요약: 제품별 합계 + 총합 */
+.fsh-prodSum { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.fsh-prodSum li { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+.fsh-prodSum li.is-empty { color: var(--text-muted, #64748b); }
+.fsh-prodSum b { font-variant-numeric: tabular-nums; color: var(--text-heading, #0f172a); white-space: nowrap; }
+.fsh-total { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border, #ebecee); font-size: 13px; }
+.fsh-total strong { font-size: 22px; color: var(--text-heading, #0f172a); font-variant-numeric: tabular-nums; }
+
+/* 오류 박스 / 수정 중 표시 */
+.fsh-errorBox { padding: 10px 14px; border-radius: 8px; background: var(--danger-soft, #fbe9eb); color: var(--danger, #c0293d); font-size: 13px; font-weight: 500; line-height: 1.5; }
+.fsh-editTag { font-size: 12px; font-weight: 600; color: var(--warn-fg, #9a6410); background: var(--warn-bg, #fcf3e0); padding: 4px 10px; border-radius: 999px; }
+
+@media (max-width: 900px) {
+  .fwo-flow.fsh-flow4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .fwo-flow.fsh-flow4 { grid-template-columns: 1fr; }
+  .fsh-confirmBar { flex-direction: column; align-items: stretch; }
+  .fsh-confirmBar .primaryButton { width: 100%; }
+}
