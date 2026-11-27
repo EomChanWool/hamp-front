@@ -1813,6 +1813,41 @@
   color: #1e2420;
 }
 
+.hullSummaryHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hullGhostBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.hullGhostBtn:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.hullGhostBtn:disabled,
+.hullDangerBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .hullSummaryKv {
   display: flex;
   flex-wrap: wrap;
@@ -1894,8 +1929,19 @@
   color: #f87171;
 }
 
-[data-theme="dark"] .hullDangerBtn:hover {
+[data-theme="dark"] .hullDangerBtn:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.14);
+}
+
+[data-theme="dark"] .hullGhostBtn {
+  background: transparent;
+  border-color: #454a57;
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .hullGhostBtn:hover:not(:disabled) {
+  background: #2a2d36;
+  border-color: #5b6170;
 }
 
 [data-theme="dark"] .hullKpiCard {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
@@ -15,6 +15,8 @@ import {
   type HullReportStatus,
 } from "@/api/seed/HullReport";
 import "@pages/page/seed/Seed.css";
+
+const NOTE_MAX_LENGTH = 255;
 
 const STATUS_LABEL: Record<HullReportStatus, string> = {
   PENDING: "대기",
@@ -51,6 +53,24 @@ function SeedReportReturnManageDetailContent({ reportId }: { reportId?: string }
   const [report, setReport] = useState<HullReportResponse | null>(null);
   const [isLoading, setIsLoading] = useState(isValidId);
   const [decisionNoteInput, setDecisionNoteInput] = useState("");
+
+  // 메모 수정 모드 상태
+  const [isEditing, setIsEditing] = useState(false);
+  const [editNote, setEditNote] = useState("");
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const isMountedRef = useRef(true);
+  const savingRef = useRef(false);
+  const deletingRef = useRef(false);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isValidId) return;
@@ -118,6 +138,75 @@ function SeedReportReturnManageDetailContent({ reportId }: { reportId?: string }
     window.alert("반려 기능은 미구현 상태입니다.");
   };
 
+  const handleStartEdit = () => {
+    if (!report || report.status !== "PENDING" || isDeleting) return;
+    setEditNote(report.note ?? "");
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    if (isSaving) return;
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!report || savingRef.current) return;
+
+    savingRef.current = true;
+    setIsSaving(true);
+
+    try {
+      const response = await HullReportApi.update(report.reportId, {
+        note: editNote.trim(),
+      });
+
+      if (!isMountedRef.current) return;
+      if (response.data) {
+        setReport(response.data);
+      }
+      setIsEditing(false);
+      window.alert("껍질 신고가 수정되었습니다.");
+    } catch (error) {
+      console.error("껍질 신고 수정 실패:", error);
+      if (isMountedRef.current) {
+        window.alert(getServerErrorMessage(error, "껍질 신고 수정에 실패했습니다."));
+      }
+    } finally {
+      savingRef.current = false;
+      if (isMountedRef.current) {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!report || report.status !== "PENDING" || deletingRef.current) return;
+
+    const confirmed = window.confirm(`껍질 신고 #${report.reportId} 건을 삭제하시겠습니까?`);
+    if (!confirmed) return;
+
+    deletingRef.current = true;
+    setIsDeleting(true);
+
+    try {
+      await HullReportApi.delete(report.reportId);
+
+      if (!isMountedRef.current) return;
+      window.alert("껍질 신고가 삭제되었습니다.");
+      navigate("/seed/report-return-manage");
+    } catch (error) {
+      console.error("껍질 신고 삭제 실패:", error);
+      if (isMountedRef.current) {
+        window.alert(getServerErrorMessage(error, "껍질 신고 삭제에 실패했습니다."));
+      }
+    } finally {
+      deletingRef.current = false;
+      if (isMountedRef.current) {
+        setIsDeleting(false);
+      }
+    }
+  };
+
   const isPending = report?.status === "PENDING";
   const hasDecisionNote =
     report != null && !isPending && Boolean(report.decisionNote);
@@ -125,7 +214,12 @@ function SeedReportReturnManageDetailContent({ reportId }: { reportId?: string }
   return (
     <section className="screenStack">
       <div>
-        <button type="button" className="hullBackLink" onClick={handleGoList}>
+        <button
+          type="button"
+          className="hullBackLink"
+          onClick={handleGoList}
+          disabled={isSaving || isDeleting}
+        >
           <ChevronLeftIcon className="hullBackLink__icon" aria-hidden="true" />
           <span>목록으로</span>
         </button>
@@ -146,7 +240,53 @@ function SeedReportReturnManageDetailContent({ reportId }: { reportId?: string }
       ) : (
         <>
           <div className="hullSummaryCard">
-            <h2 className="hullSummaryTitle">껍질 신고 #{report.reportId}</h2>
+            <div className="hullSummaryHead">
+              <h2 className="hullSummaryTitle">껍질 신고 #{report.reportId}</h2>
+
+              {isPending && (
+                <div className="hullActionRow">
+                  {isEditing ? (
+                    <>
+                      <button
+                        type="button"
+                        className="hullGhostBtn"
+                        onClick={handleCancelEdit}
+                        disabled={isSaving}
+                      >
+                        취소
+                      </button>
+                      <button
+                        type="button"
+                        className="hullPrimaryBtn"
+                        onClick={handleSaveEdit}
+                        disabled={isSaving}
+                      >
+                        {isSaving ? "저장 중..." : "저장"}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="hullGhostBtn"
+                        onClick={handleStartEdit}
+                        disabled={isDeleting}
+                      >
+                        수정
+                      </button>
+                      <button
+                        type="button"
+                        className="hullDangerBtn"
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? "삭제 중..." : "삭제"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div className="hullSummaryKv">
               <div className="hullKvItem">
@@ -170,13 +310,32 @@ function SeedReportReturnManageDetailContent({ reportId }: { reportId?: string }
                 </span>
               </div>
 
-              <div className="hullKvItem">
-                <span className="hullKvLabel">등록 메모</span>
-                <span className="hullKvValue">{report.note || "-"}</span>
-              </div>
+              {!isEditing && (
+                <div className="hullKvItem">
+                  <span className="hullKvLabel">등록 메모</span>
+                  <span className="hullKvValue">{report.note || "-"}</span>
+                </div>
+              )}
             </div>
 
-            {isPending && (
+            {isEditing && (
+              <div className="hullDecisionSection">
+                <label htmlFor="hull-edit-note" className="hullKvLabel">
+                  등록 메모 (선택)
+                </label>
+                <textarea
+                  id="hull-edit-note"
+                  className="hullTextarea"
+                  rows={2}
+                  maxLength={NOTE_MAX_LENGTH}
+                  placeholder="예: 상자 2개로 나눠서 보관"
+                  value={editNote}
+                  onChange={(e) => setEditNote(e.target.value)}
+                />
+              </div>
+            )}
+
+            {isPending && !isEditing && (
               <div className="hullDecisionSection">
                 <label htmlFor="hull-decision-note" className="hullKvLabel">
                   승인/반려 사유 (선택)
@@ -185,7 +344,7 @@ function SeedReportReturnManageDetailContent({ reportId }: { reportId?: string }
                   id="hull-decision-note"
                   className="hullTextarea"
                   rows={2}
-                  maxLength={255}
+                  maxLength={NOTE_MAX_LENGTH}
                   placeholder="예: 수량 불일치로 반려"
                   value={decisionNoteInput}
                   onChange={(e) => setDecisionNoteInput(e.target.value)}
