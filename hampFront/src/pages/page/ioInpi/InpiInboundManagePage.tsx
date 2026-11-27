@@ -254,7 +254,15 @@ export function InpiInboundManagePage() {
     setIsCreateOpen(true)
   }
 
-  const handleEdited = () => {
+  const handleEdited = (saved?: FiberReceiptResponse) => {
+    // 수정 후 정렬·필터로 현재 페이지를 벗어나더라도 선택 라벨에 최신 값이 찍히도록 즉시 반영
+    if (saved) {
+      setSelectedReceipts((prev) =>
+        prev.some((receipt) => receipt.receiptId === saved.receiptId)
+          ? prev.map((receipt) => (receipt.receiptId === saved.receiptId ? saved : receipt))
+          : prev,
+      )
+    }
     setEditingReceipt(null)
     setRefreshKey((key) => key + 1)
   }

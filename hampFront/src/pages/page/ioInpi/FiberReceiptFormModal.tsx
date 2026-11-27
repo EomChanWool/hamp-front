@@ -55,7 +55,7 @@ type Props = {
   /** 있으면 상세(수정), 없으면 등록 */
   receipt?: FiberReceiptResponse
   onClose: () => void
-  onSaved: () => void
+  onSaved: (saved?: FiberReceiptResponse) => void
   /** 확인 후 삭제. 삭제했으면 true */
   onDelete?: (receipt: FiberReceiptResponse) => Promise<boolean>
 }
@@ -370,7 +370,7 @@ export function FiberReceiptFormModal({ bpOptions, itemOptions, receipt, onClose
         : await FiberReceiptApi.create(payload)
       window.alert(res.message || (receipt ? '수정되었습니다.' : '등록되었습니다.'))
       setIsSaving(false)
-      onSaved()
+      onSaved(res.data)
     } catch (error) {
       console.error(receipt ? '인피 입고 수정 실패:' : '인피 입고 등록 실패:', error)
       window.alert(getErrorMessage(error, receipt ? '수정에 실패했습니다.' : '등록에 실패했습니다.'))
