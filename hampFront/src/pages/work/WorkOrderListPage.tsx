@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import {
+  ArchiveBoxIcon,
   ArrowPathIcon,
   ChevronDownIcon,
   ChevronRightIcon,
@@ -8,6 +9,7 @@ import {
   ExclamationTriangleIcon,
   LockClosedIcon,
   MapPinIcon,
+  QrCodeIcon,
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { WorkOrderApi } from '@/api/WorkOrder';
@@ -29,6 +31,7 @@ import type { WorkPretreatmentDetailResponse } from '@/api/WorkPretreatment';
 import type { ItemOptionResponse } from '@/api/master/Item';
 import { DefectApi, type DefectOptionResponse } from '@/api/master/Defect';
 import { isValidWorkZone } from '@/utils/common';
+import { useNativeQrScan } from '@/hooks/useNativeQrScan';
 import '@/pages/work/WorkTabletHome.css';
 import '@/pages/work/WorkSeedReportScanPage.css';
 import '@/pages/work/WorkOrderScanPage.css';
@@ -947,9 +950,11 @@ function PerformanceEntryView({
 /* ================================================================
    전처리 화면 (탈각씨드 라인)
    - 진입 시 전처리 작업지시 단건조회 → 상태별로
-     WAITING : 입고라벨 QR 스캔 대기 → 목표 수량과 일치하면 작업시작
-     PROGRESS: 계량 결과(탈각씨드 / 껍질) 입력 → 작업완료
+     WAITING : 입고라벨 QR 스캔 → 스캔할 때마다 투입 누적이 올라감 → 목표와 같아지면 작업 시작
+     PROGRESS: 계량 결과(탈각씨드 / 껍질) 입력 → 작업 완료
      DONE    : 결과만 표시
+   - 스캔 UX 는 전처리 신고 화면(WorkSeedReportScanPage)과 같은 구성/클래스를 쓴다
+     (키보드형 스캐너 입력칸 + 앱 카메라 스캔 + 스캔 대기 프레임)
 ================================================================ */
 
 const PRETREAT_SEMI_SEED = 'SEMI_SEED';
@@ -958,12 +963,14 @@ const PRETREAT_HULL = 'HULL';
 function PretreatmentView({
   workId,
   productionLine,
+  zoneVariant,
   onCancel,
   onDone,
   onDirtyChange,
 }: {
   workId: string;
   productionLine: WorkOrderProductionLineResponse;
+  zoneVariant: string;
   onCancel: () => void;
   onDone: (message: string) => void;
   onDirtyChange: (dirty: boolean) => void;
@@ -973,16 +980,12 @@ function PretreatmentView({
   const [loadError, setLoadError] = useState<string | null>(null);
 
   /* ── 스캔 ── */
-  const [scanCode, setScanCode] = useState('');
+  const [codeInput, setCodeInput] = useState('');
   const [isScanning, setIsScanning] = useState(false);
-  const [scanMessage, setScanMessage] = useState<{ type: 'ok' | 'error'; text: string } | null>(null);
-  /**
-   * 이 화면에서 QR 을 스캔한 뒤 받은 canStart (스캔 전이면 null)
-   * 단건조회의 inputQty 는 "입고 누적" 수량이라, 들어오자마자 목표와 같더라도
-   * 작업자가 입고라벨 QR 을 한 번 스캔해서 확인해야 시작할 수 있게 한다.
-   */
-  const [serverCanStart, setServerCanStart] = useState<boolean | null>(null);
-  const scanInputRef = useRef<HTMLInputElement>(null);
+  const [scanToast, setScanToast] = useState<string | null>(null);
+  const [scanFailure, setScanFailure] = useState<string | null>(null);
+  /** 마지막 스캔 응답의 canStart (스캔 전이면 null → 단건조회 수량으로 판단) */
+  const [lastCanStart, setLastCanStart] = useState<boolean | null>(null);
 
   /* ── 시작 / 완료 ── */
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1015,60 +1018,110 @@ function PretreatmentView({
 
   const status = info?.status ?? '';
   const targetQty = info?.instructQtySum ?? 0;
-  /** 입고 누적 수량 (= 이번 전처리 투입 수량) */
-  const scannedQty = info?.inputQty ?? 0;
-  const remainQty = Math.max(targetQty - scannedQty, 0);
-  const hasScanned = serverCanStart !== null;
-  const canStart = status === 'WAITING' && serverCanStart === true;
+  /** 투입 누적 = 이번 작업지시에 스캔한 입고건 수량 합계 */
+  const inputQty = info?.inputQty ?? 0;
+  const receipts = info?.receipts ?? [];
+  const remainQty = Math.max(targetQty - inputQty, 0);
+  const isOver = inputQty > targetQty + QTY_EPS;
+  const canStart =
+    status === 'WAITING' &&
+    (lastCanStart ?? (targetQty > 0 && Math.abs(inputQty - targetQty) < QTY_EPS));
 
   // 입력 중이면 뒤로가기 시 확인 (스캔은 서버에 바로 저장되므로 제외)
   const isDirty =
-    isSubmitting || isScanning || scanCode !== '' || Object.values(resultQtys).some((v) => v !== '');
+    isSubmitting || isScanning || codeInput !== '' || Object.values(resultQtys).some((v) => v !== '');
   useEffect(() => {
     onDirtyChange(isDirty);
   }, [isDirty, onDirtyChange]);
   useEffect(() => () => onDirtyChange(false), [onDirtyChange]);
 
-  // 스캔 대기 상태면 입력칸에 포커스 (QR 스캐너가 키보드처럼 입력 + Enter)
+  // 토스트 3초 / 스캔 실패 5초 후 자동 닫힘 (전처리 신고 화면과 동일)
   useEffect(() => {
-    if (status === 'WAITING' && !isScanning && !isSubmitting) scanInputRef.current?.focus();
-  }, [status, isScanning, isSubmitting]);
+    if (!scanToast) return;
+    const timer = setTimeout(() => setScanToast(null), 3000);
+    return () => clearTimeout(timer);
+  }, [scanToast]);
 
-  const handleScan = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const code = scanCode.trim();
-    if (!code || isScanning) return;
+  useEffect(() => {
+    if (!scanFailure) return;
+    const timer = setTimeout(() => setScanFailure(null), 5000);
+    return () => clearTimeout(timer);
+  }, [scanFailure]);
 
-    setIsScanning(true);
-    setScanMessage(null);
-    setError(null);
-    try {
-      const res = await WorkPretreatmentApi.scanReceipt(workId, code);
-      const { inputQty, instructQtySum, canStart: next } = res.data;
-      setServerCanStart(next);
-      setInfo((prev) => (prev ? { ...prev, inputQty, instructQtySum } : prev));
-      setScanMessage({
-        type: 'ok',
-        text: next
-          ? `스캔 확인 완료 · 입고 누적 ${inputQty.toLocaleString()} ${unit} 만큼 전처리 작업을 시작할 수 있습니다.`
-          : `스캔 완료 · 입고 누적 ${inputQty.toLocaleString()} / 목표 ${instructQtySum.toLocaleString()} ${unit}`,
-      });
-      setScanCode('');
-      // 입고건 목록 갱신
-      await loadInfo(true);
-    } catch (err) {
-      setScanMessage({ type: 'error', text: getErrorMessage(err, '입고라벨 스캔에 실패했습니다.') });
-      setScanCode('');
-    } finally {
-      setIsScanning(false);
-    }
+  /* ── 스캔 처리 (POST /work-performances/{workId}/pretreatment/scan-receipt) ──
+     스캐너로 연속으로 찍어도 순서가 꼬이지 않게 promise chain 으로 한 건씩 처리한다 */
+  const statusRef = useRef(status);
+  statusRef.current = status;
+  const scannedCodesRef = useRef<Set<string>>(new Set());
+  const scanChain = useRef<Promise<void>>(Promise.resolve());
+
+  const processScan = useCallback(
+    async (rawCode: string) => {
+      const code = rawCode.trim();
+      if (!code) return;
+
+      if (statusRef.current !== 'WAITING') {
+        setScanFailure('작업 시작 전(대기) 상태에서만 입고라벨을 스캔할 수 있습니다.');
+        return;
+      }
+
+      // 이 화면에서 이미 찍은 라벨이면 서버 호출 없이 안내 (중복 투입 방지)
+      if (scannedCodesRef.current.has(code)) {
+        setScanFailure(`${code} 는 이미 스캔한 입고라벨입니다.`);
+        return;
+      }
+
+      setIsScanning(true);
+      setScanFailure(null);
+      setError(null);
+      try {
+        const res = await WorkPretreatmentApi.scanReceipt(workId, code);
+        const { inputQty: nextInput, instructQtySum, canStart: next } = res.data;
+        scannedCodesRef.current.add(code);
+        setLastCanStart(next);
+        setInfo((prev) => (prev ? { ...prev, inputQty: nextInput, instructQtySum } : prev));
+        setScanToast(
+          next
+            ? `${code} 스캔됨 · 목표 수량을 채웠습니다`
+            : `${code} 스캔됨 · 투입 누적 ${nextInput.toLocaleString()} / ${instructQtySum.toLocaleString()} ${unit}`,
+        );
+        // 입고건 목록 갱신
+        await loadInfo(true);
+      } catch (err) {
+        setScanFailure(getErrorMessage(err, '입고라벨을 조회하지 못했습니다.'));
+      } finally {
+        setIsScanning(false);
+      }
+    },
+    [workId, unit, loadInfo],
+  );
+
+  const enqueueScan = useCallback(
+    (code: string) => {
+      scanChain.current = scanChain.current.then(() => processScan(code)).catch(() => undefined);
+    },
+    [processScan],
+  );
+
+  /** 라벨 번호 직접 입력 → 스캔 (키보드형 스캐너는 마지막에 Enter 를 보내므로 그대로 동작) */
+  const submitCodeInput = () => {
+    const code = codeInput.trim();
+    if (!code) return;
+    setCodeInput('');
+    enqueueScan(code);
   };
 
+  // 앱(네이티브) 카메라 스캔
+  const { isNative, startScan } = useNativeQrScan(async (barcode) => {
+    enqueueScan(barcode);
+  });
+
+  /* ── 작업 시작 ── */
   const handleStart = async () => {
     if (!canStart) return;
     if (
       !window.confirm(
-        `전처리 작업을 시작하시겠습니까?\n\n투입 ${scannedQty.toLocaleString()} ${unit} (입고건 ${info?.receipts.length ?? 0}건)`,
+        `전처리 작업을 시작하시겠습니까?\n\n투입 ${inputQty.toLocaleString()} ${unit} (입고건 ${receipts.length}건)`,
       )
     ) {
       return;
@@ -1085,6 +1138,7 @@ function PretreatmentView({
     }
   };
 
+  /* ── 작업 완료 (계량 결과) ── */
   const resultMaterials = useMemo(
     () =>
       [
@@ -1096,6 +1150,7 @@ function PretreatmentView({
 
   const handleResultKeyPress = useCallback(
     (key: string) => {
+      setError(null);
       setResultQtys((prev) => ({
         ...prev,
         [activeResultCode]: applyKeypad(prev[activeResultCode] ?? '', key),
@@ -1104,10 +1159,12 @@ function PretreatmentView({
     [activeResultCode],
   );
 
-  const handleComplete = async () => {
-    const semiSeedQty = Number(resultQtys[PRETREAT_SEMI_SEED] || 0);
-    const hullQty = Number(resultQtys[PRETREAT_HULL] || 0);
+  const semiSeedQty = Number(resultQtys[PRETREAT_SEMI_SEED] || 0);
+  const hullQty = Number(resultQtys[PRETREAT_HULL] || 0);
+  const resultTotal = semiSeedQty + hullQty;
+  const isResultOver = inputQty > 0 && resultTotal > inputQty + QTY_EPS;
 
+  const handleComplete = async () => {
     if (Number.isNaN(semiSeedQty) || Number.isNaN(hullQty) || semiSeedQty < 0 || hullQty < 0) {
       setError('계량 수량을 올바르게 입력해 주세요.');
       return;
@@ -1116,20 +1173,19 @@ function PretreatmentView({
       setError('탈각씨드 수량을 입력해 주세요.');
       return;
     }
-
-    const total = semiSeedQty + hullQty;
-    const overText =
-      scannedQty > 0 && total > scannedQty + QTY_EPS
-        ? `\n\n※ 탈각씨드 + 껍질(${total.toLocaleString()})이 투입량(${scannedQty.toLocaleString()})보다 많습니다.`
-        : '';
+    if (isResultOver) {
+      setError(
+        `탈각씨드 + 껍질(${resultTotal.toLocaleString()} ${unit})이 투입량(${inputQty.toLocaleString()} ${unit})보다 많습니다. 다시 계량해 주세요.`,
+      );
+      return;
+    }
 
     if (
       !window.confirm(
         `전처리 작업을 완료하시겠습니까?\n\n` +
           `탈각씨드 ${semiSeedQty.toLocaleString()} ${unit}\n` +
           `껍질 ${hullQty.toLocaleString()} ${unit}\n` +
-          `(투입 ${scannedQty.toLocaleString()} ${unit})` +
-          overText,
+          `(투입 ${inputQty.toLocaleString()} ${unit})\n\n확정 후에는 되돌릴 수 없습니다.`,
       )
     ) {
       return;
@@ -1146,6 +1202,7 @@ function PretreatmentView({
     }
   };
 
+  /* ── 렌더 ── */
   if (isLoading && !info) {
     return (
       <div className="woState">
@@ -1176,9 +1233,31 @@ function PretreatmentView({
 
   const chipMode = status === 'PROGRESS' ? 'FINISH' : 'START';
 
+  /** 스캔한 입고건 목록 + 합계 */
+  const renderReceipts = () => (
+    <div className="workPtKv">
+      {receipts.map((r) => (
+        <div className="workPtKvRow" key={r.receiptId}>
+          <span className="k">
+            입고건 #{r.receiptId} · {formatDateTime(r.scannedAt)}
+          </span>
+          <span className="v">
+            {r.inputQty.toLocaleString()} {unit}
+          </span>
+        </div>
+      ))}
+      <div className="workPtKvRow workPtKvRow--total">
+        <span className="k">투입 누적</span>
+        <span className="v">
+          {inputQty.toLocaleString()} {unit}
+        </span>
+      </div>
+    </div>
+  );
+
   return (
     <div className="woEntryView">
-      {/* 전처리 작업지시 정보 */}
+      {/* 작업지시 고정 정보 */}
       <div className="workOrderItemCard">
         <div className="workOrderCardHead">
           <span className="workOrderId">{productionLine.itemNm}</span>
@@ -1210,12 +1289,6 @@ function PretreatmentView({
               {targetQty.toLocaleString()} {unit}
             </strong>
           </div>
-          <div className="workScanInfoItem">
-            <span>입고 누적</span>
-            <strong>
-              {scannedQty.toLocaleString()} {unit}
-            </strong>
-          </div>
           {status !== 'WAITING' && (
             <div className="workScanInfoItem">
               <span>시작 일시</span>
@@ -1223,84 +1296,115 @@ function PretreatmentView({
             </div>
           )}
         </div>
-
-        {/* 입고건 목록 */}
-        <div className="woEntryInputs">
-          <div className="woEntryInputsLabel">입고건 {info.receipts.length}건</div>
-          {info.receipts.length === 0 ? (
-            <div className="woEntryInputsRow">
-              <span>입고된 내역이 없습니다.</span>
-            </div>
-          ) : (
-            info.receipts.map((r) => (
-              <div key={r.receiptId} className="woEntryInputsRow">
-                <span>
-                  #{r.receiptId} · {r.itemCode} · {formatDateTime(r.scannedAt)}
-                </span>
-                <strong>
-                  {r.inputQty.toLocaleString()} {unit}
-                </strong>
-              </div>
-            ))
-          )}
-        </div>
       </div>
 
       <div className="woEntryFormCard">
-        {/* WAITING: QR 스캔 대기 */}
+        {/* ── WAITING: 입고라벨 스캔 → 투입 누적 ── */}
         {status === 'WAITING' && (
-          <div className="workOrderPerformanceForm">
-            <div className="workOrderPerformanceLabel">입고라벨 QR 스캔</div>
+          <div className="workPtBody">
+            {scanFailure && (
+              <div className="workPtScanFail" role="alert">
+                <span>{scanFailure}</span>
+                <button type="button" aria-label="닫기" onClick={() => setScanFailure(null)}>
+                  ✕
+                </button>
+              </div>
+            )}
 
-            <div className="woPtProgress">
+            {/* 투입 누적 / 목표 진행 */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div className="woLineSummaryText">
                 <span>
-                  {!hasScanned
-                    ? '입고라벨 QR을 스캔하면 작업을 시작할 수 있습니다'
-                    : canStart
-                      ? '스캔 확인 완료 · 작업 시작 가능'
+                  {canStart
+                    ? '목표 수량을 채웠습니다 · 작업 시작 가능'
+                    : isOver
+                      ? '목표 수량 초과'
                       : `목표까지 ${remainQty.toLocaleString()} ${unit} 남음`}
                 </span>
                 <strong>
-                  입고 {scannedQty.toLocaleString()} / 목표 {targetQty.toLocaleString()}
+                  투입 누적 {inputQty.toLocaleString()} / 목표 {targetQty.toLocaleString()} {unit}
                 </strong>
               </div>
               <div className="woLineSummaryBar">
                 <div
                   className="woLineSummaryBarFill"
-                  style={{ width: `${targetQty > 0 ? Math.min((scannedQty / targetQty) * 100, 100) : 0}%` }}
+                  style={{ width: `${targetQty > 0 ? Math.min((inputQty / targetQty) * 100, 100) : 0}%` }}
                 />
               </div>
             </div>
 
-            <form className="woPtScanForm" onSubmit={handleScan}>
+            {/* 라벨 번호 직접 입력 / 키보드형 스캐너 입력칸 */}
+            <div className="workPtScanInput">
               <input
-                ref={scanInputRef}
-                className="woPtScanInput"
-                value={scanCode}
-                onChange={(e) => setScanCode(e.target.value)}
-                placeholder={isScanning ? '조회 중...' : 'QR을 스캔하거나 라벨 번호를 입력하세요'}
-                disabled={isScanning || isSubmitting}
+                type="text"
+                value={codeInput}
+                placeholder="라벨 번호 입력 또는 스캐너로 스캔"
+                autoCapitalize="off"
+                autoCorrect="off"
                 autoComplete="off"
-                enterKeyHint="done"
+                spellCheck={false}
+                aria-label="입고 라벨 번호"
+                disabled={isSubmitting}
+                onChange={(e) => setCodeInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    submitCodeInput();
+                  }
+                }}
               />
-              <button
-                type="submit"
-                className="workScanCancelBtn"
-                disabled={!scanCode.trim() || isScanning || isSubmitting}
-              >
-                {isScanning ? '조회 중' : '입력'}
+              <button type="button" disabled={!codeInput.trim() || isScanning || isSubmitting} onClick={submitCodeInput}>
+                {isScanning ? '조회 중...' : '조회'}
               </button>
-            </form>
+            </div>
 
-            {scanMessage && (
-              <div className={scanMessage.type === 'error' ? 'workScanErrorMsg' : 'woPtScanOk'}>
-                {scanMessage.text}
+            {receipts.length === 0 ? (
+              <div className="workScanWaiting">
+                <div className={`workScanTarget workScanTarget--${zoneVariant}`}>
+                  <span className="workScanTargetCorner workScanTargetCorner--tl" />
+                  <span className="workScanTargetCorner workScanTargetCorner--tr" />
+                  <span className="workScanTargetCorner workScanTargetCorner--bl" />
+                  <span className="workScanTargetCorner workScanTargetCorner--br" />
+                  <span className="workScanTargetLine" />
+                  <div className="workScanTargetLabel">
+                    <ArchiveBoxIcon className="workScanWaitingIconSvg" />
+                  </div>
+                </div>
+                <h1>스캔 대기 중</h1>
+                <p>입고 라벨을 스캔하면 투입 수량이 쌓입니다. 목표 수량을 채우면 작업을 시작할 수 있습니다.</p>
+                {isNative && (
+                  <button
+                    type="button"
+                    className={`workPtCamBtn workPtCamBtn--${zoneVariant}`}
+                    onClick={startScan}
+                    disabled={isSubmitting || isScanning}
+                    aria-label="QR 카메라로 스캔"
+                  >
+                    <QrCodeIcon aria-hidden="true" />
+                    QR 카메라로 스캔
+                  </button>
+                )}
               </div>
+            ) : (
+              <>
+                {isNative && (
+                  <button
+                    type="button"
+                    className={`workPtCamBtn workPtCamBtn--${zoneVariant} workPtCamBtn--compact`}
+                    onClick={startScan}
+                    disabled={isSubmitting || isScanning}
+                    aria-label="QR 카메라로 스캔"
+                  >
+                    <QrCodeIcon aria-hidden="true" />
+                    입고건 추가 스캔
+                  </button>
+                )}
+                <div className="workPtLabel">스캔한 입고건 {receipts.length}건</div>
+                {renderReceipts()}
+              </>
             )}
-            {hasScanned && !canStart && scannedQty > targetQty + QTY_EPS && (
-              <div className="workScanErrorMsg">입고 누적 수량이 목표 수량을 초과했습니다.</div>
-            )}
+
+            {isOver && <div className="workScanErrorMsg">투입 누적이 목표 수량을 초과했습니다. 관리자에게 확인해 주세요.</div>}
             {error && <div className="workScanErrorMsg">{error}</div>}
 
             <div className="workScanActionRow">
@@ -1319,11 +1423,13 @@ function PretreatmentView({
           </div>
         )}
 
-        {/* PROGRESS: 계량 결과 입력 */}
+        {/* ── PROGRESS: 계량 결과 입력 ── */}
         {status === 'PROGRESS' && (
-          <div className="workOrderPerformanceForm">
-            <div className="workOrderPerformanceLabel">계량 결과 입력</div>
+          <div className="workPtBody">
+            <div className="workPtLabel">투입 내역 (입고건 {receipts.length}건)</div>
+            {renderReceipts()}
 
+            <div className="workPtLabel">계량 결과 입력</div>
             <MaterialQtyInput
               materials={resultMaterials}
               values={resultQtys}
@@ -1332,6 +1438,30 @@ function PretreatmentView({
               onKeyPress={handleResultKeyPress}
             />
 
+            <div className="workScanQtySummary">
+              <div className="workScanQtySummaryItem">
+                <span>탈각씨드</span>
+                <strong>
+                  {semiSeedQty.toLocaleString()} {unit}
+                </strong>
+              </div>
+              <div className="workScanQtySummaryItem">
+                <span>껍질</span>
+                <strong>
+                  {hullQty.toLocaleString()} {unit}
+                </strong>
+              </div>
+              <div className="workScanQtySummaryItem workScanQtySummaryItem--total">
+                <span>합계 / 투입</span>
+                <strong>
+                  {resultTotal.toLocaleString()} / {inputQty.toLocaleString()}
+                </strong>
+              </div>
+            </div>
+
+            {isResultOver && (
+              <div className="workPtGuard workPtGuard--bad">탈각씨드 + 껍질이 투입량보다 많습니다. 다시 계량해 주세요.</div>
+            )}
             {error && <div className="workScanErrorMsg">{error}</div>}
 
             <div className="workScanActionRow">
@@ -1342,7 +1472,7 @@ function PretreatmentView({
                 type="button"
                 className="workScanSubmitBtn"
                 onClick={handleComplete}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isResultOver}
               >
                 {isSubmitting ? '등록 중...' : '작업 완료'}
               </button>
@@ -1350,12 +1480,14 @@ function PretreatmentView({
           </div>
         )}
 
-        {/* DONE / 기타 */}
+        {/* ── DONE / 기타 ── */}
         {status !== 'WAITING' && status !== 'PROGRESS' && (
-          <div className="workOrderPerformanceForm">
-            <div className="workOrderMaterialEmpty">
+          <div className="workPtBody">
+            <div className="workPtLabel">투입 내역</div>
+            {renderReceipts()}
+            <p className="workPtHint">
               {status === 'DONE' ? '전처리 작업이 완료되었습니다.' : `현재 상태: ${status || '-'}`}
-            </div>
+            </p>
             <div className="workScanActionRow">
               <button type="button" className="workScanCancelBtn" onClick={onCancel}>
                 돌아가기
@@ -1364,6 +1496,8 @@ function PretreatmentView({
           </div>
         )}
       </div>
+
+      {scanToast && <div className="workScanSuccessToast">{scanToast}</div>}
     </div>
   );
 }
@@ -2077,6 +2211,7 @@ export function WorkOrderListPage() {
         key={`${selectedWorkId}:${pretreatLine.seq}`}
         workId={selectedWorkId}
         productionLine={pretreatLine}
+        zoneVariant={zoneVariant}
         onCancel={closeEntry}
         onDone={handlePerformanceDone}
         onDirtyChange={handleDirtyChange}
