@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Panel } from "@components/card/Panel";
@@ -52,6 +53,7 @@ function getServerErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function SeedReportReturnManagePage() {
+  const navigate = useNavigate();
   const [reports, setReports] = useState<HullReportResponse[]>([]);
   const [kpiCounts, setKpiCounts] = useState<KpiCounts>({
     total: 0,
@@ -106,7 +108,7 @@ export function SeedReportReturnManagePage() {
   };
 
   const handleClickCreate = () => {
-    window.alert("신고 등록 기능은 미구현 상태입니다.");
+    navigate("/seed/report-return-manage/create");
   };
 
   const columns: ColumnDef<HullReportResponse>[] = useMemo(
