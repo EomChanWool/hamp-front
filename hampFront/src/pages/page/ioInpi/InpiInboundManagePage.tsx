@@ -171,6 +171,13 @@ export function InpiInboundManagePage() {
       .then((res) => {
         if (ignore) return
         const content = res.data?.content ?? []
+        const totalPages = res.data?.totalPages ?? 0
+        const lastValidPage = Math.max(0, totalPages - 1)
+        // 인쇄완료·수정·삭제 등으로 현재 페이지가 비면 마지막 유효 페이지(0건이면 0페이지)로 자동 이동한다
+        if (content.length === 0 && listRequest.page > lastValidPage) {
+          setPage(lastValidPage)
+          return
+        }
         // 선택해 둔 입고는 재조회된 최신 값으로 바꿔 라벨에 옛 값이 찍히지 않게 한다
         const latest = new Map(content.map((row) => [row.receiptId, row]))
         setSelectedReceipts((prev) =>
@@ -182,7 +189,7 @@ export function InpiInboundManagePage() {
           request: listRequest,
           rows: content,
           totalElements: res.data?.totalElements ?? 0,
-          totalPages: res.data?.totalPages ?? 0,
+          totalPages,
           failed: false,
         })
       })
