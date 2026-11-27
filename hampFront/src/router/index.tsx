@@ -134,7 +134,8 @@ import { WorkTabletGuard } from '@/pages/work/WorkTabletGuard'
 import { WorkTabletLoginPage } from '@/pages/work/WorkTabletLoginPage'
 import { WorkTabletHome } from '@/pages/work/WorkTabletHome'
 import { WorkSeedReportScanPage } from '@/pages/work/WorkSeedReportScanPage'
-import { WorkOrderScanPage } from '@/pages/work/WorkOrderScanPage'
+import { WorkOrderListPage } from '@/pages/work/WorkOrderListPage'
+// import { WorkOrderScanPage } from '@/pages/work/WorkOrderScanPage'
 import { WorkTabletType } from '@/pages/work/WorkTabletType'
 
 // 출고처리 PC 전용 페이지 (태블릿 라우팅과 분리)
@@ -398,7 +399,7 @@ export const routeObj: RouteObject[] = [
           { path: '/work', element: <WorkTabletType /> },
           { path: '/work/home', element: <WorkTabletHome /> },
           { path: '/work/seed-report-scan', element: <WorkSeedReportScanPage /> },
-          { path: '/work/work-order-scan', element: <WorkOrderScanPage /> },
+          { path: '/work/work-order-scan', element: <WorkOrderListPage /> },
           { path: '/work-pc', element: <WorkPcHome /> },
           { path: '/work-pc/outbound-scan', element: <WorkOutboundScanPage /> },
         ],

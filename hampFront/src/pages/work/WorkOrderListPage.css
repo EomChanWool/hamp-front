@@ -1,0 +1,492 @@
+/* ================================
+   WORK ORDER LIST (작업지시 목록 → 상세)
+================================ */
+
+/* ── 목록/상세 공통 헤드 ───────────────────── */
+.woListView {
+  display: flex;
+  flex-direction: column;
+}
+
+.woListHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0 14px;
+}
+
+.woListHead h1 {
+  margin: 0;
+  color: #f0f0f0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.woListHead p {
+  margin: 4px 0 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.woRefreshBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.woRefreshBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.woRefreshBtn:active {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.woRefreshBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.woSpin {
+  animation: woSpin 0.9s linear infinite;
+}
+
+@keyframes woSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── 로딩 / 빈 목록 / 오류 ───────────────────── */
+.woState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 56px 16px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.woState p {
+  margin: 0;
+  font-size: 15px;
+  word-break: keep-all;
+}
+
+.woStateIcon {
+  width: 44px;
+  height: 44px;
+  color: #64748b;
+}
+
+.woState--error .woStateIcon {
+  color: #f87171;
+}
+
+.woState--error p {
+  color: #f87171;
+}
+
+.woSpinner {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--primary-light, #93c5fd);
+  animation: woSpin 0.9s linear infinite;
+}
+
+/* ── 작업지시 카드 (목록) ───────────────────── */
+.woCardList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.woCard {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.woCard:active {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.woCardMain {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.woCardTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.woCardTop .workOrderId {
+  font-size: 17px;
+}
+
+.woCardItems {
+  color: #f0f0f0;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.woCardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.woCardChevron {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  color: #64748b;
+}
+
+.woMoreBtn {
+  width: 100%;
+  height: 48px;
+  margin-top: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.woMoreBtn:active {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.woMoreBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── 상세: 생산 라인 섹션 ───────────────────── */
+.woLineSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.woLineSectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* 기본 라벨은 아래 여백(16px)이 있어서 헤더 행 안에서는 제거 */
+.woLineSectionLabel {
+  margin-bottom: 0;
+}
+
+.woLineList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── 라인 카드 (목업 형태: 카드 전체가 입력 화면 진입 버튼) ───────── */
+.woLineCard {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.woLineCard:not(:disabled):active {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.woLineCard:disabled {
+  cursor: default;
+}
+
+.woLineCard--PROGRESS {
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.woLineCard--DONE {
+  border-color: rgba(34, 197, 94, 0.3);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.woLineSeq {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.woLineCard--PROGRESS .woLineSeq {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.woLineCard--DONE .woLineSeq {
+  background: #16a34a;
+  color: #fff;
+}
+
+.woLineInfo {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.woLineNameRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.woLineName {
+  color: #f0f0f0;
+  font-size: 19px;
+  font-weight: 700;
+  word-break: keep-all;
+}
+
+.woLineCard--DONE .woLineName {
+  color: #94a3b8;
+}
+
+/* 지금 입력할(또는 마지막으로 끝난) 공정명 칩 */
+.woLineOperChip {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: rgba(148, 163, 184, 0.18);
+  color: #cbd5e1;
+}
+
+.woLineOperChip--START {
+  background: rgba(59, 130, 246, 0.18);
+  color: var(--primary-light, #93c5fd);
+}
+
+.woLineOperChip--FINISH {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.woLineOperChip--DONE {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+.woLineMeta {
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.woLineSide {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.woLineProgress {
+  color: #94a3b8;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* 오른쪽 상태 배지 (대기·투입입력 / 진행중·실적입력 / 완료) */
+.woLineStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.woLineStatus--START {
+  background: rgba(59, 130, 246, 0.14);
+  border-color: rgba(59, 130, 246, 0.45);
+  color: var(--primary-light, #93c5fd);
+}
+
+.woLineStatus--FINISH {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
+}
+
+.woLineStatus--DONE {
+  background: rgba(34, 197, 94, 0.18);
+  color: #4ade80;
+}
+
+.woLineStatus--NONE {
+  background: rgba(148, 163, 184, 0.14);
+  color: #94a3b8;
+}
+
+.woLineChevron {
+  width: 20px;
+  height: 20px;
+  color: #64748b;
+  stroke-width: 2.5;
+}
+
+/* ── 공정 입력 화면 (투입 입력 / 실적 입력) ───────────────── */
+.woEntryView {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.woEntryChip {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.woEntryChip--START {
+  background: rgba(59, 130, 246, 0.18);
+  color: var(--primary-light, #93c5fd);
+}
+
+.woEntryChip--FINISH {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.woEntryInputs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.woEntryInputsLabel {
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.woEntryInputsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #e2e8f0;
+  font-size: 14px;
+}
+
+.woEntryFormCard {
+  padding: 18px 16px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+}
+
+.woEntryFormCard .woState {
+  padding: 36px 8px;
+}
+
+@media (max-width: 480px) {
+  .woCard {
+    padding: 16px;
+  }
+
+  .woLineCard {
+    flex-wrap: wrap;
+    padding: 16px 14px;
+  }
+
+  /* 좁은 화면에서는 상태 배지를 아래 줄 오른쪽으로 */
+  .woLineSide {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .woEntryFormCard {
+    padding: 16px 12px 18px;
+  }
+}
