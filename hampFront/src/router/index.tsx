@@ -71,6 +71,7 @@ import { EquipmentRepairHistoryPage } from '@pages/page/equipment/EquipmentRepai
 import { SeedInventoryStatusPage } from '@pages/page/seed/SeedInventoryStatusPage'
 import { SeedReportReturnManagePage } from '@pages/page/seed/SeedReportReturnManagePage'
 import { SeedReportReturnManageCreatePage } from '@pages/page/seed/SeedReportReturnManageCreatePage'
+import { SeedReportReturnManageDetailPage } from '@pages/page/seed/SeedReportReturnManageDetailPage'
 import { SeedInventoryManagePage } from '@pages/page/seed/SeedInventoryManagePage'
 
 //출고관리
@@ -286,6 +287,7 @@ export const menuRoutes: MenuRouteGroup[] = [
       { path: 'inv-status', name: '재고현황', element: <SeedInventoryStatusPage /> },
       { path: 'report-return-manage', name: '신고반납관리', element: <SeedReportReturnManagePage /> },
       { path: 'report-return-manage/create', name: '껍질 신고 등록', element: <SeedReportReturnManageCreatePage />, hidden: true },
+      { path: 'report-return-manage/:reportId', name: '껍질 신고 상세', element: <SeedReportReturnManageDetailPage />, hidden: true },
       { path: 'inv-manage', name: '재고관리', element: <SeedInventoryManagePage /> },
     ],
   },

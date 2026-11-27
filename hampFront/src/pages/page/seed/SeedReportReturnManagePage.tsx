@@ -117,21 +117,21 @@ export function SeedReportReturnManagePage() {
         accessorKey: "reportId",
         header: "신고ID",
         enableSorting: false,
-        meta: { width: "120px" },
+        meta: { width: "16%" },
         cell: ({ row }) => <span className="hullCodeCell">#{row.original.reportId}</span>,
       },
       {
         accessorKey: "reportDate",
         header: "신고일자",
         enableSorting: false,
-        meta: { width: "160px" },
+        meta: { width: "22%" },
         cell: ({ row }) => row.original.reportDate || "-",
       },
       {
         accessorKey: "status",
         header: "상태",
         enableSorting: false,
-        meta: { width: "110px" },
+        meta: { width: "16%" },
         cell: ({ row }) => {
           const status = row.original.status;
           return (
@@ -145,12 +145,14 @@ export function SeedReportReturnManagePage() {
         accessorKey: "totalQty",
         header: "수량합계",
         enableSorting: false,
+        meta: { width: "23%" },
         cell: ({ row }) => `${(row.original.totalQty ?? 0).toLocaleString()} kg`,
       },
       {
         id: "lineCount",
         header: "배치건수",
         enableSorting: false,
+        meta: { width: "23%" },
         cell: ({ row }) => `${row.original.lines?.length ?? 0}건`,
       },
     ],
@@ -221,6 +223,7 @@ export function SeedReportReturnManagePage() {
             <CusTable
               data={reports}
               columns={columns}
+              onRowClick={(row) => navigate(`/seed/report-return-manage/${row.reportId}`)}
               noDataMessage="조회된 껍질 신고가 없습니다."
             />
           )}

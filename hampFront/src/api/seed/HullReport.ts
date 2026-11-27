@@ -53,6 +53,12 @@ export const HullReportApi = {
     return res.data;
   },
 
+  /** 껍질 신고 단건 조회 */
+  getDetail: async (reportId: number): Promise<ApiResponseHullReportResponse> => {
+    const res = await apiClient.get<ApiResponseHullReportResponse>(`${BASE}/${reportId}`);
+    return res.data;
+  },
+
   /** 신고 대상(미신고 완료 전처리 배치) 목록 조회 */
   getUnreportedBatches: async (): Promise<ApiResponseListHullReportCandidateResponse> => {
     const res = await apiClient.get<ApiResponseListHullReportCandidateResponse>(
