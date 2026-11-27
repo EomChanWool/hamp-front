@@ -2,7 +2,7 @@
  *  배치(헤더+라인) 기반 3단계 흐름
  *      새 배치 시작(여러 입고건 스캔 + 투입량 N) → 탈피 완료 처리(H, D) → 최종 완료 처리(M)
  *      + 배치 병합(같은 상태끼리) / 배치 취소(진행중만)
- * 
+ *
  * ■ 확인필요 번호 목록
  *  #1 탈피 가드: 설계안 "H + D ≈ ΣN" vs 목업 "H + D ≤ ΣN" → 초과는 차단, 부족은 5% 넘으면 경고만 (허용오차 확정 필요)
  *  #2 계량: 목업은 가상(랜덤) 계량. 저울 연동 방식 미정 → 지금은 기존 키패드 수동 입력
@@ -13,6 +13,7 @@
  *      → 새로고침/다른 태블릿에서 연 배치 상세에는 라벨 번호 대신 "입고건 #ID" 로 표시됨.
  *        라인 응답에 barcode(또는 입고번호)를 내려주면 해결.
  *  #12 스캔 실패 시 서버가 내려주는 message 를 그대로 노출한다 (err.response.data.message). 에러 응답 규격 확인 필요
+ *  #13 status 코드값(PROGRESS/DEHULLED/DONE 등)과 취소 상태 코드값 확정 필요 (API 레이어 STATUS_MAP / CANCELED_STATUSES)
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
@@ -28,7 +29,7 @@ import {
   type PretreatmentStatus,
   type PretreatmentStock,
   type ReceiptId,
-} from '@/api/PretreatmentReport';
+} from '@/api/WorkPretreatment';
 import { isValidWorkZone } from '@/utils/common';
 import '@/pages/work/WorkTabletHome.css';
 import '@/pages/work/WorkSeedReportScanPage.css';
@@ -284,17 +285,26 @@ export function WorkSeedReportScanPage() {
   const [flashKeys, setFlashKeys] = useState<string[]>([]);
 
   /* ---------- 서버 데이터 불러오기 ---------- */
+  /**
+   * 목록 / 재고를 분리해서 불러온다.
+   *  - 목록: GET /pretreatment-reports  (zone 없이 전체. statuses 필터가 필요해지면 Api.listBatches(['...']) 로 전달)
+   *  - 재고: 서버에 API 가 없다(Swagger 확인). 이전에는 Promise.all 로 묶어서 재고가 404 면 목록까지 통째로 실패했다.
+   *          → 재고는 실패해도 무시하고(패널에 '-' 표시) 목록만 정상 표시한다.
+   *          재고 API 가 생기면 이 catch 를 지우고 loadError 로 보내도 된다.
+   */
   const refresh = useCallback(async () => {
+    const stockPromise = Api.getStock(zone).catch(() => null); // 재고 실패는 목록에 영향 없음
     try {
-      const [list, st] = await Promise.all([Api.listBatches(zone), Api.getStock(zone)]);
+      const list = await Api.listBatches();
       setBatches(list);
-      setStock(st);
       setLoadError(null);
     } catch (err) {
       setLoadError(getErrorMessage(err, '배치 목록을 불러오지 못했습니다.'));
     } finally {
       setIsLoading(false);
     }
+    const st = await stockPromise;
+    if (st) setStock(st);
   }, [zone]);
 
   useEffect(() => {
@@ -430,10 +440,24 @@ export function WorkSeedReportScanPage() {
     setView('new');
   };
 
+  /**
+   *  상세 진입 시 GET /pretreatment-reports/{reportId} 로 해당 배치만 최신화한다.
+   *  - 화면은 목록 캐시(batches)로 먼저 즉시 그려주고, 응답이 오면 해당 건만 교체한다.
+   *  - 다른 태블릿이 먼저 상태를 바꿨을 수 있어서(예: 이미 탈피완료) 버튼 노출이 어긋나는 걸 줄여준다.
+   *  - 실패해도 목록 캐시로 계속 볼 수 있으므로 조용히 무시한다.
+   */
   const openDetail = (id: number) => {
     setSelectedId(id);
     setErrorMsg(null);
     setView('detail');
+    void (async () => {
+      try {
+        const fresh = await Api.getBatch(id);
+        setBatches((prev) => prev.map((b) => (b.batchId === id ? fresh : b)));
+      } catch {
+        /* 상세 갱신 실패는 무시 (목록 캐시로 표시 유지) */
+      }
+    })();
   };
 
   const openDehull = () => {
@@ -531,7 +555,7 @@ export function WorkSeedReportScanPage() {
     }, '전처리 시작에 실패했습니다.');
   };
 
-  /* ---------- 탈피 완료 ---------- */
+  /* ---------- 탈피 완료 (POST /pretreatment-reports/{reportId}/hulling-done) ---------- */
   const handleDehullConfirm = () => {
     if (!selected) return;
     const totalN = sumInputQty(selected);
@@ -547,6 +571,7 @@ export function WorkSeedReportScanPage() {
     if (!ok) return;
 
     void runAction(async () => {
+      // 서버 요청: { hullQty: H, semiSeedCheckpointQty: D } — D 는 검증용이라 재고에는 반영되지 않는다 (API 레이어에서 매핑)
       await Api.completeDehull(selected.batchId, { hullQty: h, dehulledQty: d });
       setFlashKeys(['before', 'hull']);
       setToast(`탈피완료: 전처리전씨드 -${fmt(totalN)}${selected.unit}, 껍질 +${fmt(h)}${selected.unit} 반영됨`);
@@ -554,7 +579,7 @@ export function WorkSeedReportScanPage() {
     }, '탈피 완료 처리에 실패했습니다.');
   };
 
-  /* ---------- 최종 완료 ---------- */
+  /* ---------- 최종 완료 ([미확정] Swagger 에 API 없음) ---------- */
   const handleFinalConfirm = () => {
     if (!selected) return;
     const m = parseQty(mInput);
@@ -574,7 +599,7 @@ export function WorkSeedReportScanPage() {
     }, '최종 완료 처리에 실패했습니다.');
   };
 
-  /* ---------- 취소 ---------- */
+  /* ---------- 취소 ([미확정] Swagger 에 API 없음) ---------- */
   const handleCancelConfirm = () => {
     if (!selected) return;
     void runAction(async () => {
@@ -584,7 +609,7 @@ export function WorkSeedReportScanPage() {
     }, '배치 취소에 실패했습니다.');
   };
 
-  /* ---------- 병합 ---------- */
+  /* ---------- 병합 ([미확정] Swagger 에 API 없음) ---------- */
   const handleMerge = (target: PretreatmentBatch) => {
     if (!selected) return;
     // [목업추가] 병합은 되돌릴 수 없어서 확인창 추가
@@ -634,7 +659,7 @@ export function WorkSeedReportScanPage() {
     ];
     return (
       <div className="workPtBody">
-        {/* [확인필요] 재고 패널은 목업에만 있음 (설계안에 재고 조회 API 언급 없음) */}
+        {/* [확인필요] 재고 패널은 목업에만 있음 — 서버에 재고 조회 API 없음(Swagger 확인). 값이 없으면 '-' 로 표시됨 */}
         <div className="workPtStock">
           {stockCells.map((c) => (
             <div key={c.key} className={`workPtStockCell ${flashKeys.includes(c.key) ? 'is-flash' : ''}`}>
@@ -951,6 +976,7 @@ export function WorkSeedReportScanPage() {
         <p className="workPtHint">
           배치 {selected.batchNo} · 투입량 합계 {fmt(totalN)}
           {u}. 껍질(H)과 탈피후씨드(D)를 계량해 입력하세요. 확정하면 전처리전씨드가 차감되고 껍질 재고가 늘어납니다.
+          (탈피후씨드(D)는 검증용 체크포인트 값으로, 재고에는 반영되지 않습니다.)
         </p>
 
         {/* 기존 "신고수량 입력 / 껍질수량 입력" 토글 UI 를 그대로 재사용 */}
