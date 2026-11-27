@@ -60,10 +60,12 @@ function SeedReportReturnManageDetailContent({ reportId }: { reportId?: string }
 
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [decisionAction, setDecisionAction] = useState<"approve" | "reject" | null>(null);
 
   const isMountedRef = useRef(true);
   const savingRef = useRef(false);
   const deletingRef = useRef(false);
+  const decidingRef = useRef(false);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -130,16 +132,55 @@ function SeedReportReturnManageDetailContent({ reportId }: { reportId?: string }
     navigate("/seed/report-return-manage");
   };
 
+  const handleDecision = async (action: "approve" | "reject") => {
+    if (!report || report.status !== "PENDING" || deletingRef.current || decidingRef.current) {
+      return;
+    }
+
+    const label = action === "approve" ? "승인" : "반려";
+    const confirmed = window.confirm(`껍질 신고 #${report.reportId} 건을 ${label}하시겠습니까?`);
+    if (!confirmed) return;
+
+    decidingRef.current = true;
+    setDecisionAction(action);
+
+    try {
+      const trimmedNote = decisionNoteInput.trim();
+      const payload = trimmedNote ? { note: trimmedNote } : {};
+      const response =
+        action === "approve"
+          ? await HullReportApi.approve(report.reportId, payload)
+          : await HullReportApi.reject(report.reportId, payload);
+
+      if (!isMountedRef.current) return;
+      if (response.data) {
+        setReport(response.data);
+      }
+      setDecisionNoteInput("");
+      window.alert(`껍질 신고가 ${label}되었습니다.`);
+    } catch (error) {
+      console.error(`껍질 신고 ${label} 실패:`, error);
+      if (isMountedRef.current) {
+        window.alert(getServerErrorMessage(error, `껍질 신고 ${label}에 실패했습니다.`));
+      }
+    } finally {
+      decidingRef.current = false;
+      if (isMountedRef.current) {
+        setDecisionAction(null);
+      }
+    }
+  };
+
   const handleClickApprove = () => {
-    window.alert("승인 기능은 미구현 상태입니다.");
+    void handleDecision("approve");
   };
 
   const handleClickReject = () => {
-    window.alert("반려 기능은 미구현 상태입니다.");
+    void handleDecision("reject");
   };
 
   const handleStartEdit = () => {
-    if (!report || report.status !== "PENDING" || isDeleting) return;
+    if (!report || report.status !== "PENDING" || isDeleting || decidingRef.current) return;
     setEditNote(report.note ?? "");
     setIsEditing(true);
   };
@@ -180,7 +221,7 @@ function SeedReportReturnManageDetailContent({ reportId }: { reportId?: string }
   };
 
   const handleDelete = async () => {
-    if (!report || report.status !== "PENDING" || deletingRef.current) return;
+    if (!report || report.status !== "PENDING" || deletingRef.current || decidingRef.current) return;
 
     const confirmed = window.confirm(`껍질 신고 #${report.reportId} 건을 삭제하시겠습니까?`);
     if (!confirmed) return;
@@ -208,6 +249,8 @@ function SeedReportReturnManageDetailContent({ reportId }: { reportId?: string }
   };
 
   const isPending = report?.status === "PENDING";
+  const isDeciding = decisionAction !== null;
+  const isBusy = isSaving || isDeleting || isDeciding;
   const hasDecisionNote =
     report != null && !isPending && Boolean(report.decisionNote);
 
@@ -218,7 +261,7 @@ function SeedReportReturnManageDetailContent({ reportId }: { reportId?: string }
           type="button"
           className="hullBackLink"
           onClick={handleGoList}
-          disabled={isSaving || isDeleting}
+          disabled={isBusy}
         >
           <ChevronLeftIcon className="hullBackLink__icon" aria-hidden="true" />
           <span>목록으로</span>
@@ -270,7 +313,7 @@ function SeedReportReturnManageDetailContent({ reportId }: { reportId?: string }
                         type="button"
                         className="hullGhostBtn"
                         onClick={handleStartEdit}
-                        disabled={isDeleting}
+                        disabled={isDeleting || isDeciding}
                       >
                         수정
                       </button>
@@ -278,7 +321,7 @@ function SeedReportReturnManageDetailContent({ reportId }: { reportId?: string }
                         type="button"
                         className="hullDangerBtn"
                         onClick={handleDelete}
-                        disabled={isDeleting}
+                        disabled={isDeleting || isDeciding}
                       >
                         {isDeleting ? "삭제 중..." : "삭제"}
                       </button>
@@ -348,21 +391,24 @@ function SeedReportReturnManageDetailContent({ reportId }: { reportId?: string }
                   placeholder="예: 수량 불일치로 반려"
                   value={decisionNoteInput}
                   onChange={(e) => setDecisionNoteInput(e.target.value)}
+                  disabled={isDeleting || isDeciding}
                 />
                 <div className="hullActionRow">
                   <button
                     type="button"
                     className="hullPrimaryBtn"
                     onClick={handleClickApprove}
+                    disabled={isDeleting || isDeciding}
                   >
-                    승인
+                    {decisionAction === "approve" ? "승인 중..." : "승인"}
                   </button>
                   <button
                     type="button"
                     className="hullDangerBtn"
                     onClick={handleClickReject}
+                    disabled={isDeleting || isDeciding}
                   >
-                    반려
+                    {decisionAction === "reject" ? "반려 중..." : "반려"}
                   </button>
                 </div>
               </div>
