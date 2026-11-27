@@ -288,10 +288,12 @@ export function FiberPerformanceModal({
 
   const totalInputQty = useMemo(
     () =>
-      Object.values(lotInputs).reduce<number>(
-        (sum, val) => sum + (val != null && val > 0 ? val : 0),
-        0,
-      ),
+      Math.round(
+        Object.values(lotInputs).reduce<number>(
+          (sum, val) => sum + (val != null && val > 0 ? val : 0),
+          0,
+        ) * 100,
+      ) / 100,
     [lotInputs],
   )
 

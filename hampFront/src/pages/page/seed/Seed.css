@@ -1476,6 +1476,158 @@
 }
 
 /* =========================================================================
+   껍질 신고 목록 (HullReport)
+   ========================================================================= */
+.hullKpiRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.hullKpiCard {
+  background: #ffffff;
+  border: 1px solid #e3e6df;
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.hullKpiLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #60685a;
+}
+
+.hullKpiValue {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: #1e2420;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.hullKpiUnit {
+  font-size: 13px;
+  font-weight: 600;
+  color: #60685a;
+}
+
+.hullFilterRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hullFilterLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: #60685a;
+}
+
+.hullFilterChip {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid #e3e6df;
+  background: #ffffff;
+  color: #60685a;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.hullFilterChip:hover {
+  border-color: #2f6b4f;
+  color: #234f3a;
+}
+
+.hullFilterChip.active {
+  background: #2f6b4f;
+  border-color: #2f6b4f;
+  color: #ffffff;
+}
+
+.hullCodeCell {
+  font-weight: 700;
+  color: #234f3a;
+}
+
+.hullPrimaryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #2f6b4f;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.hullPrimaryBtn:hover {
+  background: #234f3a;
+}
+
+[data-theme="dark"] .hullKpiCard {
+  background: #20232c;
+  border-color: #383c47;
+}
+
+[data-theme="dark"] .hullKpiLabel,
+[data-theme="dark"] .hullKpiUnit,
+[data-theme="dark"] .hullFilterLabel {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .hullKpiValue {
+  color: #f3f4f6;
+}
+
+[data-theme="dark"] .hullFilterChip {
+  background: #20232c;
+  border-color: #383c47;
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .hullFilterChip:hover {
+  border-color: #4ade80;
+  color: #f3f4f6;
+}
+
+[data-theme="dark"] .hullFilterChip.active {
+  background: #2f6b4f;
+  border-color: #2f6b4f;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .hullCodeCell {
+  color: #86efac;
+}
+
+@media (max-width: 1023px) {
+  .hullKpiRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 639px) {
+  .hullKpiRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================================
    신고완료 — 다운로드 버튼 / 체크박스
    ========================================================================= */
 .seedSectionHeader__actions {

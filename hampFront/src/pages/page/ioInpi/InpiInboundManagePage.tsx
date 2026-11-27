@@ -171,6 +171,13 @@ export function InpiInboundManagePage() {
       .then((res) => {
         if (ignore) return
         const content = res.data?.content ?? []
+        const totalPages = res.data?.totalPages ?? 0
+        const lastValidPage = Math.max(0, totalPages - 1)
+        // 인쇄완료·수정·삭제 등으로 현재 페이지가 비면 마지막 유효 페이지(0건이면 0페이지)로 자동 이동한다
+        if (content.length === 0 && listRequest.page > lastValidPage) {
+          setPage(lastValidPage)
+          return
+        }
         // 선택해 둔 입고는 재조회된 최신 값으로 바꿔 라벨에 옛 값이 찍히지 않게 한다
         const latest = new Map(content.map((row) => [row.receiptId, row]))
         setSelectedReceipts((prev) =>
@@ -182,7 +189,7 @@ export function InpiInboundManagePage() {
           request: listRequest,
           rows: content,
           totalElements: res.data?.totalElements ?? 0,
-          totalPages: res.data?.totalPages ?? 0,
+          totalPages,
           failed: false,
         })
       })
@@ -247,7 +254,15 @@ export function InpiInboundManagePage() {
     setIsCreateOpen(true)
   }
 
-  const handleEdited = () => {
+  const handleEdited = (saved?: FiberReceiptResponse) => {
+    // 수정 후 정렬·필터로 현재 페이지를 벗어나더라도 선택 라벨에 최신 값이 찍히도록 즉시 반영
+    if (saved) {
+      setSelectedReceipts((prev) =>
+        prev.some((receipt) => receipt.receiptId === saved.receiptId)
+          ? prev.map((receipt) => (receipt.receiptId === saved.receiptId ? saved : receipt))
+          : prev,
+      )
+    }
     setEditingReceipt(null)
     setRefreshKey((key) => key + 1)
   }
@@ -277,6 +292,7 @@ export function InpiInboundManagePage() {
         (target.labelPrinted ? '\n이미 라벨이 인쇄된 입고입니다. 붙어 있는 라벨을 회수해 주세요.' : '')
       if (!window.confirm(message)) return false
 
+      detailRequestRef.current += 1
       deletingRef.current = true
       setDeletingId(target.receiptId)
       try {
@@ -570,7 +586,15 @@ export function InpiInboundManagePage() {
 
   const panelActions = (
     <div className="inpiPanelActions">
-      <button type="button" className="ghostButton" disabled={selectedIds.length === 0} onClick={() => setIsLabelOpen(true)}>
+      <button
+        type="button"
+        className="ghostButton"
+        disabled={selectedIds.length === 0}
+        onClick={() => {
+          detailRequestRef.current += 1
+          setIsLabelOpen(true)
+        }}
+      >
         선택 라벨 인쇄 ({selectedIds.length}건)
       </button>
       {selectedIds.length > 0 && (
