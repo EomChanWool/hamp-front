@@ -277,6 +277,7 @@ export function InpiInboundManagePage() {
         (target.labelPrinted ? '\n이미 라벨이 인쇄된 입고입니다. 붙어 있는 라벨을 회수해 주세요.' : '')
       if (!window.confirm(message)) return false
 
+      detailRequestRef.current += 1
       deletingRef.current = true
       setDeletingId(target.receiptId)
       try {
@@ -570,7 +571,15 @@ export function InpiInboundManagePage() {
 
   const panelActions = (
     <div className="inpiPanelActions">
-      <button type="button" className="ghostButton" disabled={selectedIds.length === 0} onClick={() => setIsLabelOpen(true)}>
+      <button
+        type="button"
+        className="ghostButton"
+        disabled={selectedIds.length === 0}
+        onClick={() => {
+          detailRequestRef.current += 1
+          setIsLabelOpen(true)
+        }}
+      >
         선택 라벨 인쇄 ({selectedIds.length}건)
       </button>
       {selectedIds.length > 0 && (

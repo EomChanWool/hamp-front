@@ -600,14 +600,20 @@ export function InpiProductionResultsPage() {
                       <button
                         type="button"
                         className="inpiPerfPlainBtn"
-                        onClick={() => setCompletingWorkOrder(wo)}
+                        onClick={() => {
+                          detailRequestRef.current += 1
+                          setCompletingWorkOrder(wo)
+                        }}
                       >
                         작업 완료
                       </button>
                       <button
                         type="button"
                         className="primaryButton"
-                        onClick={() => setCreatingWorkDetail(detail)}
+                        onClick={() => {
+                          detailRequestRef.current += 1
+                          setCreatingWorkDetail(detail)
+                        }}
                       >
                         실적 줄 추가
                       </button>
