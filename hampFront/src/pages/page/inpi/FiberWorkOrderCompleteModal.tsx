@@ -114,13 +114,13 @@ export function FiberWorkOrderCompleteModal({
 
     setIsSubmitting(true)
     try {
-      const res = await FiberWorkOrderApi.complete(workOrder.workId, {
+      await FiberWorkOrderApi.complete(workOrder.workId, {
         agingDays,
         humidified: humidified === 'true',
         endAt: endAt ? `${endAt}:00` : null,
       })
       if (!mountedRef.current) return
-      window.alert(res.message || `${workOrder.workId} 작업을 완료했습니다.`)
+      window.alert(`${workOrder.workId} 작업을 완료했습니다.`)
       onCompleted()
     } catch (error) {
       if (!mountedRef.current) return
