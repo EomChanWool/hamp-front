@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { renderToStaticMarkup } from 'react-dom/server'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { flushSync } from 'react-dom'
+import { createRoot } from 'react-dom/client'
 import Barcode from 'react-barcode'
 import { Badge } from '@/components/common/Badge'
 import Spinner from '@/components/common/Spinner'
@@ -33,10 +34,32 @@ const LIST_PATH = '/inpi/work-orders'
 const esc = (value: unknown) =>
   String(value ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string)
 
+/**
+ * 바코드 SVG 문자열 생성
+ */
+async function buildBarcodeSvg(value: string): Promise<string> {
+  const host = document.createElement('div')
+  const root = createRoot(host)
+  try {
+    flushSync(() => {
+      root.render(<Barcode value={value} width={1.8} height={64} margin={0} displayValue={false} />)
+    })
+    // 혹시 effect가 아직 안 끝났으면 한 틱만 기다린다
+    if (!host.querySelector('svg rect, svg path')) {
+      await new Promise((resolve) => window.setTimeout(resolve, 50))
+    }
+    return host.innerHTML
+  } catch (error) {
+    console.error('바코드 생성 실패:', error)
+    return ''
+  } finally {
+    root.unmount()
+  }
+}
+
 /** 작업지시서 인쇄 (새 창에 A4 양식을 그려 인쇄 대화상자를 연다) */
-function printWorkOrderSheet(detail: FiberWorkOrderDetailResponse, receipts: FiberInputReceiptResponse[]) {
+async function printWorkOrderSheet(detail: FiberWorkOrderDetailResponse, receipts: FiberInputReceiptResponse[]) {
   const { workOrder: wo, products } = detail
-  const barcode = renderToStaticMarkup(<Barcode value={wo.workId} width={1.8} height={64} fontSize={14} margin={0} />)
 
   const productRows = products
     .map(
@@ -55,13 +78,17 @@ function printWorkOrderSheet(detail: FiberWorkOrderDetailResponse, receipts: Fib
     window.alert('팝업이 차단되어 인쇄 창을 열 수 없습니다. 팝업 허용 후 다시 시도해 주세요.')
     return
   }
+  // 팝업은 클릭 직후 동기적으로 먼저 열고(차단 방지), 바코드는 그 뒤에 만든다
+  const barcode = await buildBarcodeSvg(wo.workId)
   win.document.write(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(wo.workId)}</title>
 <style>
   @page { size: A4; margin: 14mm; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body { font-family: 'Noto Sans KR','Malgun Gothic',sans-serif; color: #111; font-size: 13px; }
   h1 { margin: 0 0 4px; font-size: 22px; }
   .meta { color: #555; font-size: 12px; margin-bottom: 12px; }
   .barcode { text-align: center; padding: 10px; border: 1px dashed #bbb; margin-bottom: 12px; }
+  .barcode svg { max-width: 100%; height: auto; }
   .barcode b { display: block; margin-top: 4px; font-family: monospace; letter-spacing: .12em; }
   .bp { border: 2px solid #111; padding: 10px 14px; margin-bottom: 12px; }
   .bp small { color: #555; }
