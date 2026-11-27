@@ -6,6 +6,7 @@ import {
   ChevronRightIcon,
   ClipboardDocumentListIcon,
   ExclamationTriangleIcon,
+  LockClosedIcon,
   MapPinIcon,
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
@@ -16,6 +17,7 @@ import type {
   WorkOrderPerformanceDefectRequest,
   WorkOrderPerformanceMaterialQtyRequest,
   WorkOrderPerformanceReadyResponse,
+  WorkOrderProductionLineResponse,
   WorkOrderResponse,
   WorkOrderRoutingStepResponse,
   ZoneType,
@@ -50,6 +52,8 @@ interface EntryTarget {
   workOrderLineId: number;
   operCode: string;
   mode: EntryMode;
+  /** 생산라인 현황 카드에서 들어온 경우 그 카드의 seq (입력 화면 배지/투입량 표시용) */
+  productionSeq?: number;
 }
 
 const PAGE_SIZE = 10;
@@ -118,7 +122,55 @@ const formatMaterials = (list: MaterialSummary[]) =>
   list.map((m) => `${m.itemNm} ${m.qty.toLocaleString()}${m.unit}`).join(' · ');
 
 /** 라인 카드 상태 배지 종류 */
-type LineCardVariant = 'START' | 'FINISH' | 'DONE' | 'NONE';
+type LineCardVariant = 'START' | 'FINISH' | 'PACK' | 'DONE' | 'LOCKED' | 'NONE';
+
+/** 라인 카드 테두리/번호 색상 종류 */
+type LineCardTone = LineStatus | 'LOCKED' | 'PACK';
+
+/* ── 생산라인 현황(production-lines) 표시용 ── */
+
+/** 생산라인 상태별 배지 문구 / 색상 */
+const PRODUCTION_STATUS_META: Record<string, { label: string; variant: LineCardVariant; tone: LineCardTone }> = {
+  LOCKED: { label: '잠김', variant: 'LOCKED', tone: 'LOCKED' },
+  READY: { label: '대기 · 투입입력', variant: 'START', tone: 'WAIT' },
+  PRODUCING: { label: '진행중 · 실적입력', variant: 'FINISH', tone: 'PROGRESS' },
+  AWAITING_PACK: { label: '포장대기 · 포장입력', variant: 'PACK', tone: 'PACK' },
+  DONE: { label: '완료', variant: 'DONE', tone: 'DONE' },
+};
+
+/** 상단 요약 칩 순서 */
+const PRODUCTION_SUMMARY_ORDER: { status: string; label: string }[] = [
+  { status: 'DONE', label: '완료' },
+  { status: 'AWAITING_PACK', label: '포장대기' },
+  { status: 'PRODUCING', label: '진행중' },
+  { status: 'READY', label: '대기' },
+  { status: 'LOCKED', label: '잠김' },
+];
+
+const getProductionMeta = (status: string) =>
+  PRODUCTION_STATUS_META[status] ?? { label: status || '-', variant: 'NONE' as const, tone: 'WAIT' as const };
+
+/**
+ * 생산라인 현황 한 건 → 실제 입력을 보낼 작업지시 라인 찾기
+ * (현황 응답에 workOrderLineId 가 없어서 품목코드 기준으로 맞춘다)
+ * 1) 라인 품목코드가 같은 라인
+ * 2) 공정에 기록된 자재 중 같은 품목코드가 있는 라인 (전처리처럼 투입 품목코드가 오는 경우)
+ * 3) 대표 공정명이 같은 미완료 공정을 가진 라인
+ */
+const findWorkOrderLine = (
+  pl: WorkOrderProductionLineResponse,
+  lines: WorkOrderLineResponse[],
+): WorkOrderLineResponse | undefined =>
+  lines.find((l) => l.itemCode === pl.itemCode) ??
+  lines.find((l) => l.routingSteps.some((s) => (s.materials ?? []).some((m) => m.itemCode === pl.itemCode))) ??
+  lines.find((l) => l.routingSteps.some((s) => s.operNm === pl.operNm && !s.done));
+
+/** 생산라인 산출 자재 (OUT 우선, ioType 이 비어 있으면 전체) */
+const productionOutputs = (pl: WorkOrderProductionLineResponse): MaterialSummary[] => {
+  const list = pl.outputs ?? [];
+  const outs = list.filter((m) => m.ioType === 'OUT');
+  return (outs.length > 0 ? outs : list).map(({ itemCode, itemNm, unit, qty }) => ({ itemCode, itemNm, unit, qty }));
+};
 
 /** 자재별 입력 수량 → 전송 payload / 화면 요약. 값이 잘못되면 null */
 const buildMaterialPayload = (
@@ -731,7 +783,7 @@ function PerformanceFinishForm({
 }
 
 /* ================================================================
-   공정 입력 화면 (목업의 투입량 입력 / 생산실적 입력 화면)
+   공정 입력 화면
    - 라인 정보 카드 + 시작/종료 폼
    - 입력할 자재 목록은 상세 데이터로 만들고(buildPerformanceReady), 확정은 start / finish API 로 보낸다
 ================================================================ */
@@ -742,6 +794,7 @@ function PerformanceEntryView({
   step,
   initialMode,
   zone,
+  productionLine,
   onCancel,
   onDone,
   onDirtyChange,
@@ -751,6 +804,7 @@ function PerformanceEntryView({
   step: WorkOrderRoutingStepResponse;
   initialMode: EntryMode;
   zone: string;
+  productionLine?: WorkOrderProductionLineResponse;
   onCancel: () => void;
   onDone: (message: string) => void;
   onDirtyChange: (dirty: boolean) => void;
@@ -760,13 +814,20 @@ function PerformanceEntryView({
   const ready = useMemo(() => buildPerformanceReady(line, step, mode), [line, step, mode]);
   const eq = equipmentLabel(step);
   const { ins } = splitStepMaterials(step);
+  const title = productionLine?.itemNm ?? line.itemNm;
+  const isPack = productionLine?.status === 'AWAITING_PACK';
 
   return (
     <div className="woEntryView">
       {/* 라인 / 공정 정보 */}
       <div className="workOrderItemCard">
         <div className="workOrderCardHead">
-          <span className="workOrderId">{line.itemNm}</span>
+          <span className="workOrderId">{title}</span>
+          {productionLine?.operNm && (
+            <span className={`woLineOperChip woLineOperChip--${isPack ? 'PACK' : mode}`}>
+              {productionLine.operNm}
+            </span>
+          )}
           <span className={`woEntryChip woEntryChip--${mode}`}>{ENTRY_LABEL[mode]}</span>
         </div>
         <div className="workScanInfoGrid">
@@ -797,6 +858,34 @@ function PerformanceEntryView({
           <div className="woEntryInputs">
             <div className="woEntryInputsLabel">투입 내역</div>
             {ins.map((m, idx) => (
+              <div key={`${m.itemCode}-${idx}`} className="woEntryInputsRow">
+                <span>{m.itemNm}</span>
+                <strong>
+                  {m.qty.toLocaleString()} {m.unit}
+                </strong>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 공정 투입 내역이 없으면 생산라인 현황의 투입량으로 대신 보여준다 */}
+        {mode === 'FINISH' && ins.length === 0 && productionLine?.inputQty != null && (
+          <div className="woEntryInputs">
+            <div className="woEntryInputsLabel">투입 내역</div>
+            <div className="woEntryInputsRow">
+              <span>{productionLine.itemNm}</span>
+              <strong>
+                {productionLine.inputQty.toLocaleString()} {line.unit}
+              </strong>
+            </div>
+          </div>
+        )}
+
+        {/* 포장 대기 라인이면 포장 전 산출 내역을 같이 보여준다 */}
+        {isPack && productionLine && productionOutputs(productionLine).length > 0 && (
+          <div className="woEntryInputs">
+            <div className="woEntryInputsLabel">포장 전 산출 내역</div>
+            {productionOutputs(productionLine).map((m, idx) => (
               <div key={`${m.itemCode}-${idx}`} className="woEntryInputsRow">
                 <span>{m.itemNm}</span>
                 <strong>
@@ -857,6 +946,10 @@ export function WorkOrderListPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
 
+  /* ── 생산라인 현황 (null 이면 아직 못 받음 → 공정 기준 카드로 표시) ── */
+  const [productionLines, setProductionLines] = useState<WorkOrderProductionLineResponse[] | null>(null);
+  const [productionLinesError, setProductionLinesError] = useState<string | null>(null);
+
   /* ── 공정 입력 화면 (entryTarget 이 있으면 입력 화면) ── */
   const [entryTarget, setEntryTarget] = useState<EntryTarget | null>(null);
 
@@ -903,29 +996,42 @@ export function WorkOrderListPage() {
     loadOrders(0);
   }, [zone, loadOrders]);
 
-  /* ── 상세 조회 ── */
+  /* ── 상세 + 생산라인 현황 조회 (둘 다 동시에, 현황이 실패해도 상세는 보여준다) ── */
   const loadDetail = useCallback(async (workId: string, silent = false) => {
     if (!silent) {
       setDetailLoading(true);
       setDetailError(null);
     }
 
-    try {
-      const res = await WorkOrderApi.getDetail(workId);
-      const data = res.data;
+    const [detailRes, linesRes] = await Promise.allSettled([
+      WorkOrderApi.getDetail(workId),
+      WorkOrderApi.getProductionLines(workId),
+    ]);
 
-      setDetail(data);
+    if (detailRes.status === 'fulfilled') {
+      setDetail(detailRes.value.data);
       setDetailError(null);
-    } catch (err) {
-      console.error('작업지시 상세를 불러오지 못했습니다.', err);
+    } else {
+      console.error('작업지시 상세를 불러오지 못했습니다.', detailRes.reason);
       if (silent) {
         setNotice('최신 상태를 불러오지 못했습니다. 새로고침해 주세요.');
       } else {
-        setDetailError(getErrorMessage(err, '작업지시 상세를 불러오지 못했습니다.'));
+        setDetailError(getErrorMessage(detailRes.reason, '작업지시 상세를 불러오지 못했습니다.'));
       }
-    } finally {
-      if (!silent) setDetailLoading(false);
     }
+
+    if (linesRes.status === 'fulfilled') {
+      const list = [...(linesRes.value.data ?? [])].sort((a, b) => a.seq - b.seq);
+      setProductionLines(list);
+      setProductionLinesError(null);
+    } else {
+      console.error('생산라인 현황을 불러오지 못했습니다.', linesRes.reason);
+      setProductionLinesError(getErrorMessage(linesRes.reason, '생산라인 현황을 불러오지 못했습니다.'));
+      // 조용한 새로고침 실패면 이전 현황을 유지, 처음 조회 실패면 공정 기준 카드로 표시
+      if (!silent) setProductionLines(null);
+    }
+
+    if (!silent) setDetailLoading(false);
   }, []);
 
   const resetEntry = useCallback(() => {
@@ -941,6 +1047,8 @@ export function WorkOrderListPage() {
   const openDetail = (workId: string) => {
     resetEntry();
     setDetail(null);
+    setProductionLines(null);
+    setProductionLinesError(null);
     setSelectedWorkId(workId);
     loadDetail(workId);
   };
@@ -950,13 +1058,20 @@ export function WorkOrderListPage() {
     setSelectedWorkId(null);
     setDetail(null);
     setDetailError(null);
+    setProductionLines(null);
+    setProductionLinesError(null);
     // 완료된 작업지시가 목록에서 빠지도록 조용히 다시 불러온다
     loadOrders(0, true);
   };
 
-  const openEntry = (line: WorkOrderLineResponse, step: WorkOrderRoutingStepResponse, mode: EntryMode) => {
+  const openEntry = (
+    line: WorkOrderLineResponse,
+    step: WorkOrderRoutingStepResponse,
+    mode: EntryMode,
+    productionSeq?: number,
+  ) => {
     formDirtyRef.current = false;
-    setEntryTarget({ workOrderLineId: line.workOrderLineId, operCode: step.operCode, mode });
+    setEntryTarget({ workOrderLineId: line.workOrderLineId, operCode: step.operCode, mode, productionSeq });
   };
 
   /** 입력 화면 → 상세 (취소 버튼 / 상단 뒤로가기) */
@@ -995,6 +1110,13 @@ export function WorkOrderListPage() {
   const entryStep = entryTarget
     ? entryLine?.routingSteps.find((step) => step.operCode === entryTarget.operCode)
     : undefined;
+  const entryProductionLine =
+    entryTarget?.productionSeq !== undefined
+      ? productionLines?.find((pl) => pl.seq === entryTarget.productionSeq)
+      : undefined;
+
+  // 생산라인 현황을 쓸 수 있으면 그걸로 카드를 그리고, 아니면 기존 공정 기준 카드로 표시
+  const useProductionView = !!productionLines && productionLines.length > 0;
 
   const viewMode: ViewMode =
     selectedWorkId === null ? 'list' : entryTarget && entryLine && entryStep ? 'entry' : 'detail';
@@ -1118,6 +1240,114 @@ export function WorkOrderListPage() {
     );
   };
 
+  /**
+   * 생산라인 현황 카드 (production-lines 기준)
+   * - 상태/배지/잠금은 현황 응답을 따르고, 실제 입력할 공정은 상세(routingSteps)에서 찾는다
+   */
+  const renderProductionLine = (pl: WorkOrderProductionLineResponse, lines: WorkOrderLineResponse[]) => {
+    const meta = getProductionMeta(pl.status);
+    const line = findWorkOrderLine(pl, lines);
+    const steps = line?.routingSteps ?? [];
+    const doneCount = steps.filter((s) => s.done).length;
+    const actionable = line ? getActionableStep(steps) : null;
+    const unit = line?.unit ?? pl.outputs?.[0]?.unit ?? '';
+    const outs = productionOutputs(pl);
+
+    let subtitle: string;
+    switch (pl.status) {
+      case 'LOCKED':
+        subtitle = pl.lockedReason ? `${pl.lockedReason} 완료 후 진행 가능` : '선행 라인 완료 후 진행 가능';
+        break;
+      case 'READY':
+        subtitle = [
+          line ? `지시 ${line.instructQty.toLocaleString()} ${line.unit}` : null,
+          line?.bpNm,
+          line?.dueDate ? `납기 ${line.dueDate}` : null,
+          equipmentLabel(actionable?.step),
+        ]
+          .filter(Boolean)
+          .join(' · ') || '투입량을 입력해 작업을 시작하세요';
+        break;
+      case 'PRODUCING':
+        subtitle = [
+          pl.inputQty != null ? `투입 ${pl.inputQty.toLocaleString()} ${unit}` : '투입 내역 없음',
+          equipmentLabel(actionable?.step),
+        ]
+          .filter(Boolean)
+          .join(' · ');
+        break;
+      case 'AWAITING_PACK':
+        subtitle = [
+          pl.inputQty != null ? `투입 ${pl.inputQty.toLocaleString()} ${unit}` : null,
+          outs.length > 0 ? `산출 ${formatMaterials(outs)}` : null,
+        ]
+          .filter(Boolean)
+          .join(' · ') || '포장 실적을 입력하세요';
+        break;
+      case 'DONE':
+        subtitle =
+          pl.finalQty != null
+            ? `최종 ${pl.finalQty.toLocaleString()} ${unit}` + (outs.length > 0 ? ` · 산출 ${formatMaterials(outs)}` : '')
+            : outs.length > 0
+              ? `산출 ${formatMaterials(outs)}`
+              : '모든 공정 완료';
+        break;
+      default:
+        subtitle = '-';
+    }
+
+    const canEnter = pl.status !== 'LOCKED' && pl.status !== 'DONE' && !!line && actionable !== null;
+    // 현황상 입력 가능한데 연결할 라인을 못 찾은 경우 안내
+    if (!canEnter && pl.status !== 'LOCKED' && pl.status !== 'DONE' && !line) {
+      subtitle = `${subtitle} · 연결된 작업지시 라인을 찾을 수 없습니다`;
+    }
+
+    return (
+      <button
+        key={`${pl.seq}-${pl.itemCode}`}
+        type="button"
+        className={`woLineCard woLineCard--${meta.tone}`}
+        onClick={() => canEnter && line && actionable && openEntry(line, actionable.step, actionable.mode, pl.seq)}
+        disabled={!canEnter}
+        aria-label={`${pl.itemNm} ${meta.label}`}
+      >
+        <span className="woLineSeq">
+          {pl.status === 'DONE' ? (
+            '✓'
+          ) : pl.status === 'LOCKED' ? (
+            <LockClosedIcon className="woLineSeqIcon" aria-hidden="true" />
+          ) : (
+            pl.seq
+          )}
+        </span>
+
+        <div className="woLineInfo">
+          <div className="woLineNameRow">
+            <span className="woLineName">{pl.itemNm}</span>
+            {pl.operNm && (
+              <span className={`woLineOperChip woLineOperChip--${meta.variant}`}>{pl.operNm}</span>
+            )}
+          </div>
+          <div className="woLineMeta">{subtitle}</div>
+        </div>
+
+        <div className="woLineSide">
+          {steps.length > 0 && (
+            <span className="woLineProgress">
+              {doneCount}/{steps.length}
+            </span>
+          )}
+          <span className={`woLineStatus woLineStatus--${meta.variant}`}>
+            {pl.status === 'DONE' && <span aria-hidden="true">✓</span>}
+            {pl.status === 'LOCKED' && <LockClosedIcon className="woLineStatusIcon" aria-hidden="true" />}
+            {meta.label}
+          </span>
+          {canEnter && <ChevronRightIcon className="woLineChevron" aria-hidden="true" />}
+        </div>
+      </button>
+    );
+  };
+
   /* ── 목록 화면 ── */
   const renderListView = () => (
     <div className="woListView">
@@ -1236,7 +1466,22 @@ export function WorkOrderListPage() {
 
     if (!detail) return null;
 
-    const hasActionable = detail.lines.some((line) => getActionableStep(line.routingSteps) !== null);
+    const hasActionable = useProductionView
+      ? productionLines!.some(
+          (pl) =>
+            pl.status !== 'LOCKED' &&
+            pl.status !== 'DONE' &&
+            !!findWorkOrderLine(pl, detail.lines),
+        )
+      : detail.lines.some((line) => getActionableStep(line.routingSteps) !== null);
+
+    // 상태별 개수 (요약 칩)
+    const statusCounts = (productionLines ?? []).reduce<Record<string, number>>((acc, pl) => {
+      acc[pl.status] = (acc[pl.status] ?? 0) + 1;
+      return acc;
+    }, {});
+    const doneLineCount = statusCounts.DONE ?? 0;
+    const totalLineCount = productionLines?.length ?? 0;
 
     return (
       <div className="workOrderResult">
@@ -1279,7 +1524,50 @@ export function WorkOrderListPage() {
             </button>
           </div>
 
-          {detail.lines.length === 0 ? (
+          {/* 생산라인 진행 요약 (완료 n/전체 m + 상태별 개수) */}
+          {useProductionView && (
+            <div className="woLineSummary">
+              <div className="woLineSummaryProgress">
+                <div className="woLineSummaryText">
+                  <span>전체 진행</span>
+                  <strong>
+                    {doneLineCount}/{totalLineCount}
+                  </strong>
+                </div>
+                <div className="woLineSummaryBar">
+                  <div
+                    className="woLineSummaryBarFill"
+                    style={{ width: `${totalLineCount > 0 ? (doneLineCount / totalLineCount) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+              <div className="woLineSummaryChips">
+                {PRODUCTION_SUMMARY_ORDER.filter(({ status }) => (statusCounts[status] ?? 0) > 0).map(
+                  ({ status, label }) => (
+                    <span
+                      key={status}
+                      className={`woLineSummaryChip woLineSummaryChip--${getProductionMeta(status).variant}`}
+                    >
+                      {label} {statusCounts[status]}
+                    </span>
+                  ),
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 현황 API 실패 → 공정 기준으로 표시 중이라는 안내 */}
+          {productionLinesError && !useProductionView && (
+            <div className="workOrderNextStepBanner workOrderNextStepBanner--error">
+              {productionLinesError} 공정 기준으로 표시합니다.
+            </div>
+          )}
+
+          {useProductionView ? (
+            <div className="woLineList">
+              {productionLines!.map((pl) => renderProductionLine(pl, detail.lines))}
+            </div>
+          ) : detail.lines.length === 0 ? (
             <div className="workOrderRoutingEmpty">등록된 라인이 없습니다.</div>
           ) : (
             <div className="woLineList">{detail.lines.map((line, idx) => renderLine(line, idx))}</div>
@@ -1301,6 +1589,7 @@ export function WorkOrderListPage() {
         step={entryStep}
         initialMode={entryTarget.mode}
         zone={zone}
+        productionLine={entryProductionLine}
         onCancel={closeEntry}
         onDone={handlePerformanceDone}
         onDirtyChange={handleDirtyChange}

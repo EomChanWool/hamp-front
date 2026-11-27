@@ -188,6 +188,49 @@ export interface WorkOrderPerformanceFinishRequest {
     defects?: WorkOrderPerformanceDefectRequest[];
 }
 
+// ── 생산라인 현황(production-lines) 응답 모델 ──────────────────────────────────────
+// GET /work-performances/{workId}/production-lines
+// 태블릿 작업지시 상세에서 라인 카드를 그릴 때 쓰는 단순화된 상태
+
+/**
+ * 생산라인 단순화 상태
+ * - LOCKED: 선행 라인이 끝나지 않아 잠김 (lockedReason 에 선행 라인명)
+ * - READY: 투입 입력 가능 (작업 시작 전)
+ * - PRODUCING: 생산 중 (실적 입력 대기)
+ * - AWAITING_PACK: 생산실적 기록 완료, 포장 대기
+ * - DONE: 완료 (finalQty 확정)
+ */
+export type ProductionLineStatus = 'LOCKED' | 'READY' | 'PRODUCING' | 'AWAITING_PACK' | 'DONE';
+
+/** 생산라인에 기록된 산출 자재 한 건 */
+export interface WorkOrderProductionLineMaterialResponse {
+    itemCode: string;
+    itemNm: string;
+    unit: string;
+    ioType: MaterialIoType;
+    qty: number;
+}
+
+/** 작업지시 생산라인 현황 한 건 */
+export interface WorkOrderProductionLineResponse {
+    /** 화면 표시 순서 (전체 공정 중 이 라인의 개념적 단계 - 중간에 비어있는 번호가 있을 수 있음) */
+    seq: number;
+    /** 이 라인이 생산하는(또는 전처리의 경우 투입되는) 품목 코드 */
+    itemCode: string;
+    itemNm: string;
+    /** 대표 공정명 (화면 배지용 - 예: 전처리/선별/착유) */
+    operNm: string;
+    status: ProductionLineStatus;
+    /** LOCKED 일 때만: 잠긴 이유(선행 라인명) */
+    lockedReason?: string | null;
+    /** 투입량 (작업시작 시 기록한 값, 시작 전이면 null) */
+    inputQty: number | null;
+    /** 생산실적으로 기록된 산출 자재 목록 (포장 전 - 품목에 따라 1건 또는 2건) */
+    outputs: WorkOrderProductionLineMaterialResponse[];
+    /** 포장 후 최종 산출량 (완료 전이면 null, 포장 단계가 없는 라인도 null) */
+    finalQty: number | null;
+}
+
 // ── 예상 투입원료(estimate) 요청/응답 모델 ──────────────────────────────────────────
 // POST /work-orders/estimate-raw-material
 // 작업지시 등록 시 산출수량 기준으로 예상 투입원료를 계산한다 (참고용 추정치)
@@ -296,6 +339,9 @@ export type ApiResponseWorkOrderPerformanceReadyResponse = ApiResponse<WorkOrder
 /** 작업지시 공정 시작 API 최종 응답 타입 (기본 ApiResponse 활용) */
 export type ApiResponseWorkOrderPerformanceStartResponse = ApiResponse<string>;
 
+/** 작업지시 생산라인 현황 조회 API 최종 응답 타입 */
+export type ApiResponseListWorkOrderProductionLineResponse = ApiResponse<WorkOrderProductionLineResponse[]>;
+
 /** 예상 투입원료 계산 API 최종 응답 타입 */
 export type ApiResponseWorkOrderMaterialEstimateResponse = ApiResponse<WorkOrderMaterialEstimateResponse>;
 
@@ -330,6 +376,12 @@ export const WorkOrderApi = {
         sort?: string;
     }): Promise<ApiResponsePageWorkOrderResponse> => {
         const res = await apiClient.get('/work-performances/my', { params });
+        return res.data;
+    },
+
+    /** 작업지시 생산라인 현황 조회 (태블릿 화면용, 단순화된 상태) */
+    getProductionLines: async (workId: string): Promise<ApiResponseListWorkOrderProductionLineResponse> => {
+        const res = await apiClient.get(`/work-performances/${encodeURIComponent(workId)}/production-lines`);
         return res.data;
     },
 
