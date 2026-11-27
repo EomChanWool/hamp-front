@@ -101,7 +101,7 @@ export interface WorkOrderRoutingStepMaterialResponse {
     qty: number;
 }
 
-/** 작업지시 라인 바코드 스캔 조회 응답의 공정순서도 단계 */
+/** 작업지시 라인의 공정순서도 단계 */
 export interface WorkOrderRoutingStepResponse {
     operCode: string;
     operNm: string;
@@ -118,7 +118,7 @@ export interface WorkOrderRoutingStepResponse {
     materials?: WorkOrderRoutingStepMaterialResponse[];
 }
 
-/** 작업지시 라인 바코드 스캔 조회 응답 타입 */
+/** 작업지시 라인 바코드 스캔 조회 응답 타입 (다른 스캔 화면에서 사용) */
 export interface WorkOrderLineScanResponse {
     workId: string;
     workDate: string; // "2026-09-16"
@@ -137,10 +137,14 @@ export interface WorkOrderLineScanResponse {
     routingSteps: WorkOrderRoutingStepResponse[];
 }
 
-/** 설비 바코드 스캔 결과 - START_READY/FINISH_READY 둘 다 아직 아무것도 기록 안 된 "확인 대기"
- *  상태이고, 태블릿에서 사용자가 진행/종료를 확인해야 각각 startPerformance/finishPerformance로
- *  확정해야 실제로 기록된다 */
-export interface WorkOrderPerformanceScanResponse {
+/**
+ * 공정 시작/종료 입력 준비 정보
+ * - 태블릿에서 라인의 [투입 입력]/[실적 입력]을 누르면 조회한다
+ * - START_READY: 시작 전 → requiredMaterials 는 투입자재 목록
+ * - FINISH_READY: 진행 중 → requiredMaterials 는 산출자재 목록
+ * - 실제 기록은 startPerformance / finishPerformance 로 확정해야 된다
+ */
+export interface WorkOrderPerformanceReadyResponse {
     action: 'START_READY' | 'FINISH_READY';
     workOrderLineId: number;
     operCode: string;
@@ -150,28 +154,35 @@ export interface WorkOrderPerformanceScanResponse {
     requiredMaterials?: ItemOptionResponse[];
 }
 
-/** 설비 스캔으로 받은 공정을 투입수량과 함께 시작 확정할 때 보내는 요청 */
-export interface WorkOrderPerformanceStartRequest {
-    zone: ZoneType;
-    operCode: string;
-    materials: WorkOrderPerformanceMaterialQtyRequest[];
-}
+/** @deprecated 설비 스캔 방식 제거 - WorkOrderPerformanceReadyResponse 를 사용 */
+export type WorkOrderPerformanceScanResponse = WorkOrderPerformanceReadyResponse;
 
-/** 설비 스캔으로 받은 공정에 투입 자재와 산출자재를 보내는 요청 */
+/** 공정 시작/종료 시 자재별 수량 */
 export interface WorkOrderPerformanceMaterialQtyRequest {
     itemCode: string;
     qty: number;
 }
 
-/** 설비 스캔으로 받은 공정을 종료 확정할 때 불량수량을 보내는 요청 */
+/** 공정 종료 시 불량 수량 */
 export interface WorkOrderPerformanceDefectRequest {
     defCode: string;
     qty: number;
 }
 
-/** 설비 스캔으로 받은 공정을 종료 확정할 때 보내는 요청 */
+/** 공정을 투입수량과 함께 시작 확정할 때 보내는 요청 */
+export interface WorkOrderPerformanceStartRequest {
+    zone: ZoneType;
+    /** 스캔 대신 화면에서 라인을 직접 고르므로 어떤 라인인지 함께 보낸다 */
+    workOrderLineId: number;
+    operCode: string;
+    materials: WorkOrderPerformanceMaterialQtyRequest[];
+}
+
+/** 공정을 종료 확정할 때 보내는 요청 */
 export interface WorkOrderPerformanceFinishRequest {
     zone: ZoneType;
+    /** 스캔 대신 화면에서 라인을 직접 고르므로 어떤 라인인지 함께 보낸다 */
+    workOrderLineId: number;
     operCode: string;
     materials: WorkOrderPerformanceMaterialQtyRequest[];
     defects?: WorkOrderPerformanceDefectRequest[];
@@ -279,6 +290,9 @@ export type ApiResponseWorkOrderStatusSummaryResponse = ApiResponse<WorkOrderSta
 /** 작업지시 라인 바코드 스캔 조회 API 최종 응답 타입 */
 export type ApiResponseWorkOrderLineScanResponse = ApiResponse<WorkOrderLineScanResponse>;
 
+/** 공정 시작/종료 입력 준비 정보 API 최종 응답 타입 */
+export type ApiResponseWorkOrderPerformanceReadyResponse = ApiResponse<WorkOrderPerformanceReadyResponse>;
+
 /** 작업지시 공정 시작 API 최종 응답 타입 (기본 ApiResponse 활용) */
 export type ApiResponseWorkOrderPerformanceStartResponse = ApiResponse<string>;
 
@@ -364,7 +378,7 @@ export const WorkOrderApi = {
         return res.data;
     },
 
-    /** 작업지시 라인 바코드 스캔 조회 */
+    /** 작업지시 라인 바코드 스캔 조회 (다른 스캔 화면에서 사용) */
     scan: async (code: string, zone: ZoneType): Promise<ApiResponseWorkOrderLineScanResponse> => {
         const res = await apiClient.get('/work-orders/scan', {
             params: { code, zone },
@@ -372,13 +386,28 @@ export const WorkOrderApi = {
         return res.data;
     },
 
-    /** 설비 스캔으로 받은 공정을 투입수량과 함께 시작 확정 */
+    /**
+     * 공정 시작/종료 입력 준비 정보 조회 (설비 스캔 대체)
+     * GET /work-orders/performance/ready?zone=&workOrderLineId=&operCode=
+     * - 시작이면 투입자재, 종료면 산출자재 목록을 requiredMaterials 로 돌려준다
+     * - TODO(백엔드): 기존 설비 스캔 이벤트가 주던 값을 그대로 돌려주는 엔드포인트 필요
+     */
+    getPerformanceReady: async (params: {
+        zone: ZoneType;
+        workOrderLineId: number;
+        operCode: string;
+    }): Promise<ApiResponseWorkOrderPerformanceReadyResponse> => {
+        const res = await apiClient.get('/work-orders/performance/ready', { params });
+        return res.data;
+    },
+
+    /** 공정을 투입수량과 함께 시작 확정 */
     startPerformance: async (data: WorkOrderPerformanceStartRequest): Promise<ApiResponse<null>> => {
         const res = await apiClient.post('/work-orders/performance/start', data);
         return res.data;
     },
 
-    /** 설비 스캔으로 받은 공정을 종료 확정 */
+    /** 공정을 종료 확정 */
     finishPerformance: async (data: WorkOrderPerformanceFinishRequest): Promise<ApiResponse<null>> => {
         const res = await apiClient.post('/work-orders/performance/finish', data);
         return res.data;
